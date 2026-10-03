@@ -245,7 +245,7 @@
 .ias-b.ias-usar:hover{background:#5f43b3;border-color:#5f43b3}
 .ias-b.ias-x{width:30px;padding:0}
 .ias-b:disabled{opacity:.55;cursor:default}
-.ias-acc kbd{margin-left:auto;font:500 11px Poppins,sans-serif;color:#6b7280;border:1px solid #e5e9f0;border-bottom-width:2px;border-radius:5px;padding:1px 6px;background:#fff}
+.ias-acc kbd{margin-left:auto;font:500 11px Inter,sans-serif;color:#6b7280;border:1px solid #e5e9f0;border-bottom-width:2px;border-radius:5px;padding:1px 6px;background:#fff}
 .box .bar button.t#b-ia,.box .bar button.t#b-ia:hover{color:#6d4fc2}
 .box .bar button.t#b-ia.cm-on{background:#f5f3ff;color:#6d4fc2}
 /* Tablero 11: Mis ajustes › Mi IA */

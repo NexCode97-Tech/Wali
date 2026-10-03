@@ -69,7 +69,7 @@
   const CAMPANA = '<path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>';
   const SALIR = '<path d="M14 4h6v6M20 4l-9 9M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/>';
   const estrellasEnc = n => `<span class="stars" aria-label="${n} de 5">${[1, 2, 3, 4, 5].map(i => `<svg viewBox="0 0 24 24" class="${i <= n ? 'on' : ''}" aria-hidden="true">${ESTRELLA}</svg>`).join('')}</span>`;
-  // El globo de WhatsApp lleva Roboto, como en la maqueta (el resto del CRM sigue en Poppins).
+  // El globo de WhatsApp lleva Roboto, como en la maqueta (el resto del CRM va en Inter).
   if (!document.querySelector('link[data-enc-roboto]')) document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" data-enc-roboto="1" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap">');
   document.head.insertAdjacentHTML('beforeend', `<style>
 .enc-svg{fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
