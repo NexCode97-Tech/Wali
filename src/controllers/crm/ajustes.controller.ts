@@ -11,7 +11,7 @@ import { logger } from '../../utils/logger'
 import { guardarAjuste, leerPreferencias } from '../../services/crm/ajustes'
 import { emitirAlcance, emitirConv, emitirCrm, olvidarGenteCrm } from '../../services/crm/tiempoReal'
 import { usuariosCrm } from '../../services/crm/usuarios'
-import { leerWeb, extraerTexto, TIPOS_DOC } from '../../services/crm/kb'
+import { leerWeb, extraerTexto, TIPOS_DOC, EXT_DOC, MENSAJE_TIPOS } from '../../services/crm/kb'
 import { probarAgente } from '../../services/crm/agentes'
 import { alcanceDe, alcanceDePersona, alcanceParaFront, entraPorRol, sincronizarMiembros, type Alcance } from '../../services/crm/alcance'
 import { normalizarEquipos, type EquiposNorm } from '../../services/crm/equipos'
@@ -530,9 +530,9 @@ export async function subirDocumento(req: Request, res: Response) {
   exigirEscritura(req)
   exigirLider(req, 'cargar la base de conocimiento')
   const f = req.file
-  if (!f) throw new ValidationError('Falta el documento. Súbelo en el campo «archivo» (PDF, TXT o CSV).')
+  if (!f) throw new ValidationError(`Falta el documento. Súbelo en el campo «archivo». ${MENSAJE_TIPOS}`)
   const n = nombreArchivo(f)
-  if (!TIPOS_DOC.has(f.mimetype) && !/\.(pdf|txt|csv|md)$/i.test(n)) throw new ValidationError('Ese tipo de archivo no se puede leer. Sube un PDF, un TXT o un CSV.')
+  if (!TIPOS_DOC.has(f.mimetype) && !EXT_DOC.test(n)) throw new ValidationError(`Ese tipo de archivo no se puede leer. ${MENSAJE_TIPOS}`)
   // Primero se lee (si no se puede leer, no se sube nada).
   const { texto, paginas, recortado } = await extraerTexto(f.buffer, f.mimetype, n)
   let url: string

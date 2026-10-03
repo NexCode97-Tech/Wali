@@ -4,6 +4,8 @@ import dns from 'dns'
 import net from 'net'
 import zlib from 'zlib'
 import type { Readable } from 'stream'
+import * as XLSX from 'xlsx'
+import mammoth from 'mammoth'
 import { ValidationError, AppError } from '../../utils/errors'
 
 /**
@@ -239,15 +241,50 @@ export async function leerWeb(crudo: string): Promise<{ titulo: string; texto: s
 }
 
 // ─── Documentos ──────────────────────────────────────────────────────────────
+//
+// El agente entiende mejor un documento cuando cada fila de una tabla queda junta («Plan Pro | $3.000.000 | Tienda»)
+// y los datos van como «Campo: valor». El texto plano de pdf2json salía desordenado y perdía filas: el PDF se arma
+// de nuevo con la posición de cada texto. Word y Excel convierten sus tablas a «Campo: valor».
 
-/** Texto de un PDF con pdf2json (ya está en el proyecto). */
+interface TextoPdf { x: number; y: number; w?: number; R?: { T?: string }[] }
+interface PaginaPdf { Texts?: TextoPdf[] }
+
+/** Unidades de pdf2json: `x`/`y` en 1/16 de pulgada aprox., `w` en 1/16 de eso. Más de 1 unidad de hueco = otra columna. */
+const HUECO_COLUMNA = 1
+const MISMA_LINEA = 0.35
+
+const decodificarPdf = (s: string) => { if (!s.includes('%')) return s; try { return decodeURIComponent(s) } catch { return s } }
+
+/** Las líneas de una página, de arriba abajo; las columnas de una misma línea separadas con « | ». */
+export function lineasDePagina(textos: TextoPdf[]): string[] {
+  const items = textos
+    .map(t => ({ x: t.x, y: t.y, fin: t.x + (t.w ?? 0) / 16, s: decodificarPdf((t.R ?? []).map(r => r.T ?? '').join('')) }))
+    .filter(t => t.s.trim())
+    .sort((a, b) => a.y - b.y || a.x - b.x)
+  const lineas: { y: number; items: typeof items }[] = []
+  for (const it of items) {
+    const l = lineas.find(x => Math.abs(x.y - it.y) <= MISMA_LINEA)
+    if (l) l.items.push(it); else lineas.push({ y: it.y, items: [it] })
+  }
+  return lineas.sort((a, b) => a.y - b.y).map(l => {
+    const fila = l.items.sort((a, b) => a.x - b.x)
+    let out = ''
+    fila.forEach((it, k) => {
+      if (k > 0) out += it.x - fila[k - 1].fin > HUECO_COLUMNA ? ' | ' : /\s$/.test(out) || /^\s/.test(it.s) ? '' : ' '
+      out += it.s
+    })
+    return out.replace(/[ \t]+/g, ' ').trim()
+  }).filter(Boolean)
+}
+
+/** Texto de un PDF con pdf2json, armado por posición. */
 function textoDePdf(buffer: Buffer): Promise<{ texto: string; paginas: number }> {
   return new Promise((resolve, reject) => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const PDFParser = require('pdf2json') as new (ctx: null, needRawText: boolean) => {
-      on(ev: 'pdfParser_dataReady', cb: (d: { Pages?: unknown[] }) => void): void
+    const mod = require('pdf2json') as { default?: unknown; PDFParser?: unknown }
+    const PDFParser = (mod.default ?? mod.PDFParser ?? mod) as new (ctx: null, needRawText: boolean) => {
+      on(ev: 'pdfParser_dataReady', cb: (d: { Pages?: PaginaPdf[] }) => void): void
       on(ev: 'pdfParser_dataError', cb: (e: { parserError?: Error } | Error) => void): void
-      getRawTextContent(): string
       parseBuffer(b: Buffer): void
     }
     const p = new PDFParser(null, true)
@@ -259,15 +296,67 @@ function textoDePdf(buffer: Buffer): Promise<{ texto: string; paginas: number }>
     })
     p.on('pdfParser_dataReady', d => {
       clearTimeout(tope)
-      const bruto = p.getRawTextContent()
-      const texto = bruto.replace(/-{10,}Page \(\d+\) Break-{10,}/g, '\n\n').replace(/\r/g, '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim()
-      resolve({ texto, paginas: Array.isArray(d.Pages) ? d.Pages.length : 0 })
+      const paginas = Array.isArray(d.Pages) ? d.Pages : []
+      const texto = paginas.map(pg => lineasDePagina(Array.isArray(pg.Texts) ? pg.Texts : []).join('\n')).filter(Boolean).join('\n\n').trim()
+      resolve({ texto, paginas: paginas.length })
     })
     p.parseBuffer(buffer)
   })
 }
 
-export const TIPOS_DOC = new Set(['application/pdf', 'text/plain', 'text/csv', 'application/csv', 'application/vnd.ms-excel', 'text/markdown'])
+const limpio = (v: unknown) => String(v ?? '').replace(/\s+/g, ' ').trim()
+
+/** Una tabla como texto: con encabezados, cada fila «Encabezado: valor · Encabezado: valor»; sin ellos, « | ». */
+function tablaATexto(filas: string[][]): string[] {
+  const llenas = filas.map(f => f.map(limpio)).filter(f => f.some(Boolean))
+  if (!llenas.length) return []
+  const [cab, ...resto] = llenas
+  // Hay encabezados si la primera fila es texto corto y no repite celdas (no es una fila de datos).
+  const conCab = resto.length > 0 && cab.filter(Boolean).length >= 2 && cab.every(c => c.length <= 40) && new Set(cab.filter(Boolean)).size === cab.filter(Boolean).length
+  if (!conCab) return llenas.map(f => f.filter(Boolean).join(' | '))
+  return resto.map(f => f.map((v, k) => (v ? (cab[k] ? `${cab[k]}: ${v}` : v) : '')).filter(Boolean).join(' · '))
+}
+
+/** Texto de un Excel (xlsx/xls): cada hoja con su nombre y sus filas como «Columna: valor». */
+function textoDeExcel(buffer: Buffer): { texto: string; paginas: number } {
+  const libro = XLSX.read(buffer, { type: 'buffer', cellDates: true })
+  const partes = libro.SheetNames.map(n => {
+    const filas = XLSX.utils.sheet_to_json<unknown[]>(libro.Sheets[n], { header: 1, raw: false, defval: '' }) as unknown[][]
+    const lineas = tablaATexto(filas.map(f => f.map(limpio)))
+    return lineas.length ? `## Hoja «${n}»\n${lineas.join('\n')}` : ''
+  }).filter(Boolean)
+  return { texto: partes.join('\n\n'), paginas: libro.SheetNames.length }
+}
+
+/** HTML de mammoth → texto: títulos y párrafos por línea, viñetas con «- » y tablas como «Campo: valor». */
+function htmlDeWordATexto(html: string): string {
+  const sinEtiquetas = (s: string) => s.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+  const tablas: string[] = []
+  const conMarcas = html.replace(/<table[\s\S]*?<\/table>/gi, t => {
+    const filas = [...t.matchAll(/<tr[\s\S]*?<\/tr>/gi)].map(tr => [...tr[0].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(c => sinEtiquetas(c[1])))
+    tablas.push(tablaATexto(filas).join('\n'))
+    return `\n@@TABLA${tablas.length - 1}@@\n`
+  })
+  const texto = conMarcas
+    .replace(/<li[^>]*>/gi, '\n- ').replace(/<\/(p|h[1-6]|li|ul|ol|div)>/gi, '\n').replace(/<h[1-6][^>]*>/gi, '\n')
+  return sinEtiquetas(texto)
+    .replace(/@@TABLA(\d+)@@/g, (_, k: string) => tablas[+k] ?? '')
+    .split('\n').map(l => l.replace(/[ \t]+/g, ' ').trim()).filter(Boolean).join('\n')
+}
+
+async function textoDeWord(buffer: Buffer): Promise<{ texto: string; paginas: number }> {
+  const { value } = await mammoth.convertToHtml({ buffer })
+  return { texto: htmlDeWordATexto(value), paginas: 1 }
+}
+
+export const TIPOS_DOC = new Set([
+  'application/pdf', 'text/plain', 'text/csv', 'application/csv', 'application/vnd.ms-excel', 'text/markdown',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+])
+/** Las extensiones que se pueden leer (también lo que acepta la pantalla). */
+export const EXT_DOC = /\.(pdf|txt|csv|md|docx|xlsx|xls)$/i
+export const MENSAJE_TIPOS = 'Sube un PDF, un Word (.docx), un Excel (.xlsx), un TXT o un CSV.'
 
 export async function extraerTexto(buffer: Buffer, mime: string, nombre: string): Promise<{ texto: string; paginas: number; recortado: boolean }> {
   const ext = (nombre.match(/\.([^.]+)$/)?.[1] ?? '').toLowerCase()
@@ -276,6 +365,12 @@ export async function extraerTexto(buffer: Buffer, mime: string, nombre: string)
   if (mime === 'application/pdf' || ext === 'pdf') {
     ({ texto, paginas } = await textoDePdf(buffer))
     if (!texto) throw new ValidationError('El PDF no tiene texto que se pueda leer (parece una imagen escaneada). Pega el texto en un fragmento.')
+  } else if (ext === 'docx' || mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+    try { ({ texto, paginas } = await textoDeWord(buffer)) } catch { throw new ValidationError('No se pudo leer el Word. Guárdalo como .docx (no .doc) o pega el texto en un fragmento.') }
+    if (!texto) throw new ValidationError('El Word no tiene texto que se pueda leer.')
+  } else if (ext === 'xlsx' || ext === 'xls' || mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || (mime === 'application/vnd.ms-excel' && ext !== 'csv')) {
+    try { ({ texto, paginas } = textoDeExcel(buffer)) } catch { throw new ValidationError('No se pudo leer el Excel. Revisa que no esté protegido con clave.') }
+    if (!texto) throw new ValidationError('El Excel no tiene datos que se puedan leer.')
   } else if (['txt', 'csv', 'md'].includes(ext) || mime.startsWith('text/') || mime === 'application/csv') {
     texto = buffer.toString('utf8').replace(/^﻿/, '')
     // Archivos guardados en Excel viejo vienen en latin1: si el UTF-8 salió con errores, se lee así.
@@ -283,7 +378,7 @@ export async function extraerTexto(buffer: Buffer, mime: string, nombre: string)
     texto = texto.replace(/\r\n?/g, '\n').trim()
     paginas = 1
   } else {
-    throw new ValidationError('Ese tipo de archivo no se puede leer. Sube un PDF, un TXT o un CSV.')
+    throw new ValidationError(`Ese tipo de archivo no se puede leer. ${MENSAJE_TIPOS}`)
   }
   return { texto: texto.slice(0, MAX_TEXTO_DOC), paginas, recortado: texto.length > MAX_TEXTO_DOC }
 }

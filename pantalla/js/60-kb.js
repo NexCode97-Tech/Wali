@@ -153,15 +153,15 @@ function kbCuerpo(k){
   const websNuevas = [...st.kbLeyendo].filter(c => c.startsWith(k.id + '|')).map(c => c.slice(k.id.length + 1)).filter(u => !k.webs.some(w => w.u === u));
   const documentos = `<section class="kb-sec kb-docs" aria-label="Documentos"><div class="hd"><span class="kb-ico">${I('file')}</span><b>Documentos${kbCon(k.docs.length)}</b>
         <button type="button" class="btn" data-kb-nube="1">${I('folder')}Elegir de Archivos del CRM</button><button type="button" class="btn" data-kb-subir="1">${I('file')}Subir documentos</button></div>
-      <p class="sub2">Catálogos, guiones e instrucciones de venta. PDF, TXT o CSV, hasta 20 MB por archivo.</p>
+      <p class="sub2">Catálogos, guiones e instrucciones de venta. PDF, Word, Excel, TXT o CSV, hasta 20 MB por archivo. Revisa el texto que leyó el agente con «Ver y corregir el texto».</p>
       ${hayDocs ? `<div class="kb-bar"><label class="cn-q">${I('search')}<input id="kb-q" value="${esc(st.kbQ)}" placeholder="Buscar documentos" autocomplete="off" aria-label="Buscar documentos"></label>${ddSel('data-kb-orden', [['Más reciente', 'Más reciente'], ['Nombre', 'Por nombre']], st.kbOrden)}${sel.length ? `<button type="button" class="btn" data-kb-quitarsel="1">${I('x')}Quitar ${sel.length} seleccionado${sel.length === 1 ? '' : 's'}</button>` : ''}</div>
       ${subiendo.map(p => `<div class="kb-row"><input type="checkbox" disabled aria-label="Procesando ${esc(p.n)}">${I('file', 'i lead')}<span class="tx"><b>${esc(p.n)}</b><small>${p.s ? esc(p.s) + ' · ' : ''}subiendo y leyendo el texto</small></span><span class="kb-st pr">Procesando…</span></div>`).join('')}
       ${docs.length ? docs.map(d => `<div class="kb-row"><input type="checkbox" data-kb-check="${d.i}" ${st.kbSel.has(d.i) ? 'checked' : ''} aria-label="Elegir ${esc(d.n)}">${I('file', 'i lead')}<span class="tx"><b>${esc(d.n)}</b><small>${esc(d.s)}${paginasTxt(d.paginas)} · ${esc(cuandoKB(d.f))}</small></span>${d.estado && d.estado !== 'Listo' ? `<span class="kb-st pr">${esc(d.estado)}</span>` : '<span class="kb-st ok">Listo</span>'}
-          <div class="dd dsel kb-menu" style="position:relative"><button type="button" class="btn ic" data-dsel-open="1" aria-label="Más opciones de ${esc(d.n)}">${I('more')}</button><div class="menu" hidden><button type="button" data-kb-doc="bajar|${d.i}">${I('share')}Descargar</button><button type="button" data-kb-doc="nombre|${d.i}">${I('pen')}Cambiar nombre</button><button type="button" data-kb-doc="quitar|${d.i}">${I('x')}Quitar</button></div></div></div>`).join('')
+          <div class="dd dsel kb-menu" style="position:relative"><button type="button" class="btn ic" data-dsel-open="1" aria-label="Más opciones de ${esc(d.n)}">${I('more')}</button><div class="menu" hidden><button type="button" data-kb-doc="bajar|${d.i}">${I('share')}Descargar</button><button type="button" data-kb-doc="texto|${d.i}">${I('file')}Ver y corregir el texto</button><button type="button" data-kb-doc="nombre|${d.i}">${I('pen')}Cambiar nombre</button><button type="button" data-kb-doc="quitar|${d.i}">${I('x')}Quitar</button></div></div></div>`).join('')
         : subiendo.length ? '' : `<p class="muted" style="margin:0">Ningún documento coincide con «${esc(st.kbQ.trim())}».</p>`}
       <div class="kb-drop fino" id="kb-drop"><p>Arrastra archivos aquí para subirlos</p></div>`
       : `<div class="kb-drop" id="kb-drop">${I('file')}<b>Todavía no hay documentos</b><p>Arrástralos aquí o usa «Subir documentos». También puedes elegirlos de Archivos del CRM.</p></div>`}
-      <input type="file" id="kb-file" accept=".pdf,.txt,.csv" multiple hidden></section>`;
+      <input type="file" id="kb-file" accept=".pdf,.docx,.xlsx,.xls,.txt,.csv" multiple hidden></section>`;
   const sitios = `<section class="kb-sec" aria-label="Sitios web"><div class="hd"><span class="kb-ico">${I('web')}</span><b>Sitios web${kbCon(k.webs.length)}</b><button type="button" class="btn" data-kb-web="1" aria-label="Añadir sitio web">${I('plus')}Añadir</button></div>
       <p class="sub2">El agente lee el contenido público del sitio. Úsalo como complemento de los documentos y fragmentos.</p>
       ${k.webs.map((w, i) => { const ley = st.kbLeyendo.has(k.id + '|' + w.u); return `<div class="kb-row">${I('web', 'i lead')}<span class="tx"><b>${esc(w.u)}</b><small>${ley ? 'Leyendo el sitio…' : `${w.pag} ${w.pag === 1 ? 'página leída' : 'páginas leídas'} · ${esc(cuandoKB(w.f))}`}</small></span>${ley ? '<span class="kb-st pr">Leyendo</span>' : `<button type="button" class="btn ic" data-kb-webre="${i}" aria-label="Volver a leer ${esc(w.u)}" title="Volver a leer">${I('swap')}</button>`}<button type="button" class="btn ic" data-kb-webdel="${i}" aria-label="Quitar ${esc(w.u)}" ${ley ? 'disabled' : ''}>${I('x')}</button></div>`; }).join('')}
@@ -242,7 +242,12 @@ function kbDialogoFragmento(i){
 }
 // Subir un documento a la colección: el servidor lo guarda y saca su texto (POST /crm/kb/documento). Mientras, «Procesando…».
 const kbRepintar = id => { if (st.pagina === 'agentes' && st.kbId === id) render(); };
-function kbProcesar(kbId, f){
+function kbDialogoTexto(i){
+  const k = KB.find(x => x.id === st.kbId), d = k && k.docs[+i]; if (!d) return;
+  abrirDialogo(`<h3>Texto que lee el agente</h3><p class="muted" style="margin:0 0 10px;font-size:12.5px">De «${esc(d.n)}». Las tablas quedan una fila por línea. Corrige lo que haya salido mal o borra lo que el agente no debe usar.</p><div class="cx-f"><label>Texto<textarea id="kbt-x" rows="14" style="font-size:12.5px;line-height:1.5">${esc(d.texto || '')}</textarea></label></div>
+    <div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cerrar</button><button type="button" class="btn pri" data-kbt-guardar="${i}">${I('check')}Guardar</button></div>`);
+}
+function kbProcesar(kbId, f, verTexto){
   const p = {kb:kbId, n:f.name, s:tamano(f.size)}; st.kbSubiendo.push(p);
   return crmSubir(f, '/crm/kb/documento')
     .then(r => {
@@ -250,6 +255,7 @@ function kbProcesar(kbId, f){
       const n = r.n || f.name;
       k.docs.push({n, s:tamano(f.size), f:new Date().toISOString(), url:r.url || '', texto:r.texto || '', paginas:r.paginas || 0, estado:'Listo'});
       crmGuardarYa('kb');
+      if (verTexto && st.pagina === 'agentes' && st.kbId === kbId) setTimeout(() => kbDialogoTexto(k.docs.length - 1), 0);
       toast(r.recortado ? `${n} es muy largo: el agente solo lee los primeros 200.000 caracteres. Divídelo en varios documentos.` : `Documento listo: ${n}`);
     })
     .catch(err => toast(`${f.name}: no se pudo procesar. ${err.message}`))
@@ -258,10 +264,11 @@ function kbProcesar(kbId, f){
 function kbSubir(files){
   const k = KB.find(x => x.id === st.kbId); if (!k) return;
   let n = 0;
+  const uno = files.length === 1;
   for (const f of files) {
-    if (!/\.(pdf|txt|csv)$/i.test(f.name)) { toast(`${f.name}: solo se aceptan PDF, TXT o CSV`); continue; }
+    if (!/\.(pdf|docx|xlsx|xls|txt|csv)$/i.test(f.name)) { toast(`${f.name}: solo se aceptan PDF, Word, Excel, TXT o CSV`); continue; }
     if (f.size > 20 * 1024 * 1024) { toast(`${f.name}: pasa de 20 MB`); continue; }
-    kbProcesar(k.id, f); n++;
+    kbProcesar(k.id, f, uno); n++;
   }
   if (n) { st.kbSel = new Set(); render(); }
 }
@@ -305,13 +312,14 @@ document.getElementById('page').addEventListener('click', e => {
   const wr = t.closest('[data-kb-webre]'); if (wr) { const w = k.webs[+wr.dataset.kbWebre]; if (w) kbLeerWeb(k.id, w.u); return; }
   const wd = t.closest('[data-kb-webdel]'); if (wd && !wd.disabled) { const [x] = k.webs.splice(+wd.dataset.kbWebdel, 1); render(); toast(`Sitio quitado: ${x.u}`); return; }
   if (t.closest('[data-kb-subir]')) { document.getElementById('kb-file').click(); return; }
-  if (t.closest('[data-kb-nube]')) { const L = MATERIAL.map((m, i) => [m, i]).filter(([m]) => m.url && (/\.(pdf|txt|csv)$/i.test(m.n) || /pdf|text\/(plain|csv)/.test(m.mime || '')) && !k.docs.some(d => d.n === m.n));
+  if (t.closest('[data-kb-nube]')) { const L = MATERIAL.map((m, i) => [m, i]).filter(([m]) => m.url && (/\.(pdf|docx|xlsx|xls|txt|csv)$/i.test(m.n) || /pdf|text\/(plain|csv)|wordprocessingml|spreadsheetml|ms-excel/.test(m.mime || '')) && !k.docs.some(d => d.n === m.n));
     abrirDialogo(`<h3>Elegir de Archivos del CRM</h3><p>Documentos PDF, TXT o CSV del material del CRM (Ajustes, Archivos).</p><div class="cx-list">${L.map(([m, i]) => `<button type="button" class="cx-op" data-kbnube="${i}"><span><b>${esc(m.n)}</b><small>${esc(m.t)}</small></span></button>`).join('') || '<p class="muted">No hay documentos PDF, TXT o CSV en Archivos del CRM que no estén ya en esta colección.</p>'}</div><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button></div>`); return; }
   const ck = t.closest('[data-kb-check]'); if (ck) { const i = +ck.dataset.kbCheck; st.kbSel.has(i) ? st.kbSel.delete(i) : st.kbSel.add(i); render(); return; }
   if (t.closest('[data-kb-quitarsel]')) { const n = st.kbSel.size; [...st.kbSel].sort((x, y) => y - x).forEach(i => k.docs.splice(i, 1)); st.kbSel = new Set(); render(); toast(`${n} documento${n === 1 ? '' : 's'} quitado${n === 1 ? '' : 's'}`); return; }
   const or = t.closest('[data-kb-orden]'); if (or) { st.kbOrden = or.dataset.kbOrden; render(); return; }
   const dc = t.closest('[data-kb-doc]'); if (dc) { const [acc, i] = dc.dataset.kbDoc.split('|'), d = k.docs[+i]; if (!d) return;
     if (acc === 'bajar') { if (d.url) window.open(d.url, '_blank', 'noopener'); else toast(`${d.n} no tiene archivo guardado para descargar`); }
+    if (acc === 'texto') kbDialogoTexto(i);
     if (acc === 'quitar') { k.docs.splice(+i, 1); st.kbSel = new Set(); render(); toast(`Quitado: ${d.n}`); }
     if (acc === 'nombre') abrirDialogo(`<h3>Cambiar nombre</h3><div class="cx-f"><label>Nombre del documento<input id="kbd-n" value="${esc(d.n)}"></label></div><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" data-kbd-guardar="${i}">${I('check')}Guardar</button></div>`);
     return; }
@@ -343,6 +351,7 @@ document.getElementById('ov-x').addEventListener('click', e => {
       .then(b => { st.kbSubiendo = st.kbSubiendo.filter(x => x !== p); return kbProcesar(k.id, new File([b], m.n, {type:m.mime || b.type})); })
       .catch(err => { st.kbSubiendo = st.kbSubiendo.filter(x => x !== p); toast(`${m.n}: ${err.message}`); kbRepintar(k.id); });
     return; }
+  const dt = t.closest('[data-kbt-guardar]'); if (dt) { const d = k.docs[+dt.dataset.kbtGuardar]; if (!d) return; d.texto = document.getElementById('kbt-x').value.trim(); crmGuardarYa('kb'); cerrarDialogo(); render(); toast(`Texto guardado: ${d.n}`); return; }
   const dg = t.closest('[data-kbd-guardar]'); if (dg) { const v = document.getElementById('kbd-n').value.trim(); if (!v) { toast('Escribe el nombre'); return; } k.docs[+dg.dataset.kbdGuardar].n = v; cerrarDialogo(); render(); toast('Nombre cambiado'); return; }
   if (t.closest('[data-kbn-guardar]')) { const v = document.getElementById('kbn-n').value.trim(); if (!v) { toast('Escribe el nombre'); return; } k.n = v; cerrarDialogo(); render(); toast('Colección guardada'); return; }
   if (t.closest('[data-kbn-borrar]')) { KB.splice(KB.indexOf(k), 1); AGENTES.forEach(x => x.kb = (x.kb || []).filter(id => id !== k.id)); kbVolverAlAgente(); cerrarDialogo(); render(); toast(`Colección borrada: ${k.n}`); }
