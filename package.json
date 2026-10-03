@@ -14,6 +14,8 @@
     "db:migrate": "prisma migrate deploy",
     "db:generate": "prisma generate",
     "crear-espacio": "tsx --env-file=.env scripts/crear-espacio.ts",
+    "cambiar-clave": "tsx --env-file=.env scripts/cambiar-clave.ts",
+    "borrar-espacio": "tsx --env-file=.env scripts/borrar-espacio.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
