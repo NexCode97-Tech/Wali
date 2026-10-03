@@ -12,6 +12,7 @@ import { AppError, ConflictError, ForbiddenError, ValidationError } from '../uti
 import { logger, logSecurityEvent } from '../utils/logger'
 import { BASE } from '../utils/base'
 import { abrirSesion, cifrarClave, claveValida, RUTA_COOKIE } from './auth'
+import { correoMarca, escaparHtml } from '../utils/correoMarca'
 
 /**
  * Las puertas de entrada que no piden sesión: crear una cuenta (con su espacio), recuperar la contraseña por
@@ -117,13 +118,12 @@ router.post('/registro', limiteRegistro, asyncHandler(async (req: Request, res: 
 
 const MINUTOS_ENLACE = 30
 const hash = (token: string) => crypto.createHash('sha256').update(token).digest('hex')
-const escapar = (t: string) => t.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string))
 
 async function enviarCorreo(para: string, asunto: string, html: string, texto: string) {
   const r = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: process.env.CRM_CORREO_DE || process.env.RESEND_FROM_EMAIL || 'NexCode97 <hola@nexcode97.com>', to: [para], subject: asunto, html, text: texto }),
+    body: JSON.stringify({ from: process.env.CRM_CORREO_DE || process.env.RESEND_FROM_EMAIL || 'NexCode97 <hola@nexcode97.com>', reply_to: process.env.CRM_CORREO_AYUDA || 'nexcode97@gmail.com', to: [para], subject: asunto, html, text: texto }),
     signal: AbortSignal.timeout(15_000),
   })
   if (!r.ok) throw new Error(`Resend ${r.status}: ${(await r.text()).slice(0, 200)}`)
@@ -135,15 +135,30 @@ async function enviarRecuperacion(user: { id: string; email: string; nombre: str
   await prisma.recuperacionClave.updateMany({ where: { userId: user.id, usado: null }, data: { usado: new Date() } })
   await prisma.recuperacionClave.create({ data: { userId: user.id, tokenHash: hash(token), expira: new Date(Date.now() + MINUTOS_ENLACE * 60_000) } })
   const enlace = `${urlPublica()}/entrar?clave=${token}`
-  const hola = user.nombre ? `Hola, ${user.nombre.split(/\s+/)[0]}` : 'Hola'
+  const nombre = user.nombre ? user.nombre.split(/s+/)[0] : ''
+  const hola = nombre ? `Hola, ${nombre}` : 'Hola'
   await enviarCorreo(user.email, 'Crea tu contraseña nueva',
-    `<div style="font-family:Inter,Segoe UI,Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;color:#0a0a0d">
-      <h1 style="font-size:20px;margin:0 0 12px">${escapar(hola)}</h1>
-      <p style="font-size:15px;line-height:1.55;margin:0 0 24px">Pediste crear una contraseña nueva para entrar al CRM. El enlace vence en ${MINUTOS_ENLACE} minutos y sirve una sola vez.</p>
-      <a href="${escapar(enlace)}" style="display:inline-block;background:#FFF200;color:#0a0a0d;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:10px">Crear contraseña nueva</a>
-      <p style="font-size:13px;line-height:1.5;color:#6f6f7c;margin:24px 0 0">Si no fuiste tú, ignora este correo: tu contraseña sigue igual.</p>
-    </div>`,
-    `${hola}. Para crear tu contraseña nueva abre este enlace (vence en ${MINUTOS_ENLACE} minutos y sirve una sola vez): ${enlace}\n\nSi no fuiste tú, ignora este correo.`)
+    correoMarca({
+      preencabezado: `Tu enlace para crear una contraseña nueva vence en ${MINUTOS_ENLACE} minutos.`,
+      titulo: hola,
+      parrafos: [
+        `Recibimos una solicitud para crear una contraseña nueva para tu cuenta del CRM <strong style="color:#0a0a0d">${escaparHtml(user.email)}</strong>.`,
+        'Toca el botón para elegirla. Al guardarla entras de una vez a tu bandeja.',
+      ],
+      boton: { texto: 'Crear contraseña nueva', url: enlace },
+      aviso: `<strong style="color:#0a0a0d">El enlace vence en ${MINUTOS_ENLACE} minutos</strong> y sirve una sola vez. Si pides otro, este deja de funcionar.`,
+      nota: 'Si no pediste este cambio, ignora este correo: tu contraseña sigue igual y nadie puede cambiarla sin este enlace.',
+    }),
+    `${hola}.
+
+Recibimos una solicitud para crear una contraseña nueva para tu cuenta del CRM (${user.email}).
+
+Ábrela aquí (vence en ${MINUTOS_ENLACE} minutos y sirve una sola vez):
+${enlace}
+
+Si no pediste este cambio, ignora este correo: tu contraseña sigue igual.
+
+NexCode97 · ${process.env.CRM_CORREO_AYUDA || 'nexcode97@gmail.com'}`)
 }
 
 router.post('/recuperar', limiteRecuperar, asyncHandler(async (req: Request, res: Response) => {
