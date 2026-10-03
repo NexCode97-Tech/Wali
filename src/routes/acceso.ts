@@ -39,6 +39,8 @@ export function urlPublica(): string | null {
   const v = (process.env.CRM_URL ?? '').trim().replace(/\/+$/, '')
   return /^https?:\/\/[^\s"'<>?#]+$/.test(v) ? v : null
 }
+/** La versión de los documentos legales vigentes (fecha de nexcode97.com/privacidad y /terminos). Se cambia al publicar otra. */
+export const VERSION_DOCUMENTOS = process.env.CRM_VERSION_DOCUMENTOS || '2026-10-03'
 const registroAbierto = () => process.env.CRM_REGISTRO !== 'cerrado'
 const correoListo = () => !!(process.env.RESEND_API_KEY && urlPublica())
 const googleListo = () => !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && urlPublica())
@@ -102,6 +104,8 @@ router.post('/registro', limiteRegistro, asyncHandler(async (req: Request, res: 
       await tx.crmEspacio.create({ data: { id: espacioId, nombre: d.empresa } })
       const u = await tx.user.create({ data: { email, nombre: d.nombre, image: foto, role: 'ADMIN', passwordHash } })
       await tx.crmMiembro.create({ data: { espacioId, userId: u.id } })
+      // Al crear la cuenta aceptó los términos, el uso aceptable y la política de datos: queda la prueba.
+      await tx.consentimiento.create({ data: { userId: u.id, email, tipo: d.google ? 'registro-google' : 'registro', version: VERSION_DOCUMENTOS, ip: req.ip ?? null, userAgent: String(req.headers['user-agent'] ?? '').slice(0, 300) || null } })
       return u
     })
   } catch (e) {

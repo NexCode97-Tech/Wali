@@ -39,6 +39,24 @@ model User {
   @@map("usuarios")
 }
 
+/// Prueba de que una persona aceptó los términos y la política de datos (Ley 1581): quién, cuándo, qué versión y desde dónde.
+model Consentimiento {
+  id        String   @id @default(cuid())
+  userId    String?  @map("user_id")
+  email     String
+  /// registro (cuenta nueva con contraseña) o registro-google.
+  tipo      String
+  /// Fecha de la versión de los documentos aceptados (la de nexcode97.com/privacidad).
+  version   String
+  ip        String?
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([email])
+  @@map("consentimientos")
+}
+
 /// Enlace de un solo uso para crear una contraseña nueva (vence en 30 minutos). Se guarda el hash del token, nunca el token.
 model RecuperacionClave {
   id        String    @id @default(cuid())

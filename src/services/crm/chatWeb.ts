@@ -43,6 +43,8 @@ export interface TokenWeb {
   p?: string
   /** Cuándo se emitió (ms). */
   t: number
+  /** Cuándo aceptó el aviso de datos al enviar el formulario (ms) y qué política tenía enlazada la empresa. */
+  a?: number; pol?: string
 }
 
 const firma = (cuerpo: string) => crypto.createHmac('sha256', secreto()).update(cuerpo).digest('base64url')
@@ -86,7 +88,13 @@ export async function configWeb() {
     // «Mostrar solo en horario de atención»: fuera de horario la burbuja es un formulario para dejar el mensaje.
     soloFormulario: w.horario === true && !abierto,
     fuera: txt(cfg.fuera) || 'Estamos fuera de horario. Te respondemos apenas abramos.',
+    privacidad: politicaWeb(w),
   }
+}
+
+/** La política de datos de la empresa (Ley 1581), si la configuró: solo una dirección https. */
+function politicaWeb(w: Json): string {
+  try { const u = new URL(txt(w.privacidad)); return u.protocol === 'https:' ? u.href.slice(0, 300) : '' } catch { return '' }
 }
 
 /** El nombre que ve la persona arriba de la burbuja: el de la empresa dueña del espacio. */
@@ -114,7 +122,7 @@ export async function abrirSesionWeb(entrada: Json): Promise<{ token: string }> 
   if (correo && !CORREO.test(correo)) throw new ValidationError('Ese correo no parece completo.')
   let pagina = ''
   try { const u = new URL(txt(entrada.pagina)); if (/^https?:$/.test(u.protocol)) pagina = `${u.origin}${u.pathname}`.slice(0, 300) } catch { /* sin página */ }
-  const d: TokenWeb = { v: crypto.randomBytes(16).toString('hex'), e: espacioActual(), t: Date.now(), ...(nombre ? { n: nombre } : {}), ...(tel ? { tel } : {}), ...(correo ? { c: correo } : {}), ...(pagina ? { p: pagina } : {}) }
+  const d: TokenWeb = { v: crypto.randomBytes(16).toString('hex'), e: espacioActual(), t: Date.now(), ...(nombre ? { n: nombre } : {}), ...(tel ? { tel } : {}), ...(correo ? { c: correo } : {}), ...(pagina ? { p: pagina } : {}), a: Date.now(), ...(politicaWeb(w) ? { pol: politicaWeb(w) } : {}) }
   return { token: firmarToken(d) }
 }
 
@@ -122,7 +130,9 @@ export async function abrirSesionWeb(entrada: Json): Promise<{ token: string }> 
 async function contactoWeb(d: TokenWeb): Promise<CrmContacto> {
   const conv = await prisma.crmConversacion.findFirst({ where: deVisitante(d.v), orderBy: { createdAt: 'desc' }, include: { contacto: true } })
   if (conv) return conv.contacto
-  const ficha = { origen: 'Chat de la web', ...(d.p ? { pagina: d.p } : {}), ...(d.c ? { correo: d.c } : {}) }
+  // Prueba de la autorización (Ley 1581): enviar el formulario con el aviso a la vista es una conducta inequívoca.
+  const autorizacion = d.a ? { fecha: new Date(d.a).toISOString(), medio: 'Chat de la web', ...(d.p ? { pagina: d.p } : {}), ...(d.pol ? { politica: d.pol } : {}) } : null
+  const ficha = { origen: 'Chat de la web', ...(d.p ? { pagina: d.p } : {}), ...(d.c ? { correo: d.c } : {}), ...(autorizacion ? { autorizacion } : {}) }
   if (d.tel) {
     const k = await prisma.crmContacto.findFirst({ where: { telefono: d.tel } })
     if (k) {
@@ -130,6 +140,8 @@ async function contactoWeb(d: TokenWeb): Promise<CrmContacto> {
       const cambios: Prisma.CrmContactoUpdateInput = {}
       if (!k.nombre && d.n) cambios.nombre = d.n
       if (!k.correo && d.c) cambios.correo = d.c
+      const fk = (k.ficha && typeof k.ficha === 'object' && !Array.isArray(k.ficha) ? k.ficha : {}) as Record<string, unknown>
+      if (autorizacion && !fk.autorizacion) cambios.ficha = { ...fk, autorizacion } as Prisma.InputJsonValue
       return Object.keys(cambios).length ? prisma.crmContacto.update({ where: { id: k.id }, data: cambios }) : k
     }
   }

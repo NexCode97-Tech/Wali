@@ -57,7 +57,7 @@
       '.form label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:500;color:#374151}' +
       '.form input,.form textarea{border:1px solid #e5e9f0;border-radius:10px;padding:9px 11px;font-size:14px;font-weight:400;color:#1f2937;width:100%}' +
       '.pri{border:0;border-radius:10px;background:' + c + ';color:#fff;padding:10px 14px;font-size:14px;font-weight:600;cursor:pointer}.pri:disabled{opacity:.6;cursor:default}' +
-      '.err{color:#b91c1c;font-size:13px}.nota{font-size:12px;color:#6b7280}.saludo{align-self:flex-start;background:#fff;border:1px solid #e5e9f0;border-radius:12px;padding:8px 11px;max-width:82%}' +
+      '.err{color:#b91c1c;font-size:13px}.nota{font-size:12px;color:#6b7280}.nota a{color:inherit;text-decoration:underline}.saludo{align-self:flex-start;background:#fff;border:1px solid #e5e9f0;border-radius:12px;padding:8px 11px;max-width:82%}' +
       '@media (max-width:480px){.panel{right:0;bottom:0;width:100vw;height:100%;max-height:none;border-radius:0}.fab{right:14px;bottom:14px}}' +
       '@media (prefers-reduced-motion:no-preference){.panel{animation:sube .18s ease-out}@keyframes sube{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}}';
   }
@@ -89,7 +89,7 @@
     h += '<label>' + (cfg.soloFormulario ? 'Tu mensaje' : '¿En qué te ayudamos?') + '<textarea name="texto" rows="3" maxlength="2000" required></textarea></label>';
     if (error) h += '<div class="err" role="alert">' + esc(error) + '</div>';
     h += '<button type="submit" class="pri"' + (enviando ? ' disabled' : '') + '>' + (enviando ? 'Enviando…' : cfg.soloFormulario ? 'Dejar mensaje' : 'Empezar el chat') + '</button>';
-    h += '<span class="nota">Al escribirnos aceptas que usemos estos datos para responderte.</span></form>';
+    h += '<span class="nota">Al escribirnos autorizas a ' + esc(cfg.nombre || 'la empresa') + ' a usar estos datos para responderte' + (cfg.privacidad ? ', según su <a href="' + esc(cfg.privacidad) + '" target="_blank" rel="noopener noreferrer">política de datos</a>' : '') + '.</span></form>';
     return h;
   }
 

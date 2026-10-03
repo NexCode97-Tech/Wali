@@ -1571,6 +1571,7 @@ function paginaCfg(k){
     <div class="two3"><div class="cfg"><div class="box2">
       ${fila('<b>Chat activo</b>', w.on ? 'La burbuja se ve en las páginas donde se pegó el código' : 'Apagado, la burbuja no aparece aunque el código esté pegado', sw('web-on', w.on))}
       <label class="fld">Saludo<input data-cfg-in="web.saludo" value="${esc(w.saludo)}"></label>
+      <label class="fld">Enlace a tu política de datos<input data-cfg-in="web.privacidad" type="url" placeholder="https://tuempresa.com/privacidad" value="${esc(w.privacidad || '')}"><span class="muted" style="font-size:12px">La Ley 1581 pide informar para qué usas los datos. Aparece como enlace debajo del formulario de la burbuja.</span></label>
       <div class="fld">Color<div style="display:flex;gap:6px">${['#1f93ff','#0f172a','#059669','#7c3aed','#dc2626'].map(c => `<button type="button" data-cfg-color="${c}" aria-label="Color" style="width:24px;height:24px;border-radius:50%;background:${c};outline:${w.color === c ? '2px solid var(--ink)' : 'none'};outline-offset:2px"></button>`).join('')}</div></div>
       ${fila('Pedir nombre y WhatsApp antes de chatear', 'Así el contacto queda completo desde el primer mensaje', sw('web-pedir', w.pedir))}
       ${fila('Mostrar solo en horario de atención', 'Fuera de horario sale un formulario para dejar el mensaje', sw('web-horario', w.horario))}</div>
