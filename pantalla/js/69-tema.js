@@ -25,6 +25,8 @@
 #app .nav .me .cu-fila.mc-cuenta:hover,#app .nav .me .cu-fila.mc-cuenta[aria-expanded="true"]{background:var(--nx-negro-2)}
 #app .nav .me .cu-est{background:var(--nx-negro-2);border-color:var(--nx-negro-3);color:#e4e4ea}
 #app .nav .me .cu-est:hover{border-color:#3a3a46}
+#app .nav .me .cu-est #me-e{color:#e4e4ea;font-size:13px}
+#app .nav .me .cu-est[aria-expanded="true"]{border-color:var(--nx-amarillo);box-shadow:0 0 0 3px rgba(255,242,0,.25)}
 #app .nav .me #b-ajustes{background:var(--nx-negro-2);border:1px solid var(--nx-negro-3);color:var(--nx-txt)}
 #app .nav .me #b-ajustes:hover{background:var(--nx-negro-3);color:#fff}
 #app .nav .brand .mc-campana{color:var(--nx-txt)}
