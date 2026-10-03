@@ -566,6 +566,8 @@ requestAnimationFrame(cuadro);
 const VISTAS = ['entrar', 'registro', 'recuperar', 'enviado', 'nueva'];
 function ir(v){
   VISTAS.forEach(x => { $('v-' + x).hidden = x !== v; });
+  // En «Revisa tu correo» ya hay un ícono grande: el logo sobra.
+  const marca = document.querySelector('.caja > .marca'); if (marca) marca.hidden = v === 'enviado';
   vista = v; escribio = false; SVG.dataset.estado = '';
   document.querySelectorAll('.error').forEach(e => e.classList.remove('ver'));
   frase(FRASES[v]);
