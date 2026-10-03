@@ -83,6 +83,8 @@ input[type="password"]::-ms-reveal,input[type="password"]::-ms-clear{display:non
 .con-google svg{width:16px;height:16px;flex:none}
 .con-google b{color:var(--texto);overflow:hidden;text-overflow:ellipsis}
 .terminos{margin:0;font-size:12px;color:var(--texto-3);text-align:center;line-height:1.5}
+.terminos a{color:var(--texto-2);text-decoration:underline;text-underline-offset:2px}
+.terminos a:hover{color:var(--texto)}
 
 /* ── Arte: tormenta con rayos reales, el astronauta que reacciona al formulario y la frase que se escribe ── */
 .der{position:relative;overflow:hidden;background:#050507}
@@ -185,7 +187,7 @@ input[type="password"]::-ms-reveal,input[type="password"]::-ms-clear{display:non
             <div class="entrada con-ojo"><input id="re-clave" type="password" autocomplete="new-password" placeholder="10 caracteres o más"><button type="button" class="ojo" data-ojo="re-clave" aria-label="Mostrar la contraseña"><svg class="i"><use href="#i-ojo"/></svg></button></div>
             <div class="fuerza" id="re-fuerza" data-n="0" aria-hidden="true"><i></i><i></i><i></i></div><span class="ayuda" id="re-ayuda">Usa 10 caracteres o más. Una frase es fácil de recordar.</span></div>
           <button class="pri" type="submit">Crear cuenta</button>
-          <p class="terminos">Al crear tu cuenta aceptas los términos del servicio y la política de datos de NexCode97.</p>
+          <p class="terminos">Al crear tu cuenta aceptas los <a href="https://www.nexcode97.com/terminos" target="_blank" rel="noopener noreferrer">términos del servicio</a>, el <a href="https://www.nexcode97.com/uso-aceptable" target="_blank" rel="noopener noreferrer">uso aceptable</a> y la <a href="https://www.nexcode97.com/privacidad" target="_blank" rel="noopener noreferrer">política de privacidad</a>.</p>
         </form>
         <p class="alterna">¿Ya tienes cuenta? <button data-ir="entrar">Inicia sesión</button></p>
         <div class="o">O continúa con</div>
