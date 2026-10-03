@@ -431,13 +431,16 @@ function lista(){
   // Cada conversación es la tarjeta de la maqueta aprobada «CRM · tarjetas de la lista» (29-sep). El texto del contacto
   // (vista previa) va siempre en peso normal; sin leer cambia solo el nombre, la hora y el tono del texto.
   const chip = (cls, ico, t) => `<span class="tj-chip${cls ? ' ' + cls : ''}">${ico}<span>${esc(t)}</span></span>`;
+  // La etapa se distingue de las etiquetas (maqueta «tarjetas de la bandeja», 3-oct): píldora de su color; las etiquetas, punto y texto.
+  const tinte = (c, a) => { let x = colorOk(c).slice(1); if (x.length <= 4) x = x.split('').map(d => d + d).join(''); const n = parseInt(x.slice(0, 6), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
+  const chipEtapa = e => `<span class="tj-chip et" style="background:${tinte(COL[e], .16)};color:color-mix(in srgb, ${colorOk(COL[e])} 70%, #000)"><span>${esc(e)}</span></span>`;
   document.getElementById('items').innerHTML = L.length ? L.map(c => {
     const ult = [...c.msgs].reverse().find(m => m.in || (m.out != null && !m.prog) || m.recepcion || m.ia);
     const txt = ult ? (ult.in ? resumenIn(ult.in) : ult.recepcion ? 'IA: ' + ult.recepcion : ult.ia ? 'IA: ' + ult.ia : 'Tú: ' + resumenOut(ult)) : '';
     const eq = equipoConv(c), recs = recPend(c), vencido = recs.some(r => recEst(r) === 'vencido');
     const anuncio = c.pauta ? c.pauta.campana || c.pauta.anuncio || c.pauta.plataforma || '' : '';
     // Línea 4: etapas, etiquetas, seguimiento, el anuncio del que llegó y «No contactar»; si no hay nada, no sale.
-    const chips = [...c.etq.map(e => chip('', `<i style="background:${colorOk(COL[e])}"></i>`, e)), ...c.tags.map(t => chip('', `<i style="background:${colorOk(ETIQ_COL[t])}"></i>`, t)),
+    const chips = [...c.etq.map(chipEtapa), ...c.tags.map(t => chip('tg', `<i style="background:${colorOk(ETIQ_COL[t])}"></i>`, t)),
       recs.length ? chip(vencido ? 'rj' : 'am', ICONOS_MAQ.campana, vencido ? 'Seguimiento vencido' : 'Seguimiento hoy') : '',
       anuncio ? chip('', ICONOS_MAQ.megafono, anuncio) : '', c.noContactar ? chip('rj', I('block'), 'No contactar') : ''].join('');
     return `<button type="button" class="it${c.unread ? ' unread' : ''}" data-c="${c.id}" aria-current="${st.sel === c.id}">
