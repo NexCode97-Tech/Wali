@@ -20,6 +20,7 @@ import { avisarMencionesAlRecibir, guardarMensaje, motivoNoContactar, tipoDe, va
 import { contactoVisible, convVigente, convVisible, exigirContactoCompleto, exigirEscritura, exigirLiderDeConv, exigirVerConv, idNum, mensajeReservado, mezclaProfunda, obj, txt, type Json } from './_comun'
 import { alcanceDe, alcanceDePersona, alcanceParaFront, equipoDeConv, equiposDeReq, filtroContactos, filtroConvs, fueraDeLidera, genteQueLidera, lideraConv, reservaDeContacto, veConv, type Alcance } from '../../services/crm/alcance'
 import { miembrosDe, repartir, tomarAlResponder } from '../../services/crm/reparto'
+import { agenteDeEquipo } from '../../services/crm/agenteIA'
 import { equipoDeCanal } from '../../services/crm/entrantes'
 import type { Subequipo } from '../../services/crm/equipos'
 import { esAudioIn, transcribirMensaje } from '../../services/crm/transcripciones'
@@ -317,7 +318,8 @@ export async function editarConversacion(req: Request, res: Response) {
     return { c, contactoCambio }
   }, { timeout: 20_000 })
 
-  if (reparteEquipo) await repartir(id)
+  // Si el equipo (o subequipo) al que pasó tiene agente IA, la toma él; si no, se reparte entre su gente.
+  if (reparteEquipo && !(await agenteDeEquipo(id))) await repartir(id)
   const nombres = await mapaNombres()
   const salida = await cargarConv(id, nombres)
   emitirCrm({ tipo: 'conv', conv: salida }, req.userId!)

@@ -42,7 +42,8 @@ export async function alEntrarMensaje(ctx: CtxEntrante): Promise<{ tomado: boole
   if (ctx.vuelveDe) await dispararReglas('vuelve', ctx.convId, { previa: ctx.vuelveDe, texto: ctx.texto, msgId: ctx.msgId }).catch(e => { logger.error(`[CRM reglas] vuelve ${ctx.convId}: ${(e as Error)?.message ?? e}`) })
   try {
     tomado = (await flujoContinuar(ctx)) || (await agenteContinuar(ctx))
-    if (!tomado && (ctx.nueva || ctx.reabierta)) tomado = (await agenteIniciar(ctx)) || (await flujoIniciar(ctx))
+    // agenteIniciar solo toma una conversación que no es nueva si un agente responde siempre en ese canal.
+    if (!tomado) tomado = (await agenteIniciar(ctx)) || ((ctx.nueva || ctx.reabierta) && (await flujoIniciar(ctx)))
   } catch (e) {
     logger.error(`[CRM automatizaciones] conversación ${ctx.convId}: ${(e as Error)?.message ?? e}`)
   }

@@ -127,6 +127,9 @@ const agRecopilar = a => Array.isArray(a.recopilar) ? a.recopilar : (a.acc && a.
 const agDatosOps = () => [['nombre', 'Nombre y apellido'], ['correo', 'Correo'], ...CAMPOS.map(c => [c.k, c.n])];
 // Si la persona deja de responder (motor: recordatorioMin e inactividad en agenteIA.ts). Por defecto, como antes: sin recordatorio y pasa a los 10 minutos.
 const agRec = a => ({on:false, tras:1, unidad:'horas', ...(a.recordar || {})});
+// «Responder siempre» (3-oct, opción A): canales vacíos = todos los del agente; pausa en minutos si un asesor escribe.
+const agSiempre = a => ({on:false, canales:[], pausa:30, ...(a.siempre || {})});
+const agCanalesAg = a => canalesConectados().filter(k => (a.canales || {})[k]);
 const agIna = a => ({tras:10, unidad:'minutos', accion:'pasar', ...(a.inactivo || {})});
 function nuevoAgente(tpl){
   const t = AG_TPL[tpl];
@@ -193,7 +196,14 @@ function editorAgente(a){
   const config = `<div class="ag-card"><h4>${I('wa')}Dónde atiende</h4>
         <div class="fld">Canales<div class="chips2">${canalesConectados().length ? canalesConectados().map(k => `<button type="button" data-ag-canal="${k}" aria-pressed="${!!(a.canales || {})[k]}">${CANALES[k].n}</button>`).join('') : ''}</div>${canalesConectados().length ? '' : `<p class="muted" style="margin:4px 0 0">Todavía no hay canales conectados al CRM. Se conectan en Ajustes del CRM, Canales.</p><div style="margin-top:6px"><button type="button" class="btn" data-ir="cfg-canales">${I('share')}Ir a Canales</button></div>`}</div>
         ${fila('Cuándo atiende', '', ddSel('data-ag-cuando', ['Siempre', 'Solo fuera del horario de atención', 'Solo en el horario de atención'], a.cuando))}
+        ${fila('Equipo del agente', 'Atiende primero lo que entra a ese equipo y al terminar lo pasa a su gente', ddSel('data-ag-eq', [['', 'Todos los equipos'], ...EQUIPOS.map(e => [e.n, e.n])], (a.equipoAg || {}).equipo || ''))}
+        ${(a.equipoAg || {}).equipo && ((EQ_CFG.subequipos || {})[a.equipoAg.equipo] || []).length ? fila('Subequipo', 'Solo lo que se pasa a ese subequipo', ddSel('data-ag-sub', [['', 'Todo el equipo'], ...EQ_CFG.subequipos[a.equipoAg.equipo].map(s => [s.id, s.n])], a.equipoAg.sub || '')) : ''}
         ${fila('Contactos que ya tienen asesor', 'Si habló con un asesor en los últimos 30 días, va directo a esa persona', '<span class="ag-lock">' + I('lock') + 'No los atiende</span>')}</div>
+      <div class="ag-card"><h4>${I('bolt')}Responder siempre</h4>
+        ${fila('Responder siempre', 'Responde en estos canales aunque la conversación tenga asesor. Si un asesor escribe, se pausa en esa conversación.', sw('data-ag-siempre="1"', agSiempre(a).on, 'Responder siempre'))}
+        ${agSiempre(a).on ? `<div class="fld">En qué canales<div class="chips2">${agCanalesAg(a).map(k => `<button type="button" data-ag-sie-canal="${k}" aria-pressed="${!agSiempre(a).canales.length || agSiempre(a).canales.includes(k)}">${CANALES[k].n}</button>`).join('') || '<span class="muted">Primero elige sus canales arriba</span>'}</div></div>
+        <div class="ag-tiempo"><span>Si un asesor escribe, se pausa</span><input type="number" min="5" max="1440" data-ag-num="pausa" value="${esc(agSiempre(a).pausa)}" aria-label="Minutos de pausa"><span>minutos</span></div>
+        ${(() => { const otro = AGENTES.find(x => x !== a && x.siempre && x.siempre.on && agCanalesAg(x).some(k => agCanalesAg(a).includes(k))); return otro ? `<p class="muted" style="margin:6px 0 0">«${esc(otro.nombre)}» también responde siempre en alguno de estos canales. Responde el del equipo de la conversación; si los dos son generales, el primero de la lista.</p>` : ''; })()}` : ''}</div>
       <div class="ag-card"><h4>${I('clock')}Si la persona deja de responder</h4>
         ${fila('Recordatorio', 'Le escribe una sola vez para retomar la conversación donde quedó', sw('data-ag-rec="1"', rec.on, 'Recordatorio si no responde'))}
         ${rec.on ? `<div class="ag-tiempo"><span>Después de</span><input type="number" min="1" max="${rec.unidad === 'horas' ? 23 : 1380}" data-ag-num="recordar" value="${esc(rec.tras)}" aria-label="Tiempo del recordatorio">${ddSel('data-ag-unidad', [['recordar|minutos', 'minutos'], ['recordar|horas', 'horas']], `recordar|${rec.unidad}`)}</div>` : ''}
@@ -347,6 +357,10 @@ document.getElementById('page').addEventListener('click', e => {
   const dt = t.closest('[data-ag-dato]'); if (dt) { const k = dt.dataset.agDato, l = agRecopilar(a).slice(); const i = l.indexOf(k); if (i >= 0) l.splice(i, 1); else l.push(k); a.recopilar = l; render(); return; }
   const la = t.closest('[data-ag-largo]'); if (la) { a.largo = la.dataset.agLargo; render(); return; }
   const cu = t.closest('[data-ag-cuando]'); if (cu) { a.cuando = cu.dataset.agCuando; render(); return; }
+  const eqb = t.closest('[data-ag-eq]'); if (eqb) { const v = eqb.dataset.agEq; a.equipoAg = v ? {equipo:v, sub:null} : null; render(); toast(v ? `Atiende primero lo que entra a ${v}` : 'Atiende todos los equipos'); return; }
+  const sbb = t.closest('[data-ag-sub]'); if (sbb) { a.equipoAg = {...(a.equipoAg || {}), sub: sbb.dataset.agSub || null}; render(); return; }
+  if (t.closest('[data-ag-siempre]')) { const s = agSiempre(a); a.siempre = {...s, on:!s.on}; render(); toast(a.siempre.on ? 'Responde siempre en sus canales' : 'Ya no responde por encima de los asesores'); return; }
+  const sc = t.closest('[data-ag-sie-canal]'); if (sc) { const s = agSiempre(a), todos = agCanalesAg(a), k = sc.dataset.agSieCanal; let L = s.canales.length ? s.canales.filter(x => todos.includes(x)) : [...todos]; L = L.includes(k) ? L.filter(x => x !== k) : [...L, k]; if (!L.length) { toast('Elige al menos un canal'); return; } a.siempre = {...s, canales: L.length === todos.length ? [] : L}; render(); return; }
   const de = t.closest('[data-ag-dest]'); if (de) { a.destino = de.dataset.agDest; render(); toast(`Pasa siempre a ${a.destino}`); return; }
   const te = t.closest('[data-ag-teq]'); if (te) { const [i, eq] = te.dataset.agTeq.split('|'); a.temas[+i][1] = eq; render(); toast(`Pasa a ${eq}`); return; }
   const tb = t.closest('[data-ag-tab]'); if (tb) { st.agTab = tb.dataset.agTab; render(); return; }
@@ -363,6 +377,7 @@ document.getElementById('page').addEventListener('change', e => {
   if (t.dataset.agIn) { a[t.dataset.agIn] = t.value; setTimeout(render); return; }
   if (t.dataset.agTema !== undefined) { a.temas[+t.dataset.agTema][0] = t.value; toast('Guardado'); }
   if (t.dataset.habIn) { const [id, campo] = t.dataset.habIn.split('|'); const h = (a.habilidades || []).find(x => x.id === id); if (h) { h[campo] = t.value.slice(0, campo === 'pasos' ? 5000 : 500); setTimeout(render); } return; }
+  if (t.dataset.agNum === 'pausa') { a.siempre = {...agSiempre(a), pausa: Math.max(5, Math.min(1440, Math.round(+t.value) || 30))}; setTimeout(render); return; }
   if (t.dataset.agNum) { const k = t.dataset.agNum, cur = k === 'recordar' ? agRec(a) : agIna(a), n = Math.max(1, Math.min(+t.max || 10080, Math.round(+t.value) || 1)); a[k] = {...cur, tras:n}; setTimeout(render); }
 });
 

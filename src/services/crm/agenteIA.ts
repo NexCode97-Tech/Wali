@@ -8,6 +8,7 @@ import { MODELO } from '../../config/ia'
 import type { CtxEntrante } from './automatizaciones'
 import { leerAjuste } from './ajustes'
 import { aQuienRecepcion, conocimiento, datosRecopilar, destinoDe, esRecep, habilidadesDe, llenarHuecos, MAX_CONSULTAS, nombreDeAgente, nombreEmpresa, sistemaDe, sugeribles, type AgenteMaqueta, type DatoRecopilar } from './agentes'
+import { equipoDeConv } from './equipos'
 import { consultasDe, consultaPorHerramienta, CONSULTAS, HERRAMIENTA_CONSULTA, SISTEMAS, usarConsulta } from './integraciones'
 import { guardarMensaje } from './salientes'
 import { transcribirPendientes } from './transcripciones'
@@ -97,6 +98,12 @@ interface Agente extends AgenteMaqueta {
   /** Si la persona deja de responder (28-sep, como Trengo): recordatorio una vez y, después, pasar o finalizar. */
   recordar?: { on?: boolean; tras?: number | string; unidad?: string }
   inactivo?: { tras?: number | string; unidad?: string; accion?: string }
+  /** Equipo o subequipo del agente (3-oct): atiende primero lo que entra a ese equipo y al terminar lo pasa a su
+   *  gente. Sin equipo, atiende cualquier conversación de sus canales. */
+  equipoAg?: { equipo?: string; sub?: string | null } | null
+  /** «Responder siempre» (3-oct, opción A): en esos canales (vacío = todos los suyos) responde aunque la
+   *  conversación tenga asesor o no sea nueva. Si un asesor escribe, se pausa `pausa` minutos en esa conversación. */
+  siempre?: { on?: boolean; canales?: string[]; pausa?: number | string }
   /** Si el agente se limita a unas líneas: sus ids. Vacío o sin definir = todas. */
   lineas?: string[]
 }
@@ -108,6 +115,8 @@ interface EstadoAgente {
   id: string
   n: string
   tpl: string
+  /** Lo tomó por «Responder siempre»: asignarla no lo saca; si un asesor escribe, se pausa. */
+  siempre?: boolean
   /** Respuestas que ya mandó el agente en esta conversación. */
   turnos: number
   /** Mensajes del cliente ya contestados (se cuentan, no se ordenan: la hora de WhatsApp puede llegar desordenada). */
@@ -210,6 +219,23 @@ function atiendeCanal(a: Agente, canal: string): boolean {
   return canal === 'wa'
 }
 const permiteLinea = (a: Agente, lineaId: string) => (Array.isArray(a.lineas) && a.lineas.length ? a.lineas.includes(lineaId) : true)
+/** Qué tanto le toca al agente una conversación por su equipo: 2 su subequipo, 1 su equipo, 0 agente sin equipo
+ *  (atiende cualquiera), -1 no le toca. */
+function afinidad(a: Agente, eq: string, sub: string | null): number {
+  const e = txt(a.equipoAg?.equipo)
+  if (!e) return 0
+  if (e !== eq) return -1
+  const s = txt(a.equipoAg?.sub)
+  return !s ? 1 : s === sub ? 2 : -1
+}
+/** Los agentes que le tocan, el más específico primero (su subequipo, su equipo, los generales). */
+const porAfinidad = (xs: Agente[], eq: string, sub: string | null) =>
+  xs.map(a => ({ a, n: afinidad(a, eq, sub) })).filter(x => x.n >= 0).sort((x, y) => y.n - x.n).map(x => x.a)
+/** ¿Responde siempre en este canal? */
+const siempreEn = (a: Agente, canal: string) => !!a.siempre?.on && (!Array.isArray(a.siempre.canales) || !a.siempre.canales.length || a.siempre.canales.includes(canal))
+const minutosPausa = (a?: Agente | null) => Math.min(1440, Math.max(5, Math.round(Number(a?.siempre?.pausa)) || 30))
+/** La conversación está en pausa para «Responder siempre» porque un asesor escribió hace poco. */
+const enPausa = (extra: unknown) => { const h = txt(obj(extra)._pausaIA); return !!h && Date.parse(h) > Date.now() }
 /** «Cuándo atiende»: Siempre, Solo fuera del horario de atención, Solo en el horario de atención. */
 function permiteMomento(a: Agente, fuera: boolean): boolean {
   const c = plano(txt(a.cuando))
@@ -306,7 +332,7 @@ const cargar = (id: number) => prisma.crmConversacion.findUnique({ where: { id }
  * alguien conversando: no cuenta.
  */
 async function tomadaPor(conv: CrmConversacion, est: EstadoAgente): Promise<string | null> {
-  if (conv.asignadoId && conv.asignadoId !== est.asesorAntes) {
+  if (conv.asignadoId && conv.asignadoId !== est.asesorAntes && !est.siempre) {
     // Una asignación automática (reparto de cada minuto o una regla «Asignar por turnos») no es una
     // persona tomándola: el agente sigue y, al terminar, la pasa a ese asesor con su nota. La toma
     // una persona cuando alguien la asigna a mano o escribe en ella.
@@ -1020,6 +1046,15 @@ async function entregar(convId: number, equipo: string, conv: CrmConversacion | 
 /** Una persona tomó la conversación: el agente se retira sin escribirle nada al cliente. */
 async function dejarPorPersona(conv: CrmConversacion, est: EstadoAgente, quien: string) {
   if (!(await quitarEstado(conv.id, est))) return
+  if (est.siempre) {
+    // Opción A: se pausa en esta conversación para no hablar encima del asesor; después vuelve a responder.
+    const a = (await leerAgentes()).find(x => x.id === est.id)
+    const min = minutosPausa(a), hasta = new Date(Date.now() + min * 60_000).toISOString()
+    await prisma.$executeRaw`UPDATE crm_conversaciones SET extra = jsonb_set(COALESCE(extra, '{}'::jsonb), '{_pausaIA}', to_jsonb(${hasta}::text)) WHERE id = ${conv.id}`
+    await evento(conv.id, `El agente IA «${est.n}» se pausó ${min} minutos en esta conversación: escribió ${quien}.`)
+    await emitirConv(conv.id, null)
+    return
+  }
   await evento(conv.id, `El agente IA «${est.n}» dejó la conversación: la tomó ${quien}.`)
   await emitirConv(conv.id, null)
 }
@@ -1177,39 +1212,51 @@ export async function agenteContinuar(ctx: CtxEntrante): Promise<boolean> {
  * configuración (hoy: el contacto ya habló con un asesor), para que quien
  * llama no lo reporte como falla.
  */
-export type CtxAgente = CtxEntrante & { noche?: boolean; regla?: string; motivo?: string }
+export type CtxAgente = CtxEntrante & { noche?: boolean; regla?: string; motivo?: string; porEquipo?: boolean }
 export const MOTIVO_CON_ASESOR = 'el contacto habló con un asesor en los últimos 30 días y va directo a esa persona'
 
 /** Primer contacto (o de noche, o por una regla): lo toma el agente encendido si corresponde. true = lo tomó. */
 export async function agenteIniciar(ctx: CtxEntrante): Promise<boolean> {
   const extra = ctx as CtxAgente
   const porRegla = extra.noche === true
+  const porEquipo = extra.porEquipo === true
   let tomado = false
   try {
-    if (!ctx.nueva && !ctx.reabierta && !porRegla) return false
     const conv = await prisma.crmConversacion.findUnique({ where: { id: ctx.convId }, include: { contacto: true } })
     // Por donde el CRM puede contestar: WhatsApp con línea, el chat de la web, o Instagram y Messenger con su página.
     if (!conv || conv.estado === 'finalizadas' || !tieneSalida(conv)) return false
     if (leerEstado(conv.extra)) return true
     if (obj(conv.extra)._flujo) return false
-    // «Contactos que ya tienen asesor» (fila con candado en el editor del agente): van directo a esa
-    // persona, también cuando una regla pide el agente. Así el agente nunca se mete en una conversación
-    // que lleva un asesor. Una conversación asignada en la que el asesor todavía no escribió sí la puede
-    // tomar una regla (y al terminar vuelve a ese asesor).
-    if (await hablaConAsesor(conv.contactoId)) { extra.motivo = MOTIVO_CON_ASESOR; return false }
-    if (!porRegla && conv.asignadoId) return false
 
     const agentes = (await leerAgentes()).filter(a => encendido(a) && atiendeCanal(a, conv.canal) && (!conv.lineaId || permiteLinea(a, conv.lineaId)))
     if (!agentes.length) return false
+    // El más específico primero: el de su subequipo, el de su equipo y los que no tienen equipo.
+    const eq = equipoDeConv(conv), sub = txt(obj(conv.extra).subequipo) || null
+    const ordenados = porAfinidad(agentes, eq, sub)
+    // «Responder siempre»: en su canal responde aunque no sea nueva o tenga asesor, salvo en la pausa de un asesor.
+    const siempreA = enPausa(conv.extra) ? undefined : ordenados.find(x => siempreEn(x, conv.canal))
     const cfg = obj(await leerAjuste('cfg'))
     const cuando = ahora()
     const fuera = fueraDeHorario(cfg, cuando)
-    const noche = porRegla || esNoche(cfg, conv.lineaId, cuando)
-    const primero = obj(await leerAjuste('ag')).primer === 'agente'
-    if (!primero && !noche) return false
-    // «Cuándo atiende» de cada agente vale también para las reglas: un agente «Solo en el horario de
-    // atención» no contesta de noche aunque una regla lo pida.
-    const a = agentes.find(x => permiteMomento(x, porRegla ? fuera : noche || fuera))
+    let noche = false, primero = false
+    let a: Agente | undefined = siempreA
+    if (!a) {
+      if (!ctx.nueva && !ctx.reabierta && !porRegla && !porEquipo) return false
+      // «Contactos que ya tienen asesor» (fila con candado en el editor del agente): van directo a esa
+      // persona, también cuando una regla pide el agente. Así el agente nunca se mete en una conversación
+      // que lleva un asesor. Una conversación asignada en la que el asesor todavía no escribió sí la puede
+      // tomar una regla (y al terminar vuelve a ese asesor). Si alguien la pasó a un equipo, la toma el agente de ese equipo.
+      if (!porEquipo && await hablaConAsesor(conv.contactoId)) { extra.motivo = MOTIVO_CON_ASESOR; return false }
+      if (!porRegla && conv.asignadoId) return false
+      noche = porRegla || esNoche(cfg, conv.lineaId, cuando)
+      primero = obj(await leerAjuste('ag')).primer === 'agente'
+      if (!primero && !noche && !porEquipo) return false
+      // Pasada a un equipo: solo la toma el agente de ese equipo (o subequipo), no uno general.
+      const candidatos = porEquipo ? ordenados.filter(x => afinidad(x, eq, sub) > 0) : ordenados
+      // «Cuándo atiende» de cada agente vale también para las reglas: un agente «Solo en el horario de
+      // atención» no contesta de noche aunque una regla lo pida.
+      a = candidatos.find(x => porEquipo || permiteMomento(x, porRegla ? fuera : noche || fuera))
+    }
     if (!a) return false
 
     const quien = txt(a.nombre) || 'Agente IA'
@@ -1225,13 +1272,14 @@ export async function agenteIniciar(ctx: CtxEntrante): Promise<boolean> {
       inicio: (disparo?.createdAt ?? new Date()).toISOString(), noche, regla: txt(extra.regla) || null,
       asesorAntes: conv.asignadoId ?? null, contactoNuevo: !!ctx.contactoNuevo, nueva: !!ctx.nueva, reabierta: !!ctx.reabierta,
       msgId: ctx.msgId, nombreOk: !ctx.contactoNuevo && txt(conv.contacto.nombre).split(/\s+/).length >= 2, plataforma: null, v: 1,
+      ...(siempreA ? { siempre: true } : {}),
     }
     if (!(await tomarEstado(conv.id, est))) {
       const otra = await prisma.crmConversacion.findUnique({ where: { id: conv.id }, select: { extra: true } })
       return !!leerEstado(otra?.extra)
     }
     tomado = true
-    const porQue = est.regla ? ` por la regla «${est.regla}»` : noche && !primero ? ' (atención de noche)' : ''
+    const porQue = siempreA ? ' (responde siempre en este canal)' : porEquipo ? ` (agente del equipo ${eq})` : est.regla ? ` por la regla «${est.regla}»` : noche && !primero ? ' (atención de noche)' : ''
     await evento(conv.id, `La atiende el agente IA «${quien}»${porQue}.`)
     await emitirConv(conv.id, null)
     programarTurno(conv.id)
@@ -1239,6 +1287,20 @@ export async function agenteIniciar(ctx: CtxEntrante): Promise<boolean> {
   } catch (e) {
     logger.error(`[CRM agente] al iniciar en ${ctx.convId}: ${(e as Error)?.message ?? e}`)
     if (tomado) { programarTurno(ctx.convId); return true }
+    return false
+  }
+}
+
+/** Alguien pasó la conversación a un equipo o subequipo (conversaciones.controller.ts): si ese equipo tiene un agente
+ *  encendido, la toma él antes de repartirla entre su gente. true = la tomó. Nunca lanza. */
+export async function agenteDeEquipo(convId: number): Promise<boolean> {
+  try {
+    const ult = await prisma.crmMensaje.findFirst({ where: { conversacionId: convId, tipo: 'in' }, orderBy: { createdAt: 'desc' }, select: { id: true } })
+    if (!ult) return false
+    const ctx: CtxAgente = { convId, msgId: String(ult.id), linea: null, nueva: false, reabierta: false, contactoNuevo: false, texto: '', respuestaId: null, porEquipo: true }
+    return await agenteIniciar(ctx)
+  } catch (e) {
+    logger.warn(`[CRM agente] equipo ${convId}: ${(e as Error)?.message ?? e}`)
     return false
   }
 }
