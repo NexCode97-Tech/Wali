@@ -406,6 +406,19 @@ button.pill svg{width:12px;height:12px}
 .it .tj-esp{margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 8px;border-radius:999px;background:#fee2e2;color:#b91c1c;font-size:11.5px;font-weight:500}
 .it .tj-esp svg{width:12px;height:12px}
 .it .tj-l4{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+/* Pie de la tarjeta (maqueta aprobada «tarjetas de la bandeja», opción B, 3-oct): quién la atiende y su equipo; sin
+   asignar, en ámbar. Ocupa todo el ancho de la tarjeta, debajo de la etapa y las etiquetas. */
+.it{overflow:hidden}
+.it .tj-pie{grid-column:1 / -1;margin:10px -12px -12px;padding:8px 12px;border-top:1px dashed #e5e7eb}
+.it .tj-pie .tj-as b{font-weight:600;color:#111827}
+.it .tj-pie .tj-mini{width:20px;height:20px;font-size:8.5px}
+.it .tj-pie .tj-eq{margin-left:auto;height:20px;padding:0 8px;border-radius:999px;background:#f1f5f9;font-size:11px;font-weight:600;color:#4b5563}
+.it .tj-pie .tj-eq:first-child{margin-left:0}
+.it .tj-pie .tj-esp + .tj-eq{margin-left:0}
+.it .tj-pie.libre{background:#fef3c7;color:#b45309}
+.it .tj-pie.libre .tj-as b{color:#b45309}
+.it .tj-pie.libre .tj-sin{width:20px;height:20px;border:0;background:#f59e0b;color:#fff;font-size:10px;font-weight:700;box-sizing:border-box}
+.it .tj-pie.libre .tj-eq{background:#fff}
 .it .tj-chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:999px;background:#f1f5f9;font-size:11.5px;color:#374151;max-width:100%}
 .it .tj-chip i{width:7px;height:7px;border-radius:50%;display:inline-block;flex:none}
 .it .tj-chip span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

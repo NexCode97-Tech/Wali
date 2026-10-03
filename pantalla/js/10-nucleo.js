@@ -445,9 +445,11 @@ function lista(){
       <span class="tj-cu">
         <span class="tj-l1"><b>${esc(c.n)}</b><time>${esc(c.hora)}</time></span>
         <span class="tj-l2"><span class="tj-msg">${esc(txt)}</span>${c.unread ? `<span class="tj-cnt">${c.unread}</span>` : ''}</span>
-        <span class="tj-l3"><span class="tj-eq"><i style="background:${colorEquipo(eq)}"></i>${esc(eq)}</span><span class="tj-pt">·</span><span class="tj-as">${c.asig ? `<span class="av tj-mini" style="background:${colorPersona(c.asig)}">${fotoAv(fotoDe(c.asig), c.asig)}</span>` : '<span class="tj-mini tj-sin"></span>'}<span>${c.asig ? esc(c.asig) : 'Sin asignar'}</span></span>${c.espera ? `<span class="tj-esp">${I('clock')}${esc(c.espera)}</span>` : ''}</span>
         ${chips ? `<span class="tj-l4">${chips}</span>` : ''}
       </span>
+      <span class="tj-l3 tj-pie${c.asig ? '' : ' libre'}">${c.asig
+        ? `<span class="av tj-mini" style="background:${colorPersona(c.asig)}">${fotoAv(fotoDe(c.asig), c.asig)}</span><span class="tj-as"><span>Atiende <b>${esc(c.asig)}</b></span></span>`
+        : '<span class="tj-mini tj-sin">?</span><span class="tj-as"><span><b>Sin asignar</b> · nadie la atiende</span></span>'}${c.espera ? `<span class="tj-esp">${I('clock')}${esc(c.espera)}</span>` : ''}<span class="tj-eq"><i style="background:${colorEquipo(eq)}"></i>${esc(eq)}</span></span>
     </button>`;
   }).join('') : (st.q.trim() ? `<div class="nothing"><b>Ningún lead con «${esc(st.q.trim())}»</b><span>${st.vista !== 'todas' || fa.length ? 'Buscaste solo en esta vista.' : 'Revisa el nombre o prueba con el número.'}</span>${st.vista !== 'todas' ? `<button type="button" class="btn" data-ver-todas="1">Buscar en todas las conversaciones</button>` : ''}</div>` : st.menciones ? `<div class="empty">${I('at')}<b>Sin menciones</b><span>Cuando un compañero te mencione en una nota privada, aparece aquí.</span></div>` : `<div class="nothing"><b>Nada por aquí</b><span>${fa.length ? 'Ninguna conversación ' + (st.vista === 'mias' ? 'tuya ' : st.vista === 'sin' ? 'sin asignar ' : '') + 'coincide con ' + esc(fa.map(f => f.n).join(' y ')) + '.' : 'No hay conversaciones activas en esta vista.'}</span>${fa.length ? `<button type="button" class="btn" data-quitar="todo">Quitar filtros</button>` : ''}${st.vista !== 'todas' && fa.length ? `<button type="button" class="btn" data-ver-todas="1">Ver las de todo el equipo</button>` : ''}</div>`);
 }
