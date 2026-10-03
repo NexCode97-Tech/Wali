@@ -7,7 +7,7 @@ import { logger } from '../../utils/logger'
 import { MODELO } from '../../config/ia'
 import type { CtxEntrante } from './automatizaciones'
 import { leerAjuste } from './ajustes'
-import { aQuienRecepcion, conocimiento, datosRecopilar, destinoDe, esRecep, habilidadesDe, MAX_CONSULTAS, nombreEmpresa, sistemaDe, sugeribles, type AgenteMaqueta, type DatoRecopilar } from './agentes'
+import { aQuienRecepcion, conocimiento, datosRecopilar, destinoDe, esRecep, habilidadesDe, llenarHuecos, MAX_CONSULTAS, nombreDeAgente, nombreEmpresa, sistemaDe, sugeribles, type AgenteMaqueta, type DatoRecopilar } from './agentes'
 import { consultasDe, consultaPorHerramienta, CONSULTAS, HERRAMIENTA_CONSULTA, SISTEMAS, usarConsulta } from './integraciones'
 import { guardarMensaje } from './salientes'
 import { transcribirPendientes } from './transcripciones'
@@ -217,8 +217,8 @@ function permiteMomento(a: Agente, fuera: boolean): boolean {
   if (c.includes('solo en el horario')) return !fuera
   return true
 }
-/** Cómo se presenta: «Sofía, del equipo de ventas» → Sofía. */
-const nombrePila = (a: Agente) => (txt(a.presenta).split(',')[0] || txt(a.nombre)).trim()
+/** Cómo se presenta: «Sofía, del equipo de ventas» → Sofía (limpio: sin «Se presenta como:» ni huecos de plantilla). */
+const nombrePila = (a: Agente) => nombreDeAgente(a)
 /** «Soy Sofía, asistente virtual del equipo de {empresa}.» (sin nombre: «Soy la asistente virtual…»). */
 const soyAsistente = (a: Agente, empresa: string) => (nombrePila(a) ? `Soy ${nombrePila(a)}, asistente virtual del equipo de ${empresa}.` : `Soy la asistente virtual del equipo de ${empresa}.`)
 /** Lo que piden las habilidades prendidas al terminar: equipos y etapas que existen, y etiquetas. */
@@ -894,6 +894,15 @@ async function turno(convId: number): Promise<void> {
     else if (d.finalizar) { await finalizar(convId, est, a, d.finalizar.resumen); return }
     else { await fallo(conv, est, a, 'el modelo no devolvió ningún mensaje'); return }
   }
+  // Huecos de plantilla copiados de los documentos («(nombre del robot)», «[empresa]», «Se presenta como:»): se llenan
+  // los conocidos; si queda alguno, el mensaje no sale y la conversación pasa a una persona.
+  const llenado = llenarHuecos(texto, nombrePila(a), empresa)
+  if (llenado.quedan.length) {
+    logger.warn(`[CRM agente] conversación ${convId}: respuesta descartada por huecos de plantilla sin llenar: ${llenado.quedan.join(', ')}`)
+    await pasarAPersona(convId, est, a, { motivo: `su respuesta traía un dato de plantilla sin llenar (${llenado.quedan.slice(0, 3).join(', ')}). No se le respondió nada al cliente; revisa los documentos del agente`, nota: notaAutomatica(conv, est, msgs), sinRespuesta: true })
+    return
+  }
+  texto = llenado.texto
   let forzarPaso: string | null = null
   // Nunca se hace pasar por una persona: si lo parece, sale una frase fija y pasa a una persona.
   if (PARECE_HUMANO.some(re => re.test(texto))) {
@@ -1060,7 +1069,9 @@ async function recordar(conv: ConvCompleta, est: EstadoAgente, a: Agente, msgs: 
     return false
   }
   const bruto = r.content.filter((b): b is Anthropic.TextBlock => b.type === 'text').map(b => b.text).join('').trim()
-  const texto = limpiarRespuesta(bruto)
+  const limpio = limpiarRespuesta(bruto)
+  const llenado = limpio ? llenarHuecos(limpio, nombrePila(a), empresa) : null
+  const texto = llenado && !llenado.quedan.length ? llenado.texto : null
   if (!texto || PARECE_HUMANO.some(re => re.test(texto))) return false
   // Justo antes de mandar: si la persona escribió o una persona la tomó mientras tanto, no sale nada.
   const fresca = await prisma.crmConversacion.findUnique({ where: { id: conv.id } })

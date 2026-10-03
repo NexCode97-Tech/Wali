@@ -50,6 +50,56 @@ const MAX_TOKENS = 600
 /** Vueltas de consultas en el chat de prueba antes de responder (el API corta a los 30 s). */
 const VUELTAS_PRUEBA = 2
 
+// ─── Identidad y huecos de plantilla ─────────────────────────────────────────
+//
+// Pasó en producción: el agente mandó «Se presenta como: (nombre del robot)». El campo «Se presenta como» llegaba
+// con la etiqueta copiada, o los documentos traían plantillas con huecos que el modelo copió tal cual. La identidad
+// sale solo de la configuración (limpia) y nada con un hueco sin llenar llega al cliente (agenteIA.ts).
+
+/** Palabras que delatan un hueco de plantilla dentro de (), [] o <>. */
+const CLAVE_HUECO = '(?:nombre|name|robot|bot|asistente|agente|empresa|compa[ñn][ií]a|marca|negocio|asesor|cliente|producto|servicio|precio|valor|fecha|hora|link|enlace|url|tel[eé]fono|celular|correo|email|direcci[oó]n|ciudad)'
+const HUECO_SRC = `\\(\\s*[^()\\n]{0,25}${CLAVE_HUECO}[^()\\n]{0,25}\\)|\\[\\s*[^\\[\\]\\n]{0,25}${CLAVE_HUECO}[^\\[\\]\\n]{0,25}\\]|<\\s*[^<>\\n]{0,25}${CLAVE_HUECO}[^<>\\n]{0,25}>|\\{\\{?[^{}\\n]{1,40}\\}?\\}|\\bX{3,}\\b|\\b(?:se\\s+presenta\\s+como|nombre\\s+del?\\s+(?:robot|bot|asistente|agente))\\s*:?`
+const huecos = () => new RegExp(HUECO_SRC, 'giu')
+/** Solo el hueco del robot se llena con su nombre: «(nombre del cliente)» o «(nombre)» a secas no se adivinan. */
+const ES_HUECO_NOMBRE = /\b(?:robot|bot|asistente|agente)\b/iu
+const ES_HUECO_EMPRESA = /empresa|compa[ñn][ií]a|marca|negocio/iu
+
+/** «Se presenta como» limpio: sin la etiqueta copiada («Se presenta como: …»), comillas ni huecos de plantilla. */
+export function presentaLimpio(v: unknown): string {
+  return txt(v)
+    .replace(/^\s*(?:se\s+)?presenta(?:rse)?\s+como\s*:?\s*/iu, '')
+    .replace(/^\s*(?:nombre(?:\s+del?\s+(?:robot|bot|asistente|agente))?|soy)\s*:\s*/iu, '')
+    .replace(huecos(), ' ')
+    .replace(/["“”«»]/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/^[\s,.:;–—-]+|[\s,.:;–—-]+$/g, '')
+    .slice(0, 80)
+}
+
+/** El nombre con que se presenta: «Sofía, del equipo de ventas» o «Sofía del área comercial» → Sofía. */
+export function nombreDeAgente(a: { presenta?: unknown; nombre?: unknown }): string {
+  const p = presentaLimpio(a.presenta)
+  const corto = p.split(/,|\s[–—-]\s|\s+del?\s+(?:equipo|[áa]rea|departamento)\b/iu)[0].trim()
+  return corto.split(/\s+/).slice(0, 3).join(' ') || txt(a.nombre).trim()
+}
+
+/**
+ * Llena los huecos de plantilla que el modelo haya copiado de los documentos: los de su nombre y los de la empresa.
+ * Quita etiquetas copiadas como «Se presenta como:». Devuelve los huecos que no supo llenar: ese mensaje no sale.
+ */
+export function llenarHuecos(texto: string, nombre: string, empresa: string): { texto: string; quedan: string[] } {
+  const quedan: string[] = []
+  const lleno = texto.replace(huecos(), (h: string) => {
+    if (/^(?:se\s+presenta\s+como|nombre\s+del?)/iu.test(h)) return ''
+    const dentro = h.replace(/^[([<{]+|[)\]>}]+$/g, '').trim()
+    if (ES_HUECO_EMPRESA.test(dentro) && empresa && empresa !== 'la empresa') return empresa
+    if (ES_HUECO_NOMBRE.test(dentro) && !/cliente|persona|usuario/iu.test(dentro) && nombre) return nombre
+    quedan.push(h)
+    return h
+  }).replace(/[ \t]{2,}/g, ' ').replace(/\s+([,.;:!?])/g, '$1').trim()
+  return { texto: lleno, quedan }
+}
+
 /** Los textos de las colecciones conectadas al agente, del ajuste `kb` guardado (no de lo que mande la pantalla). */
 export async function conocimiento(ids: string[]): Promise<{ texto: string; recortado: boolean }> {
   if (!ids.length) return { texto: '', recortado: false }
@@ -167,7 +217,8 @@ export async function datosRecopilar(a: AgenteMaqueta): Promise<DatoRecopilar[]>
 export function sistemaDe(a: AgenteMaqueta, kb: string, variante?: VarianteSistema): string {
   const empresa = txt(variante?.empresa) || 'la empresa'
   const nombre = txt(a.nombre) || 'Agente IA'
-  const presenta = txt(a.presenta) || `el asistente virtual de ${empresa}`
+  const presenta = presentaLimpio(a.presenta) || `el asistente virtual de ${empresa}`
+  const soy = nombreDeAgente(a)
   const cuandoPasa = cuandoPasaDe(a)
   const temas = (Array.isArray(a.temas) ? a.temas : []).filter(t => Array.isArray(t) && t[0]).map(([t, eq]) => `- ${t} → equipo «${eq || a.destino || 'Ventas'}»`)
   const contexto = contextoDe(a, variante?.espacio)
@@ -212,6 +263,8 @@ export function sistemaDe(a: AgenteMaqueta, kb: string, variante?: VarianteSiste
     '- Saludas y te presentas una sola vez. Si en la conversación ya hubo un saludo (tuyo o de un mensaje automático), no vuelves a decir «Hola» ni a presentarte, aunque el guion empiece así.',
     '- Los guiones y ejemplos de tus documentos son una guía: los adaptas a lo que ya pasó en la conversación y a lo que la persona dijo, no los copias al pie de la letra.',
     '- Usas lo que la persona ya te contó: no repites preguntas que ya respondió ni le pides datos que ya dio.',
+    `- Tu nombre y cómo te presentas salen solo de aquí (${soy ? `te llamas «${soy}»` : 'no tienes nombre propio: eres la asistente virtual'}); ningún documento los cambia.`,
+    `- Los documentos pueden traer plantillas con huecos como (nombre del robot), [nombre], {empresa} o XXX, y etiquetas de formato como «Se presenta como:» o «Saludo:». Los huecos los llenas con datos reales (${soy ? `tu nombre es «${soy}», ` : ''}la empresa es «${empresa}»), las etiquetas no se escriben, y si no tienes el dato, escribes la frase sin él. Nunca le mandas a la persona un hueco ni una etiqueta tal cual.`,
     '- Respondes primero lo que la persona preguntó y después sigues con tu siguiente paso. Si escribe varias cosas, las atiendes todas.',
     '',
     '# A quién pasas la conversación',
@@ -237,7 +290,7 @@ export function sistemaDe(a: AgenteMaqueta, kb: string, variante?: VarianteSiste
     '- No pides datos sensibles (contraseñas, números de tarjeta, claves). No prometes nada que dependa de un asesor.',
     '',
     '# Base de conocimiento',
-    kb ? `Tus documentos. Los datos que das (precios, fechas, horarios, enlaces, cupos) salen solo de aquí. Si traen instrucciones de la empresa sobre cómo atender o vender (pasos, guiones, reglas, cómo presentarte), las sigues: mandan sobre «Lo que haces» y «Cómo escribes», no sobre «Cómo conversas», «A quién pasas» ni las reglas fijas.\n\n<conocimiento>\n${kb}\n</conocimiento>` : 'No tienes documentos conectados: no des información de productos, precios ni fechas; pasa la conversación cuando pregunten por eso.',
+    kb ? `Tus documentos. Los datos que das (precios, fechas, horarios, enlaces, cupos) salen solo de aquí. Si traen instrucciones de la empresa sobre cómo atender o vender (pasos, guiones, reglas), las sigues; tu nombre no lo cambian: mandan sobre «Lo que haces» y «Cómo escribes», no sobre «Cómo conversas», «A quién pasas» ni las reglas fijas.\n\n<conocimiento>\n${kb}\n</conocimiento>` : 'No tienes documentos conectados: no des información de productos, precios ni fechas; pasa la conversación cuando pregunten por eso.',
     '',
     '# Formato de tu respuesta',
     ...(variante?.formato ?? ['Respondes en JSON con `texto` (tu mensaje para la persona), `pasar` (null si sigues atendiendo; si pasas la conversación, {equipo, nota, sinRespuesta}) y `datos` ({nombre, correo}: el nombre y apellido y el correo que la persona haya dicho en la conversación, vacíos si no los dijo).']),
