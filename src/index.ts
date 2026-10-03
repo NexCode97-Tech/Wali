@@ -10,6 +10,7 @@ import { logger } from './utils/logger'
 import { redactarUrl } from './utils/redactar'
 import { errorHandler } from './middleware/errorHandler'
 import authRoutes from './routes/auth'
+import accesoRoutes from './routes/acceso'
 import usuariosRoutes from './routes/usuarios'
 import notificacionesRoutes from './routes/notificaciones'
 import uploadRoutes from './routes/upload'
@@ -134,6 +135,7 @@ app.get('/health', async (_req, res) => {
 
 // ─── API ─────────────────────────────────────────────────────────────────────
 app.use('/api/auth',           authRoutes)
+app.use('/api/auth',           accesoRoutes) // registro, recuperar la contraseña y Google (sin sesión)
 app.use('/api/usuarios',       usuariosRoutes)
 app.use('/api/notificaciones', notificacionesRoutes)
 app.use('/api/upload',         uploadRoutes)

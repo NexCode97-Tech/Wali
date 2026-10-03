@@ -68,7 +68,8 @@ const router = Router()
 
 router.get('/entrar', asyncHandler(async (req: Request, res: Response) => {
   if (await sesionDePagina(req)) return res.redirect(BASE + '/')
-  html(res, leer('paginas/entrar.html').replace(/__MARCA__/g, escapar(MARCA())))
+  const logo = LOGO ? `<img src="${escapar(LOGO)}" alt="">` : ''
+  html(res, leer('paginas/entrar.html').replace('__LOGO__', () => logo).replace(/__MARCA__/g, escapar(MARCA())))
 }))
 
 /** La persona de la sesión con su espacio, o la redirección al inicio de sesión. */

@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express'
+import type { User } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import rateLimit from 'express-rate-limit'
@@ -26,7 +27,7 @@ const router = Router()
 
 const DIAS_SESION = 30
 /** La cookie solo viaja a las direcciones del CRM: si vive en /crm de otro sitio, el resto del sitio no la recibe. */
-const RUTA_COOKIE = BASE || '/'
+export const RUTA_COOKIE = BASE || '/'
 const cookieOpts = () => ({
   httpOnly: true,
   sameSite: 'lax' as const,
@@ -55,14 +56,19 @@ router.post('/login', limiteEntrar, asyncHandler(async (req: Request, res: Respo
     logSecurityEvent('LOGIN_FALLIDO', { email, ip: req.ip })
     throw new UnauthorizedError('El correo o la contraseña no coinciden')
   }
+  await abrirSesion(req, res, user)
+  return ApiResponse.success(res, { ok: true })
+}))
+
+/** Abre la sesión de una cuenta (contraseña, Google, registro o contraseña nueva): revisa que pueda entrar y deja la cookie. */
+export async function abrirSesion(req: Request, res: Response, user: User) {
   if (user.suspendido) throw new ForbiddenError('Esta cuenta está suspendida. Habla con el administrador.')
   if (!(await espacioDeUsuario(user.id))) throw new ForbiddenError('Tu cuenta no pertenece a ningún espacio de trabajo. Habla con el administrador.')
   await prisma.user.update({ where: { id: user.id }, data: { ultimoIngreso: new Date() } })
   res.cookie(COOKIE_SESION, firmar({ sub: user.id, email: user.email, role: user.role }, `${DIAS_SESION}d`), cookieOpts())
   req.userId = user.id; req.userRole = user.role
   auditLog(req, 'LOGIN', 'sesion', user.id)
-  return ApiResponse.success(res, { ok: true })
-}))
+}
 
 router.post('/logout', (_req: Request, res: Response) => {
   res.clearCookie(COOKIE_SESION, { path: RUTA_COOKIE })
