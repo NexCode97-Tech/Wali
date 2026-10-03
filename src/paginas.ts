@@ -39,9 +39,19 @@ function leer(ruta: string, armar?: (texto: string) => string): string {
   return texto
 }
 
+/** El logo de la empresa en la barra lateral (CRM_LOGO: una dirección https o una ruta del mismo sitio). Sin él, el
+ *  ícono de fábrica. */
+const LOGO = (() => {
+  const v = (process.env.CRM_LOGO ?? '').trim()
+  return /^(https:\/\/|\/)[^\s"'<>]+$/.test(v) ? v : ''
+})()
+
 const armarCrm = () => leer('crm.html', html => {
   const js = SCRIPTS.map(n => readFileSync(join(PANTALLA, 'js', n + '.js'), 'utf8')).join('\n')
-  return html.replace('/*CRM_SCRIPTS*/', () => '/*CRM_INICIO*/\n' + js)
+  const conLogo = LOGO
+    ? html.replace(/<span class="brand-ic" aria-hidden="true">[\s\S]*?<\/span>/, () => `<span class="brand-ic logo" aria-hidden="true"><img src="${escapar(LOGO)}" alt=""></span>`)
+    : html
+  return conLogo.replace('/*CRM_SCRIPTS*/', () => '/*CRM_INICIO*/\n' + js)
 })
 
 /** JSON para poner dentro de un <script>: `<` escapado, así un nombre con "</script>" no cierra la etiqueta. */
