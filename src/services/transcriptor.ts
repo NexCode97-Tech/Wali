@@ -17,7 +17,7 @@ export async function transcribirAudio(audio: Buffer, mime: string): Promise<str
     }),
     signal: AbortSignal.timeout(90_000),
   })
-  if (!res.ok) throw new Error(`Gemini respondió ${res.status}`)
+  if (!res.ok) throw new Error(`El servicio de transcripción respondió ${res.status}`) // sin nombre del proveedor: el error puede llegar a la pantalla
   const datos = await res.json() as { candidates?: { content?: { parts?: { text?: string }[] } }[] }
   const texto = (datos.candidates?.[0]?.content?.parts ?? []).map(p => p.text ?? '').join('').trim()
   if (!texto || texto === '[inaudible]') throw new Error('No se entendió el audio')
