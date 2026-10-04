@@ -15,7 +15,7 @@ import { AppError, ValidationError } from '../../utils/errors'
 export type Plan = 'starter' | 'growth' | 'business'
 export type Periodo = 'mensual' | 'anual'
 export const PLANES: Plan[] = ['starter', 'growth', 'business']
-export const DIAS_PRUEBA = 14
+export const DIAS_PRUEBA = 10
 
 /** Lo que permite cada plan. Infinity = sin límite. */
 export const LIMITES: Record<Plan, { usuarios: number; agentesIA: number }> = {
@@ -74,6 +74,8 @@ export interface EstadoPlan {
   periodo: string | null
   pruebaHasta: string | null
   diasPrueba: number | null
+  /** Cuántos días dura la prueba gratis (DIAS_PRUEBA). */
+  duracionPrueba: number
   renuevaEl: string | null
   cancelaAlFinal: boolean
   /** Si el espacio puede trabajar normal. Si no, queda en solo lectura hasta pagar. */
@@ -100,6 +102,7 @@ export async function estadoPlan(espacioId: string): Promise<EstadoPlan> {
     plan, estado: e.estadoPlan, periodo: e.periodo,
     pruebaHasta: e.pruebaHasta?.toISOString() ?? null,
     diasPrueba: e.pruebaHasta ? Math.max(0, Math.ceil((e.pruebaHasta.getTime() - ahora) / 864e5)) : null,
+    duracionPrueba: DIAS_PRUEBA,
     renuevaEl: e.renuevaEl?.toISOString() ?? null,
     cancelaAlFinal: e.cancelaAlFinal,
     vigente,

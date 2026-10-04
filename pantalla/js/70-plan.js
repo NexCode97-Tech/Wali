@@ -183,9 +183,9 @@ function planVista(P){
   if (P.estado === 'interno') return {sello:'N', nombre, chip:['', 'Interno'], texto:['Espacio de NexCode97: todo incluido y sin cobro.'],
     medidas:[['Usuarios', String(uso.usuarios), null, null, 'Sin límite'], ['Agentes de IA', String(uso.agentesIA), null, null, 'Sin límite'], ['Cobro', 'Sin cobro', null, null, 'Espacio interno']], acciones:[]};
   if (P.estado === 'prueba' && !vencido) {
-    const dias = P.diasPrueba ?? 0;
+    const dias = P.diasPrueba ?? 0, total = P.duracionPrueba || 10;
     return {sello:'S', nombre:'Starter', chip:['prueba', 'Prueba gratis'], texto:['Tu prueba termina el ', [plFecha(P.pruebaHasta, true)], '. Elige un plan antes para no perder el acceso.'],
-      medidas:[['Prueba gratis', `${dias} ${dias === 1 ? 'día' : 'días'}`, 'de 14', Math.max(0, 14 - dias) / 14 * 100, null, '', dias <= 3], mUsuarios, mAgentes], acciones:[['pri', 'Elegir plan', 'planes']]};
+      medidas:[['Prueba gratis', `${dias} ${dias === 1 ? 'día' : 'días'}`, `de ${total}`, Math.max(0, total - dias) / total * 100, null, '', dias <= 3], mUsuarios, mAgentes], acciones:[['pri', 'Elegir plan', 'planes']]};
   }
   if (vencido) {
     const cuando = P.estado === 'prueba' ? P.pruebaHasta : P.renuevaEl, rechazo = P.estado === 'vencido';
