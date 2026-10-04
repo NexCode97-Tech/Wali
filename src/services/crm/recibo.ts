@@ -77,6 +77,6 @@ export function reciboPdf(p: CrmPago, empresa: string, correo: string): Buffer {
   doc.text(doc.splitTextToSize('Este recibo es un comprobante del pago de tu plan del CRM. El cobro lo procesa Creem como Merchant of Record: la factura con los impuestos de tu país la emite Creem y la encuentras en el CRM, en Ajustes > Plan y pagos > Facturas y tarjeta.', ancho - 2 * m), m, y)
 
   // Pie.
-  doc.setFontSize(8.5); doc.text('NexCode97 · www.nexcode97.com · ¿Dudas con un cobro? Escríbenos desde el CRM.', ancho / 2, doc.internal.pageSize.getHeight() - 14, { align: 'center' })
+  doc.setFontSize(8.5); doc.text('NexCode97 · www.nexcode97.com · ¿Dudas con un cobro? Escríbenos a nexcode97@gmail.com', ancho / 2, doc.internal.pageSize.getHeight() - 14, { align: 'center' })
   return Buffer.from(doc.output('arraybuffer'))
 }

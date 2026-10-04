@@ -94,6 +94,8 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .pl-pie{display:flex;gap:10px;align-items:flex-start;margin-top:16px;padding:14px 18px;border:1px solid var(--line);border-radius:14px;background:#fff;font-size:13px;color:var(--ink2)}
 .pl-pie svg{width:18px;height:18px;flex:none;color:var(--green-ink);margin-top:1px}
 .pl-pie b{color:var(--ink)}
+.pl-soporte{margin:14px 0 0;text-align:center;font-size:13px;color:var(--ink3)}
+.pl-soporte a{color:var(--ink);font-weight:600;text-decoration:underline;text-underline-offset:3px}
 .pl-carga{padding:60px 16px;text-align:center;color:var(--ink3)}
 @media (max-width:900px){.pl-planes{grid-template-columns:1fr}.pl-medidas{grid-template-columns:1fr}.pl-medida + .pl-medida{border-left:0;border-top:1px solid var(--line)}.pl-tabla .pl-opc{display:none}.pl-tabla th,.pl-tabla td{padding-left:12px;padding-right:12px}}
 @media (prefers-reduced-motion:reduce){.pl-barra span{animation:none}}
@@ -145,6 +147,8 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 let PLAN = null, planCargando = null;
 st.plPeriodo = '';
 const PL_NOMBRE = {starter:'Starter', growth:'Growth', business:'Business'};
+// El correo de soporte de los cobros (Creem exige que se vea dentro del producto).
+const PL_SOPORTE = 'nexcode97@gmail.com';
 // Si el sitio no respondió, la pantalla muestra al menos el nombre y el precio de cada plan.
 const PL_RESPALDO = [
   {id:'starter', nombre:'Starter', mensual:99, anual:'950', ficha:[], incluye:[]},
@@ -267,6 +271,7 @@ function paginaPlan(){
     <div class="pl-sec"></div>
     <section class="pl-caja"><div class="pl-caja-cab"><div><h3>Historial de pagos</h3><p>Cada cobro del CRM con su recibo. Los impuestos aparecen según tu país.</p></div>${P.portal && P.administra ? `<button type="button" class="btn" data-pl-acc="portal">${I('link')}Facturas en el portal</button>` : ''}</div>${plHistorial(P)}</section>
     <div class="pl-pie">${I('chat')}<span><b>WhatsApp y la IA se pagan aparte, directo a cada proveedor.</b> Meta te cobra los mensajes de WhatsApp en tu propia cuenta y la IA se cobra en tu cuenta del proveedor, sin recargo de NexCode97.</span></div>
+    <p class="pl-soporte">¿Dudas con tu plan o un cobro? Escríbenos a <a href="mailto:${PL_SOPORTE}">${PL_SOPORTE}</a> y te respondemos en máximo 3 días hábiles.</p>
   </div>`;
 }
 
