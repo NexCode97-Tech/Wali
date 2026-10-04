@@ -19,6 +19,10 @@ import { conEspacio } from '../services/crm/espacio'
 import { accesoCrm, alcanceDe } from '../services/crm/alcance'
 import { borrarEnlace, crearEnlace, editarEnlace, listarEnlaces } from '../services/crm/enlaces'
 import { ApiResponse } from '../utils/response'
+import { z } from 'zod'
+import { estadoPlan, pagarPlan, portalPagos, PLANES, type Plan } from '../services/crm/plan'
+import { urlPublica } from './acceso'
+import { prisma } from '../config/prisma'
 
 /**
  * CRM propio. Todo lo de la bandeja: conversaciones,
@@ -30,6 +34,27 @@ const router = Router()
 // Toda petición del CRM corre dentro del espacio de trabajo de quien la hace (services/crm/espacio.ts).
 // Ventas entra por su rol; cualquier otra persona, si un líder la agregó a un equipo (alcance.ts).
 router.use(authenticate, accesoCrm, conEspacio)
+
+// Plan y pagos (Creem). Van antes de la guarda: con el plan vencido hay que poder ver el plan y pagar.
+router.get('/plan', asyncHandler(async (req: Request, res: Response) => ApiResponse.success(res, await estadoPlan(req.espacioId!))))
+router.post('/plan/pagar', asyncHandler(async (req: Request, res: Response) => {
+  if (req.userRole !== 'ADMIN' || req.soloLectura) throw new ForbiddenError('Solo el administrador del espacio puede cambiar el plan.')
+  const d = z.object({ plan: z.enum(PLANES as [Plan, ...Plan[]]), periodo: z.enum(['mensual', 'anual']) }).parse(req.body)
+  const u = await prisma.user.findUnique({ where: { id: req.userId }, select: { email: true } })
+  const volver = `${urlPublica() ?? ''}/?pago=ok`
+  return ApiResponse.success(res, await pagarPlan(req.espacioId!, d.plan, d.periodo, u?.email ?? '', volver))
+}))
+router.post('/plan/portal', asyncHandler(async (req: Request, res: Response) => {
+  if (req.userRole !== 'ADMIN' || req.soloLectura) throw new ForbiddenError('Solo el administrador del espacio puede ver los pagos.')
+  return ApiResponse.success(res, await portalPagos(req.espacioId!))
+}))
+
+/** Con la prueba o el pago vencidos el espacio queda en solo lectura: se ve todo, nada se borra, pero no se escribe. */
+router.use((req: Request, _res: Response, next: NextFunction) => {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method.toUpperCase())) return next()
+  estadoPlan(req.espacioId!).then(p => (p.vigente ? next()
+    : next(new ForbiddenError(p.estado === 'prueba' ? 'Tu prueba gratis terminó. Elige un plan en Ajustes → Plan y pagos para seguir atendiendo.' : 'Tu plan no está activo. Renuévalo en Ajustes → Plan y pagos para seguir atendiendo.'))), next)
+})
 router.use(rutasWaCrm)
 // La IA del CRM (lote 5): Mi IA, sugerencias de respuesta y embudo automático (crmIa.ts).
 router.use(rutasIaCrm)

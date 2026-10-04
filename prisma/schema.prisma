@@ -279,6 +279,20 @@ model CrmWebhookEvento {
 model CrmEspacio {
   id             String            @id
   nombre         String
+  /// Plan del CRM: starter, growth o business. Lo cambia el webhook de Creem al pagar.
+  plan           String            @default("starter")
+  /// prueba (14 días de Starter), activo, pago-pendiente (cobro fallido, Creem reintenta), cancelado, vencido,
+  /// o interno (espacios de NexCode97, sin cobro).
+  estadoPlan     String            @default("prueba") @map("estado_plan")
+  /// mensual o anual.
+  periodo        String?
+  pruebaHasta    DateTime?         @map("prueba_hasta")
+  /// Fin del periodo pagado (Creem: current_period_end_date).
+  renuevaEl      DateTime?         @map("renueva_el")
+  /// Canceló pero el plan sigue hasta renuevaEl.
+  cancelaAlFinal Boolean           @default(false) @map("cancela_al_final")
+  creemCliente   String?           @map("creem_cliente")
+  creemSuscripcion String?         @map("creem_suscripcion")
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
   miembros       CrmMiembro[]

@@ -11,6 +11,7 @@ import { redactarUrl } from './utils/redactar'
 import { errorHandler } from './middleware/errorHandler'
 import authRoutes from './routes/auth'
 import accesoRoutes from './routes/acceso'
+import pagosRoutes from './routes/pagos'
 import usuariosRoutes from './routes/usuarios'
 import notificacionesRoutes from './routes/notificaciones'
 import uploadRoutes from './routes/upload'
@@ -86,6 +87,7 @@ app.use('/api/crm/web', (req: Request, res: Response, next: NextFunction) => {
 app.use('/api/crm/whatsapp/webhook', express.raw({ type: '*/*', limit: '5mb' }))
 app.use('/api/crm/meta/webhook', express.raw({ type: '*/*', limit: '5mb' }))
 app.use('/api/crm/tiktok/webhook', express.raw({ type: '*/*', limit: '5mb' }))
+app.use('/api/pagos/creem', express.raw({ type: '*/*', limit: '1mb' }))
 
 // El tiempo real (/api/eventos) no se comprime: gzip retiene cada escritura y el navegador no recibiría nada.
 // Se mira `originalUrl` porque la compresión decide al enviar las cabeceras, ya dentro del router.
@@ -135,7 +137,8 @@ app.get('/health', async (_req, res) => {
 
 // ─── API ─────────────────────────────────────────────────────────────────────
 app.use('/api/auth',           authRoutes)
-app.use('/api/auth',           accesoRoutes) // registro, recuperar la contraseña y Google (sin sesión)
+app.use('/api/auth',           accesoRoutes)
+app.use('/api/pagos/creem',     pagosRoutes) // avisos de Creem (firmados) // registro, recuperar la contraseña y Google (sin sesión)
 app.use('/api/usuarios',       usuariosRoutes)
 app.use('/api/notificaciones', notificacionesRoutes)
 app.use('/api/upload',         uploadRoutes)

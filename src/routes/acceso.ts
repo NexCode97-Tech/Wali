@@ -13,6 +13,7 @@ import { logger, logSecurityEvent } from '../utils/logger'
 import { BASE } from '../utils/base'
 import { abrirSesion, cifrarClave, claveValida, RUTA_COOKIE } from './auth'
 import { correoMarca, escaparHtml } from '../utils/correoMarca'
+import { DIAS_PRUEBA } from '../services/crm/plan'
 
 /**
  * Las puertas de entrada que no piden sesión: crear una cuenta (con su espacio), recuperar la contraseña por
@@ -101,7 +102,7 @@ router.post('/registro', limiteRegistro, asyncHandler(async (req: Request, res: 
   let user
   try {
     user = await prisma.$transaction(async tx => {
-      await tx.crmEspacio.create({ data: { id: espacioId, nombre: d.empresa } })
+      await tx.crmEspacio.create({ data: { id: espacioId, nombre: d.empresa, plan: 'starter', estadoPlan: 'prueba', pruebaHasta: new Date(Date.now() + DIAS_PRUEBA * 864e5) } })
       const u = await tx.user.create({ data: { email, nombre: d.nombre, image: foto, role: 'ADMIN', passwordHash } })
       await tx.crmMiembro.create({ data: { espacioId, userId: u.id } })
       // Al crear la cuenta aceptó los términos, el uso aceptable y la política de datos: queda la prueba.
