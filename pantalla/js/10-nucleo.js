@@ -765,6 +765,8 @@ function pagina(){
         ['ad','Enlaces de pauta','De qué anuncio llega cada persona: Google, TikTok, Meta y tu página','cfg-pauta'],
         ['lock','Protección de datos','Autorizaciones, menores, horario legal y números excluidos','cfg-datos'],
         ['folder','Archivos','Material para enviar en mensajes, difusiones y flujos','cfg-archivos']]],
+      ['Cuenta', [
+        ['card','Plan y pagos','Tu plan del CRM, el historial de pagos y los recibos','cfg-plan']]],
     ];
     const tg = (k, t, d) => `<div class="tgr"><span>${t}${d ? `<small>${d}</small>` : ''}</span><button type="button" class="tg" role="switch" data-aj-tg="${k}" aria-checked="${!!AJ[k]}" aria-label="${esc(t)}"></button></div>`;
     const SECS = []; const ac = (id, ic, t, d, body) => { SECS.push({id, ic, t, d, body}); return ''; };

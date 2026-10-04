@@ -29,6 +29,17 @@ svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;str
 .campana .aviso small{display:block;margin-top:4px;font-size:11.5px;color:#6b7280}
 .campana .aviso.nueva{background:#f3f8fe}
 .campana .vacio{padding:26px 14px;text-align:center;color:#6b7280;font-size:13px}
+.aviso-plan{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 12px 9px 18px;font-size:13.5px;font-weight:600;background:#FFF200;color:#0b0b10}
+.aviso-plan[hidden]{display:none}
+.aviso-plan.vencido{background:#dc2626;color:#fff}
+.aviso-plan.pendiente{background:#d97706;color:#fff}
+.aviso-plan span{min-width:0}
+.aviso-plan .acc{display:flex;align-items:center;gap:6px;flex:none}
+.aviso-plan .ir{height:32px;padding:0 14px;border-radius:999px;background:#0b0b10;color:#fff;font-weight:600;font-size:13px}
+.aviso-plan.vencido .ir,.aviso-plan.pendiente .ir{background:#fff;color:#0b0b10}
+.aviso-plan .x{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;opacity:.7}
+.aviso-plan .x:hover{opacity:1;background:rgba(0,0,0,.08)}
+.aviso-plan .x[hidden]{display:none}
 main{flex:1;min-height:0;position:relative;overflow:hidden}
 iframe{position:absolute;left:0;top:0;display:block;border:0;transform-origin:top left;width:100%;height:100%}
 .ov{position:fixed;inset:0;z-index:80;background:rgba(15,23,42,.45);display:grid;place-items:center;padding:20px}
@@ -61,6 +72,7 @@ iframe{position:absolute;left:0;top:0;display:block;border:0;transform-origin:to
   <hr>
   <button type="button" id="b-salir" role="menuitem"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>Cerrar sesión</button>
 </div>
+<div class="aviso-plan" id="aviso-plan" role="status" hidden><span id="ap-txt"></span><div class="acc"><button type="button" class="ir" id="ap-ir"></button><button type="button" class="x" id="ap-x" aria-label="Cerrar el aviso"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div></div>
 <main id="caja"><iframe id="marco" src="__BASE__/app" title="CRM" allow="microphone; clipboard-write"></iframe></main>
 <div class="ov" id="ov-clave" hidden>
   <form class="dlg" id="f-clave" role="dialog" aria-labelledby="t-clave" novalidate>
@@ -136,7 +148,27 @@ window.CRM_MARCO = {
   cuenta: r => { abrir('cuenta', $('m-yo'), r, false); },
   cerrar: () => { if (abierto) cerrarMenus(); },
   sinLeer: () => sinLeer,
+  plan: () => avisoPlan(),
 };
+
+/* ── Aviso del plan, arriba de todo: la prueba gratis (se puede cerrar por esta sesión), el pago pendiente y el plan
+      vencido, que deja el CRM en solo lectura. El botón abre Ajustes → Plan y pagos dentro del CRM. ── */
+async function avisoPlan(){
+  let P;
+  try { P = await api('GET', '/crm/plan'); } catch { return; }
+  const dias = P.diasPrueba ?? 0;
+  const a = P.estado === 'prueba' && P.vigente ? ['', dias === 1 ? 'Te queda 1 día de prueba gratis de Starter.' : `Te quedan ${dias} días de prueba gratis de Starter.`, 'Elegir plan', true]
+    : !P.vigente && P.estado !== 'interno' ? ['vencido', `${P.estado === 'prueba' ? 'Tu prueba gratis terminó.' : 'Tu plan no está activo.'} Puedes ver todo, pero no responder ni hacer cambios.`, P.estado === 'prueba' ? 'Elegir plan' : 'Renovar plan', false]
+    : P.estado === 'pago-pendiente' ? ['pendiente', 'No pudimos cobrar tu tarjeta. Actualízala para no perder el acceso.', 'Ver mi plan', false]
+    : null;
+  let cerrado = false; try { cerrado = sessionStorage.getItem('aviso-plan-prueba') === '1'; } catch { /* sin almacenamiento */ }
+  const caja = $('aviso-plan');
+  if (!a || (a[3] && cerrado)) { caja.hidden = true; return; }
+  caja.className = 'aviso-plan' + (a[0] ? ' ' + a[0] : ''); $('ap-txt').textContent = a[1]; $('ap-ir').textContent = a[2]; $('ap-x').hidden = !a[3]; caja.hidden = false;
+}
+$('ap-ir').addEventListener('click', () => marco.contentWindow.postMessage({tipo: 'crm-aviso', q: 'ir=cfg-plan'}, location.origin));
+$('ap-x').addEventListener('click', () => { try { sessionStorage.setItem('aviso-plan-prueba', '1'); } catch { /* sin almacenamiento */ } $('aviso-plan').hidden = true; });
+avisoPlan();
 
 /* ── Campana ── */
 const HORA = new Intl.DateTimeFormat('es-CO', {day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit'});

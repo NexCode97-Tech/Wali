@@ -37,13 +37,14 @@
     megafono: '<path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1Z"/><path d="M15 9a3 3 0 0 1 0 6"/>',
     candado: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
     carpeta: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/>',
+    tarjeta: '<rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/>',
   };
   // Mis ajustes por data-aj-ver y Ajustes del CRM por data-ir.
   const IC_DE = {
     perfil: IC.persona, disp: IC.reloj, firma: IC.lapiz, qr: IC.rayo, enl: IC.enlace, notif: IC.campana,
     'cfg-canales': IC.chat, 'cfg-llamadas': IC.tel, 'cfg-integraciones': IC.enchufe, 'cfg-conversaciones': IC.check, 'cfg-reparto': IC.equipo,
     'cfg-etapas': IC.kanban, etiquetas: IC.etiqueta, campos: IC.persona, 'cfg-horario': IC.reloj, 'cfg-qr': IC.rayo, plantillas: IC.doc,
-    'cfg-encuesta': IC.estrella, 'cfg-recepcion': IC.luna, flujos: IC.flujo, reglas: IC.flujo, 'cfg-pauta': IC.megafono, 'cfg-datos': IC.candado, 'cfg-archivos': IC.carpeta,
+    'cfg-encuesta': IC.estrella, 'cfg-recepcion': IC.luna, flujos: IC.flujo, reglas: IC.flujo, 'cfg-pauta': IC.megafono, 'cfg-datos': IC.candado, 'cfg-archivos': IC.carpeta, 'cfg-plan': IC.tarjeta,
   };
 
   document.head.insertAdjacentHTML('beforeend', `<style>

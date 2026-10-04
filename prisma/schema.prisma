@@ -305,8 +305,37 @@ model CrmEspacio {
   preferencias   CrmPreferencia[]
   enlaces        CrmEnlace[]
   clics          CrmClic[]
+  pagos          CrmPago[]
 
   @@map("crm_espacios")
+}
+
+/// Un cobro del plan del CRM, tal como lo avisó Creem: pagado, rechazado o reembolsado. Es el historial de
+/// Ajustes → Plan y pagos y de él sale el recibo en PDF. Los montos van en centavos de la moneda del cobro.
+model CrmPago {
+  id         String     @id @default(cuid())
+  espacioId  String     @map("espacio_id")
+  espacio    CrmEspacio @relation(fields: [espacioId], references: [id], onDelete: Cascade)
+  /// Consecutivo del recibo (NX-10001, NX-10002…), único en todo el CRM.
+  numero     Int        @unique @default(autoincrement())
+  /// La transacción de Creem (tran_…); en un cobro rechazado, la suscripción y el periodo.
+  creemId    String     @unique @map("creem_id")
+  plan       String
+  periodo    String
+  /// pagado, rechazado o reembolsado.
+  estado     String
+  subtotal   Int
+  impuestos  Int        @default(0)
+  total      Int
+  reembolso  Int        @default(0)
+  moneda     String     @default("USD")
+  desde      DateTime?
+  hasta      DateTime?
+  fecha      DateTime
+  createdAt  DateTime   @default(now()) @map("created_at")
+
+  @@index([espacioId, fecha])
+  @@map("crm_pagos")
 }
 
 /// Enlace de pauta. Lleva a WhatsApp

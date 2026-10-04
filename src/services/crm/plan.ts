@@ -30,11 +30,11 @@ function productos(): Record<string, string> {
 }
 export const pagosListos = () => !!(process.env.CREEM_API_KEY && Object.keys(productos()).length)
 
-async function creem<T>(ruta: string, cuerpo: unknown): Promise<T> {
+async function creem<T>(ruta: string, cuerpo?: unknown): Promise<T> {
   const r = await fetch(`${API()}/v1${ruta}`, {
-    method: 'POST',
-    headers: { 'x-api-key': process.env.CREEM_API_KEY ?? '', 'Content-Type': 'application/json' },
-    body: JSON.stringify(cuerpo),
+    method: cuerpo === undefined ? 'GET' : 'POST',
+    headers: { 'x-api-key': process.env.CREEM_API_KEY ?? '', ...(cuerpo === undefined ? {} : { 'Content-Type': 'application/json' }) },
+    body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
     signal: AbortSignal.timeout(15_000),
   })
   const texto = await r.text()
@@ -43,6 +43,27 @@ async function creem<T>(ruta: string, cuerpo: unknown): Promise<T> {
     throw new AppError('No se pudo conectar con la pasarela de pagos. Intenta de nuevo en un momento.', 502)
   }
   return JSON.parse(texto) as T
+}
+
+// ─── Los planes de la página de precios ─────────────────────────────────────
+
+/**
+ * Lo que trae cada plan, tal como lo dice nexcode97.com/precios (web/lib/precios-crm.ts, servido en
+ * /api/planes-crm). Una sola fuente: si cambia la página de precios, cambia la pantalla del CRM. Se guarda una
+ * hora; si el sitio no responde, se usa lo último que se trajo y, sin nada, la pantalla muestra solo nombre y precio.
+ */
+const SITIO = () => (process.env.SITIO_URL || 'https://www.nexcode97.com').replace(/\/+$/, '')
+let planesCache: { en: number; planes: unknown[] } | null = null
+export async function planesDelSitio(): Promise<unknown[]> {
+  if (planesCache && Date.now() - planesCache.en < 3_600_000) return planesCache.planes
+  try {
+    const r = await fetch(`${SITIO()}/api/planes-crm`, { signal: AbortSignal.timeout(5_000) })
+    const j = (await r.json()) as { planes?: unknown }
+    if (r.ok && Array.isArray(j.planes)) planesCache = { en: Date.now(), planes: j.planes }
+  } catch (e) {
+    logger.warn({ evento: 'PLANES_SITIO_FALLO', err: (e as Error).message })
+  }
+  return planesCache?.planes ?? []
 }
 
 // ─── Estado del plan ────────────────────────────────────────────────────────
@@ -59,6 +80,8 @@ export interface EstadoPlan {
   vigente: boolean
   limites: { usuarios: number | null; agentesIA: number | null }
   pagos: boolean
+  /** Ya pagó alguna vez: tiene portal de Creem (facturas, tarjeta y cancelación). */
+  portal: boolean
 }
 
 const esPlan = (v: string): v is Plan => (PLANES as string[]).includes(v)
@@ -82,6 +105,7 @@ export async function estadoPlan(espacioId: string): Promise<EstadoPlan> {
     vigente,
     limites: { usuarios: Number.isFinite(lim.usuarios) ? lim.usuarios : null, agentesIA: Number.isFinite(lim.agentesIA) ? lim.agentesIA : null },
     pagos: pagosListos(),
+    portal: !!e.creemCliente,
   }
 }
 
@@ -153,11 +177,79 @@ const ESTADOS: Record<string, string> = {
   'subscription.canceled': 'cancelado', 'subscription.expired': 'vencido', 'subscription.scheduled_cancel': '',
 }
 
+const obj = (v: unknown): Obj => (v && typeof v === 'object' && !Array.isArray(v) ? v as Obj : {})
+const entero = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? Math.round(v) : null)
+/** Creem manda fechas como texto ISO o como milisegundos. */
+function fechaDe(v: unknown): Date | null {
+  const d = typeof v === 'number' ? new Date(v) : typeof v === 'string' && v ? new Date(v) : null
+  return d && !Number.isNaN(d.getTime()) ? d : null
+}
+
+/** El espacio de un aviso: la metadata del pago o, si no viene, la suscripción que ya conocemos. */
+async function espacioDeAviso(meta: Obj, suscripcion: string): Promise<string> {
+  const espacio = txt(meta.espacio)
+  if (espacio || !suscripcion) return espacio
+  return (await prisma.crmEspacio.findFirst({ where: { creemSuscripcion: suscripcion }, select: { id: true } }))?.id ?? ''
+}
+
+/** La transacción de Creem con sus montos e impuestos. Si la API no responde, null: el cobro se guarda con el precio. */
+async function transaccion(id: string): Promise<Obj | null> {
+  if (!id) return null
+  try {
+    const r = await creem<Obj>(`/transactions?transaction_id=${encodeURIComponent(id)}`)
+    return Array.isArray(r.items) ? obj(r.items[0]) : r
+  } catch { return null }
+}
+
+/**
+ * Guarda en el historial el cobro de una suscripción: pagado (subscription.paid, con su transacción) o rechazado
+ * (subscription.past_due). Idempotente por la transacción: si Creem repite el aviso, no se duplica.
+ */
+async function registrarCobro(espacioId: string, sub: Obj, estado: 'pagado' | 'rechazado', producto: { plan: Plan; periodo: Periodo } | null) {
+  const e = producto ? null : await prisma.crmEspacio.findUnique({ where: { id: espacioId }, select: { plan: true, periodo: true } })
+  const plan = producto?.plan ?? e?.plan ?? 'starter', periodo = producto?.periodo ?? e?.periodo ?? 'mensual'
+  const prod = obj(sub.product), precio = entero(prod.price) ?? 0
+  const tr = estado === 'pagado' ? await transaccion(txt(sub.last_transaction_id)) : null
+  const subtotal = entero(tr?.amount) ?? precio
+  const total = entero(tr?.amount_paid) ?? subtotal
+  const creemId = estado === 'pagado'
+    ? txt(sub.last_transaction_id) || `${txt(sub.id)}:${txt(sub.current_period_start_date)}`
+    : `${txt(sub.id)}:${txt(sub.next_transaction_date) || txt(sub.current_period_end_date)}:rechazado`
+  const datos = {
+    plan, periodo, estado, subtotal, total,
+    impuestos: entero(tr?.tax_amount) ?? Math.max(0, total - subtotal),
+    moneda: (txt(tr?.currency) || txt(prod.currency) || 'USD').toUpperCase(),
+    desde: estado === 'pagado' ? fechaDe(tr?.period_start) ?? fechaDe(sub.current_period_start_date) : null,
+    hasta: estado === 'pagado' ? fechaDe(tr?.period_end) ?? fechaDe(sub.current_period_end_date) : null,
+    fecha: fechaDe(tr?.created_at) ?? fechaDe(sub.last_transaction_date) ?? new Date(),
+  }
+  if (estado === 'rechazado') datos.fecha = new Date()
+  await prisma.crmPago.upsert({ where: { creemId }, create: { espacioId, creemId, ...datos }, update: datos })
+}
+
+/** Un reembolso (refund.created): el cobro queda reembolsado con lo devuelto. Si no estaba en el historial, se crea. */
+async function registrarReembolso(o: Obj) {
+  const tr = obj(o.transaction), sub = obj(o.subscription), creemId = txt(tr.id)
+  if (!creemId) return
+  const devuelto = entero(tr.refunded_amount) ?? entero(o.refund_amount) ?? 0
+  const ya = await prisma.crmPago.findUnique({ where: { creemId } })
+  if (ya) { await prisma.crmPago.update({ where: { creemId }, data: { estado: 'reembolsado', reembolso: devuelto } }); return }
+  const espacioId = await espacioDeAviso(obj(sub.metadata), txt(sub.id))
+  if (!espacioId) { logger.warn({ evento: 'CREEM_REEMBOLSO_SIN_ESPACIO', creemId }); return }
+  const producto = planDeProducto(idDe(sub.product)), subtotal = entero(tr.amount) ?? 0, total = entero(tr.amount_paid) ?? subtotal
+  await prisma.crmPago.create({ data: {
+    espacioId, creemId, plan: producto?.plan ?? 'starter', periodo: producto?.periodo ?? 'mensual', estado: 'reembolsado',
+    subtotal, total, impuestos: entero(tr.tax_amount) ?? 0, reembolso: devuelto, moneda: (txt(tr.currency) || 'USD').toUpperCase(),
+    desde: fechaDe(tr.period_start), hasta: fechaDe(tr.period_end), fecha: fechaDe(tr.created_at) ?? new Date(),
+  } })
+}
+
 /** Aplica un aviso de Creem al espacio. Idempotente: guarda el estado, no suma ni resta nada. */
 export async function procesarAvisoCreem(evento: Obj): Promise<void> {
   const tipo = txt(evento.eventType)
   const o = (evento.object ?? {}) as Obj
   const meta = (o.metadata ?? {}) as Obj
+  if (tipo === 'refund.created') { await registrarReembolso(o); return }
   if (tipo === 'checkout.completed') {
     // La suscripción llega en sus propios avisos; aquí solo se anota el cliente de Creem.
     const espacio = txt(meta.espacio), cliente = idDe(o.customer)
@@ -166,9 +258,7 @@ export async function procesarAvisoCreem(evento: Obj): Promise<void> {
   }
   if (!(tipo in ESTADOS)) { logger.info({ evento: 'CREEM_AVISO_IGNORADO', tipo }); return }
   const suscripcion = txt(o.id)
-  // El espacio sale de la metadata del pago; si no viene, de la suscripción que ya conocemos.
-  let espacio = txt(meta.espacio)
-  if (!espacio && suscripcion) espacio = (await prisma.crmEspacio.findFirst({ where: { creemSuscripcion: suscripcion }, select: { id: true } }))?.id ?? ''
+  const espacio = await espacioDeAviso(meta, suscripcion)
   if (!espacio) { logger.warn({ evento: 'CREEM_AVISO_SIN_ESPACIO', tipo, suscripcion }); return }
   const producto = planDeProducto(idDe(o.product))
   const fin = txt(o.current_period_end_date)
@@ -180,6 +270,31 @@ export async function procesarAvisoCreem(evento: Obj): Promise<void> {
   if (estado) data.estadoPlan = estado
   if (tipo === 'subscription.scheduled_cancel') data.cancelaAlFinal = true
   if (tipo === 'subscription.active' || tipo === 'subscription.paid') data.cancelaAlFinal = false
-  await prisma.crmEspacio.updateMany({ where: { id: espacio, NOT: { estadoPlan: 'interno' } }, data })
+  const { count } = await prisma.crmEspacio.updateMany({ where: { id: espacio, NOT: { estadoPlan: 'interno' } }, data })
+  if (count && tipo === 'subscription.paid') await registrarCobro(espacio, o, 'pagado', producto)
+  if (count && tipo === 'subscription.past_due') await registrarCobro(espacio, o, 'rechazado', producto)
   logger.info({ evento: 'CREEM_AVISO', tipo, espacio, plan: producto?.plan, estado })
+}
+
+// ─── Historial y recibos ────────────────────────────────────────────────────
+
+export interface PagoHistorial {
+  numero: number; fecha: string; plan: string; periodo: string; estado: string
+  desde: string | null; hasta: string | null; subtotal: number; impuestos: number; total: number; reembolso: number; moneda: string
+}
+
+/** Los cobros del espacio, del más reciente al más viejo. */
+export async function historialPagos(espacioId: string, limite = 24): Promise<PagoHistorial[]> {
+  const filas = await prisma.crmPago.findMany({ where: { espacioId }, orderBy: { fecha: 'desc' }, take: limite })
+  return filas.map(p => ({
+    numero: p.numero, fecha: p.fecha.toISOString(), plan: p.plan, periodo: p.periodo, estado: p.estado,
+    desde: p.desde?.toISOString() ?? null, hasta: p.hasta?.toISOString() ?? null, subtotal: p.subtotal, impuestos: p.impuestos, total: p.total, reembolso: p.reembolso, moneda: p.moneda,
+  }))
+}
+
+/** Un cobro del espacio para su recibo. Solo los pagados o reembolsados tienen recibo. */
+export async function pagoDeEspacio(espacioId: string, numero: number) {
+  const p = await prisma.crmPago.findFirst({ where: { espacioId, numero, estado: { in: ['pagado', 'reembolsado'] } } })
+  if (!p) throw new ValidationError('Ese recibo no existe.')
+  return p
 }

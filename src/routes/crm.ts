@@ -15,12 +15,14 @@ import * as ajustes from '../controllers/crm/ajustes.controller'
 import { catalogo } from '../controllers/crm/catalogo.controller'
 import { informes } from '../controllers/crm/informes.controller'
 import { menciones } from '../controllers/crm/menciones.controller'
-import { conEspacio } from '../services/crm/espacio'
+import { conEspacio, usuariosDeEspacio } from '../services/crm/espacio'
 import { accesoCrm, alcanceDe } from '../services/crm/alcance'
 import { borrarEnlace, crearEnlace, editarEnlace, listarEnlaces } from '../services/crm/enlaces'
 import { ApiResponse } from '../utils/response'
 import { z } from 'zod'
-import { estadoPlan, pagarPlan, portalPagos, PLANES, type Plan } from '../services/crm/plan'
+import { estadoPlan, historialPagos, pagarPlan, pagoDeEspacio, planesDelSitio, portalPagos, PLANES, type Plan } from '../services/crm/plan'
+import { nombreRecibo, reciboPdf } from '../services/crm/recibo'
+import { leerAjuste } from '../services/crm/ajustes'
 import { urlPublica } from './acceso'
 import { prisma } from '../config/prisma'
 
@@ -36,12 +38,35 @@ const router = Router()
 router.use(authenticate, accesoCrm, conEspacio)
 
 // Plan y pagos (Creem). Van antes de la guarda: con el plan vencido hay que poder ver el plan y pagar.
-router.get('/plan', asyncHandler(async (req: Request, res: Response) => ApiResponse.success(res, await estadoPlan(req.espacioId!))))
+router.get('/plan', asyncHandler(async (req: Request, res: Response) => {
+  const [estado, historial, catalogo, usuarios, agentes] = await Promise.all([
+    estadoPlan(req.espacioId!), historialPagos(req.espacioId!), planesDelSitio(),
+    usuariosDeEspacio(req.espacioId!), leerAjuste<unknown>('agentes'),
+  ])
+  return ApiResponse.success(res, {
+    ...estado, historial, catalogo,
+    uso: { usuarios: usuarios.length, agentesIA: Array.isArray(agentes) ? agentes.length : 0 },
+    administra: req.userRole === 'ADMIN' && !req.soloLectura,
+  })
+}))
+router.get('/plan/recibo/:numero', asyncHandler(async (req: Request, res: Response) => {
+  if (req.userRole !== 'ADMIN') throw new ForbiddenError('Solo el administrador del espacio puede descargar los recibos.')
+  const p = await pagoDeEspacio(req.espacioId!, Number(req.params.numero) || 0)
+  const [e, u] = await Promise.all([
+    prisma.crmEspacio.findUnique({ where: { id: req.espacioId! }, select: { nombre: true } }),
+    prisma.user.findUnique({ where: { id: req.userId }, select: { email: true } }),
+  ])
+  res.setHeader('Content-Type', 'application/pdf')
+  res.setHeader('Content-Disposition', `attachment; filename="${nombreRecibo(p)}"`)
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition')
+  res.setHeader('Cache-Control', 'private, no-store')
+  res.send(reciboPdf(p, e?.nombre ?? 'Tu empresa', u?.email ?? ''))
+}))
 router.post('/plan/pagar', asyncHandler(async (req: Request, res: Response) => {
   if (req.userRole !== 'ADMIN' || req.soloLectura) throw new ForbiddenError('Solo el administrador del espacio puede cambiar el plan.')
   const d = z.object({ plan: z.enum(PLANES as [Plan, ...Plan[]]), periodo: z.enum(['mensual', 'anual']) }).parse(req.body)
   const u = await prisma.user.findUnique({ where: { id: req.userId }, select: { email: true } })
-  const volver = `${urlPublica() ?? ''}/?pago=ok`
+  const volver = `${urlPublica() ?? ''}/?ir=cfg-plan&pago=ok`
   return ApiResponse.success(res, await pagarPlan(req.espacioId!, d.plan, d.periodo, u?.email ?? '', volver))
 }))
 router.post('/plan/portal', asyncHandler(async (req: Request, res: Response) => {

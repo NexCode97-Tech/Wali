@@ -800,7 +800,7 @@ async function crmPlantillas(){
 /* Avisos de la campana de la plataforma (services/notificaciones.ts): ?conv=<id> abre la conversación y ?ir=<página>
    una página del CRM. Al cargar se lee la dirección; con el CRM ya abierto, la página de la plataforma (crm/page.tsx)
    lo manda por postMessage, porque tocar el aviso cambia la dirección sin recargar el marco. */
-const IR_AVISO = ['difusiones', 'plantillas', 'cfg-canales'];
+const IR_AVISO = ['difusiones', 'plantillas', 'cfg-canales', 'cfg-plan'];
 let crmCargado = false;
 function abrirDesdeAviso(q, avisarSiNo){
   const id = +q.get('conv'), ir = q.get('ir') || '';
@@ -812,6 +812,8 @@ function abrirDesdeAviso(q, avisarSiNo){
     document.getElementById('est-l').textContent = {abiertas:'Abiertas', pendientes:'Pendientes', finalizadas:'Finalizadas'}[st.est] || 'Abiertas';
     return true;
   }
+  // Al volver de pagar en Creem: /?ir=cfg-plan&pago=ok (70-plan.js espera a que el plan quede activo).
+  if (ir === 'cfg-plan' && q.get('pago') === 'ok') st.pagoOk = true;
   if (IR_AVISO.includes(ir)) { st.pagina = ir; st.sel = null; return true; }
   return false;
 }
