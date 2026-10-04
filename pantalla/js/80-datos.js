@@ -814,6 +814,8 @@ function abrirDesdeAviso(q, avisarSiNo){
   }
   // Al volver de pagar en Creem: /?ir=cfg-plan&pago=ok (70-plan.js espera a que el plan quede activo).
   if (ir === 'cfg-plan' && q.get('pago') === 'ok') st.pagoOk = true;
+  // Viene de la página de precios con un plan elegido: 70-plan.js lo lleva al pago.
+  if (['starter', 'growth', 'business'].includes(q.get('pagar'))) { try { sessionStorage.setItem('crm-pagar', JSON.stringify({plan: q.get('pagar'), periodo: q.get('periodo') === 'anual' ? 'anual' : 'mensual'})); } catch { /* sin almacenamiento */ } }
   if (IR_AVISO.includes(ir)) { st.pagina = ir; st.sel = null; return true; }
   return false;
 }

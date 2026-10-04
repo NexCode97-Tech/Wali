@@ -85,6 +85,10 @@ input[type="password"]::-ms-reveal,input[type="password"]::-ms-clear{display:non
 .listo b{color:var(--texto)}
 .con-google{margin:0;display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--linea);border-radius:10px;background:var(--campo);font-size:13px;color:var(--texto-2)}
 .con-google svg{width:16px;height:16px;flex:none}
+.plan-elegido{margin:0 0 4px;display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid rgba(255,242,0,.35);border-radius:10px;background:rgba(255,242,0,.07);font-size:13px;color:var(--texto-2);line-height:1.4}
+.plan-elegido[hidden]{display:none}
+.plan-elegido b{color:var(--amarillo)}
+.plan-elegido svg{width:18px;height:18px;flex:none;color:var(--amarillo);fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .con-google b{color:var(--texto);overflow:hidden;text-overflow:ellipsis}
 .terminos{margin:0;font-size:12px;color:var(--texto-3);text-align:center;line-height:1.5}
 .terminos a{color:var(--texto-2);text-decoration:underline;text-underline-offset:2px}
@@ -184,6 +188,7 @@ input[type="password"]::-ms-reveal,input[type="password"]::-ms-clear{display:non
         <div class="cab"><h1>Crea tu cuenta</h1><p id="re-sub">Tu empresa queda con su propio espacio; después invitas a tu equipo</p></div>
         <form id="f-registro" novalidate>
           <div class="error" id="e-registro" role="alert"><svg class="i"><use href="#i-alerta"/></svg><span></span></div>
+          <p class="plan-elegido" id="re-plan" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/></svg><span>Plan <b id="re-plan-n"></b>. Al crear tu cuenta pasas al pago seguro.</span></p>
           <div class="campo"><label for="re-nombre">Nombre y apellido</label><div class="entrada"><input id="re-nombre" autocomplete="name" placeholder="Ana Pérez"></div></div>
           <div class="campo"><label for="re-empresa">Empresa</label><div class="entrada"><input id="re-empresa" autocomplete="organization" placeholder="Moda Mar"></div></div>
           <p class="con-google" id="re-google" hidden><svg aria-hidden="true"><use href="#g"/></svg>Con Google: <b id="re-google-correo"></b></p>
@@ -680,11 +685,17 @@ const ERRORES = {
 
 (async () => {
   // Lo que trae la dirección (el enlace del correo, el regreso de Google) se lee una vez y se quita de la barra.
-  const q = new URLSearchParams(location.search), token = q.get('clave'), err = q.get('error'), google = q.get('google');
-  ['clave', 'error', 'google'].forEach(k => q.delete(k));
+  const q = new URLSearchParams(location.search), token = q.get('clave'), err = q.get('error'), google = q.get('google'), registro = q.has('registro');
+  ['clave', 'error', 'google', 'registro'].forEach(k => q.delete(k));
+  // Viene de nexcode97.com/precios con un plan: se guarda en la pestaña (sobrevive a la ida y vuelta de Google) y,
+  // al entrar, el CRM abre Plan y pagos y lleva al pago (70-plan.js).
+  const PLANES = {starter: 'Starter', growth: 'Growth', business: 'Business'};
+  if (PLANES[q.get('pagar')]) { try { sessionStorage.setItem('crm-pagar', JSON.stringify({plan: q.get('pagar'), periodo: q.get('periodo') === 'anual' ? 'anual' : 'mensual'})); } catch { /* sin almacenamiento */ } }
+  let elegido = null; try { elegido = JSON.parse(sessionStorage.getItem('crm-pagar') || 'null'); } catch { /* sin almacenamiento */ }
+  if (elegido && PLANES[elegido.plan]) { $('re-plan-n').textContent = `${PLANES[elegido.plan]} ${elegido.periodo === 'anual' ? 'anual' : 'mensual'}`; $('re-plan').hidden = false; }
   DESTINO = q.toString() ? '?' + q : '';
   history.replaceState(null, '', location.pathname + DESTINO);
-  ir('entrar');
+  ir(registro ? 'registro' : 'entrar');
   api('opciones').then(o => {
     OPC = o;
     if (!o.registro) document.querySelectorAll('#v-entrar .alterna').forEach(x => { x.hidden = true; });

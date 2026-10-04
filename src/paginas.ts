@@ -67,7 +67,11 @@ function html(res: Response, cuerpo: string) {
 const router = Router()
 
 router.get('/entrar', asyncHandler(async (req: Request, res: Response) => {
-  if (await sesionDePagina(req)) return res.redirect(BASE + '/')
+  // Con sesión ya abierta se va al CRM; si viene de la página de precios con un plan, el plan sigue en la dirección.
+  if (await sesionDePagina(req)) {
+    const plan = typeof req.query.pagar === 'string' && /^(starter|growth|business)$/.test(req.query.pagar) ? req.query.pagar : ''
+    return res.redirect(BASE + '/' + (plan ? `?pagar=${plan}&periodo=${req.query.periodo === 'anual' ? 'anual' : 'mensual'}` : ''))
+  }
   const logo = LOGO ? `<img src="${escapar(LOGO)}" alt="">` : ''
   html(res, leer('paginas/entrar.html').replace('__LOGO__', () => logo).replace(/__MARCA__/g, escapar(MARCA())))
 }))

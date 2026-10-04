@@ -403,4 +403,20 @@ render = function(){
   if (st.pagina !== 'cfg-plan') st.pagoOk = false;
   renderPl();
 };
-crmListo.then(() => { if (st.pagoOk) plEsperarActivo(''); });
+// Al cargar: si vuelve de pagar, se espera a Creem; si eligió un plan en nexcode97.com/precios (lo guardan
+// entrar.html o abrirDesdeAviso en la pestaña), se abre Plan y pagos y se lleva al pago de ese plan, una sola vez.
+crmListo.then(() => {
+  let pend = null;
+  try { pend = JSON.parse(sessionStorage.getItem('crm-pagar') || 'null'); sessionStorage.removeItem('crm-pagar'); } catch { /* sin almacenamiento */ }
+  if (st.pagoOk) { plEsperarActivo(''); return; }
+  if (!pend || !PL_NOMBRE[pend.plan]) return;
+  const periodo = pend.periodo === 'anual' ? 'anual' : 'mensual', nombre = PL_NOMBRE[pend.plan];
+  st.pagina = 'cfg-plan'; st.sel = null; st.plPeriodo = periodo; render();
+  cargarPlan().then(P => {
+    st.plPeriodo = periodo; if (st.pagina === 'cfg-plan') render();
+    if (P.estado === 'interno') { toast('Tu espacio es interno: no necesita plan'); return; }
+    if (!P.administra) { toast('Solo el administrador del espacio puede pagar el plan'); return; }
+    if (P.vigente && ['activo', 'pago-pendiente'].includes(P.estado) && !P.cancelaAlFinal && P.plan === pend.plan && P.periodo === periodo) { toast(`Ya tienes el plan ${nombre}`); return; }
+    plPagar(pend.plan);
+  }, err => toast(err.message));
+});
