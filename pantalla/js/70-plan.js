@@ -49,7 +49,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .pl-switch em{font-style:normal;font-size:11.5px;font-weight:700;color:var(--green-ink);background:var(--green-soft);padding:2px 8px;border-radius:999px}
 .pl-planes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .pl-plan{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:12px;min-width:0}
-.pl-plan.sel{border-color:#0b0b10;box-shadow:0 0 0 1px #0b0b10}
+.pl-plan.pl-sel{border-color:#0b0b10;box-shadow:0 0 0 1px #0b0b10}
 .pl-tope{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .pl-tope h4{margin:0;font-size:17px;font-weight:700;color:var(--ink)}
 .pl-chip{font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px;background:#FFF200;color:#0b0b10}
@@ -95,7 +95,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .pl-pie svg{width:18px;height:18px;flex:none;color:var(--green-ink);margin-top:1px}
 .pl-pie b{color:var(--ink)}
 .pl-carga{padding:60px 16px;text-align:center;color:var(--ink3)}
-@media (max-width:900px){.pl-planes{grid-template-columns:1fr}.pl-medidas{grid-template-columns:1fr}.pl-medida + .pl-medida{border-left:0;border-top:1px solid var(--line)}.pl-tabla .opc{display:none}.pl-tabla th,.pl-tabla td{padding-left:12px;padding-right:12px}}
+@media (max-width:900px){.pl-planes{grid-template-columns:1fr}.pl-medidas{grid-template-columns:1fr}.pl-medida + .pl-medida{border-left:0;border-top:1px solid var(--line)}.pl-tabla .pl-opc{display:none}.pl-tabla th,.pl-tabla td{padding-left:12px;padding-right:12px}}
 @media (prefers-reduced-motion:reduce){.pl-barra span{animation:none}}
 
 /* Modal del datáfono: imprime el recibo y al terminar lo descarga. */
@@ -151,7 +151,13 @@ const PL_RESPALDO = [
   {id:'growth', nombre:'Growth', mensual:259, anual:'2.490', destacado:true, ficha:[], incluye:[]},
   {id:'business', nombre:'Business', mensual:459, anual:'4.390', ficha:[], incluye:[]},
 ];
-const plFecha = (iso, larga) => iso ? new Date(iso).toLocaleDateString('es-CO', larga ? {day:'numeric', month:'long', year:'numeric', timeZone:'America/Bogota'} : {day:'numeric', month:'short', year:'numeric', timeZone:'America/Bogota'}).replace(/\./g, '') : '';
+// «4 oct 2026» o, larga, «4 de octubre de 2026», en la hora de Colombia (UTC-5, sin cambio de hora).
+const PL_MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const plFecha = (iso, larga) => {
+  if (!iso) return '';
+  const b = new Date(new Date(iso).getTime() - 5 * 3600e3), d = b.getUTCDate(), m = PL_MESES[b.getUTCMonth()], y = b.getUTCFullYear();
+  return larga ? `${d} de ${m} de ${y}` : `${d} ${m.slice(0, 3)} ${y}`;
+};
 const plDinero = (centavos, moneda = 'USD') => `${moneda} ${(centavos / 100).toLocaleString('es-CO', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
 const plCatalogo = () => (PLAN && Array.isArray(PLAN.catalogo) && PLAN.catalogo.length ? PLAN.catalogo : PL_RESPALDO);
 const plDe = id => plCatalogo().find(p => p.id === id) || PL_RESPALDO.find(p => p.id === id) || PL_RESPALDO[0];
@@ -211,7 +217,7 @@ function plTarjeta(p, P){
   const actual = p.id === P.plan && P.estado !== 'prueba';
   const txt = mio ? 'Tu plan actual' : pagado && !noRenueva ? `Cambiar a ${p.nombre}` : actual ? `Renovar ${p.nombre}` : `Elegir ${p.nombre}`;
   const ficha = (p.ficha || []).length ? `<dl class="pl-ficha">${p.ficha.map(f => `<div><dt>${esc(f.k)}</dt><dd class="${f.tono === 'si' ? 'si' : f.tono === 'no' ? 'no' : ''}">${esc(f.v)}</dd></div>`).join('')}</dl>` : '';
-  return `<article class="pl-plan${actual || (P.estado === 'prueba' && p.destacado) ? ' sel' : ''}">
+  return `<article class="pl-plan${actual || (P.estado === 'prueba' && p.destacado) ? ' pl-sel' : ''}">
     <div class="pl-tope"><h4>${esc(p.nombre)}</h4>${actual ? '<span class="pl-chip gris">Tu plan</span>' : p.destacado ? '<span class="pl-chip">Más elegido</span>' : ''}</div>
     <div class="pl-precio"><b>USD ${esc(anual ? p.anual : String(p.mensual))}</b><span>${anual ? 'al año' : 'al mes'}</span></div>
     <p class="pl-eq">${anual && p.equivaleMes ? `Equivale a ${esc(p.equivaleMes)} al mes · <b>${esc(p.ahorro || '')}</b>` : ''}</p>
@@ -224,10 +230,10 @@ function plTarjeta(p, P){
 function plHistorial(P){
   const H = P.historial || [];
   if (!H.length) return '<p class="pl-vacio">Todavía no tienes pagos. Cuando elijas un plan, cada cobro aparecerá aquí con su recibo.</p>';
-  return `<table class="pl-tabla"><thead><tr><th>Fecha</th><th>Plan</th><th class="opc">Periodo</th><th class="der">Monto</th><th>Estado</th><th>Recibo</th></tr></thead><tbody>${H.map(h => `<tr>
+  return `<table class="pl-tabla"><thead><tr><th>Fecha</th><th>Plan</th><th class="pl-opc">Periodo</th><th class="der">Monto</th><th>Estado</th><th>Recibo</th></tr></thead><tbody>${H.map(h => `<tr>
     <td>${esc(plFecha(h.fecha))}</td>
     <td>${esc(PL_NOMBRE[h.plan] || h.plan)} · ${h.periodo === 'anual' ? 'anual' : 'mensual'}</td>
-    <td class="opc gris">${h.desde && h.hasta ? `${esc(plFecha(h.desde))} – ${esc(plFecha(h.hasta))}` : h.estado === 'rechazado' ? 'Cobro rechazado' : '—'}</td>
+    <td class="pl-opc gris">${h.desde && h.hasta ? `${esc(plFecha(h.desde))} – ${esc(plFecha(h.hasta))}` : h.estado === 'rechazado' ? 'Cobro rechazado' : '—'}</td>
     <td class="der">${esc(plDinero(h.total, h.moneda))}</td>
     <td><span class="pl-pago ${esc(h.estado)}"><i></i>${esc({pagado:'Pagado', rechazado:'Rechazado', reembolsado:'Reembolsado'}[h.estado] || h.estado)}</span></td>
     <td>${h.estado === 'rechazado' || !P.administra ? '<span class="gris">—</span>' : `<button type="button" class="pl-desc" data-pl-recibo="${+h.numero}">${I('download')}Descargar</button>`}</td></tr>`).join('')}</tbody></table>`;
