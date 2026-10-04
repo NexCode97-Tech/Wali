@@ -33,6 +33,10 @@ svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 .marca:empty{display:none}
 .marca img{width:52px;height:52px;border-radius:50%}
 .caja{width:100%;max-width:360px}
+/* Regreso al sitio, arriba a la izquierda. */
+.al-sitio{position:absolute;top:24px;left:28px;display:inline-flex;align-items:center;gap:6px;padding:8px 12px 8px 8px;border-radius:999px;border:1px solid var(--linea);font-size:13px;font-weight:600;color:var(--texto-2);text-decoration:none;transition:color .15s,border-color .15s,background .15s}
+.al-sitio:hover{color:var(--texto);border-color:var(--linea-2);background:var(--campo)}
+@media (max-width:860px){.al-sitio{top:16px;left:16px}}
 .vista[hidden]{display:none}
 .cab{text-align:center;margin-bottom:28px}
 .cab h1{margin:0;font-size:24px;font-weight:700;letter-spacing:-.02em;text-wrap:balance}
@@ -139,7 +143,7 @@ input[type="password"]::-ms-reveal,input[type="password"]::-ms-clear{display:non
 
 .toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:var(--texto);color:#0a0a0d;padding:9px 16px;border-radius:999px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:opacity .2s;z-index:11}
 .toast.ver{opacity:1}
-@media (max-width:860px){.pantalla{grid-template-columns:1fr}.der{display:none}.izq{padding:48px 16px}}
+@media (max-width:860px){.pantalla{grid-template-columns:1fr}.der{display:none}.izq{padding:76px 16px 48px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -156,6 +160,7 @@ input[type="password"]::-ms-reveal,input[type="password"]::-ms-clear{display:non
 
 <div class="pantalla">
   <section class="izq">
+    <a class="al-sitio" href="/"><svg class="i"><use href="#i-izq"/></svg>Volver a nexcode97.com</a>
     <div class="caja">
       <div class="marca">__LOGO__</div>
 
