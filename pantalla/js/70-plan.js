@@ -152,8 +152,8 @@ const PL_SOPORTE = 'nexcode97@gmail.com';
 // Si el sitio no respondió, la pantalla muestra al menos el nombre y el precio de cada plan.
 const PL_RESPALDO = [
   {id:'starter', nombre:'Starter', mensual:99, anual:'950', ficha:[], incluye:[]},
-  {id:'growth', nombre:'Growth', mensual:259, anual:'2.490', destacado:true, ficha:[], incluye:[]},
-  {id:'business', nombre:'Business', mensual:459, anual:'4.390', ficha:[], incluye:[]},
+  {id:'growth', nombre:'Growth', mensual:179, anual:'1.718', destacado:true, ficha:[], incluye:[]},
+  {id:'business', nombre:'Business', mensual:299, anual:'2.870', ficha:[], incluye:[]},
 ];
 // «4 oct 2026» o, larga, «4 de octubre de 2026», en la hora de Colombia (UTC-5, sin cambio de hora).
 const PL_MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
