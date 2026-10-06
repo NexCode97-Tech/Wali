@@ -99,74 +99,266 @@ function ajLinea(id, eq = 'Ventas'){
 }
 const horaCfg = s => { const m = String(s || '').match(/^(\d{1,2}):(\d{2})$/); return m ? fmtMin(+m[1] * 60 + +m[2]) : String(s || ''); };
 
-/* Cuentas de Meta conectadas (26-sep): cómo se conectó cada una, si Meta ya manda los avisos, revisar y desconectar */
+/* ── Líneas de WhatsApp (maqueta aprobada el 5-oct, «Líneas de WhatsApp» v7): resumen de tres datos, las líneas en
+   grilla de 2 (filas de ícono, título, explicación y control), las cuentas de Meta conectadas, grabaciones y el botón
+   «Conectar con Facebook» de la plataforma. El agente IA de noche se maneja en Atención de noche, no aquí. ── */
+document.head.insertAdjacentHTML('beforeend', `<style>
+.ln{display:grid;gap:22px}
+.ln-cab{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.ln-cab > div{flex:1 1 420px;min-width:0}
+.ln-cab h2{margin:0}
+.ln-cab .sub{margin:4px 0 0}
+.ln-conectar{height:38px;padding:0 16px;border-radius:10px;background:#FFF200;color:#0b0b10;font-weight:600;font-size:13.5px;display:inline-flex;align-items:center;gap:8px;border:0;cursor:pointer;transition:background .15s}
+.ln-conectar:hover{background:#e6d900}
+.ln-conectar svg{width:16px;height:16px;transition:transform .35s cubic-bezier(.22,1,.36,1)}
+.ln-conectar:hover svg{transform:rotate(90deg)}
+.ln-res{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.ln-r{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:#fff;min-width:0}
+.ln-r .ic{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;flex:none}
+.ln-r .ic svg{width:21px;height:21px;display:block}
+.ln-r .ic.wa{background:#25D366;color:#fff;border-radius:11px}
+.ln-r .ic.meta{background:none}
+.ln-r .ic.meta svg{width:34px;height:34px}
+.ln-r .ic.tel{background:#fff1ea;color:#d9480f}
+.ln-r .ic.tel svg{width:18px;height:18px}
+.ln-r b{display:block;font-size:14px;font-weight:600}
+.ln-r small{display:block;color:var(--ink3);font-size:12.5px}
+.ln-tit{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 -10px;font-size:13.5px;font-weight:600;color:var(--ink2)}
+.ln-tit span{font-weight:500;color:var(--ink3)}
+.ln-grilla{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.ln-card{border:1px solid var(--line);border-radius:14px;background:#fff;min-width:0}
+.ln-card-cab{display:flex;align-items:center;gap:12px;padding:14px 16px;position:relative}
+.ln-wa{width:38px;height:38px;border-radius:11px;background:#25D366;color:#fff;display:grid;place-items:center;flex:none}
+.ln-wa svg{width:22px;height:22px;display:block}
+.ln-card.mal .ln-wa{background:#b9bdc6}
+.ln-nom{flex:1;min-width:0}
+.ln-nom b{display:block;font-size:14.5px;font-weight:600}
+.ln-nom span{display:block;color:var(--ink3);font-size:12px;font-variant-numeric:tabular-nums}
+.ln-est{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:999px;white-space:nowrap}
+.ln-est i{width:7px;height:7px;border-radius:50%;background:currentColor}
+.ln-est{padding-left:0;padding-right:0}
+.ln-est.ok{color:#16a34a}
+.ln-est.ok i{background:#22c55e}
+.ln-est.espera{color:#d97706}
+.ln-est.mal{color:#dc2626}
+.ln-mas{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--ink3);border:0;background:none;cursor:pointer}
+.ln-mas:hover{background:var(--bg3);color:var(--ink)}
+.ln-mas svg{width:18px;height:18px}
+.ln-menu{position:absolute;right:12px;top:52px;z-index:5;min-width:210px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:5px;box-shadow:0 14px 30px -14px rgba(15,23,42,.35)}
+.ln-menu[hidden]{display:none}
+.ln-menu button{display:flex;align-items:center;gap:9px;width:100%;padding:8px 10px;border:0;background:none;border-radius:7px;font:inherit;font-size:13px;color:var(--ink);text-align:left;cursor:pointer}
+.ln-menu button:hover{background:var(--hover)}
+.ln-menu svg{width:15px;height:15px;color:var(--ink3)}
+.ln-f{display:flex;align-items:center;gap:12px;padding:11px 16px;border-top:1px solid var(--line)}
+.ln-f .fic{width:30px;height:30px;border-radius:8px;background:var(--bg3);color:var(--ink2);display:grid;place-items:center;flex:none}
+.ln-f .fic svg{width:15px;height:15px;display:block}
+.ln-f .ftx{flex:1;min-width:0}
+.ln-f .ftx b{display:block;font-weight:500;font-size:13px}
+.ln-f .ftx small{display:block;color:var(--ink3);font-size:12px}
+.ln-f .ctl{flex:none;display:flex;align-items:center;gap:8px;font-weight:500;font-size:13px}
+.ln-f .dsel{min-width:160px!important}
+.ln-senal{display:inline-flex;align-items:flex-end;gap:3px;height:15px}
+.ln-senal i{width:4px;border-radius:2px;background:#d5d8e0}
+.ln-senal i:nth-child(1){height:5px}.ln-senal i:nth-child(2){height:10px}.ln-senal i:nth-child(3){height:15px}
+.ln-senal.alta i{background:#15803d}
+.ln-senal.media i:nth-child(-n+2){background:#b45309}
+.ln-senal.baja i:nth-child(1){background:#b91c1c}
+.ln-esc{display:inline-flex;gap:2px}
+.ln-esc i{width:11px;height:5px;border-radius:2px;background:#d5d8e0}
+.ln-esc i.on{background:var(--ink)}
+.ln-lnk{border:0;background:none;padding:4px 0;color:var(--blue-ink);font:inherit;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:4px;cursor:pointer}
+.ln-lnk:hover{text-decoration:underline;text-underline-offset:3px}
+.ln-lnk svg{width:14px;height:14px;transition:transform .25s cubic-bezier(.22,1,.36,1)}
+.ln-lnk[aria-expanded="true"] svg{transform:rotate(180deg)}
+.ln-sub{padding:2px 16px 12px 58px;display:grid;gap:8px}
+.ln-req{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--ink2);flex-wrap:wrap}
+.ln-req svg{width:16px;height:16px;flex:none}
+.ln-req.falta svg{color:var(--amber-ink)}
+.ln-req.listo svg{color:var(--green-ink)}
+.ln-req em{font-style:normal;margin-left:auto;color:var(--ink3);font-variant-numeric:tabular-nums}
+.ln-req a{margin-left:auto;color:var(--blue-ink);font-weight:500;text-decoration:none}
+.ln-sub .row2{padding:6px 0;border-top:1px dashed var(--line2)}
+.ln-sub .row2:first-child{border-top:0}
+.ln .tg[aria-checked="true"]{background:#1a9e4b}
+.ln-sub .ll-ok{white-space:nowrap}
+.ln-cuentas{border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden}
+.ln-cta{display:flex;align-items:center;gap:14px;padding:14px 16px;flex-wrap:wrap}
+.ln-cta + .ln-cta,.ln-cta + .ln-nota,.ln-nota + .ln-cta,.ln-cta + .ln-hook,.ln-hook + .ln-cta,.ln-nota + .ln-hook{border-top:1px solid var(--line)}
+.ln-cta .fic{width:38px;height:38px;border-radius:10px;background:var(--bg3);display:grid;place-items:center;flex:none}
+.ln-cta .fic svg{width:21px;height:21px;display:block}
+.ln-cta .ctx{flex:1 1 240px;min-width:0}
+.ln-cta .ctx b{display:block;font-weight:600}
+.ln-cta .ctx small{display:block;color:var(--ink3);font-size:12.5px;font-variant-numeric:tabular-nums}
+.ln-chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;border:1px solid var(--line);color:var(--ink2);white-space:nowrap}
+.ln-chip svg{width:13px;height:13px}
+.ln-chip.ok{color:var(--green-ink)}
+.ln-chip.ambar{color:var(--amber-ink)}
+.ln-chip.mal{background:var(--red-soft);border-color:#f5c2c2;color:var(--red-ink)}
+.ln-cta .acc{display:flex;gap:6px}
+.ln-nota{display:flex;align-items:center;gap:12px;padding:11px 16px;background:var(--red-soft);color:var(--ink2);font-size:13px;flex-wrap:wrap}
+.ln-nota svg{width:17px;height:17px;color:var(--red-ink);flex:none}
+.ln-nota span{flex:1 1 300px}
+.ln-hook{padding:12px 16px;background:var(--bg2);display:grid;gap:8px}
+.ln-hook p{margin:0;font-size:12.5px;color:var(--ink2)}
+.ln-extra{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:#fff;flex-wrap:wrap}
+.ln-extra .fic{width:38px;height:38px;border-radius:10px;background:var(--bg3);color:var(--ink2);display:grid;place-items:center;flex:none}
+.ln-extra .fic svg{width:18px;height:18px}
+.ln-extra div{flex:1 1 260px;min-width:0}
+.ln-extra b{display:block;font-weight:500}
+.ln-extra small{color:var(--ink3);font-size:12.5px}
+.ln-plat{border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden}
+.ln-plat-cab{display:flex;align-items:flex-start;gap:14px;padding:16px 18px 4px;flex-wrap:wrap}
+.ln-plat-cab .fic{width:38px;height:38px;border-radius:10px;background:var(--bg3);display:grid;place-items:center;flex:none}
+.ln-plat-cab .fic svg{width:21px;height:21px;display:block}
+.ln-plat-cab div{flex:1 1 320px;min-width:0}
+.ln-plat-cab h4{margin:0;font-size:14.5px;font-weight:600;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ln-plat-cab p{margin:4px 0 0;color:var(--ink3);font-size:13px;max-width:72ch}
+.ln-solo{font-size:11.5px;font-weight:600;padding:2px 9px;border-radius:999px;border:1px solid #d5d8e0;color:var(--ink2)}
+.ln-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 18px;padding:14px 18px 4px}
+.ln-campo label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+.ln-campo label small{font-weight:400;color:var(--ink3)}
+.ln-campo input{width:100%;height:38px;border:1px solid #d5d8e0;border-radius:10px;padding:0 12px;font:inherit;font-size:13px;font-variant-numeric:tabular-nums;background:#fff;transition:border-color .15s,box-shadow .15s}
+.ln-campo input:hover{border-color:var(--ink3)}
+.ln-campo input:focus{outline:none;border-color:var(--blue-ink);box-shadow:0 0 0 3px rgba(25,118,210,.15)}
+.ln-campo .ayuda{display:block;margin-top:5px;font-size:12px;color:var(--ink3)}
+.ln-copiables{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 18px;margin:12px 18px 0;padding:12px 14px;border-radius:12px;background:var(--bg2)}
+.ln-copiables p{grid-column:1/-1;margin:0;font-size:12.5px;color:var(--ink2)}
+.ln-copiable small{display:block;font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:4px}
+.ln-copiable div{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:5px 5px 5px 10px}
+.ln-copiable code{flex:1;min-width:0;font-family:inherit;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ln-copiable button{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;color:var(--ink2);border:0;background:none;cursor:pointer;flex:none}
+.ln-copiable button:hover{background:var(--bg3);color:var(--ink)}
+.ln-copiable button svg{width:15px;height:15px}
+.ln-plat-pie{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px 16px;flex-wrap:wrap}
+.ln-plat-est{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--amber-ink)}
+.ln-plat-est.ok{color:var(--green-ink)}
+.ln-plat-est i{width:7px;height:7px;border-radius:50%;background:currentColor}
+@media (max-width:1100px){.ln-res,.ln-grilla{grid-template-columns:1fr}}
+@media (max-width:600px){.ln-f{flex-wrap:wrap}.ln-f .ctl{width:100%;padding-left:42px}.ln-f .dsel{min-width:0!important;width:100%}.ln-form,.ln-copiables{grid-template-columns:1fr}.ln-sub{padding-left:16px}}
+@media (prefers-reduced-motion:reduce){.ln-conectar svg,.ln-lnk svg{transition:none}}
+</style>`);
+
+// El logo de Meta con su degradado oficial. Cada copia lleva su propio id de degradado.
+let lnMetaN = 0;
+const logoMeta = () => { const id = 'meta-deg-' + (++lnMetaN); return LOGO_META.replace('__ID__', id).replace('__ID__', id); };
+const LOGO_META = '<svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="__ID__" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0064E0"/><stop offset="1" stop-color="#0082FB"/></linearGradient></defs><path fill="url(#__ID__)" d="M6.915 4.03c-1.968 0-3.683 1.28-4.871 3.113C.704 9.208 0 11.883 0 14.449c0 .706.07 1.369.21 1.973a6.624 6.624 0 0 0 .265.86 5.297 5.297 0 0 0 .371.761c.696 1.159 1.818 1.927 3.593 1.927 1.497 0 2.633-.671 3.965-2.444.76-1.012 1.144-1.626 2.663-4.32l.756-1.339.186-.325c.061.1.121.196.183.3l2.152 3.595c.724 1.21 1.665 2.556 2.47 3.314 1.046.987 1.992 1.22 3.06 1.22 1.075 0 1.876-.355 2.455-.843a3.743 3.743 0 0 0 .81-.973c.542-.939.861-2.127.861-3.745 0-2.72-.681-5.357-2.084-7.45-1.282-1.912-2.957-2.93-4.716-2.93-1.047 0-2.088.467-3.053 1.308-.652.57-1.257 1.29-1.82 2.05-.69-.875-1.335-1.547-1.958-2.056-1.182-.966-2.315-1.303-3.454-1.303zm10.16 2.053c1.147 0 2.188.758 2.992 1.999 1.132 1.748 1.647 4.195 1.647 6.4 0 1.548-.368 2.9-1.839 2.9-.58 0-1.027-.23-1.664-1.004-.496-.601-1.343-1.878-2.832-4.358l-.617-1.028a44.908 44.908 0 0 0-1.255-1.98c.07-.109.141-.224.211-.327 1.12-1.667 2.118-2.602 3.358-2.602zm-10.201.553c1.265 0 2.058.791 2.675 1.446.307.327.737.871 1.234 1.579l-1.02 1.566c-.757 1.163-1.882 3.017-2.837 4.338-1.191 1.649-1.81 1.817-2.486 1.817-.524 0-1.038-.237-1.383-.794-.263-.426-.464-1.13-.464-2.046 0-2.221.63-4.535 1.66-6.088.454-.687.964-1.226 1.533-1.533a2.264 2.264 0 0 1 1.088-.285z"/></svg>';
+const LN_IC = {
+  equipo: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c1-3.5 3.5-5.5 6.5-5.5s5.5 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.8.8 3 2.6 3.5 5.2"/></svg>',
+  senal: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 19v-3M10 19v-7M15 19V8M20 19V4"/></svg>',
+  escalera: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h5v-5h5v-5h5V5h3"/></svg>',
+  reloj: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  copiar: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></svg>',
+  alerta: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17h.01"/></svg>',
+};
+// Los niveles de Meta para conversaciones nuevas al día.
+const LN_NIVELES = [250, 2000, 10000, 100000, Infinity];
+const lnNivel = n => { if (n == null) return -1; let i = 0; LN_NIVELES.forEach((v, k) => { if (n >= v) i = k; }); return i; };
+const lnCalidad = v => { const s = String(v || '').toUpperCase(); return /GREEN|HIGH/.test(s) ? ['alta', 'Alta'] : /YELLOW|MEDIUM/.test(s) ? ['media', 'Media'] : /RED|LOW/.test(s) ? ['baja', 'Baja'] : ['', 'Sin dato']; };
+const lnCuentaDe = l => conexionesWa().find(c => c.id === l.conexionId) || null;
+const lnLineasDe = c => LINEAS.filter(l => l.conexionId === c.id).length || c.lineas || 0;
+st.lnAbierto = st.lnAbierto || {};
+
+/* Cuentas de Meta conectadas: cómo se conectó cada una, si Meta ya manda los avisos, revisar y desconectar */
 function cajaCuentasMeta(){
   const cs = conexionesWa(); if (!cs.length) return '';
-  return `<div class="box2"><h4>${I('lock')}Cuentas de Meta conectadas</h4>${cs.map(c => {
-    const est = c.estado === 'conectada' ? `<span class="ll-ok">${I('check')}Conectada</span>` : c.estado === 'error' ? `<span class="ll-no">${I('x')}Con un problema</span>` : `<span class="muted">Pendiente</span>`;
-    const avisos = c.ultimoAviso ? `El último llegó ${cuandoKB(c.ultimoAviso)}` : (c.verificado || c.modo === 'meta') ? 'Meta ya puede mandarlos; todavía no ha llegado ninguno' : 'Meta todavía no ha verificado la dirección de los avisos';
+  return `<div class="ln-tit">Cuentas de Meta <span>${cs.length}</span></div><div class="ln-cuentas">${cs.map(c => {
+    const n = lnLineasDe(c), avisos = c.ultimoAviso ? `último mensaje ${cuandoKB(c.ultimoAviso)}` : (c.verificado || c.modo === 'meta') ? 'todavía no llega ningún mensaje' : 'Meta no ha verificado los avisos';
+    const est = c.estado === 'conectada' ? `<span class="ln-chip ok">${I('check')}${c.modo === 'meta' ? 'Conectada con Facebook' : 'Conectada con los datos de la app'}</span>`
+      : c.estado === 'error' ? `<span class="ln-chip mal">${LN_IC.alerta}Con un problema</span>` : `<span class="ln-chip ambar">${LN_IC.reloj}Pendiente</span>`;
+    const llamadasOk = LINEAS.some(l => l.conexionId === c.id && metaLlamadas(l)), limOk = LINEAS.some(l => l.conexionId === c.id && (limiteNum(l.limite) || 0) >= 2000);
+    const req = llamadasOk ? 2 : limOk ? 1 : 0;
     const manualPendiente = c.modo === 'manual' && c.webhookUrl && (c.estado === 'error' || (!c.verificado && !c.ultimoAviso && c.webhookApp !== 'otro'));
-    return `<div class="ll-sec"><div class="cx-fila"><b>${esc(cxNombre(c))}</b>${est}</div>
-      ${fila('Cómo se conectó', '', `<span class="muted">${c.modo === 'meta' ? 'Con el botón de Meta' : `Con los datos de la app ${esc(c.appId || '')}`}</span>`)}
-      ${fila('Cuentas de WhatsApp y líneas', '', `<span class="muted">${c.cuentas} ${c.cuentas === 1 ? 'cuenta' : 'cuentas'} · ${c.lineas} ${c.lineas === 1 ? 'línea' : 'líneas'} en el CRM</span>`)}
-      ${fila('Avisos de mensajes', avisos, '')}
-      ${c.error ? `<div class="ll-nota">${esc(c.error)}</div>` : ''}
-      ${manualPendiente ? `<p class="muted" style="margin:6px 0 0">Si Meta no los manda solo, en tu app de Meta ve a WhatsApp, Configuración, Webhook: pega esta dirección y este código y suscríbete al campo «messages».</p>${datoCopiable('Dirección', c.webhookUrl)}${datoCopiable('Código de verificación', c.verifyToken || '')}` : ''}
-      <div class="cx-acc"><button type="button" class="btn" data-cxm-revisar="${c.id}">${I('swap')}Revisar</button><button type="button" class="btn" data-cxm-quitar="${c.id}">${I('x')}Desconectar</button></div></div>`;
+    return `<div class="ln-cta"><span class="fic">${logoMeta()}</span><div class="ctx"><b>${esc(cxNombre(c))}</b><small>${c.appId ? `App ${esc(c.appId)} · ` : ''}${c.cuentas} ${c.cuentas === 1 ? 'cuenta' : 'cuentas'} de WhatsApp · ${n} ${n === 1 ? 'línea' : 'líneas'} · ${avisos}</small></div>
+      ${est}<span class="ln-chip ${req === 2 ? 'ok' : 'ambar'}">${I('phone')}Llamadas: ${req} de 2 requisitos</span>
+      <div class="acc"><button type="button" class="btn" data-cxm-revisar="${c.id}">${I('swap')}Revisar</button><button type="button" class="btn" data-cxm-quitar="${c.id}">${I('x')}Desconectar</button></div></div>
+      ${c.error ? `<div class="ln-nota">${LN_IC.alerta}<span>${esc(c.error)}</span></div>` : ''}
+      ${manualPendiente ? `<div class="ln-hook"><p>Si Meta no manda los mensajes solo: en tu app de Meta ve a WhatsApp, Configuración, Webhook; pega esta dirección y este código y suscríbete al campo «messages».</p>${lnCopiable('Dirección de avisos', c.webhookUrl)}${lnCopiable('Código de verificación', c.verifyToken || '')}</div>` : ''}`;
   }).join('')}</div>`;
 }
+const lnCopiable = (etq, v) => `<div class="ln-copiable"><small>${etq}</small><div><code>${esc(v)}</code><button type="button" data-cx-copiar="${esc(v)}" aria-label="Copiar ${etq}">${LN_IC.copiar}</button></div></div>`;
+
 /* El botón «Conectar con Facebook» usa la app de Meta de la plataforma: la configura su administrador, una sola vez. */
 st.provCfg = null;
 function cajaProveedor(){
   if (!CRM_YO.operador) return '';
   const p = st.provCfg;
   if (!p) { crmApi('GET', '/crm/conexiones/proveedor').then(d => { st.provCfg = d; if (st.pagina === 'cfg-lineas') render(); }).catch(() => {}); return ''; }
-  return `<div class="box2"><h4>${I('fb')}Botón «Conectar con Facebook» de la plataforma</h4>
-    <p class="muted" style="margin:0 0 8px">Lo ven todas las empresas del CRM al conectar WhatsApp, Instagram y Messenger. Usa una app de Meta de la plataforma aprobada como proveedor tecnológico, con Facebook Login for Business: una configuración para el registro integrado de WhatsApp y otra para páginas. Solo lo ve el administrador de la plataforma.</p>
-    <div class="cx-f"><label>Identificador de la app (App ID)<input id="pv-app" value="${esc(p.appId || '')}" inputmode="numeric" autocomplete="off"></label>
-      <label>Configuración de WhatsApp (config_id)<input id="pv-cfg" value="${esc(p.configId || '')}" inputmode="numeric" autocomplete="off"></label>
-      <label>Configuración de páginas, para Instagram y Messenger (config_id)<input id="pv-cfgp" value="${esc(p.configPaginas || '')}" inputmode="numeric" autocomplete="off"></label>
-      <label>Clave secreta de la app<input id="pv-sec" type="password" value="" autocomplete="new-password" placeholder="${p.conClave ? 'Guardada: déjala vacía para no cambiarla' : '32 letras y números'}"></label></div>
-    ${p.verifyToken ? `<p class="muted" style="margin:0">En esa app, WhatsApp, Configuración, Webhook: pega esta dirección y este código y suscríbete a «messages», «message_template_status_update» y «phone_number_quality_update».</p>${datoCopiable('Dirección', p.webhookUrl)}${datoCopiable('Código de verificación', p.verifyToken)}
-      <p class="muted" style="margin:0">Y en Webhooks, en «Page» y en «Instagram», esta otra dirección con el mismo código, suscrita a «messages» y «messaging_postbacks»; en «Page» también «message_deliveries», «message_reads» y «message_echoes», y en «Instagram», «messaging_seen».</p>${datoCopiable('Dirección de páginas', p.webhookPaginas || '')}` : ''}
-    <div class="cx-acc"><span class="${p.listo || p.listoPaginas ? 'll-ok' : 'muted'}">${p.listo && p.listoPaginas ? `${I('check')}Activo` : p.listo ? `${I('check')}Activo para WhatsApp` : p.listoPaginas ? `${I('check')}Activo para Instagram y Messenger` : 'Sin configurar'}</span><button type="button" class="btn pri" data-pv-guardar="1">${I('check')}Guardar</button></div></div>`;
+  const estado = p.listo && p.listoPaginas ? ['ok', 'Activo para WhatsApp, Instagram y Messenger'] : p.listo ? ['ok', 'Activo para WhatsApp'] : p.listoPaginas ? ['', 'Falta la configuración de WhatsApp'] : ['', 'Sin configurar'];
+  return `<section class="ln-plat" aria-label="Botón Conectar con Facebook de la plataforma">
+    <div class="ln-plat-cab"><span class="fic">${logoMeta()}</span><div><h4>Botón «Conectar con Facebook» de la plataforma <span class="ln-solo">Solo tú lo ves</span></h4>
+      <p>La app de Meta que usan todas las empresas del CRM para conectar WhatsApp, Instagram y Messenger con un clic. Se configura una sola vez.</p></div></div>
+    <div class="ln-form">
+      <div class="ln-campo"><label for="pv-app">Identificador de la app <small>(App ID)</small></label><input id="pv-app" value="${esc(p.appId || '')}" inputmode="numeric" autocomplete="off" placeholder="Ej. 1234567890123456"><span class="ayuda">Configuración de la app → Básica</span></div>
+      <div class="ln-campo"><label for="pv-sec">Clave secreta de la app</label><input id="pv-sec" type="password" value="" autocomplete="new-password" placeholder="${p.conClave ? 'Guardada: déjala vacía para no cambiarla' : '32 letras y números'}"><span class="ayuda">Se guarda cifrada y no se vuelve a mostrar</span></div>
+      <div class="ln-campo"><label for="pv-cfg">Configuración de WhatsApp <small>(config_id)</small></label><input id="pv-cfg" value="${esc(p.configId || '')}" inputmode="numeric" autocomplete="off" placeholder="Ej. 1234567890123456"><span class="ayuda">Facebook Login for Business → Configuraciones → registro integrado</span></div>
+      <div class="ln-campo"><label for="pv-cfgp">Configuración de Instagram y Messenger <small>(config_id)</small></label><input id="pv-cfgp" value="${esc(p.configPaginas || '')}" inputmode="numeric" autocomplete="off" placeholder="Ej. 1234567890123456"><span class="ayuda">Otra configuración, para páginas</span></div>
+    </div>
+    ${p.verifyToken ? `<div class="ln-copiables"><p>En la app de Meta, WhatsApp → Configuración → Webhook: pega esta dirección y este código y suscríbete a «messages», «message_template_status_update» y «phone_number_quality_update». Para Instagram y Messenger, la dirección de páginas con el mismo código.</p>
+      ${lnCopiable('Dirección de avisos', p.webhookUrl)}${lnCopiable('Código de verificación', p.verifyToken)}${p.webhookPaginas ? lnCopiable('Dirección de páginas', p.webhookPaginas) : ''}</div>` : ''}
+    <div class="ln-plat-pie"><span class="ln-plat-est ${estado[0]}"><i></i>${estado[1]}</span><button type="button" class="btn pri" data-pv-guardar="1">${I('check')}Guardar</button></div>
+  </section>`;
+}
+
+/* Una línea: encabezado con su estado y menú, y las filas de equipo, calidad, límite y llamadas. */
+function tarjetaLinea(l, lim){
+  const i = CFG.lineas.findIndex(x => x.id === l.id), x = CFG.lineas[i] || {id:l.id, eq:'Ventas'};
+  const c = LLAM.lineas[l.id] || {on:false, icono:true, eq:'Ventas', buzon:true, grabar:true}, cx = lnCuentaDe(l);
+  const meta = metaLlamadas(l), puede = meta && lim != null && lim >= 2000, on = meta && !!c.on;
+  const est = l.estado !== 'conectada' ? ['mal', l.estado === 'desconectada' ? 'Desconectada' : 'Sin conexión'] : cx && !cx.ultimoAviso ? ['espera', 'Esperando mensajes'] : ['ok', 'Conectada'];
+  const cal = lnCalidad(l.calidad), ln = limiteNum(l.limite), niv = lnNivel(ln);
+  const ab = st.lnAbierto[l.id] || '';
+  const nueva = on && c.desde && Date.now() - Date.parse(c.desde) < 7 * 864e5;
+  return `<article class="ln-card ${est[0] === 'mal' ? 'mal' : ''}">
+    <div class="ln-card-cab"><span class="ln-wa">${LOGO.wa}</span><div class="ln-nom"><b>${esc(l.n)}</b><span>${esc(l.tel)}${cx ? ` · ${esc(cxNombre(cx))}` : ''}</span></div>
+      <span class="ln-est ${est[0]}"><i></i>${est[1]}</span>
+      <button type="button" class="ln-mas" data-ln-menu="${l.id}" aria-haspopup="menu" aria-expanded="${st.lnMenu === l.id}" aria-label="Más acciones de ${esc(l.n)}">${I('more')}</button>
+      <div class="ln-menu" role="menu" ${st.lnMenu === l.id ? '' : 'hidden'}><button type="button" role="menuitem" data-ln-ver="${l.id}">${I('inbox')}Ver sus conversaciones</button><button type="button" role="menuitem" data-cx-copiar="${esc(l.tel)}">${LN_IC.copiar}Copiar el número</button></div></div>
+    <div class="ln-f"><span class="fic">${LN_IC.equipo}</span><div class="ftx"><b>Equipo que la atiende</b><small>Le llegan sus conversaciones nuevas</small></div><div class="ctl">${ddSel('data-cfg-lineq', EQUIPOS.map(e => [`${i}|${e.n}`, e.n]), `${i}|${x.eq}`)}</div></div>
+    <div class="ln-f"><span class="fic">${LN_IC.senal}</span><div class="ftx"><b>Calidad según Meta</b><small>Si baja, Meta limita cuántos mensajes envías</small></div><div class="ctl"><span class="ln-senal ${cal[0]}" aria-hidden="true"><i></i><i></i><i></i></span>${cal[1]}</div></div>
+    <div class="ln-f"><span class="fic">${LN_IC.escalera}</span><div class="ftx"><b>Límite de Meta</b><small>${niv < 0 ? 'Meta todavía no lo ha informado' : `Nivel ${niv + 1} de 5${niv < 4 ? `, el siguiente es ${fmtLimite(LN_NIVELES[niv + 1])}` : ''}`}</small></div>
+      <div class="ctl"><span class="ln-esc" aria-hidden="true">${LN_NIVELES.map((_, n) => `<i class="${n <= niv ? 'on' : ''}"></i>`).join('')}</span><span>${ln == null ? 'Sin dato' : `${fmtLimite(ln)} al día`}</span></div></div>
+    <div class="ln-f"><span class="fic">${I('phone')}</span><div class="ftx"><b>Llamadas</b><small>${!meta ? 'Meta todavía no las activa en esta línea' : on ? 'Tus clientes ven el botón de llamar' : 'Apagadas en esta línea'}</small></div>
+      <div class="ctl">${puede ? `${on ? `<button type="button" class="ln-lnk" data-ln-abrir="${l.id}|aj" aria-expanded="${ab === 'aj'}">Ajustes${I('chev')}</button>` : ''}<button type="button" class="tg" role="switch" data-ll-on="${l.id}" aria-checked="${on}" aria-label="Llamadas por WhatsApp en ${esc(l.n)}"></button>`
+        : `<button type="button" class="ln-lnk" data-ln-abrir="${l.id}|req" aria-expanded="${ab === 'req'}">Ver requisitos${I('chev')}</button>`}</div></div>
+    ${ab === 'req' && !puede ? `<div class="ln-sub">
+      <div class="ln-req ${lim != null && lim >= 2000 ? 'listo' : 'falta'}">${lim != null && lim >= 2000 ? I('check') : LN_IC.reloj}Límite de 2.000 conversaciones al día<em>${lim == null ? 'Sin dato de Meta' : lim >= 2000 ? 'Listo' : `${fmtLimite(lim)} de 2.000`}</em></div>
+      <div class="ln-req falta">${LN_IC.reloj}Método de pago en la cuenta de WhatsApp<a href="https://business.facebook.com/wa/manage/" target="_blank" rel="noopener noreferrer">Revisar en Meta</a></div>
+      <div class="ln-req ${meta ? 'listo' : 'falta'}">${meta ? I('check') : LN_IC.reloj}Meta activa las llamadas en la línea<em>${meta ? 'Listo' : 'Pendiente'}</em></div></div>` : ''}
+    ${ab === 'aj' && on ? `<div class="ln-sub">
+      ${nueva ? '<div class="ll-nota">Activadas hace poco. Meta puede tardar hasta 7 días en mostrar el botón de llamar en los teléfonos.</div>' : ''}
+      ${fila('Mostrar el botón de llamar en WhatsApp', 'Si se oculta, el cliente solo puede llamar desde un botón que le mande el asesor', `<button type="button" class="tg" role="switch" data-ll-tg="${l.id}|icono" aria-checked="${c.icono}" aria-label="Mostrar el botón de llamar"></button>`)}
+      ${fila('Quién contesta', 'Suena a los asesores conectados de ese equipo; el primero que contesta se la queda', ddSel('data-ll-eq', EQUIPOS.map(e => [`${l.id}|${e.n}`, e.n]), `${l.id}|${c.eq}`))}
+      ${fila('Horario para recibir llamadas', 'El mismo horario de atención del CRM', `<button type="button" class="btn" data-ir="cfg-horario">Cambiar</button>`)}
+      ${fila('Horario para llamar a clientes', 'Lunes a viernes de 7 a. m. a 7 p. m. y sábados de 8 a. m. a 3 p. m.; nunca domingos ni festivos (Ley 2300)', `<span class="ll-ok">${I('lock')}Fijo por ley</span>`)}
+      ${fila('Buzón de voz si nadie contesta en 30 segundos', 'El mensaje de voz llega a la conversación, transcrito', `<button type="button" class="tg" role="switch" data-ll-tg="${l.id}|buzon" aria-checked="${c.buzon}" aria-label="Buzón de voz"></button>`)}
+      ${fila('Grabar y transcribir las llamadas', 'Solo si el contacto autorizó sus datos', `<button type="button" class="tg" role="switch" data-ll-tg="${l.id}|grabar" aria-checked="${c.grabar}" aria-label="Grabar y transcribir"></button>`)}</div>` : ''}
+  </article>`;
 }
 
 /* Página «Líneas de WhatsApp» */
 function paginaLineas(){
   const volver = `<button type="button" class="volver" data-ir="ajustes-crm">${I('back')}Ajustes del CRM</button>`;
-  const ok = t => `<span class="ll-ok">${I('check')}${t}</span>`, no = t => `<span class="ll-no">${I('x')}${t}</span>`;
   const lims = LINEAS.map(l => limiteNum(l.limite)).filter(n => n != null), lim = lims.length ? Math.max(...lims) : null;
   // Pintar no escribe ajustes: el visitante de solo lectura entraba en un bucle de pintar y revertir.
   if (!crmSoloLectura()) LINEAS.forEach(l => ajLinea(l.id));
-  const A = CFG.recepcion || {}, noche = A.desde && A.hasta ? `De ${horaCfg(A.desde)} a ${horaCfg(A.hasta)}` : '';
-  return `<div class="ajw ancho">${volver}
-    <div class="pg-h"><div><h2>Líneas de WhatsApp</h2><p class="sub">Las líneas conectadas por la API oficial de Meta. Aquí se conecta cada línea, se elige su equipo y se activan sus llamadas.</p></div><button type="button" class="btn pri" data-ll-conectar="1">${I('plus')}Conectar línea</button></div>
-    <div class="cfg">
-      ${cajaCuentasMeta()}
-      <div class="box2"><h4>${I('lock')}Requisitos de Meta para las llamadas</h4>
-        <div class="ll-req">${fila('Límite de mensajería de la cuenta', 'Meta pide al menos 2.000 para activar llamadas', lim == null ? '<span class="muted">Sin dato de Meta</span>' : lim >= 2000 ? ok(fmtLimite(lim)) : no(fmtLimite(lim)))}
-        ${fila('Método de pago en la cuenta de WhatsApp', 'Sin él no se pueden hacer llamadas. Se revisa en el administrador de WhatsApp de Meta', '<span class="muted">Sin confirmar</span>')}</div></div>
-      ${LINEAS.length ? LINEAS.map(l => { const i = CFG.lineas.findIndex(x => x.id === l.id), x = CFG.lineas[i] || {id:l.id, eq:'Ventas', recepcion:false}, c = LLAM.lineas[l.id] || {on:false, icono:true, eq:'Ventas', buzon:true, grabar:true}, meta = metaLlamadas(l), on = meta && !!c.on;
-        const nueva = on && c.desde && Date.now() - Date.parse(c.desde) < 7 * 864e5;
-        return `<div class="box2"><h4>${I('wa')}${esc(l.n)} · ${esc(l.tel)}${estadoLineaHTML(l)}</h4>
-        ${fila('Equipo que la atiende', '', ddSel('data-cfg-lineq', EQUIPOS.map(e => [`${i}|${e.n}`, e.n]), `${i}|${x.eq}`))}
-        ${fila('El agente IA responde de noche', noche, sw('linea-recepcion-' + i, x.recepcion))}
-        ${fila('Calidad según Meta', 'Si baja, Meta limita cuántos mensajes se pueden enviar', calidadHTML(l.calidad))}
-        <div class="ll-sec">
-          ${fila('<b>Llamadas por WhatsApp</b>', !meta ? 'Meta todavía no las tiene activadas en esta línea: nadie ve el botón de llamar' : on ? 'Los clientes pueden llamar a esta línea y los asesores pueden llamarlos' : 'Apagadas: nadie ve el botón de llamar y no se puede llamar desde esta línea', `<button type="button" class="tg" role="switch" data-ll-on="${l.id}" aria-checked="${on}" aria-label="Llamadas por WhatsApp en ${esc(l.n)}" ${meta && lim != null && lim >= 2000 ? '' : 'disabled'}></button>`)}
-          ${nueva ? `<div class="ll-nota">Activadas hace poco. Meta puede tardar hasta 7 días en mostrar el botón de llamar en los teléfonos.</div>` : ''}
-          ${on ? `${fila('Mostrar el botón de llamar en WhatsApp', 'Si se oculta, el cliente solo puede llamar desde un botón que le mande el asesor', `<button type="button" class="tg" role="switch" data-ll-tg="${l.id}|icono" aria-checked="${c.icono}" aria-label="Mostrar el botón de llamar"></button>`)}
-          ${fila('Quién contesta', 'Suena a los asesores conectados de ese equipo y el primero que contesta se la queda', ddSel('data-ll-eq', EQUIPOS.map(e => [`${l.id}|${e.n}`, e.n]), `${l.id}|${c.eq}`))}
-          ${fila('Horario para recibir llamadas', 'El mismo horario de atención del CRM', `<button type="button" class="btn" data-ir="cfg-horario">Cambiar</button>`)}
-          ${fila('Horario para llamar a clientes', 'Lunes a viernes de 7 a. m. a 7 p. m. y sábados de 8 a. m. a 3 p. m.; nunca domingos ni festivos. Lo fija la Ley 2300 y no se puede cambiar', `<span class="ll-ok">${I('lock')}Fijo por ley</span>`)}
-          ${fila('Buzón de voz si nadie contesta en 30 segundos', 'El mensaje de voz llega a la conversación, transcrito', `<button type="button" class="tg" role="switch" data-ll-tg="${l.id}|buzon" aria-checked="${c.buzon}" aria-label="Buzón de voz"></button>`)}
-          ${fila('Grabar y transcribir las llamadas', 'Solo si el contacto autorizó sus datos y, si es menor de edad, su representante legal', `<button type="button" class="tg" role="switch" data-ll-tg="${l.id}|grabar" aria-checked="${c.grabar}" aria-label="Grabar y transcribir"></button>`)}` : ''}
-        </div></div>`; }).join('')
-        : `<div class="box2"><div class="vacio">${I('wa')}<b>Ninguna línea conectada</b><p>Conecta la cuenta de WhatsApp Business de tu empresa y elige sus números.</p></div></div>`}
-      <div class="box2">${fila('Grabaciones, buzón de voz y horario', 'Se configuran para todas las líneas en la página Llamadas', `<button type="button" class="btn" data-ir="cfg-llamadas">Abrir</button>`)}</div>
-      ${cajaProveedor()}
-    </div></div>`;
+  const cs = conexionesWa(), conectadas = LINEAS.filter(l => l.estado === 'conectada').length;
+  const conLlamadas = LINEAS.filter(l => metaLlamadas(l) && (LLAM.lineas[l.id] || {}).on).length;
+  const problemas = cs.filter(c => c.estado === 'error').length, ultimo = cs.map(c => c.ultimoAviso).filter(Boolean).sort().pop();
+  const resumen = LINEAS.length ? `<div class="ln-res">
+      <div class="ln-r"><span class="ic wa">${LOGO.wa}</span><span><b>${conectadas} de ${LINEAS.length} ${LINEAS.length === 1 ? 'línea' : 'líneas'}</b><small>conectadas y recibiendo mensajes</small></span></div>
+      <div class="ln-r"><span class="ic meta">${logoMeta()}</span><span><b>${cs.length} ${cs.length === 1 ? 'cuenta de Meta' : 'cuentas de Meta'}</b><small>${problemas ? `${problemas} con un problema` : ultimo ? `El último mensaje llegó ${cuandoKB(ultimo)}` : 'Esperando el primer mensaje'}</small></span></div>
+      <div class="ln-r"><span class="ic tel">${I('phone')}</span><span><b>${conLlamadas ? `Llamadas en ${conLlamadas} ${conLlamadas === 1 ? 'línea' : 'líneas'}` : 'Llamadas apagadas'}</b><small>${conLlamadas ? 'Tus clientes pueden llamarte' : 'Requisitos de Meta por revisar'}</small></span></div>
+    </div>` : '';
+  return `<div class="ajw ancho">${volver}<div class="ln">
+    <div class="ln-cab"><div><h2>Líneas de WhatsApp</h2><p class="sub">Las líneas conectadas por la API oficial de Meta. Aquí se conecta cada línea, se elige su equipo y se activan sus llamadas.</p></div>
+      <button type="button" class="ln-conectar" data-ll-conectar="1">${I('plus')}Conectar línea</button></div>
+    ${resumen}
+    ${LINEAS.length ? `<div class="ln-tit">Líneas <span>${LINEAS.length}</span></div><div class="ln-grilla">${LINEAS.map(l => tarjetaLinea(l, lim)).join('')}</div>`
+      : `<div class="box2"><div class="vacio">${I('wa')}<b>Ninguna línea conectada</b><p>Conecta la cuenta de WhatsApp Business de tu empresa y elige sus números. Meta te cobra los mensajes directo, sin recargo.</p><button type="button" class="ln-conectar" data-ll-conectar="1">${I('plus')}Conectar línea</button></div></div>`}
+    ${cajaCuentasMeta()}
+    <div class="ln-extra"><span class="fic">${I('mic')}</span><div><b>Grabaciones, buzón de voz y horario</b><small>Se configuran para todas las líneas en la página Llamadas.</small></div><button type="button" class="btn" data-ir="cfg-llamadas">Abrir</button></div>
+    ${cajaProveedor()}
+  </div></div>`;
 }
 const paginaCfgBase = paginaCfg;
 paginaCfg = function(k){ return k === 'lineas' ? paginaLineas() : paginaCfgBase(k); };
@@ -174,6 +366,10 @@ paginaCfg = function(k){ return k === 'lineas' ? paginaLineas() : paginaCfgBase(
 document.getElementById('page').addEventListener('click', e => {
   if (st.pagina !== 'cfg-lineas') return; const t = e.target;
   if (t.closest('[data-ll-conectar]')) { abrirConexion('Ventas'); return; }
+  const mn = t.closest('[data-ln-menu]'); if (mn) { st.lnMenu = st.lnMenu === mn.dataset.lnMenu ? null : mn.dataset.lnMenu; render(); return; }
+  const vr = t.closest('[data-ln-ver]'); if (vr) { st.lnMenu = null; st.linea = ''; filtrar('linea', vr.dataset.lnVer); return; }
+  const ab = t.closest('[data-ln-abrir]'); if (ab) { const [id, k] = ab.dataset.lnAbrir.split('|'); st.lnAbierto[id] = st.lnAbierto[id] === k ? '' : k; render(); return; }
+  if (st.lnMenu && !t.closest('.ln-menu')) { st.lnMenu = null; render(); }
   const cpy = t.closest('[data-cx-copiar]'); if (cpy) { copiar(cpy.dataset.cxCopiar, 'Copiado'); return; }
   const rv = t.closest('[data-cxm-revisar]'); if (rv && !rv.disabled) { rv.disabled = true;
     crmApi('POST', `/crm/conexiones/${rv.dataset.cxmRevisar}/revisar`).then(c => { mezclarConexion(c); toast(c.estado === 'conectada' ? 'La cuenta de Meta está bien' : 'La cuenta de Meta tiene un problema'); render(); })
@@ -183,7 +379,7 @@ document.getElementById('page').addEventListener('click', e => {
   if (t.closest('[data-pv-guardar]')) { const v = id => (document.getElementById(id) || {}).value || '';
     crmApi('PUT', '/crm/conexiones/proveedor', {appId:v('pv-app').trim(), configId:v('pv-cfg').trim(), configPaginas:v('pv-cfgp').trim(), appSecret:v('pv-sec').trim()})
       .then(p => { st.provCfg = p; render(); toast('Botón de Meta guardado'); }).catch(err => toast(err.message || 'No se pudo guardar')); return; }
-  const on = t.closest('[data-ll-on]'); if (on && !on.disabled) { const id = on.dataset.llOn, c = LLAM.lineas[id]; c.on = !c.on; c.desde = c.on ? new Date().toISOString() : null; render(); toast(c.on ? 'Llamadas activadas en ' + lineaDe(id).n : 'Llamadas apagadas en ' + lineaDe(id).n); return; }
+  const on = t.closest('[data-ll-on]'); if (on && !on.disabled) { const id = on.dataset.llOn, c = LLAM.lineas[id]; c.on = !c.on; c.desde = c.on ? new Date().toISOString() : null; st.lnAbierto[id] = c.on ? 'aj' : ''; render(); toast(c.on ? 'Llamadas activadas en ' + lineaDe(id).n : 'Llamadas apagadas en ' + lineaDe(id).n); return; }
   const tg = t.closest('[data-ll-tg]'); if (tg) { const [id, k] = tg.dataset.llTg.split('|'); LLAM.lineas[id][k] = !LLAM.lineas[id][k]; render(); toast(LLAM.lineas[id][k] ? 'Activado' : 'Apagado'); return; }
   const eq = t.closest('[data-ll-eq]'); if (eq) { const [id, n] = eq.dataset.llEq.split('|'); LLAM.lineas[id].eq = n; render(); toast(`Las llamadas de ${lineaDe(id).n} suenan a ${n}`); return; }
 });

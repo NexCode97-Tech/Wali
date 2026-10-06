@@ -166,7 +166,7 @@ const crmDatos = (() => {
       tags: Array.isArray(k.tags) ? k.tags : [], cuotas: com && com.total ? [com.pagadas, com.total] : com ? [1, 1] : null, noContactar: k.noContactar ?? null, guardado: k.guardado !== false,
       ultimoDias: 0, agregadoDias: 0, _t: k._t || {}, _k: k};
   }
-  const lineaLocal = l => ({id: l.id, n: l.n, tel: l.tel, estado: l.estado, calidad: l.calidad, limite: l.limite, phoneNumberId: l.phoneNumberId, ajustes: l.ajustes || {}});
+  const lineaLocal = l => ({id: l.id, n: l.n, tel: l.tel, estado: l.estado, calidad: l.calidad, limite: l.limite, phoneNumberId: l.phoneNumberId, conexionId: l.conexionId || null, wabaId: l.wabaId || '', llamadas: l.llamadas === true, ajustes: l.ajustes || {}});
 
   /* ── Fotos de lo que está en el servidor ── */
   const SIN_FOTO = new Set(['msgs','hora','min','espera','esperaMin','ventana','unread','id','contactoId','asigId']);

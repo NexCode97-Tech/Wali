@@ -160,7 +160,7 @@ export function contactoAFront(k: CrmContacto, nombres: Map<string, string>) {
 export function lineaAFront(l: CrmLinea) {
   return {
     id: l.id, n: l.nombre, tel: l.telefono, estado: l.estado, calidad: l.calidad, limite: l.limite,
-    phoneNumberId: l.phoneNumberId, ajustes: obj(l.ajustes),
+    phoneNumberId: l.phoneNumberId, conexionId: l.conexionId, wabaId: l.wabaId, ajustes: obj(l.ajustes),
   }
 }
 
