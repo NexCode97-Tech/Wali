@@ -575,10 +575,10 @@ function paginaIntegraciones(){
       ${s.conectado ? `<dl class="ig-kv"><dt>La usan</dt><dd>${usan.length ? esc(usan.join(', ')) : 'Ningún agente todavía'}</dd>${s.desde ? `<dt>Conectada</dt><dd>${esc(fechaCorta(s.desde))}${s.por ? `, por ${esc(s.por)}` : ''}</dd>` : ''}</dl>
         <div class="ig-pie"><span class="sp"></span><button type="button" class="btn" data-integ-quitar="${esc(s.id)}">${I('x')}Desconectar</button></div>`
       : `<div class="ig-pie"><span class="sp">${esc(u.ayuda || '')}</span><button type="button" class="btn" data-integ-conectar="${esc(s.id)}">${I('link')}Conectar</button></div>`}</article>`; };
-  const con = INTEG.lista.filter(s => s.conectado), dis = INTEG.lista.filter(s => !s.conectado);
-  const nCon = con.length + (incluida ? 1 : 0);
+  // Una sola sección, con las conectadas primero: el estado de cada una lo dice su etiqueta (5-oct).
+  const todas = [...INTEG.lista.filter(s => s.conectado), ...INTEG.lista.filter(s => !s.conectado)];
   const sec = (t, n, html) => `<section class="ig-sec"><h4>${t} <span class="ig-n">${n}</span></h4><div class="ig-lista">${html}</div></section>`;
-  return `<div class="ajw ancho">${cab}${nCon ? sec('Conectadas', nCon, incluida + con.map(tarjeta).join('')) : ''}${dis.length ? sec('Disponibles', dis.length, dis.map(tarjeta).join('')) : ''}</div>`;
+  return `<div class="ajw ancho">${cab}${todas.length ? sec('Plataformas', todas.length, incluida + todas.map(tarjeta).join('')) : ''}</div>`;
 }
 const paginaCfgInteg = paginaCfg;
 paginaCfg = function(k){ return k === 'integraciones' ? paginaIntegraciones() : paginaCfgInteg(k); };
@@ -653,7 +653,7 @@ function motorCargar(){
   crmApi('GET', '/crm/motor-ia')
     .then(e => { MOTOR.estado = e && Array.isArray(e.proveedores) ? e : null; MOTOR.error = MOTOR.estado ? '' : 'respuesta inesperada'; })
     .catch(err => { MOTOR.error = err.message || 'el servidor no contestó'; })
-    .finally(() => { MOTOR.cargando = false; if (st.pagina === 'cfg-integraciones') render(); });
+    .finally(() => { MOTOR.cargando = false; if (st.pagina === 'cfg-integraciones' || st.pagina === 'agentes') render(); });
 }
 const motorPedir = () => { if (!MOTOR.estado && !MOTOR.cargando && !MOTOR.error) setTimeout(motorCargar); };
 document.head.insertAdjacentHTML('beforeend', `<style>
@@ -674,10 +674,9 @@ function motorSeccion(){
   motorPedir();
   const t = '<h4>Motor de IA</h4><p class="mt-sub">El modelo que mueve a tus agentes IA, las sugerencias y el embudo automático. Conectas la cuenta de tu empresa y el proveedor te cobra directo lo que uses; NexCode97 no cobra recargo. Las instrucciones, el conocimiento y los permisos de cada agente siguen en el CRM, con cualquier motor.</p>';
   if (!MOTOR.estado) return `<section class="ig-sec">${t}<p class="muted" style="margin:0">${MOTOR.error ? `No se pudo cargar: ${esc(MOTOR.error)}` : 'Cargando…'}</p></section>`;
-  const e = MOTOR.estado, hayUso = e.proveedores.some(p => p.activo);
-  const aviso = !e.disponible ? `<div class="mt-aviso">${I('lock')}<span>El motor de IA viene desde el plan Growth. Starter no trae agentes ni respuestas con IA.</span><button type="button" class="btn" data-ir="cfg-plan">Ver planes</button></div>`
-    : e.servidor ? `<div class="mt-aviso info">${I('bolt')}<span>Este espacio usa la clave de NexCode97 mientras no conectes una propia.</span></div>`
-    : !hayUso ? `<div class="mt-aviso">${I('bolt')}<span>Sin un motor conectado, los agentes IA no responden: las conversaciones pasan a tu equipo.</span></div>` : '';
+  const e = MOTOR.estado;
+  // Aquí solo el candado de Starter; el aviso de que falta motor va en Agentes IA, que es donde se nota.
+  const aviso = !e.disponible ? `<div class="mt-aviso">${I('lock')}<span>El motor de IA viene desde el plan Growth. Starter no trae agentes ni respuestas con IA.</span><button type="button" class="btn" data-ir="cfg-plan">Ver planes</button></div>` : '';
   const tarjeta = p => { const u = MOTOR_UI[p.id] || {};
     const est = p.activo ? '<span class="ig-est uso">En uso</span>' : p.conectado ? '<span class="ig-est off">Conectado</span>' : '<span class="ig-est off">Sin conectar</span>';
     const kv = p.conectado ? `<dl class="ig-kv">${p.modelo ? `<dt>Modelo</dt><dd>${esc(p.modelo)}</dd>` : ''}<dt>Clave</dt><dd class="mt-mono">•••• ${esc(p.fin || '')}</dd>${p.desde ? `<dt>Conectado</dt><dd>${esc(fechaCorta(p.desde))}${p.por ? `, por ${esc(p.por)}` : ''}</dd>` : ''}</dl>` : '';
@@ -695,6 +694,17 @@ paginaIntegraciones = function(){
   const conMotor = i < 0 ? h.replace(/<\/div>$/, sec + '</div>') : h.slice(0, i) + sec + h.slice(i);
   return conMotor.replace('Conecta otras plataformas que usa tu empresa. Los agentes IA pueden consultar las que estén conectadas; en Capacidades de cada agente eliges cuáles usa. Solo consultan: nunca crean, cambian ni borran nada.',
     'El motor de IA de tus agentes y las otras plataformas que usa tu empresa. Las plataformas solo se consultan: los agentes nunca crean, cambian ni borran nada en ellas; en Capacidades de cada agente eliges cuáles usa.');
+};
+/* En Agentes IA (Panel de control): si no hay motor, los agentes no responden; el aviso lleva a conectarlo. */
+const paginaAgentesSinMotor = paginaAgentes;
+paginaAgentes = function(){
+  const h = paginaAgentesSinMotor();
+  if (st.agV === 'editor' || st.agV === 'plantillas') return h;
+  motorPedir();
+  const e = MOTOR.estado; if (!e || !e.disponible) return h;
+  const aviso = e.servidor ? `<div class="mt-aviso info">${I('bolt')}<span>Tus agentes usan la clave de NexCode97 mientras no conectes un motor de IA propio.</span><button type="button" class="btn" data-ir="cfg-integraciones">Ver motores</button></div>`
+    : !e.proveedores.some(p => p.activo) ? `<div class="mt-aviso">${I('bolt')}<span>Sin un motor de IA conectado, los agentes no responden: las conversaciones pasan a tu equipo.</span><button type="button" class="btn" data-ir="cfg-integraciones">Conectar un motor</button></div>` : '';
+  return aviso ? h.replace('<div class="cfg">', '<div class="cfg">' + aviso) : h;
 };
 const motorBotonConectar = b => { b.disabled = false; b.textContent = ''; b.insertAdjacentHTML('beforeend', `${I('link')}Conectar`); };
 document.getElementById('page').addEventListener('click', e => {
