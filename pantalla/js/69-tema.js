@@ -95,3 +95,39 @@
   st.textContent = css;
   document.head.append(st);
 })();
+
+/* ── Desplegables de la barra con animación (5-oct): Conversaciones y cada equipo. La barra se pinta de nuevo en cada
+   render, así que se compara lo que había antes con lo que queda: las filas de adentro que aparecen entran deslizando
+   (una tras otra) y las que se van se cierran con su altura, en vez de saltar. Las que ya estaban no se mueven. ── */
+(() => {
+  const llave = li => { const b = li.querySelector('button'); const a = b && [...b.attributes].find(x => x.name.startsWith('data-')); return a ? `${a.name}=${a.value}` : ''; };
+  const subsDe = () => [...document.querySelectorAll('#app .nav li.sub')].map(li => {
+    let p = li.previousElementSibling; while (p && p.classList.contains('sub')) p = p.previousElementSibling;
+    return {li, k: llave(li), ancla: p ? llave(p) : ''};
+  });
+  const quieto = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const navSinAnimar = nav;
+  nav = function(){
+    const antes = subsDe();
+    const r = navSinAnimar.apply(this, arguments);
+    if (quieto()) return r;
+    const ahora = subsDe(), habia = new Set(antes.map(x => x.k)), hay = new Set(ahora.map(x => x.k));
+    ahora.filter(x => !habia.has(x.k)).forEach((x, i) => { x.li.style.setProperty('--i', i); x.li.classList.add('nv-entra'); x.li.addEventListener('animationend', () => x.li.classList.remove('nv-entra'), {once: true}); });
+    // Las que se fueron vuelven un momento, detrás de la fila que las abría, para cerrarse con animación.
+    const porAncla = new Map();
+    antes.filter(x => !hay.has(x.k)).forEach(x => { if (!porAncla.has(x.ancla)) porAncla.set(x.ancla, []); porAncla.get(x.ancla).push(x.li); });
+    porAncla.forEach((lis, ancla) => {
+      const a = [...document.querySelectorAll('#app .nav li:not(.sub)')].find(li => llave(li) === ancla); if (!a) return;
+      let tras = a; while (tras.nextElementSibling && tras.nextElementSibling.classList.contains('sub')) tras = tras.nextElementSibling;
+      lis.forEach(li => { li.classList.remove('nv-entra'); li.classList.add('nv-sale'); li.setAttribute('aria-hidden', 'true'); li.inert = true; tras.after(li); tras = li; li.addEventListener('animationend', () => li.remove(), {once: true}); });
+    });
+    return r;
+  };
+  document.head.insertAdjacentHTML('beforeend', `<style>
+@keyframes nv-entra{from{opacity:0;max-height:0;transform:translateY(-6px)}to{opacity:1;max-height:48px;transform:none}}
+@keyframes nv-sale{from{opacity:1;max-height:48px}to{opacity:0;max-height:0;transform:translateY(-4px)}}
+#app .nav li.nv-entra{overflow:hidden;animation:nv-entra .26s cubic-bezier(.22,1,.36,1) both;animation-delay:calc(var(--i, 0) * 35ms)}
+#app .nav li.nv-sale{overflow:hidden;pointer-events:none;animation:nv-sale .18s cubic-bezier(.4,0,1,1) both}
+#app .nav li button .tw,#app #equipos li .mj-tw svg{transition:transform .26s cubic-bezier(.22,1,.36,1)}
+</style>`);
+})();
