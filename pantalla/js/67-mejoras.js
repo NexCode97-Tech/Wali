@@ -27,13 +27,20 @@
 .it .tj-l1{align-items:center}
 .it .tj-l1 .mj-fav{width:13px;height:13px;color:#f59e0b;fill:#f59e0b;stroke:#f59e0b;flex:none}
 .it .tj-l1 .mj-fu{font-size:13px;line-height:1;flex:none}
-/* Barra: personas del equipo */
-#mj-personas .mj-per{display:flex;align-items:center;gap:9px;width:100%;text-align:left}
-#mj-personas .mj-mini{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:8.5px;font-weight:600;flex:none;position:relative;overflow:hidden;line-height:1}
-#mj-personas .mj-mini.sin{background:#fff;border:1.5px dashed #cbd5e1;width:16px;height:16px;margin:0 2px;box-sizing:content-box}
-#mj-personas .mj-nom{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#mj-personas .n{margin-left:auto;font-size:12px;color:var(--ink3);font-variant-numeric:tabular-nums}
-#mj-personas .mj-r{min-width:18px;height:18px;border-radius:999px;background:#fee2e2;color:#b91c1c;font-size:11px;font-weight:600;display:grid;place-items:center;padding:0 5px;flex:none}
+/* Barra: personas del equipo, debajo de cada equipo con su flecha */
+#equipos li.mj-eq{position:relative}
+#app #equipos li.mj-eq > button[data-t2]{padding-right:38px}
+#app #equipos li .mj-tw{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:28px;height:28px;padding:0;border-radius:7px;display:grid;place-items:center;color:var(--nx-mut)}
+#app #equipos li .mj-tw:hover{color:#fff}
+#equipos .mj-tw svg{width:14px;height:14px;transition:transform .15s}
+#equipos .mj-tw[aria-expanded="true"] svg{transform:rotate(180deg)}
+#equipos .mj-per{display:flex;align-items:center;gap:9px;width:100%;text-align:left}
+#equipos .mj-mini{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:8.5px;font-weight:600;flex:none;position:relative;overflow:hidden;line-height:1}
+#equipos .mj-mini.sin{background:transparent;border:1.5px dashed #6b6b78;width:16px;height:16px;margin:0 2px;box-sizing:content-box}
+#equipos .mj-nom{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#equipos .mj-per .n{margin-left:auto;font-size:12px;font-variant-numeric:tabular-nums}
+#equipos .mj-r + .n{margin-left:0}
+#equipos .mj-r{margin-left:auto;min-width:18px;height:18px;border-radius:999px;background:#fee2e2;color:#b91c1c;font-size:11px;font-weight:600;display:grid;place-items:center;padding:0 5px;flex:none}
 /* Panel: notas privadas arriba */
 .mj-notas{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border:1px solid #fde68a;border-radius:12px;background:#fffbeb;margin-top:12px}
 .mj-notas .cab{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:#92400e}
@@ -150,29 +157,43 @@
     });
   };
 
-  /* ── Personas del equipo, en la barra del líder ── */
+  /* ── Personas del equipo, dentro de Equipos (5-oct) ──
+     Cada equipo que la persona lidera (o todos, para el administrador sin equipo) lleva una flecha a la derecha que
+     despliega a sus integrantes con las conversaciones abiertas de cada uno, más las sin asignar. Al integrante no le
+     sale: el API solo le manda lo suyo y los números de los demás saldrían en cero. */
   const equiposConPersonas = () => {
     if (typeof esLiderCrm !== 'function' || !esLiderCrm()) return [];
     const todos = typeof MIEMBROS === 'object' && MIEMBROS ? Object.keys(MIEMBROS) : [];
-    return (ALCANCE.todo ? todos : (ALCANCE.lidera || [])).filter(eq => idsDe(eq).length);
+    return ALCANCE.todo ? todos : (ALCANCE.lidera || []);
   };
   const abiertasDe = eq => CONV.filter(c => okRol(c) && (c.est || 'abiertas') === 'abiertas' && equipoConv(c) === eq);
-  if (!document.getElementById('mj-personas')) document.getElementById('carpetas').parentElement.insertAdjacentHTML('afterend', '<div id="mj-personas" hidden></div>');
+  const eqAbierto = new Set();
+  const personasHtml = eq => {
+    const L = abiertasDe(eq), act = st.persona && st.persona.eq === eq ? st.persona.id : null;
+    const filas = idsDe(eq).map(id => { const u = USUARIOS.find(x => x.id === id); if (!u) return null; const suyas = L.filter(c => c.asigId === id); return {id, n:u.nombre, foto:u.foto || null, total:suyas.length, esperan:suyas.filter(c => !!c.espera).length}; })
+      .filter(Boolean).sort((a, b) => b.total - a.total || a.n.localeCompare(b.n, 'es'));
+    const sin = L.filter(c => !c.asig).length;
+    return filas.map(p => `<li class="sub"><button type="button" class="mj-per" data-mj-per="${esc(eq)}|${esc(p.id)}" aria-current="${act === p.id}"><span class="mj-mini" style="background:${colorPersona(p.n)}">${fotoAv(p.foto, p.n)}</span><span class="mj-nom">${esc(p.n)}</span>${p.esperan ? `<span class="mj-r" title="Esperan respuesta">${p.esperan}</span>` : ''}<span class="n">${p.total || ''}</span></button></li>`).join('')
+      + `<li class="sub"><button type="button" class="mj-per" data-mj-per="${esc(eq)}|" aria-current="${act === ''}"><span class="mj-mini sin"></span><span class="mj-nom">Sin asignar</span><span class="n">${sin || ''}</span></button></li>`;
+  };
   const navBase = nav;
   nav = function(){
     navBase.apply(this, arguments);
-    const el = document.getElementById('mj-personas'), eqs = equiposConPersonas();
-    el.hidden = !eqs.length;
-    el.innerHTML = eqs.map(eq => {
-      const L = abiertasDe(eq), act = st.persona && st.persona.eq === eq ? st.persona.id : null;
-      const filas = idsDe(eq).map(id => { const u = USUARIOS.find(x => x.id === id); if (!u) return null; const suyas = L.filter(c => c.asigId === id); return {id, n:u.nombre, foto:u.foto || null, total:suyas.length, esperan:suyas.filter(c => !!c.espera).length}; })
-        .filter(Boolean).sort((a, b) => b.total - a.total || a.n.localeCompare(b.n, 'es'));
-      const sin = L.filter(c => !c.asig).length;
-      return `<div class="sec">Personas de ${esc(eq)}</div><ul>${filas.map(p => `<li><button type="button" class="mj-per" data-mj-per="${esc(eq)}|${esc(p.id)}" aria-current="${act === p.id}"><span class="mj-mini" style="background:${colorPersona(p.n)}">${fotoAv(p.foto, p.n)}</span><span class="mj-nom">${esc(p.n)}</span><span class="n">${p.total}</span>${p.esperan ? `<span class="mj-r" title="Esperan respuesta">${p.esperan}</span>` : ''}</button></li>`).join('')}
-        <li><button type="button" class="mj-per" data-mj-per="${esc(eq)}|" aria-current="${act === ''}"><span class="mj-mini sin"></span><span class="mj-nom">Sin asignar</span><span class="n">${sin}</span></button></li></ul>`;
-    }).join('');
+    const eqs = equiposConPersonas();
+    // Si se filtra por una persona, su equipo queda abierto para que se vea quién está elegido.
+    if (st.persona) eqAbierto.add(st.persona.eq);
+    document.querySelectorAll('#equipos [data-t2]').forEach(b => {
+      const eq = (EQUIPOS.find(x => x.id === b.dataset.t2) || {}).n, li = b.closest('li');
+      if (!eq || !li || !eqs.includes(eq)) return;
+      const abierto = eqAbierto.has(eq);
+      li.classList.add('mj-eq');
+      li.insertAdjacentHTML('beforeend', `<button type="button" class="mj-tw" data-mj-abrir="${esc(eq)}" aria-expanded="${abierto}" aria-label="${abierto ? 'Ocultar' : 'Ver'} los integrantes de ${esc(eq)}">${I('chev')}</button>`);
+      if (abierto) li.insertAdjacentHTML('afterend', personasHtml(eq));
+    });
   };
-  document.getElementById('mj-personas').addEventListener('click', e => {
+  document.getElementById('equipos').addEventListener('click', e => {
+    const ab = e.target.closest('[data-mj-abrir]');
+    if (ab) { const eq = ab.dataset.mjAbrir; eqAbierto.has(eq) ? eqAbierto.delete(eq) : eqAbierto.add(eq); nav(); return; }
     const b = e.target.closest('[data-mj-per]'); if (!b) return;
     const i = b.dataset.mjPer.lastIndexOf('|'), eq = b.dataset.mjPer.slice(0, i), id = b.dataset.mjPer.slice(i + 1);
     const misma = st.persona && st.persona.eq === eq && st.persona.id === id;
@@ -182,7 +203,10 @@
     document.getElementById('est-l').textContent = 'Abiertas';
     const pr = visibles()[0]; if (pr) st.sel = pr.id;
     render();
+    document.getElementById('app').classList.remove('open');
   });
+  // Elegir el equipo entero suelta a la persona.
+  document.getElementById('equipos').addEventListener('click', e => { if (e.target.closest('[data-t2]')) st.persona = null; }, true);
   const visiblesBase = visibles;
   visibles = function(){
     const L = visiblesBase.apply(this, arguments), p = st.persona;
