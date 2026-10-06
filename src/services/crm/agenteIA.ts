@@ -290,7 +290,8 @@ async function equiposValidos(a: Agente): Promise<string[]> {
 async function etapasValidas(): Promise<string[]> {
   const v = await leerAjuste<unknown>('etapas')
   const n = (Array.isArray(v) ? v : []).map(e => (Array.isArray(e) ? txt(e[0]) : txt(obj(e).n))).filter(Boolean)
-  return [...new Set(n.length ? n : ETAPAS_DEFECTO)].filter(e => !ETAPA_DE_PAGO.test(e))
+  // Las de ejemplo solo si la empresa nunca guardó sus etapas: una lista vacía guardada es «sin etapas».
+  return [...new Set(Array.isArray(v) ? n : ETAPAS_DEFECTO)].filter(e => !ETAPA_DE_PAGO.test(e))
 }
 // ─── Estado en conversacion.extra._agente ────────────────────────────────────
 

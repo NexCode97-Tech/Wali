@@ -105,6 +105,8 @@ router.post('/registro', limiteRegistro, asyncHandler(async (req: Request, res: 
       await tx.crmEspacio.create({ data: { id: espacioId, nombre: d.empresa, plan: 'starter', estadoPlan: 'prueba', pruebaHasta: new Date(Date.now() + DIAS_PRUEBA * 864e5) } })
       const u = await tx.user.create({ data: { email, nombre: d.nombre, image: foto, role: 'ADMIN', passwordHash } })
       await tx.crmMiembro.create({ data: { espacioId, userId: u.id } })
+      // La empresa empieza desde cero: sin las etapas, etiquetas ni reglas de ejemplo (6-oct).
+      await tx.crmAjuste.createMany({ data: ['etapas', 'etiquetas', 'reglas'].map(clave => ({ espacioId, clave, valor: [] })), skipDuplicates: true })
       // Al crear la cuenta aceptó los términos, el uso aceptable y la política de datos: queda la prueba.
       await tx.consentimiento.create({ data: { userId: u.id, email, tipo: d.google ? 'registro-google' : 'registro', version: VERSION_DOCUMENTOS, ip: req.ip ?? null, userAgent: String(req.headers['user-agent'] ?? '').slice(0, 300) || null } })
       return u

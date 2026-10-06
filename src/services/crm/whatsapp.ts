@@ -49,7 +49,7 @@ const EXPLICACION: Record<number, string> = {
   80007: 'Se pasó el límite de llamadas a la API de WhatsApp. Espera unos minutos',
   130429: 'Se pasó el límite de mensajes por segundo de la línea. Intenta de nuevo en un momento',
   131000: 'Meta tuvo un error al procesar el mensaje. Intenta de nuevo',
-  131005: 'El token no tiene permiso para enviar por esta línea',
+  131005: 'El token no tiene permiso para enviar por esta línea. Si conectaste con el token temporal de la app, ya venció: genera el token del usuario del sistema con whatsapp_business_messaging y la cuenta de WhatsApp asignada, y pégalo en Ajustes del CRM, Líneas de WhatsApp, Revisar',
   131008: 'Falta un dato obligatorio en el mensaje',
   131009: 'Uno de los datos del mensaje no es válido',
   131016: 'WhatsApp no está disponible en este momento. Intenta de nuevo en unos minutos',
@@ -619,6 +619,18 @@ async function armarCuerpo(m: MsgConTodo, cred: CredMeta): Promise<Json> {
 }
 
 /** Envía por WhatsApp un CrmMensaje de salida ya guardado. Nunca lanza: deja el estado en la fila. */
+/** Códigos de Meta que dicen que el token de la cuenta ya no sirve para esa línea. */
+const TOKEN_MALO = new Set([10, 190, 200, 131005])
+
+async function marcarCuentaConError(msgId: string, error: string) {
+  const m = await prisma.crmMensaje.findUnique({ where: { id: msgId }, select: { conversacion: { select: { linea: { select: { conexionId: true } } } } } })
+  const id = m?.conversacion.linea?.conexionId
+  if (!id) return
+  await prisma.crmConexion.update({ where: { id }, data: { estado: 'error', error: error.slice(0, 500) } })
+  const { emitirConexiones } = await import('./conexiones')
+  await emitirConexiones(null)
+}
+
 export async function enviarPorWhatsapp(msgId: string): Promise<void> {
   let convId: number | null = null
   try {
@@ -677,6 +689,9 @@ export async function enviarPorWhatsapp(msgId: string): Promise<void> {
     textoFinalPlantilla.delete(msgId)
     const texto = e instanceof ErrorEnvio || e instanceof AppError ? e.message : esCorte(e) ? 'No se pudo enviar: la conexión se cortó mientras salía. Toca Reintentar.' : `No se pudo enviar: ${(e as Error)?.message ?? e}`
     logger.warn(`[CRM WA] envío ${msgId} falló: ${texto}`)
+    // Token vencido o sin permiso: la cuenta de Meta queda con el problema a la vista en Líneas de WhatsApp (6-oct),
+    // no solo en el mensaje que falló.
+    if (e instanceof ErrorMeta && TOKEN_MALO.has(e.codigo)) await marcarCuentaConError(msgId, explicarErrorMeta({ code: e.codigo, message: e.textoMeta })).catch(() => {})
     try {
       const f = await prisma.crmMensaje.update({ where: { id: msgId }, data: { estado: 'fallido', error: texto.slice(0, 1000) } })
       emitirMsg(f.conversacionId, f)

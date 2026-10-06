@@ -31,6 +31,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .cx-f label{display:grid;gap:5px;font-size:12.5px;font-weight:600;color:var(--ink2)}
 .cx-f input{border:1px solid var(--line);border-radius:9px;padding:8px 10px;font:inherit;font-size:13px;font-weight:400}
 .cx-f small{font-weight:400;color:var(--ink3);font-size:12px}
+.cx-falta{margin:-4px 0 12px;padding:9px 12px;border-radius:10px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;font-size:12.5px;line-height:1.45}
 .cx-prog{display:grid;gap:8px;margin:8px 0 12px;font-size:13px}
 .cx-prog div{display:flex;align-items:center;gap:8px;color:var(--ink3)}
 .cx-prog div.ok{color:var(--ink)}
@@ -440,12 +441,28 @@ function pasoCuenta(x){
       <label>Clave secreta de la app<input id="cx-sec" type="password" value="${esc(a.appSecret)}" autocomplete="new-password" placeholder="32 letras y números"></label>
       <label>Token del usuario del sistema<input id="cx-tok" type="password" value="${esc(a.token)}" autocomplete="new-password" placeholder="Empieza por EAA…"><small>Se guarda cifrado y no se vuelve a mostrar.</small></label>
       ${x.pideWaba ? `<label>Identificador de la cuenta de WhatsApp Business<input id="cx-waba" value="${esc(a.wabaId || '')}" inputmode="numeric" autocomplete="off" placeholder="Ej. 1234567890123456"><small>Está en tu app de Meta, en WhatsApp, Configuración de la API, junto al número.</small></label>` : ''}</div>
+    <p class="cx-falta" id="cx-falta" role="status"${faltaCx(x) ? '' : ' hidden'}>${esc(faltaCx(x))}</p>
     <details class="cx-ayuda"><summary>Cómo conseguir estos datos</summary><ol>
       <li>En developers.facebook.com crea una app de tipo Negocio (o usa la que ya tienes) y agrégale el producto WhatsApp.</li>
       <li>En Configuración de la app, Básica, copia el identificador de la app y la clave secreta.</li>
       <li>En la configuración de tu negocio en Meta, Usuarios del sistema: crea uno con rol de administrador, asígnale la app y la cuenta de WhatsApp, y genera un token sin vencimiento con los permisos whatsapp_business_management y whatsapp_business_messaging.</li>
       <li>Pega los tres datos aquí. El CRM configura el resto solo.</li></ol></details>
     ${x.errorCx ? `<div class="ll-nota">${esc(x.errorCx)}</div>` : ''}`;
+}
+/**
+ * Conectar con los datos de la app: qué le falta a lo escrito para poder conectar ('' si está completo). Mientras no se
+ * ha escrito nada en un campo no se le reclama (salvo con `todo`, que es lo que decide el botón).
+ */
+function faltaCx(x, todo){
+  const a = x.app, id = a.appId.trim(), sec = a.appSecret.trim(), tok = a.token.trim(), waba = (a.wabaId || '').trim();
+  const f = [];
+  if ((id || todo) && !/^\d{5,30}$/.test(id)) f.push('el identificador de la app son solo números');
+  if ((sec || todo) && sec.length !== 32) f.push(sec ? `la clave secreta de Meta tiene 32 caracteres y esta tiene ${sec.length}: cópiala de nuevo en Configuración de la app, Básica, con «Mostrar»` : 'falta la clave secreta');
+  if ((tok || todo) && tok.length < 40) f.push(tok ? 'el token parece incompleto: cópialo entero, empieza por EAA' : 'falta el token');
+  if (x.pideWaba && (waba || todo) && !/^\d{5,30}$/.test(waba)) f.push('el identificador de la cuenta de WhatsApp Business son solo números');
+  if (!f.length) return '';
+  const t = f.join('; ');
+  return t.charAt(0).toUpperCase() + t.slice(1) + '.';
 }
 function pintarConexion(){
   const x = st.cx, pasos = pasosHTML(['Cuenta', 'Número', 'Datos', 'Conexión'], x.paso);
@@ -454,7 +471,7 @@ function pintarConexion(){
   let h = '';
   if (x.paso === 1) {
     const usables = conexionesWa().filter(cxUsable), eligiendo = !x.nueva && usables.length;
-    const a = x.app, listoManual = /^\d{5,30}$/.test(a.appId.trim()) && a.appSecret.trim().length >= 32 && a.token.trim().length >= 40 && (!x.pideWaba || /^\d{5,30}$/.test((a.wabaId || '').trim()));
+    const listoManual = !faltaCx(x, true);
     const pie = x.avisoCx ? `<button type="button" class="btn pri" data-cx-seguir="1">Elegir el número</button>`
       : eligiendo ? `<button type="button" class="btn pri" data-cx-ir="2" ${x.conexionId ? '' : 'disabled'}>Siguiente</button>`
       : x.manual ? `<button type="button" class="btn atras" data-cx-atrasman="1">Atrás</button><button type="button" class="btn pri" data-cx-conectarcuenta="1" ${listoManual && !x.enviandoCx ? '' : 'disabled'}>${x.enviandoCx ? 'Conectando…' : `${I('check')}Conectar cuenta`}</button>`
@@ -694,7 +711,9 @@ document.getElementById('ov-x').addEventListener('input', e => {
   if (e.target.id === 'cx-tok') x.app.token = e.target.value;
   if (e.target.id === 'cx-waba') { e.target.value = e.target.value.replace(/\D/g, ''); x.app.wabaId = e.target.value; }
   const b = document.querySelector('[data-cx-conectar]'); if (b && x.paso === 3) b.disabled = !(x.nombre.trim() && /^\d{6}$/.test(x.pin));
-  const bc = document.querySelector('[data-cx-conectarcuenta]'); if (bc) bc.disabled = x.enviandoCx || !(/^\d{5,30}$/.test(x.app.appId.trim()) && x.app.appSecret.trim().length >= 32 && x.app.token.trim().length >= 40 && (!x.pideWaba || /^\d{5,30}$/.test((x.app.wabaId || '').trim())));
+  const bc = document.querySelector('[data-cx-conectarcuenta]'); if (bc) bc.disabled = x.enviandoCx || !!faltaCx(x, true);
+  // Qué le falta a cada dato, en vivo: el botón deshabilitado sin explicación no dice nada (6-oct).
+  const fa = document.getElementById('cx-falta'); if (fa) { const t = faltaCx(x); fa.textContent = t; fa.hidden = !t; }
 });
 
 /* Registro de cada llamada en la conversación */

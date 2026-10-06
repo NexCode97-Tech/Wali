@@ -480,6 +480,9 @@ const INTEG_UI = {
   hotmart:{logo:'<svg viewBox="-4.49 0.00 31.96 31.96" aria-hidden="true"><path fill="#FF4000" d="M11.4892 26.2887C8.2052 26.2887 5.54065 23.5637 5.54065 20.2035C5.54065 16.8433 8.20241 14.1182 11.4892 14.1182C14.7759 14.1182 17.4377 16.8433 17.4377 20.2035C17.4377 23.5637 14.7759 26.2887 11.4892 26.2887ZM22.285 15.0148C21.874 13.5556 21.2797 12.1326 20.4287 10.7264C20.4287 10.7264 19.6261 9.39738 19.2894 8.99467C19.2075 8.89051 19.0401 9.00584 19.1034 9.12395C19.1992 9.32205 19.2847 9.56386 19.2243 9.80381C19.1257 10.093 18.803 10.2967 18.5044 10.1916C18.4254 10.1582 18.351 10.1116 18.2849 10.0428C17.978 9.72661 17.8218 9.20579 17.6218 8.54268C17.4433 7.95396 17.2247 7.21923 16.8248 6.42591C16.1784 5.13781 15.4111 4.54073 15.3814 4.51562C15.3432 4.48586 15.2884 4.48586 15.2474 4.51562C15.2065 4.54631 15.1898 4.5956 15.2065 4.64489C15.2093 4.65605 15.532 5.71815 14.9108 6.52171C14.6643 6.8435 14.2867 7.03602 13.8477 7.06392C13.4069 7.09089 12.9716 6.9458 12.7084 6.68446C12.0593 6.03251 11.983 4.87647 11.996 4.24591C12.037 2.14309 12.6722 0.670843 13.0042 0.183503C13.034 0.142582 13.0321 0.0849194 12.9986 0.0430678C12.9661 0.00400622 12.914 -0.0118044 12.8675 0.00958644C10.2959 1.12749 8.43306 3.03128 7.48349 5.51727C6.94686 6.9951 6.71435 7.66937 6.52463 8.09347C6.34978 8.48129 6.18795 8.66079 6.02334 8.75938C5.93312 8.81425 5.82059 8.84494 5.70805 8.85052C5.54065 8.83378 4.71105 8.68032 5.43369 7.29271C5.49414 7.17738 5.33511 7.05927 5.24768 7.15506L4.67757 7.78284C4.65246 7.81074 4.62549 7.83771 4.60038 7.86561L4.50458 7.9707C4.48784 7.99024 4.47482 8.00605 4.46087 8.02558C2.66404 10.0791 1.40756 12.7046 0.683992 15.1348C0.0366861 17.4729 -0.00516555 19.3358 0.000414671 20.0463V20.2035C0.000414671 23.3433 1.19458 26.2934 3.36622 28.5152C5.53507 30.7334 8.4219 31.9582 11.4892 31.9582C14.5564 31.9582 17.4433 30.7362 19.6121 28.5152C21.781 26.2943 22.9779 23.3433 22.9779 20.2026C22.9779 18.2011 22.7203 16.5726 22.285 15.0139"/></svg>', cat:'Pagos y ventas', res:'Compras de tus clientes por su correo: producto, estado del pago, fecha y cuotas.',
     ayuda:'Con las credenciales de desarrollador de tu cuenta', para:'Para que los agentes IA consulten las compras de tus clientes',
     pasos:['En Hotmart, entra a Herramientas y luego a Credenciales de desarrollador.', 'Crea una credencial nueva.', 'Copia aquí el Client ID y el Client Secret.']},
+  // El ícono oficial de Google Calendar (2020).
+  gcal:{logo:'<svg viewBox="0 0 200 200" aria-hidden="true"><g transform="translate(3.75 3.75)"><path fill="#fff" d="M148.882 43.618l-47.368-5.263-57.895 5.263L38.355 96.25l5.263 52.632 52.632 6.579 52.632-6.579 5.263-53.947z"/><path fill="#1A73E8" d="M65.211 125.276c-3.934-2.658-6.658-6.539-8.145-11.671l9.132-3.763c.829 3.158 2.276 5.605 4.342 7.342 2.053 1.737 4.553 2.592 7.474 2.592 2.987 0 5.553-.908 7.697-2.724s3.224-4.132 3.224-6.934c0-2.868-1.132-5.211-3.395-7.026s-5.105-2.724-8.5-2.724h-5.276v-9.039H76.5c2.921 0 5.382-.789 7.382-2.368 2-1.579 3-3.737 3-6.487 0-2.447-.895-4.395-2.684-5.855s-4.053-2.197-6.803-2.197c-2.684 0-4.816.711-6.395 2.145s-2.724 3.197-3.447 5.276l-9.039-3.763c1.197-3.395 3.395-6.395 6.618-8.987 3.224-2.592 7.342-3.895 12.342-3.895 3.697 0 7.026.711 9.974 2.145 2.947 1.434 5.263 3.421 6.934 5.947 1.671 2.539 2.5 5.382 2.5 8.539 0 3.224-.776 5.947-2.329 8.184-1.553 2.237-3.461 3.947-5.724 5.145v.539c2.987 1.25 5.421 3.158 7.342 5.724 1.908 2.566 2.868 5.632 2.868 9.211s-.908 6.776-2.724 9.579c-1.816 2.803-4.329 5.013-7.513 6.618-3.197 1.605-6.789 2.421-10.776 2.421-4.618.013-8.881-1.316-12.815-3.974zM121.25 79.961l-9.974 7.25-5.013-7.605 17.987-12.974h6.895v61.197h-9.895z"/><path fill="#EA4335" d="M148.882 196.25l47.368-47.368-23.684-10.526-23.684 10.526-10.526 23.684z"/><path fill="#34A853" d="M33.092 172.566l10.526 23.684h105.263v-47.368H43.618z"/><path fill="#4285F4" d="M12.039-3.75C3.316-3.75-3.75 3.316-3.75 12.039v136.842l23.684 10.526 23.684-10.526V43.618h105.263l10.526-23.684L148.882-3.75z"/><path fill="#188038" d="M-3.75 148.882v31.579c0 8.724 7.066 15.789 15.789 15.789h31.579v-47.368z"/><path fill="#FBBC04" d="M148.882 43.618v105.263h47.368V43.618l-23.684-10.526z"/><path fill="#1967D2" d="M196.25 43.618V12.039c0-8.724-7.066-15.789-15.789-15.789h-31.579v47.368z"/></g></svg>',
+    cat:'Agenda', ayuda:'Compartiendo tu calendario con el CRM', para:'Para que los agentes IA ofrezcan los horarios libres de tu agenda'},
 };
 const integLogo = id => (INTEG_UI[id] || {}).logo || I('plug');
 function integCargar(){
@@ -572,7 +575,7 @@ function paginaIntegraciones(){
     const usan = AGENTES.filter(a => (a.consultas || []).some(id => s.consultas.some(c => c.id === id))).map(a => a.nombre).filter(Boolean);
     return `<article class="ig-c"><div class="ig-cab"><span class="ig-logo">${integLogo(s.id)}</span><span class="ig-nom"><b>${esc(s.n)}</b><small>${esc(u.cat || 'Otras plataformas')}</small></span><span class="ig-est ${s.conectado ? 'on' : 'off'}">${s.conectado ? 'Conectada' : 'Sin conectar'}</span></div>
       <p>${esc(u.res || s.d)}</p>
-      ${s.conectado ? `<dl class="ig-kv"><dt>La usan</dt><dd>${usan.length ? esc(usan.join(', ')) : 'Ningún agente todavía'}</dd>${s.desde ? `<dt>Conectada</dt><dd>${esc(fechaCorta(s.desde))}${s.por ? `, por ${esc(s.por)}` : ''}</dd>` : ''}</dl>
+      ${s.conectado ? `<dl class="ig-kv">${(s.datos || []).map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}<dt>La usan</dt><dd>${usan.length ? esc(usan.join(', ')) : 'Ningún agente todavía'}</dd>${s.desde ? `<dt>Conectada</dt><dd>${esc(fechaCorta(s.desde))}${s.por ? `, por ${esc(s.por)}` : ''}</dd>` : ''}</dl>
         <div class="ig-pie"><span class="sp"></span><button type="button" class="btn" data-integ-quitar="${esc(s.id)}">${I('x')}Desconectar</button></div>`
       : `<div class="ig-pie"><span class="sp">${esc(u.ayuda || '')}</span><button type="button" class="btn" data-integ-conectar="${esc(s.id)}">${I('link')}Conectar</button></div>`}</article>`; };
   // Una sola sección, con las conectadas primero: el estado de cada una lo dice su etiqueta (5-oct).
@@ -629,6 +632,52 @@ document.getElementById('ov-x').addEventListener('click', e => {
     .catch(err => { q.disabled = false; toast(err.message); });
 });
 
+/* Google Calendar (6-oct): se conecta compartiendo el calendario con el correo del CRM («Ver solo información de
+   disponible/ocupado») y diciendo cuánto dura cada cita, en qué horario y días se dan, y el enlace para reservar. */
+const GC_DIAS = [[1, 'L'], [2, 'M'], [3, 'M'], [4, 'J'], [5, 'V'], [6, 'S'], [0, 'D']];
+const GC_DIAS_N = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+document.head.insertAdjacentHTML('beforeend', `<style>
+.gc-cuenta{display:flex;align-items:center;gap:8px;margin-top:6px;padding:8px 10px;border:1px solid #e5e9f0;border-radius:9px;background:#fff;font-size:12.5px;font-family:ui-monospace,monospace;word-break:break-all}
+.gc-cuenta button{margin-left:auto;flex:none;height:28px;padding:0 10px;border-radius:7px;font:inherit;font-family:Inter,system-ui,sans-serif;font-size:12px}
+.gc-fila{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.ig-f select{height:42px;border:1px solid #e5e9f0;border-radius:10px;padding:0 10px;font:inherit;font-size:14px;font-weight:400;background:#fff}
+.gc-dias{display:flex;gap:6px;flex-wrap:wrap}
+.gc-dias button{width:38px;height:38px;border-radius:10px;border:1px solid #e5e9f0;background:#fff;font-weight:600;font-size:13px;color:#4b5563;cursor:pointer}
+.gc-dias button[aria-pressed="true"]{background:var(--nx-negro,#0b0b10);border-color:var(--nx-negro,#0b0b10);color:#fff}
+.ig-f .gc-op{font-weight:400;color:#6b7280}
+@media (max-width:560px){.gc-fila{grid-template-columns:1fr}}
+</style>`);
+document.getElementById('page').addEventListener('click', e => {
+  if (st.pagina !== 'cfg-integraciones') return;
+  const cn = e.target.closest('[data-integ-conectar="gcal"]'); if (!cn) return;
+  e.stopImmediatePropagation();
+  const s = (INTEG.lista || []).find(x => x.id === 'gcal'); if (!s) return;
+  const sin = !s.cuenta;
+  const pasos = ['En Google Calendar, abre la configuración del calendario de las citas y entra a «Compartir con personas o grupos específicos».', 'Agrega este correo con el permiso «Ver solo información de disponible/ocupado (ocultar detalles)»:', 'Escribe aquí el ID del calendario: para el principal es el correo de tu cuenta de Google. Está en la misma configuración, en «Integrar el calendario».'];
+  abrirDialogo(`<div class="ig-dcab"><span class="ig-logo">${integLogo('gcal')}</span><div><h3>Conectar Google Calendar</h3><span>${esc(INTEG_UI.gcal.para)}</span></div></div>
+    ${sin ? `<div class="mt-aviso">${I('lock')}<span>Google Calendar todavía no está disponible en este CRM. Escríbenos y lo activamos.</span></div>` : `<div class="ig-pasos">${pasos.map((p, i) => `<span class="ig-paso"><i>${i + 1}</i><span>${esc(p)}${i === 1 ? `<span class="gc-cuenta" id="gc-cuenta">${esc(s.cuenta)}<button type="button" class="btn" data-gc-copiar="1">Copiar</button></span>` : ''}</span></span>`).join('')}</div>`}
+    <div class="ig-f"><label>ID del calendario<input id="gc-cal" type="email" placeholder="agenda@tuempresa.com" autocomplete="off" spellcheck="false"></label>
+      <div class="gc-fila"><label>Cada cita dura<select id="gc-dur">${[15, 20, 30, 45, 60, 90, 120].map(m => `<option value="${m}"${m === 30 ? ' selected' : ''}>${m < 60 ? m + ' minutos' : m === 60 ? '1 hora' : (m / 60) + ' horas'}</option>`).join('')}</select></label>
+        <label>Desde<input id="gc-desde" type="time" value="08:00" step="900"></label><label>Hasta<input id="gc-hasta" type="time" value="18:00" step="900"></label></div>
+      <label>Días de citas<span class="gc-dias" id="gc-dias">${GC_DIAS.map(([d, l]) => `<button type="button" data-gc-dia="${d}" aria-pressed="${d >= 1 && d <= 5}" aria-label="${GC_DIAS_N[d]}">${l}</button>`).join('')}</span></label>
+      <label>Enlace para reservar <span class="gc-op">(opcional)</span><input id="gc-enlace" type="url" placeholder="https://calendar.app.google/… o tu página de Calendly" autocomplete="off"></label></div>
+    <p class="ig-nota">${I('lock')}El CRM solo ve si cada hora está libre u ocupada, nunca el detalle de tus citas, y no agenda nada. Con el enlace, el agente lo comparte para que la persona reserve; sin él, pasa la conversación a tu equipo con la hora que eligió.</p>
+    <div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" data-gc-guardar="1"${sin ? ' disabled' : ''}>${I('link')}Conectar</button></div>`, 'dlg-per dlg-ig');
+  setTimeout(() => { const x = document.getElementById('gc-cal'); if (x) x.focus(); }, 30);
+}, true);
+document.getElementById('ov-x').addEventListener('click', e => {
+  const d = e.target.closest('[data-gc-dia]'); if (d) { d.setAttribute('aria-pressed', String(d.getAttribute('aria-pressed') !== 'true')); return; }
+  if (e.target.closest('[data-gc-copiar]')) { const s = (INTEG.lista || []).find(x => x.id === 'gcal'); try { navigator.clipboard.writeText(s.cuenta); toast('Correo copiado'); } catch { toast('No se pudo copiar: selecciónalo y cópialo'); } return; }
+  const g = e.target.closest('[data-gc-guardar]'); if (!g) return;
+  const v = id => ((document.getElementById(id) || {}).value || '').trim();
+  const dias = [...document.querySelectorAll('#gc-dias [aria-pressed="true"]')].map(b => Number(b.dataset.gcDia));
+  if (!v('gc-cal')) { toast('Escribe el ID del calendario'); return; }
+  if (!dias.length) { toast('Elige al menos un día para las citas'); return; }
+  g.disabled = true; g.textContent = 'Revisando el calendario…';
+  crmApi('POST', '/crm/integraciones/gcal', {calendario: v('gc-cal'), duracion: Number(v('gc-dur')), desde: v('gc-desde'), hasta: v('gc-hasta'), dias, enlace: v('gc-enlace')})
+    .then(l => { INTEG.lista = Array.isArray(l) ? l : INTEG.lista; cerrarDialogo(); render(); toast('Google Calendar quedó conectado. Elige en Capacidades qué agentes lo usan.'); })
+    .catch(err => { g.disabled = false; g.textContent = ''; g.insertAdjacentHTML('beforeend', `${I('link')}Conectar`); toast(err.message); });
+});
 
 /* ── Motor de IA (5-oct): Claude, Gemini u OpenAI con la clave de la cuenta de la empresa, que le paga directo al
    proveedor (api/src/services/crm/motorIA.ts). El proveedor solo pone el modelo: instrucciones, conocimiento,

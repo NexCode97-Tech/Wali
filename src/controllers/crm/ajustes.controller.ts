@@ -14,7 +14,7 @@ import { leerWeb, extraerTexto, TIPOS_DOC, EXT_DOC, MENSAJE_TIPOS } from '../../
 import { probarAgente } from '../../services/crm/agentes'
 import { alcanceDe, alcanceDePersona, alcanceParaFront, entraPorRol, sincronizarMiembros, type Alcance } from '../../services/crm/alcance'
 import { normalizarEquipos, type EquiposNorm } from '../../services/crm/equipos'
-import { conectarHotmart, desconectar, estadoIntegraciones } from '../../services/crm/integraciones'
+import { conectarCalendario, conectarHotmart, desconectar, estadoIntegraciones } from '../../services/crm/integraciones'
 import { conectarMotor, conOpciones, desconectarMotor, estadoMotor, motorIA, usarMotor } from '../../services/crm/motorIA'
 import { convVigente, esLider, exigirAdminEquipos, exigirEscritura, exigirLider, nombreArchivo, obj, subirACloudinary, tamanoLegible } from './_comun'
 
@@ -668,6 +668,11 @@ export async function integracionHotmart(req: Request, res: Response) {
   exigirLider(req, 'conectar Hotmart')
   const b = obj(req.body)
   return ApiResponse.success(res, await conectarHotmart({ clientId: b.clientId, clientSecret: b.clientSecret }, req.userId ?? null))
+}
+export async function integracionCalendario(req: Request, res: Response) {
+  exigirEscritura(req)
+  exigirLider(req, 'conectar Google Calendar')
+  return ApiResponse.success(res, await conectarCalendario(obj(req.body), req.userId ?? null))
 }
 export async function integracionQuitar(req: Request, res: Response) {
   exigirEscritura(req)

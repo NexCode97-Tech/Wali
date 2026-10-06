@@ -523,8 +523,8 @@ const EQUIPOS_DEFECTO = ['Ventas', 'Recuperación de ventas', 'Soporte de ventas
 async function nombresDe(clave: string, defecto: string[]): Promise<string[]> {
   const v = await leerAjuste<unknown>(clave)
   if (!Array.isArray(v)) return defecto
-  const nombres = v.map(x => (Array.isArray(x) ? txt(x[0]) : txt(obj(x).n))).filter(Boolean)
-  return nombres.length ? nombres : defecto
+  // Guardada vacía es «ninguna» (las empresas nuevas empiezan sin etapas, 6-oct): no vuelven las de ejemplo.
+  return v.map(x => (Array.isArray(x) ? txt(x[0]) : txt(obj(x).n))).filter(Boolean)
 }
 
 async function equipoValido(nombre: string): Promise<string | null> {

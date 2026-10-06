@@ -635,7 +635,7 @@ function panel(c){
     <div class="ptitle">Contacto<button type="button" id="p-min" aria-label="Ocultar el panel">${I('back')}</button></div>
     <div class="contact">
       <div class="pc-who"><span class="av" style="background:${AVC[c.id % AVC.length]}">${esc(ini(c.n))}</span><span><b>${esc(c.n)}</b>${c.numero ? `<small>Ticket <strong>#${c.numero}</strong></small>` : ''}</span></div>
-      <div class="pc-acts">${c.guardado ? `<button type="button" class="pc-act" aria-label="Ver contacto" title="Ver en Contactos">${I('user')}Ver</button>` : `<button type="button" class="pc-act pri" id="b-agregar" title="Agregar a contactos">${I('user-plus')}Agregar</button>`}<button type="button" class="pc-act" id="b-editar" title="Editar contacto">${I('pen')}Editar</button><button type="button" class="pc-act${sil ? ' on' : ''}" id="b-silenciar" aria-pressed="${sil}" title="${sil ? 'Quitar el silencio' : 'Silenciar sus mensajes'}">${I('bell-off')}${sil ? 'Silenciado' : 'Silenciar'}</button>${c.canal === 'wa' ? `<button type="button" class="pc-act" id="b-call" title="Llamar por WhatsApp">${I('phone')}Llamar</button>` : ''}</div>
+      <div class="pc-acts">${c.guardado ? `<button type="button" class="pc-act" aria-label="Ver contacto" title="Ver en Contactos">${I('user')}Ver</button>` : `<button type="button" class="pc-act pri" id="b-agregar" title="Agregar a contactos">${I('user-plus')}Agregar</button>`}<button type="button" class="pc-act" id="b-editar" title="Editar contacto">${I('pen')}Editar</button><button type="button" class="pc-act" id="b-transferir" title="Transferir con nota">${I('share')}Transferir</button>${c.canal === 'wa' ? `<button type="button" class="pc-act" id="b-call" title="Llamar por WhatsApp">${I('phone')}Llamar</button>` : ''}</div>
       ${lineas ? `<div class="pc-info">${lineas}</div>` : ''}
     </div>
     ${sec('acc','sliders','Conversación', `
@@ -913,6 +913,8 @@ document.getElementById('panel').addEventListener('click', e => {
       <div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" id="ed-ok">${I('check')}Guardar</button></div>`);
     setTimeout(() => document.getElementById('ed-n').focus(), 30); return;
   }
+  // Transferir va en la tarjeta (6-oct); Silenciar pasó al menú «⋯» de la conversación.
+  if (ic && ic.id === 'b-transferir') { st.tr = {a:'', nota:''}; dlgTransferir(); return; }
   if (ic && ic.id === 'b-silenciar') { const k = c.contactoId || c.id, ya = silenciado(c); AJ.silenciados = ya ? (AJ.silenciados || []).filter(x => x !== k) : [...(AJ.silenciados || []), k]; panel(c); toast(ya ? `Vuelven a sonar los mensajes de ${c.n}` : `Silenciaste a ${c.n}: sus mensajes no suenan ni avisan`); return; }
   if (ic) { if (ic.getAttribute('aria-label') === 'Ver contacto') irA('contactos'); return; }
 });
@@ -1432,7 +1434,7 @@ document.querySelector('.chat').addEventListener('click', e => {
 // Menú «Más»
 document.getElementById('b-mas').addEventListener('click', e => {
   e.stopPropagation(); const m = document.getElementById('m-mas'); const c = conv();
-  m.innerHTML = [['transferir','share','Transferir con nota'],['unir','merge','Unir con otro contacto'],['nocontactar','block', c.noContactar ? 'Quitar «no contactar»' : 'No contactar'],['-'],['exportar','download','Exportar el chat'],['spam','shield-x','Marcar como spam','peligro'],['-'],['borrar','x','Borrar sus datos']].map(([k, ic, n, cls]) => k === '-' ? '<hr>' : `<button type="button" data-mas="${k}"${cls ? ` class="${cls}"` : ''}>${I(ic)}${n}</button>`).join('');
+  m.innerHTML = [['silenciar','bell-off', silenciado(c) ? 'Quitar el silencio' : 'Silenciar sus mensajes'],['unir','merge','Unir con otro contacto'],['nocontactar','block', c.noContactar ? 'Quitar «no contactar»' : 'No contactar'],['-'],['exportar','download','Exportar el chat'],['spam','shield-x','Marcar como spam','peligro'],['-'],['borrar','x','Borrar sus datos']].map(([k, ic, n, cls]) => k === '-' ? '<hr>' : `<button type="button" data-mas="${k}"${cls ? ` class="${cls}"` : ''}>${I(ic)}${n}</button>`).join('');
   m.hidden = !m.hidden;
 });
 document.addEventListener('click', e => { if (!e.target.closest('#b-mas')) document.getElementById('m-mas').hidden = true; if (!e.target.closest('#b-clip') && !e.target.closest('#matp')) document.getElementById('matp').hidden = true; if (!e.target.closest('#b-prog') && !e.target.closest('#progp')) document.getElementById('progp').hidden = true; });
@@ -1440,6 +1442,7 @@ const chipsSel = (lista, attr, sel) => ddSel(attr, lista, sel);
 document.getElementById('m-mas').addEventListener('click', e => {
   const b = e.target.closest('[data-mas]'); if (!b) return; const c = conv(); document.getElementById('m-mas').hidden = true;
   if (b.dataset.mas === 'transferir') { st.tr = {a:'', nota:''}; dlgTransferir(); }
+  if (b.dataset.mas === 'silenciar') { const k = c.contactoId || c.id, ya = silenciado(c); AJ.silenciados = ya ? (AJ.silenciados || []).filter(x => x !== k) : [...(AJ.silenciados || []), k]; panel(c); toast(ya ? `Vuelven a sonar los mensajes de ${c.n}` : `Silenciaste a ${c.n}: sus mensajes no suenan ni avisan`); }
   if (b.dataset.mas === 'unir') dlgUnir(c);
   if (b.dataset.mas === 'exportar') mjDlgExportar(c);
   if (b.dataset.mas === 'spam') mjDlgSpam(c);
@@ -1772,7 +1775,7 @@ document.getElementById('page').addEventListener('click', e => {
   if (g('data-fl-del', v => { f.pasos.splice(+v, 1); toast('Paso borrado'); })) return;
   if (g('data-fl-opadd', v => { f.pasos[+v].ops.push('Opción nueva'); })) return;
   if (g('data-fl-opdel', v => { const [i, j] = v.split('|').map(Number); f.pasos[i].ops.splice(j, 1); })) return;
-  if (g('data-fl-add', v => { const n = {mensaje:{t:'mensaje', txt:''}, pregunta:{t:'pregunta', txt:'', guardar:'Ciudad', validar:'Texto libre'}, botones:{t:'botones', txt:'', ops:['Opción 1','Opción 2']}, etiqueta:{t:'etiqueta', tag:ETIQS[0][0]}, asignar:{t:'asignar', a:'Reparto automático · equipo Ventas'}}[v]; const k = f.pasos.findIndex(p => p.t === 'asignar' || p.t === 'ramas'); if (k >= 0 && v !== 'asignar') f.pasos.splice(k, 0, n); else f.pasos.push(n); toast(`Paso agregado: ${TIPOS_PASO.find(x => x[0] === v)[1]}`); })) return;
+  if (g('data-fl-add', v => { const n = {mensaje:{t:'mensaje', txt:''}, pregunta:{t:'pregunta', txt:'', guardar:'Ciudad', validar:'Texto libre'}, botones:{t:'botones', txt:'', ops:['Opción 1','Opción 2']}, etiqueta:{t:'etiqueta', tag:(ETIQS[0] || [''])[0]}, asignar:{t:'asignar', a:'Reparto automático · equipo Ventas'}}[v]; const k = f.pasos.findIndex(p => p.t === 'asignar' || p.t === 'ramas'); if (k >= 0 && v !== 'asignar') f.pasos.splice(k, 0, n); else f.pasos.push(n); toast(`Paso agregado: ${TIPOS_PASO.find(x => x[0] === v)[1]}`); })) return;
   if (t.closest('[data-fl-probar]')) { st.prueba = {resp:{}, nombre:''}; render(); const n = document.getElementById('fl-in'); if (n) n.focus(); return; }
   const en = t.closest('[data-fl-enviar]'); if (en) { responderPrueba(+en.dataset.flEnviar, document.getElementById('fl-in').value); return; }
   const rb = t.closest('[data-fl-resp]'); if (rb) { const [i, v] = rb.dataset.flResp.split('|'); responderPrueba(+i, v); return; }

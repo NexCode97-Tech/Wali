@@ -179,6 +179,7 @@ router.delete('/agentes/mejorar/:id', soloLideres('quitar preguntas de Mejorar')
 // Capacidades (versión cerrada): conexión de la empresa con los sistemas aprobados; el agente solo consulta.
 router.get('/integraciones', soloLideres('ver las conexiones con otros sistemas'), asyncHandler(ajustes.integracionesLista))
 router.post('/integraciones/hotmart', soloLideres('conectar Hotmart'), asyncHandler(ajustes.integracionHotmart))
+router.post('/integraciones/gcal', soloLideres('conectar Google Calendar'), asyncHandler(ajustes.integracionCalendario))
 router.delete('/integraciones/:sistema', soloLideres('desconectar otros sistemas'), asyncHandler(ajustes.integracionQuitar))
 router.get('/motor-ia', soloLideres('ver el motor de IA'), asyncHandler(ajustes.motorLista))
 router.post('/motor-ia/:proveedor', soloLideres('conectar el motor de IA'), asyncHandler(ajustes.motorConectar))
