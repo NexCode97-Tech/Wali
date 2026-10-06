@@ -19,6 +19,7 @@ import { waConfigurado } from './whatsapp'
 import { agenteIniciar } from './agenteIA'
 import type { CtxEntrante } from './automatizaciones'
 import { CANALES_CONEXION, nombreCanal, tieneSalida } from './formas'
+import { motorIA, SIN_MOTOR } from './motorIA'
 
 /**
  * Reglas automáticas del CRM (página «Reglas automáticas» de la maqueta,
@@ -877,7 +878,8 @@ function textoDeMensaje(m: CrmMensaje): string {
 }
 
 async function accionResumen(origen: string, c: Conv): Promise<Resultado> {
-  if (!clienteIA && !process.env.ANTHROPIC_API_KEY) return { aviso: 'no dejó el resumen en nota privada: falta ANTHROPIC_API_KEY en el servidor' }
+  const ia = clienteIA ?? (await motorIA())?.cliente
+  if (!ia) return { aviso: `no dejó el resumen en nota privada: ${SIN_MOTOR}` }
   const [msgs, previo] = await Promise.all([
     prisma.crmMensaje.findMany({ where: { conversacionId: c.id, tipo: { in: ['in', 'out', 'bot', 'ia', 'recepcion', 'note'] } }, orderBy: { createdAt: 'desc' }, take: 60 }),
     prisma.crmMensaje.findFirst({ where: { conversacionId: c.id, tipo: 'note', datos: { path: ['resumen'], equals: true } }, orderBy: { createdAt: 'desc' } }),
@@ -897,7 +899,6 @@ async function accionResumen(origen: string, c: Conv): Promise<Resultado> {
       : m.tipo === 'bot' ? 'Mensaje automático' : 'Asistente virtual'
     return `${de}: ${t}`
   }).filter(Boolean)
-  const ia = clienteIA ?? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 30_000, maxRetries: 1 })
   let r: Anthropic.Message
   try {
     r = await ia.messages.create({
@@ -907,7 +908,7 @@ async function accionResumen(origen: string, c: Conv): Promise<Resultado> {
         + 'Escribe en español de Colombia de dos a cuatro frases cortas: quién es la persona si se sabe, qué necesita o pregunta, qué se le respondió y qué queda pendiente. '
         + 'Solo con lo que está en la conversación, sin inventar datos ni precios. Sin saludos, sin listas, sin markdown y sin guiones como puntuación.',
       messages: [{ role: 'user', content: `Conversación (de la más antigua a la más reciente):\n\n${lineas.join('\n')}` }],
-    })
+    }, { timeout: 30_000, maxRetries: 1 })
   } catch (e) {
     const detalle = e instanceof Anthropic.APIError ? `el proveedor de IA respondió ${e.status ?? 'con error'}` : (e as Error).message
     logger.warn(`[CRM reglas] resumen de ${c.id}: ${detalle}`)

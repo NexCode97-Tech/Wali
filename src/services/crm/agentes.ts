@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { AppError } from '../../utils/errors'
 import { logger } from '../../utils/logger'
 import { MODELO } from '../../config/ia'
+import { motorIA } from './motorIA'
 import { leerAjuste } from './ajustes'
 import { prismaGlobal } from './bd'
 import { espacioActual } from './espacio'
@@ -326,10 +327,10 @@ const ESQUEMA = {
 }
 
 export async function probarAgente(agente: AgenteMaqueta, historial: TurnoPrueba[], cliente?: Pick<Anthropic, 'messages'>): Promise<RespuestaAgente> {
-  if (!cliente && !process.env.ANTHROPIC_API_KEY) {
-    throw new AppError('El chat de prueba no está disponible: falta ANTHROPIC_API_KEY en el servidor. Pídele al administrador que la configure.', 503)
+  const ia = cliente ?? (await motorIA())?.cliente
+  if (!ia) {
+    throw new AppError('El chat de prueba no está disponible: conecta un motor de IA en Ajustes del CRM, Integraciones, Motor de IA.', 503)
   }
-  const ia = cliente ?? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   const { texto: kb, recortado } = await conocimiento((Array.isArray(agente.kb) ? agente.kb : []).map(String))
   const espacio = espacioActual()
   const [empresa, pedir, consultas] = await Promise.all([nombreEmpresa(espacio), datosRecopilar(agente), consultasDe(agente)])
@@ -368,7 +369,7 @@ export async function probarAgente(agente: AgenteMaqueta, historial: TurnoPrueba
     } catch (e) {
       if (e instanceof Anthropic.RateLimitError) throw new AppError('El modelo está ocupado. Espera unos segundos y vuelve a escribir.', 429)
       if (e instanceof Anthropic.APIError) {
-        logger.error(`[CRM agentes] Anthropic ${e.status}: ${e.message}`)
+        logger.error(`[CRM agentes] proveedor de IA ${e.status}: ${e.message}`)
         throw new AppError('El agente no pudo responder por un error del proveedor de IA. Intenta de nuevo en un momento.', 502)
       }
       throw e

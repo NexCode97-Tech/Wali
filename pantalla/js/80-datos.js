@@ -678,6 +678,7 @@ const crmDatos = (() => {
         case 'conexiones': if (Array.isArray(d.conexiones)) CONEXIONES.splice(0, CONEXIONES.length, ...d.conexiones); break;
         case 'canales': if (Array.isArray(d.canales)) CX_CANALES.splice(0, CX_CANALES.length, ...d.canales); break;
         case 'integraciones': if (Array.isArray(d.integraciones)) INTEG.lista = d.integraciones; break;
+        case 'motor-ia': if (d.motorIA && Array.isArray(d.motorIA.proveedores)) MOTOR.estado = d.motorIA; break;
         case 'plantillas': crmPlantillas().then(repintarPronto, () => {}); break;
         // Le cambió el rol en un equipo o el equipo (lote 4): se vuelve a pedir lo que ve. Sin acceso al CRM, la pantalla lo dice.
         case 'alcance':

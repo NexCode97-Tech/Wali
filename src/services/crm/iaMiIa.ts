@@ -304,7 +304,7 @@ export async function aprenderNoche(op: { forzar?: boolean; ahora?: Date } = {})
     const h = horaColombia(ahora)
     if (h < 2 || h >= 6) return 0
   }
-  if (!clienteIA()) return 0
+  if (!(await clienteIA())) return 0
   const hoy = diaColombia(ahora)
   if (!op.forzar) {
     const reclamado = await prisma.$executeRaw`

@@ -3,6 +3,7 @@ import type { CrmMensaje, Prisma } from '@prisma/client'
 import { prisma, prismaGlobal, llaveAjuste } from './bd'
 import { espacioActual } from './espacio'
 import { logger } from '../../utils/logger'
+import { motorIA, type Motor } from './motorIA'
 
 /**
  * Módulo común de la IA del CRM (lote 5): sugerencias de respuesta, embudo
@@ -11,18 +12,23 @@ import { logger } from '../../utils/logger'
  * métricas de la prueba. Ningún otro archivo del lote 5 crea clientes de
  * Anthropic: todos llaman a `llamarIA`.
  *
- * Sin ANTHROPIC_API_KEY (ni CRM_IA_URL, que solo existe en el entorno local de
- * pruebas) no hay cliente y la IA no corre: nada falla ni avisa.
+ * El modelo lo pone el motor de IA de cada empresa (motorIA.ts): Claude, Gemini u
+ * OpenAI con la clave de su cuenta, que no cuenta para el tope (lo paga ella). La
+ * clave del servidor solo mueve el espacio interno de NexCode97, con el tope.
+ * Sin motor la IA no corre: nada falla ni avisa.
  */
 
 export const MODELO_SUGERENCIAS = 'claude-sonnet-5-5'
 export const MODELO_HAIKU = 'claude-haiku-4-5-20251001'
-/** Gasto máximo de la IA del CRM en un día de Colombia, sumando todos los espacios (es una sola clave de Anthropic). */
+/** Gasto máximo en un día de Colombia de la clave del servidor (la de NexCode97), sumando los espacios que la usan. */
 export const TOPE_USD_DIA = 5
 /** USD por millón de tokens. */
 export const PRECIOS: Record<string, { entrada: number; salida: number; lecturaCache: number; escrituraCache: number }> = {
   'claude-sonnet-5-5': { entrada: 2, salida: 10, lecturaCache: 0.2, escrituraCache: 2.5 },
   'claude-haiku-4-5-20251001': { entrada: 1, salida: 5, lecturaCache: 0.1, escrituraCache: 1.25 },
+  // Con la clave propia de la empresa el gasto solo se muestra (lo paga ella); los de OpenAI, de su página de modelos.
+  'gpt-6.1-sol': { entrada: 2, salida: 10, lecturaCache: 0.1, escrituraCache: 2.5 },
+  'gpt-6-luna': { entrada: 0.1, salida: 0.5, lecturaCache: 0.01, escrituraCache: 0.1 },
 }
 /** Persona a la que se cuenta lo del embudo cuando la conversación no tiene asignado. */
 export const PERSONA_SIN_ASIGNAR = '_sinAsignar'
@@ -35,7 +41,6 @@ export const CLAVE_METRICAS = '_iaMetricas:'
 export type ClienteIA = Pick<Anthropic, 'messages'>
 
 let inyectado: ClienteIA | null = null
-let propio: ClienteIA | null = null
 let reloj: (() => Date) | null = null
 
 /** Solo pruebas: fija el cliente de Claude (null vuelve al de la clave). */
@@ -47,19 +52,17 @@ export function fijarRelojIA(f: (() => Date) | null): void { reloj = f }
 export const ahoraIA = (): Date => (reloj ? reloj() : new Date())
 
 /**
- * El cliente de Claude: el inyectado; si no, uno con ANTHROPIC_API_KEY o (solo
- * en el entorno local de pruebas) con CRM_IA_URL, que apunta al Claude falso.
- * Sin ninguno, null: la IA no corre.
+ * El motor de la empresa actual (motorIA.ts), o el cliente inyectado en las pruebas. Sin ninguno, null: la IA no
+ * corre. Sus clientes no reintentan solos: llamarIA reintenta a mano una sola vez los errores que no se cobran.
  */
-export function clienteIA(): ClienteIA | null {
-  if (inyectado) return inyectado
-  const clave = process.env.ANTHROPIC_API_KEY
-  const url = process.env.CRM_IA_URL
-  if (!clave && !url) return null
-  // Sin reintentos del SDK: también reintenta los pedidos que vencen por tiempo, que Anthropic pudo haber cobrado sin
-  // que el gasto quede contado. llamarIA reintenta a mano una sola vez los errores que no se cobran (429, 5xx).
-  if (!propio) propio = new Anthropic({ apiKey: clave || 'prueba-local', baseURL: url || undefined, maxRetries: 0 })
-  return propio
+async function motor(): Promise<Motor | null> {
+  if (inyectado) return { cliente: inyectado, proveedor: 'claude', propio: false }
+  return motorIA()
+}
+
+/** El cliente del motor de la empresa actual (null si no tiene). */
+export async function clienteIA(): Promise<ClienteIA | null> {
+  return (await motor())?.cliente ?? null
 }
 
 // ─── Días de Colombia (UTC−5 todo el año) ────────────────────────────────────
@@ -111,10 +114,11 @@ export async function gastoHoy(dia: string = diaColombia()): Promise<number> {
   return Number(filas[0]?.usd) || 0
 }
 
-/** Hay cliente y no se ha llegado al tope de hoy. */
+/** Hay motor y, si es la clave del servidor, no se ha llegado al tope de hoy (la clave propia no tiene tope aquí). */
 export async function iaDisponible(): Promise<boolean> {
-  if (!clienteIA()) return false
-  return (await gastoHoy()) < TOPE_USD_DIA
+  const m = await motor()
+  if (!m) return false
+  return m.propio || (await gastoHoy()) < TOPE_USD_DIA
 }
 
 // ─── Métricas por día, persona y equipo ──────────────────────────────────────
@@ -204,20 +208,23 @@ export function costoEstimadoUsd(params: Anthropic.MessageCreateParamsNonStreami
   return costoUsd(String(params.model), { input_tokens: Math.ceil(largo / 3), output_tokens: Number(params.max_tokens) || 0 })
 }
 
-/** Registra el gasto de una llamada; si con ella se cruza el tope, deja la hora en que se apagó. */
-async function registrarGasto(usd: number, uso: Uso): Promise<void> {
+/**
+ * Registra el gasto de una llamada; si con ella se cruza el tope, deja la hora en que se apagó. Lo que se gasta con la
+ * clave propia de la empresa queda en su persona pero no en `usd` del día, que es lo de la clave del servidor.
+ */
+async function registrarGasto(usd: number, uso: Uso, propio = false): Promise<void> {
   const dia = diaColombia()
   const espacioId = espacioActual()
   let cruzo = false
   await cambiarDia(dia, async (f, tx) => {
     const persona = uso.persona || PERSONA_SIN_ASIGNAR
     const p = (f.personas[persona] ??= {}) as MetricasPersona
-    f.usd = redondear(f.usd + usd)
+    if (!propio) f.usd = redondear(f.usd + usd)
     p.usd = redondear((p.usd ?? 0) + usd)
     p.llamadas = (p.llamadas ?? 0) + 1
     const por = (p.usdPor ??= {})
     por[uso.tipo] = redondear((por[uso.tipo] ?? 0) + usd)
-    if (f.apagadaEn) return
+    if (propio || f.apagadaEn) return
     const otros = await tx.$queryRaw<{ usd: number | null }[]>`
       SELECT coalesce(sum((valor->>'usd')::numeric), 0)::float8 AS usd FROM crm_ajustes
       WHERE clave = ${CLAVE_METRICAS + dia} AND espacio_id <> ${espacioId}`
@@ -282,14 +289,17 @@ function reintentable(e: unknown): boolean {
  *   refusal devuelve null; max_tokens devuelve la respuesta (quien llama decide).
  */
 export async function llamarIA(params: Anthropic.MessageCreateParamsNonStreaming, uso: Uso, op: { timeout?: number } = {}): Promise<Anthropic.Message | null> {
-  const c = clienteIA()
-  if (!c) return null
-  let gastado: number
-  try { gastado = await gastoHoy() } catch (e) {
-    logger.warn(`[CRM IA] ${uso.tipo}: no se pudo leer el gasto de hoy (${motivo(e)})`)
-    return null
+  const m = await motor()
+  if (!m) return null
+  const c = m.cliente
+  if (!m.propio) {
+    let gastado: number
+    try { gastado = await gastoHoy() } catch (e) {
+      logger.warn(`[CRM IA] ${uso.tipo}: no se pudo leer el gasto de hoy (${motivo(e)})`)
+      return null
+    }
+    if (gastado >= TOPE_USD_DIA) return null
   }
-  if (gastado >= TOPE_USD_DIA) return null
 
   let r: Anthropic.Message
   for (let intento = 1; ; intento++) {
@@ -300,7 +310,7 @@ export async function llamarIA(params: Anthropic.MessageCreateParamsNonStreaming
       if (e instanceof Anthropic.APIConnectionTimeoutError) {
         const estimado = costoEstimadoUsd(params)
         logger.warn(`[CRM IA] ${uso.tipo} (${params.model}): venció el tiempo; se cuenta un gasto estimado de USD ${estimado}`)
-        try { await registrarGasto(estimado, uso) } catch (e2) {
+        try { await registrarGasto(estimado, uso, m.propio) } catch (e2) {
           logger.error(`[CRM IA] ${uso.tipo}: no se pudo registrar el gasto estimado de USD ${estimado} (${motivo(e2)})`)
         }
         return null
@@ -315,8 +325,8 @@ export async function llamarIA(params: Anthropic.MessageCreateParamsNonStreaming
     }
   }
 
-  const usd = costoUsd(String(params.model), r?.usage)
-  try { await registrarGasto(usd, uso) } catch (e) {
+  const usd = costoUsd(String(r?.model || params.model), r?.usage)
+  try { await registrarGasto(usd, uso, m.propio) } catch (e) {
     logger.error(`[CRM IA] ${uso.tipo}: no se pudo registrar el gasto de USD ${usd} (${motivo(e)})`)
   }
   if (r?.stop_reason === 'refusal') {

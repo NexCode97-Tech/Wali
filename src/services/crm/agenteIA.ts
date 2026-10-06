@@ -5,6 +5,7 @@ import { prisma } from './bd'
 import { espacioActual } from './espacio'
 import { logger } from '../../utils/logger'
 import { MODELO } from '../../config/ia'
+import { motorIA, SIN_MOTOR } from './motorIA'
 import type { CtxEntrante } from './automatizaciones'
 import { leerAjuste } from './ajustes'
 import { aQuienRecepcion, conocimiento, datosRecopilar, destinoDe, esRecep, habilidadesDe, llenarHuecos, MAX_CONSULTAS, nombreDeAgente, nombreEmpresa, sistemaDe, sugeribles, type AgenteMaqueta, type DatoRecopilar } from './agentes'
@@ -43,8 +44,8 @@ import { anotarSinRespuesta } from './mejorar'
  *
  * Reglas fijas: se presenta como asistente virtual en su primer mensaje, nunca
  * se hace pasar por persona y siempre termina en una persona (pasa a un equipo
- * con nota, o finaliza si el agente tiene esa acción). Sin ANTHROPIC_API_KEY o
- * si Claude falla, no inventa nada: queda un evento y pasa a una persona (o al
+ * con nota, o finaliza si el agente tiene esa acción). Sin motor de IA o
+ * si el modelo falla, no inventa nada: queda un evento y pasa a una persona (o al
  * flujo de respaldo si todavía no había dicho nada). Tampoco sale nada que no
  * sea un mensaje para el cliente (herramientas escritas como texto, etiquetas
  * internas) ni la misma respuesta dos veces. Solo responde a lo que el cliente
@@ -792,9 +793,10 @@ async function turno(convId: number): Promise<void> {
     return
   }
 
-  const cliente = clienteIA ?? (process.env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }) : null)
+  // El motor de IA de la empresa (Claude, Gemini u OpenAI con su clave): el agente es el mismo con cualquiera.
+  const cliente = clienteIA ?? (await motorIA())?.cliente ?? null
   if (!cliente) {
-    await fallo(conv, est, a, 'falta ANTHROPIC_API_KEY en el servidor')
+    await fallo(conv, est, a, SIN_MOTOR)
     return
   }
 
@@ -1075,7 +1077,7 @@ async function finalizar(convId: number, est: EstadoAgente, a: Agente, resumen: 
 /** Recordatorio (28-sep, como el de Trengo): la persona dejó de responder y el agente le escribe una sola
  *  vez para retomar donde quedó. Solo dentro de la ventana en que el canal deja escribir. true si salió. */
 async function recordar(conv: ConvCompleta, est: EstadoAgente, a: Agente, msgs: CrmMensaje[]): Promise<boolean> {
-  const cliente = clienteIA ?? (process.env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }) : null)
+  const cliente = clienteIA ?? (await motorIA())?.cliente ?? null
   if (!cliente || !encendido(a) || !tieneSalida(conv)) return false
   const ultimoIn = [...msgs].reverse().find(m => m.tipo === 'in')
   const ventana = conv.canal === 'tt' ? 48 * 3_600_000 - 120_000 : ['wa', 'ig', 'fb'].includes(conv.canal) ? VENTANA_UTIL : Infinity
@@ -1260,9 +1262,9 @@ export async function agenteIniciar(ctx: CtxEntrante): Promise<boolean> {
     if (!a) return false
 
     const quien = txt(a.nombre) || 'Agente IA'
-    if (!clienteIA && !process.env.ANTHROPIC_API_KEY) {
+    if (!clienteIA && !(await motorIA())) {
       // No se toma: queda constancia (una vez cada 12 horas por conversación) y sigue el flujo de respaldo o el reparto.
-      await eventoUnaVez(conv.id, `El agente IA «${quien}» no atendió: falta ANTHROPIC_API_KEY en el servidor. No se le respondió nada al cliente con IA.`, 12)
+      await eventoUnaVez(conv.id, `El agente IA «${quien}» no atendió: ${SIN_MOTOR}. No se le respondió nada al cliente con IA.`, 12)
       return false
     }
 

@@ -1,6 +1,5 @@
 import type { Request, Response } from 'express'
 import { Prisma } from '@prisma/client'
-import Anthropic from '@anthropic-ai/sdk'
 import { z } from 'zod'
 import { prisma, prismaGlobal, llaveAjuste, llavePreferencia } from '../../services/crm/bd'
 import { espacioActual, usuariosDeEspacio } from '../../services/crm/espacio'
@@ -16,6 +15,7 @@ import { probarAgente } from '../../services/crm/agentes'
 import { alcanceDe, alcanceDePersona, alcanceParaFront, entraPorRol, sincronizarMiembros, type Alcance } from '../../services/crm/alcance'
 import { normalizarEquipos, type EquiposNorm } from '../../services/crm/equipos'
 import { conectarHotmart, desconectar, estadoIntegraciones } from '../../services/crm/integraciones'
+import { conectarMotor, conOpciones, desconectarMotor, estadoMotor, motorIA, usarMotor } from '../../services/crm/motorIA'
 import { convVigente, esLider, exigirAdminEquipos, exigirEscritura, exigirLider, nombreArchivo, obj, subirACloudinary, tamanoLegible } from './_comun'
 
 /**
@@ -645,11 +645,9 @@ export async function probarAgenteRuta(req: Request, res: Response) {
   if (llevaHoy === null) {
     throw new AppError(`Llegaste a las ${PRUEBAS_POR_DIA} pruebas del agente de hoy. Mañana puedes seguir probando.`, 429)
   }
-  // Con la clave configurada, un cliente propio que no espera más de 25 s ni reintenta.
-  // Sin clave, probarAgente responde 503 con su texto.
-  const cliente = process.env.ANTHROPIC_API_KEY
-    ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: TIEMPO_MODELO_MS, maxRetries: 0 })
-    : undefined
+  // Con el motor de IA de la empresa, sin esperar más de 25 s ni reintentar. Sin motor, probarAgente responde 503 con su texto.
+  const motor = await motorIA()
+  const cliente = motor ? conOpciones(motor.cliente, { timeout: TIEMPO_MODELO_MS, maxRetries: 0 }) : undefined
   try {
     return ApiResponse.success(res, await probarAgente(agente as Parameters<typeof probarAgente>[0], historial, cliente))
   } catch (e) {
@@ -675,4 +673,25 @@ export async function integracionQuitar(req: Request, res: Response) {
   exigirEscritura(req)
   exigirLider(req, 'desconectar otros sistemas')
   return ApiResponse.success(res, await desconectar(String(req.params.sistema || '').slice(0, 40), req.userId ?? null))
+}
+
+// ─── Motor de IA de la empresa: Claude, Gemini u OpenAI con la clave de su cuenta (motorIA.ts) ─────
+export async function motorLista(req: Request, res: Response) {
+  exigirLider(req, 'ver el motor de IA')
+  return ApiResponse.success(res, await estadoMotor())
+}
+export async function motorConectar(req: Request, res: Response) {
+  exigirEscritura(req)
+  exigirLider(req, 'conectar el motor de IA')
+  return ApiResponse.success(res, await conectarMotor(String(req.params.proveedor || '').slice(0, 20), { clave: obj(req.body).clave }, req.userId ?? null))
+}
+export async function motorUsar(req: Request, res: Response) {
+  exigirEscritura(req)
+  exigirLider(req, 'cambiar el motor de IA')
+  return ApiResponse.success(res, await usarMotor(String(req.params.proveedor || '').slice(0, 20), req.userId ?? null))
+}
+export async function motorQuitar(req: Request, res: Response) {
+  exigirEscritura(req)
+  exigirLider(req, 'desconectar el motor de IA')
+  return ApiResponse.success(res, await desconectarMotor(String(req.params.proveedor || '').slice(0, 20), req.userId ?? null))
 }

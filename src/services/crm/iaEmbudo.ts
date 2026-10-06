@@ -9,7 +9,7 @@ import { guardarMensaje } from './salientes'
 import { nombreDe } from './usuarios'
 import { dispararReglas, type PagoHotmart } from './reglas'
 import {
-  MODELO_HAIKU, PERSONA_SIN_ASIGNAR, REGLA_CONVERSACION, bloqueConversacion, cambiarAjusteBloqueado, clienteIA, diaColombia,
+  MODELO_HAIKU, PERSONA_SIN_ASIGNAR, REGLA_CONVERSACION, bloqueConversacion, cambiarAjusteBloqueado, diaColombia,
   iaDisponible, jsonDe, lineasParaIA, llamarIA, metricasDeHoy, sinGuiones, sumarMetrica,
 } from './iaComun'
 import { ConflictError, NotFoundError } from '../../utils/errors'
@@ -250,7 +250,7 @@ async function marcarLeido(convId: number, hasta: string | null, en: string, con
  * vieja. Sin clave de Claude o con el tope del día no hace nada. Devuelve cuántas movió.
  */
 export async function embudoPendientes(op: { sinEspera?: boolean; max?: number } = {}): Promise<number> {
-  if (!clienteIA() || !(await iaDisponible())) return 0
+  if (!(await iaDisponible())) return 0
   const ahora = Date.now()
   const [candidatas, cfgTodos] = await Promise.all([
     prisma.crmConversacion.findMany({
