@@ -13,7 +13,9 @@
 #app .nav .brand{color:#fff}
 #app .nav .nueva-conv{height:40px;border-radius:12px;border-color:var(--nx-amarillo);background:var(--nx-amarillo);color:var(--nx-negro);font-weight:700}
 #app .nav .nueva-conv:hover{background:var(--nx-amarillo-2);border-color:var(--nx-amarillo-2)}
-#app .nav .sec{color:var(--nx-mut);text-transform:uppercase;letter-spacing:.08em}
+#app .nav .sec{color:var(--nx-mut);text-transform:uppercase;letter-spacing:.08em;border-bottom:0}
+/* Sin «Canales» ni «Líneas de WhatsApp» en la barra (5-oct). Quedan en el HTML porque el código los sigue llenando. */
+#app .nav div:has(> #canales),#app .nav #sec-lineas{display:none}
 #app .nav li button{color:var(--nx-txt);position:relative}
 #app .nav li button:hover{background:var(--nx-negro-2)}
 #app .nav li button[aria-current="true"]{background:var(--nx-negro-3);color:#fff}
