@@ -744,6 +744,21 @@ paginaIntegraciones = function(){
   return conMotor.replace('Conecta otras plataformas que usa tu empresa. Los agentes IA pueden consultar las que estén conectadas; en Capacidades de cada agente eliges cuáles usa. Solo consultan: nunca crean, cambian ni borran nada.',
     'El motor de IA de tus agentes y las otras plataformas que usa tu empresa. Las plataformas solo se consultan: los agentes nunca crean, cambian ni borran nada en ellas; en Capacidades de cada agente eliges cuáles usa.');
 };
+/* «Modelo y consumo» en Capacidades de cada agente (6-oct): con qué motor y modelo responde y dónde se ve lo que gasta
+   (lo cobra el proveedor directo a la empresa). Se cambia en Integraciones › Motor de IA. */
+const MOTOR_CONSUMO = {claude:'https://console.anthropic.com/settings/usage', gemini:'https://aistudio.google.com/usage', openai:'https://platform.openai.com/usage'};
+const consultasSinMotor = consultasHTML;
+consultasHTML = function(a, sw){
+  const h = consultasSinMotor(a, sw);
+  motorPedir();
+  const e = MOTOR.estado, p = e && e.proveedores.find(x => x.activo);
+  const adm = `<button type="button" class="ig-adm" data-ir="cfg-integraciones">${p ? 'Cambiar motor' : 'Conectar un motor'}${I('next')}</button>`;
+  const cuerpo = !e ? `<p class="muted" style="margin:0">${MOTOR.error ? 'No se pudo cargar el motor de IA.' : 'Cargando…'}</p>`
+    : p ? `<div class="ag-sis"><span class="ig-logo">${motorLogo(p.id)}</span><span class="tx"><b>${esc(p.n)}${p.modelo ? ' · ' + esc(p.modelo) : ''}</b><small>Lo que usa este agente lo cobra ${esc(p.empresa)} directo a tu empresa. <a href="${MOTOR_CONSUMO[p.id]}" target="_blank" rel="noopener noreferrer">Ver el consumo en ${esc(p.empresa)}</a></small></span></div>`
+    : e.servidor ? '<p class="ig-txt">Este agente usa la clave de NexCode97 mientras no conectes un motor de IA propio.</p>'
+    : '<p class="ig-txt">Sin un motor de IA conectado, este agente no responde: las conversaciones pasan a tu equipo.</p>';
+  return h + `<div class="ag-card"><h4>${I('bolt')}Modelo y consumo${adm}</h4>${cuerpo}</div>`;
+};
 /* En Agentes IA (Panel de control): si no hay motor, los agentes no responden; el aviso lleva a conectarlo. */
 const paginaAgentesSinMotor = paginaAgentes;
 paginaAgentes = function(){
