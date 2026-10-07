@@ -726,3 +726,43 @@ guardarAgregar = async function(){
   st.pa = null; cerrarDialogo(); render();
   toast(`${p.nombre} quedó en ${unirNombres(elegidos)}`);
 };
+
+/* ── Invitar por correo (6-oct): en «Agregar persona», quien todavía no tiene cuenta se invita con su nombre y su
+   correo. El API crea su cuenta en este espacio (POST /crm/personas/invitar) y aquí se le eligen los equipos como a
+   cualquiera; al guardarla en un equipo le llega el correo con el enlace para crear su contraseña y entrar. ── */
+const dlgAgregarSinInvitar = dlgAgregarPersona;
+dlgAgregarPersona = function(){
+  const h = dlgAgregarSinInvitar(), A = st.pa;
+  if (A.sel) return h.replace('<div class="ft2">', `<p class="muted" style="margin:0;font-size:12.5px">Al agregarla a un equipo le llega un correo con el enlace para entrar${A.sel.nueva ? ' y crear su contraseña' : ''}.</p><div class="ft2">`);
+  const v = A.inv || {};
+  const caja = A.inv
+    ? `<div class="pa-inv"><b>Invitar por correo</b><div class="cx-f" style="margin:0"><label>Nombre completo<input id="pa-inv-n" value="${esc(v.nombre || '')}" autocomplete="off"></label><label>Correo<input id="pa-inv-c" type="email" value="${esc(v.email || '')}" autocomplete="off" placeholder="nombre@empresa.com"></label></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn" data-pa-inv-cerrar="1">Cancelar</button><button type="button" class="btn pri" data-pa-invitar="1"${v.enviando ? ' disabled' : ''}>${v.enviando ? 'Creando…' : 'Continuar'}</button></div></div>`
+    : `<button type="button" class="pa-inv-abrir" data-pa-inv-abrir="1">${I('plus')}¿No está en la lista? Invitar por correo</button>`;
+  return h.replace('<div class="ft2">', `${caja}<div class="ft2">`);
+};
+document.head.insertAdjacentHTML('beforeend', `<style>
+.pa-inv-abrir{display:flex;align-items:center;gap:8px;width:100%;padding:10px 12px;border:1px dashed #cbd5e1;border-radius:10px;background:#fff;color:var(--ink2);font:inherit;font-size:13.5px;font-weight:500;cursor:pointer}
+.pa-inv-abrir:hover{border-color:#94a3b8;background:#f8fafc}
+.pa-inv-abrir svg{width:16px;height:16px}
+.pa-inv{display:flex;flex-direction:column;gap:10px;padding:14px;border:1px solid #e5e9f0;border-radius:12px;background:#f8fafc}
+.pa-inv > b{font-size:13.5px}
+</style>`);
+document.getElementById('ov-x').addEventListener('input', e => {
+  const A = st.pa; if (!A || !A.inv) return;
+  if (e.target.id === 'pa-inv-n') A.inv.nombre = e.target.value;
+  if (e.target.id === 'pa-inv-c') A.inv.email = e.target.value;
+});
+document.getElementById('ov-x').addEventListener('click', e => {
+  const A = st.pa; if (!A) return;
+  if (e.target.closest('[data-pa-inv-abrir]')) { A.inv = {nombre: '', email: /@/.test(A.q || '') ? A.q.trim() : ''}; pintarPa(); setTimeout(() => { const x = document.getElementById('pa-inv-n'); if (x) x.focus(); }, 30); return; }
+  if (e.target.closest('[data-pa-inv-cerrar]')) { A.inv = null; pintarPa(); return; }
+  if (!e.target.closest('[data-pa-invitar]') || !A.inv || A.inv.enviando) return;
+  const nombre = (A.inv.nombre || '').trim(), email = (A.inv.email || '').trim().toLowerCase();
+  if (nombre.length < 2) { toast('Escribe el nombre completo'); return; }
+  if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(email)) { toast('Ese correo no parece completo'); return; }
+  A.inv.enviando = true; pintarPa();
+  crmApi('POST', '/crm/personas/invitar', {nombre, email})
+    .then(p => { if (st.pa !== A) return; A.inv = null; A.res = [p, ...A.res.filter(x => x.id !== p.id)]; PERSONAS_EXTRA[p.id] = {...(PERSONAS_EXTRA[p.id] || {}), nombre: p.nombre, rol: p.rol, foto: p.foto || null}; elegirPa(p.id); })
+    .catch(err => { if (st.pa !== A) return; A.inv.enviando = false; pintarPa(); toast(err.message || 'No se pudo invitar'); });
+});

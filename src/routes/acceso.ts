@@ -142,7 +142,7 @@ async function enviarRecuperacion(user: { id: string; email: string; nombre: str
   await prisma.recuperacionClave.updateMany({ where: { userId: user.id, usado: null }, data: { usado: new Date() } })
   await prisma.recuperacionClave.create({ data: { userId: user.id, tokenHash: hash(token), expira: new Date(Date.now() + MINUTOS_ENLACE * 60_000) } })
   const enlace = `${urlPublica()}/entrar?clave=${token}`
-  const nombre = user.nombre ? user.nombre.split(/s+/)[0] : ''
+  const nombre = user.nombre ? user.nombre.split(/\s+/)[0] : ''
   const hola = nombre ? `Hola, ${nombre}` : 'Hola'
   await enviarCorreo(user.email, 'Crea tu contraseña nueva',
     correoMarca({
