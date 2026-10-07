@@ -92,6 +92,15 @@ const FORMAS: Record<string, { schema: z.ZodTypeAny; elemento: string }> = {
         z.string({ invalid_type_error: 'Un filtro del segmento debe ser un texto' }).max(200, 'Un filtro del segmento puede tener máximo 200 caracteres').refine(sinControl, 'Un filtro del segmento tiene caracteres que no se pueden guardar').nullable(),
       ).refine(f => Object.keys(f).length <= 20, 'Un segmento puede tener máximo 20 filtros').optional().default({}),
       q: z.string({ invalid_type_error: 'La búsqueda del segmento debe ser un texto' }).max(200, 'La búsqueda del segmento puede tener máximo 200 caracteres').refine(sinControl, 'La búsqueda del segmento tiene caracteres que no se pueden guardar').optional().default(''),
+      // Los del modal «Nuevo segmento»: ícono, color, «todas / al menos una» y las condiciones [campo, es | no es, valor].
+      ic: z.string().regex(/^[a-z-]{1,20}$/, 'El ícono del segmento no es válido').optional(),
+      col: z.string().regex(COLOR, 'El color del segmento debe ser un color como #2563eb').optional(),
+      modo: z.enum(['todas', 'alguna'], { invalid_type_error: 'El segmento se cumple con «todas» o con «alguna»' }).optional(),
+      reglas: z.array(z.tuple([
+        z.string().regex(/^[a-z]{1,20}$/i, 'Una condición del segmento no es válida'),
+        z.enum(['es', 'no es'], { invalid_type_error: 'Una condición del segmento va con «es» o «no es»' }),
+        z.string().max(200, 'Una condición del segmento puede tener máximo 200 caracteres').refine(sinControl, 'Una condición del segmento tiene caracteres que no se pueden guardar'),
+      ])).max(20, 'Un segmento puede tener máximo 20 condiciones').optional(),
     }, { invalid_type_error: 'Cada segmento va como {id, n, filtros, q}' }), { invalid_type_error: '«segmentos» debe ser una lista' }).max(100, 'Caben máximo 100 segmentos guardados'),
   },
   equipos: {
