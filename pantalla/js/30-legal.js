@@ -75,8 +75,7 @@ const nombrePila = c => /^\+?\d/.test(c.n || '') ? '' : String(c.n || '').split(
 function puedeGrabar(c){
   const L = LLAM.lineas[c.linea] || {};
   if (!L.grabar) return {ok:false, motivo:'la grabación está apagada en esta línea'};
-  if (!c.aut) return {ok:false, motivo:'no ha autorizado sus datos', pedir:true};
-  if (pideRepresentante(c) && !c.rep) return {ok:false, motivo:'es menor de edad y falta la autorización de su representante legal', pedir:true};
+  // La autorización de datos se toma en la misma llamada: WhatsApp avisa en voz alta el propósito antes de grabar (6-oct).
   return {ok:true};
 }
 function filaGrabacion(c){
@@ -96,7 +95,7 @@ function marcarDatosFicha(){
   cont.insertAdjacentHTML('beforeend', h);
 }
 const repintarDatosFicha = () => { const p = document.getElementById('panel'), v = p && p.querySelector('.pc-dat'); if (v) v.remove(); marcarDatosFicha(); };
-new MutationObserver(marcarDatosFicha).observe(document.getElementById('panel'), {childList:true, subtree:true});
+// Sin el recuadro de autorización en la ficha (6-oct): la autorización queda en la grabación de la llamada.
 
 /* Pedir la autorización por WhatsApp (al cliente o a su representante legal). Queda pendiente hasta que alguien del equipo la marque. */
 function textoAutorizacion(c, rep){
