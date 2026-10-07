@@ -19,6 +19,8 @@ export interface EspacioFront {
   id: string; n: string; actual: boolean; principal: boolean
   estado: string; plan: string; dias: number | null
   personas: number; lineas: number; chats: number; desde: string
+  /** Su administrador (el primero que entró con rol de administrador). */
+  admin: string | null; correo: string | null
 }
 
 /** Los espacios de la cuenta del espacio actual a los que entra esta persona, con lo que usa cada uno. */
@@ -38,12 +40,16 @@ export async function listarEspacios(userId: string, actual: string): Promise<{ 
     base.crmConversacion.groupBy({ by: ['espacioId'], where: { espacioId: { in: ids }, estado: 'abiertas' }, _count: true }),
   ])
   const n = (l: { espacioId: string; _count: number }[], id: string) => l.find(x => x.espacioId === id)?._count ?? 0
+  const miembros = await base.crmMiembro.findMany({ where: { espacioId: { in: ids } }, orderBy: { createdAt: 'asc' }, select: { espacioId: true, userId: true } })
+  const gente = await base.user.findMany({ where: { id: { in: [...new Set(miembros.map(m => m.userId))] }, role: 'ADMIN', suspendido: false }, select: { id: true, nombre: true, email: true } })
+  const adminDe = (id: string) => { const m = miembros.find(x => x.espacioId === id && gente.some(g => g.id === x.userId)); return m ? gente.find(g => g.id === m.userId)! : null }
   const espacios = ids.map(id => {
     const f = filas.find(x => x.id === id)!
     return {
       id, n: f.nombre, actual: id === actual, principal: id === cuenta,
       estado: plan.estado, plan: plan.plan, dias: plan.estado === 'prueba' ? plan.diasPrueba : null,
       personas: n(personas, id), lineas: n(lineas, id), chats: n(chats, id), desde: f.createdAt.toISOString(),
+      admin: adminDe(id)?.nombre ?? null, correo: adminDe(id)?.email ?? null,
     }
   })
   return { espacios, limite: plan.limites.espacios, puedeCrear: yo?.role === 'ADMIN' && mios.some(m => m.espacioId === cuenta) }
