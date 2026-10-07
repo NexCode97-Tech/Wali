@@ -1849,7 +1849,6 @@ function ctTodos(){ return [...ultimasConv().map(ctDe), ...CT_EXTRA.map(x => ({.
 const SEGMENTOS = [
   {id:'nuevos', n:'Nuevos esta semana', f:c => c.agregadoDias <= 7},
   {id:'inactivos', n:'Sin mensajes hace más de 30 días', f:c => c.ultimoDias > 30},
-  {id:'cuotas', n:'Con cuotas pendientes', f:c => !!c.cuotas && c.cuotas[0] < c.cuotas[1]},
   {id:'anuncio', n:'Vienen de un anuncio', f:c => c.anuncio},
   {id:'compraron', n:'Ya compraron', f:c => c.compro},
 ];
@@ -1920,7 +1919,7 @@ function paginaContactos(){
       ${etapasActivas().map(e => item('etapa:' + e, e, cuentaV(c => c.etapa === e && !c.noContactar), `<span class="dot" style="background:${COL[e]}"></span>`)).join('')}
       <div class="cts-sec">Etapas perdidas</div>
       ${etapasPerdidas().map(e => item('etapa:' + e, e, cuentaV(c => c.etapa === e && !c.noContactar), `<span class="dot" style="background:${COL[e]}"></span>`)).join('')}
-      <div class="cts-sec">Segmentos</div>
+      <div class="cts-sec" style="display:flex;align-items:center;justify-content:space-between">Segmentos<button type="button" id="ct-nuevo-seg" style="display:inline-flex;align-items:center;gap:4px;border:0;background:none;padding:2px 4px;border-radius:6px;font:inherit;font-size:12px;font-weight:600;color:var(--blue-ink);cursor:pointer">${I('plus')}Nuevo</button></div>
       ${SEGMENTOS.map(s => item('seg:' + s.id, s.n, cuentaV(c => c.guardado !== false && !c.noContactar && s.f(c)), I('filter'))).join('')}
       ${ct.propios.map(s => `<div class="ctn-w">${item('seg:' + s.id, s.n, cuentaV(c => c.guardado !== false && !c.noContactar && pasaFiltros(c, s.filtros)), I('star'))}<button type="button" class="ctn-x" data-ct-segdel="${s.id}" aria-label="Borrar segmento">${I('x')}</button></div>`).join('')}
       <div class="cts-sep"></div>
@@ -2036,6 +2035,8 @@ document.getElementById('page').addEventListener('click', e => {
   const f = t.closest('[data-ctf]'); if (f) { const [k, val] = f.dataset.ctf.split('::'); ct.f[k] = val; ct.sel.clear(); render(); return; }
   const qt = t.closest('[data-ct-quitar]'); if (qt) { if (qt.dataset.ctQuitar === 'todo') ct.f = {}; else delete ct.f[qt.dataset.ctQuitar]; render(); return; }
   if (t.closest('#ct-guardar-seg')) { ctGuardarSegmento(); return; }
+  // «+ Nuevo» en Segmentos (6-oct): abre los filtros; con alguno puesto sale «Guardar como segmento».
+  if (t.closest('#ct-nuevo-seg')) { st.ct.vista = 'todos'; st.ct.filtrosAbiertos = true; render(); toast('Elige los filtros y toca «Guardar como segmento»'); return; }
   if (t.closest('#ct-nuevo')) { st.ctNuevo = {etapa:'Nuevo lead', asig:'', producto:''}; ctNuevo(); return; }
   const o = t.closest('[data-ct-ord]'); if (o) { const k = o.dataset.ctOrd; ct.orden = ct.orden.k === k ? {k, dir:-ct.orden.dir} : {k, dir:k === 'n' ? 1 : 1}; render(); return; }
   if (t.closest('[data-ct-todos]')) { const L = ctVisibles(); const todos = L.every(c => ct.sel.has(c.id)); L.forEach(c => todos ? ct.sel.delete(c.id) : ct.sel.add(c.id)); render(); return; }
