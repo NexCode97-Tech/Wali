@@ -966,7 +966,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ch-b{padding:9px 14px;border-radius:16px;font-size:14px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%;box-sizing:border-box}
 .ch-b.in{background:#fff;border:1px solid #e5e9f0;color:var(--ink);box-shadow:0 1px 1px rgba(15,23,42,.04)}
 .ch-b.in.ult{border-bottom-left-radius:6px}
-.ch-b.out{background:#0b0b10;color:#fff}
+.ch-b.out{background:#1f93ff;color:#fff}
 .ch-b.out.ult{border-bottom-right-radius:6px}
 .ch-b.ia{background:#f5f3ff;border:1px solid #e4defc;color:var(--ink)}
 .ch-b.ia.ult{border-bottom-right-radius:6px}
@@ -981,7 +981,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ch-img.stk{background:transparent;border:0}
 .ch-img.stk img{max-width:140px}
 .ch-file{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:16px;text-decoration:none;min-width:260px;box-sizing:border-box}
-.ch-file.out{background:#0b0b10;color:#fff}
+.ch-file.out{background:#1f93ff;color:#fff}
 .ch-file.out.ult{border-bottom-right-radius:6px}
 .ch-file.in{background:#fff;border:1px solid #e5e9f0;color:var(--ink)}
 .ch-file.in.ult{border-bottom-left-radius:6px}
@@ -997,7 +997,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ch-voz{display:flex;flex-direction:column;gap:8px;min-width:300px}
 .ch-audio{display:flex;align-items:center;gap:10px}
 .ch-audio .pl{width:34px;height:34px;border:0;border-radius:50%;background:#0b0b10;color:#fff;display:grid;place-items:center;cursor:pointer;flex:none}
-.ch-b.out .ch-audio .pl{background:#fff;color:#0b0b10}
+.ch-b.out .ch-audio .pl{background:#fff;color:#1f93ff}
 .ch-audio .pl svg{width:13px;height:13px;fill:currentColor;stroke:none}
 .ch-audio .wave{position:relative;flex:1;height:24px;background:repeating-linear-gradient(90deg,#94a3b8 0 2px,transparent 2px 5px);border-radius:2px;opacity:.6;overflow:hidden}
 .ch-b.out .ch-audio .wave{background:repeating-linear-gradient(90deg,#fff 0 2px,transparent 2px 5px);opacity:.75}
@@ -1016,7 +1016,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ch-meta .est{display:inline-flex}
 .ch-meta .est svg{width:15px;height:15px;stroke-width:2}
 .ch-meta .est svg:has(use[href="#i-check2"]){width:18px;height:12px;stroke-width:1.5}
-.ch-meta .est.leido{color:#0b0b10}
+.ch-meta .est.leido{color:#1f93ff}
 .ch-meta.mal{color:#b91c1c}
 .ch-meta.mal{flex-wrap:nowrap;align-items:flex-start;max-width:440px}
 .ch-fila.yo .ch-meta.mal{text-align:right}

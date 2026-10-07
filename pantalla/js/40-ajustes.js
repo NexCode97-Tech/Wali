@@ -342,7 +342,7 @@ const PERSONAS_EXTRA = {};
 const ROL_NOMBRE = {ADMIN:'Administrador', LIDER_VENTAS:'Líder de ventas', VENDEDOR:'Asesor de ventas', MARKETING:'Marketing', EDITOR:'Editor de video', COMMUNITY:'Community manager', LIDER_EDICION:'Líder de edición', LIDER_CREADORES:'Líder de creadores', SOCIAL_MEDIA:'Social media', LIDER_DISENO:'Líder de diseño', DISENADOR:'Diseñador', AUDITOR:'Auditor', VISITANTE:'Visitante', COLABORADOR:'Colaborador'};
 const METODOS_EQ = [['turnos', 'Por turnos', 'Una conversación para cada persona conectada del equipo, en orden.'], ['menos', 'A quien tenga menos conversaciones', 'Le llega a la persona conectada con menos conversaciones abiertas.'], ['todos', 'Todos ven y cualquiera la toma', 'La conversación les aparece a todas las personas del equipo. La primera que responde se la queda.'], ['lider', 'Solo un líder la asigna', 'Nadie la recibe sola: queda sin asignar hasta que un líder o administrador la entrega.']];
 // Sin color elegido, cada equipo toma uno por su posición: Ventas azul, Soporte morado, Soporte de ventas cian, Recuperación naranja.
-const COLORES_EQ = [['#0b0b10', 'Azul'], ['#7c3aed', 'Morado'], ['#0891b2', 'Cian'], ['#ea580c', 'Naranja'], ['#db2777', 'Rosado'], ['#0d9488', 'Verde azulado']];
+const COLORES_EQ = [['#1f93ff', 'Azul'], ['#7c3aed', 'Morado'], ['#0891b2', 'Cian'], ['#ea580c', 'Naranja'], ['#db2777', 'Rosado'], ['#0d9488', 'Verde azulado']];
 document.head.insertAdjacentHTML('beforeend', `<style>
 .rq-bar{display:flex;align-items:center;gap:10px;margin:0 0 14px;flex-wrap:wrap}
 .rq-bar .cn-q{margin:0;width:340px;max-width:100%}
@@ -763,7 +763,7 @@ document.getElementById('ov-x').addEventListener('click', e => {
   const t = e.target;
   if (t.closest('[data-eq-borrar-ok]') && st.eqDraft) {
     const n = st.eqDraft.orig, i = EQUIPOS.findIndex(q => q.n === n); if (i >= 0) EQUIPOS.splice(i, 1);
-    delete MIEMBROS[n]; for (const k of ['ids', 'colores', 'metodos', 'transferibles']) delete EQ_CFG[k][n];
+    delete MIEMBROS[n]; for (const k of ['ids', 'colores', 'metodos', 'transferibles', 'cola', 'iconos']) if (EQ_CFG[k]) delete EQ_CFG[k][n];
     CFG.lineas.forEach(l => { if (l.eq === n) l.eq = 'Ventas'; });
     st.eqVer = null; st.eqDraft = null; cerrarDialogo(); render(); toast(`Equipo eliminado: ${n}`); return;
   }

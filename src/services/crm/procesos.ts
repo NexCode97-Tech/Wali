@@ -110,7 +110,8 @@ export async function procesarSinAsignar(): Promise<number> {
     select: { id: true, extra: true }, orderBy: { esperaDesde: 'asc' }, take: 30,
   })
   // Lo que un flujo dejó «para el líder» no lo toma el reparto automático.
-  for (const c of convs) if (!retenidaPorFlujo(c.extra)) await repartir(c.id)
+  // Con «Guardar los leads cuando no haya nadie disponible» apagado en su equipo, repartir no las toca (quedan para tomarlas).
+  for (const c of convs) if (!retenidaPorFlujo(c.extra)) await repartir(c.id, true)
   return convs.length
 }
 

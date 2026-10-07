@@ -388,7 +388,7 @@ guardarEquipo = function(){
     // aquí solo cambian en pantalla (80-datos.js, crmRenombrarEquipo).
     if (typeof crmRenombrarEquipo === 'function') crmRenombrarEquipo(viejo, n); else CONV.forEach(c => { if (c.equipo === viejo) c.equipo = n; });
     CFG.lineas.forEach(l => { if (l.eq === viejo) l.eq = n; }); Object.values(LLAM.lineas).forEach(l => { if (l.eq === viejo) l.eq = n; });
-    for (const k of ['ids', 'colores', 'metodos', 'transferibles', 'lideres', 'roles', 'subequipos']) if (EQ_CFG[k] && viejo in EQ_CFG[k]) { EQ_CFG[k][n] = EQ_CFG[k][viejo]; delete EQ_CFG[k][viejo]; }
+    for (const k of ['ids', 'colores', 'metodos', 'transferibles', 'lideres', 'roles', 'subequipos', 'cola', 'iconos']) if (EQ_CFG[k] && viejo in EQ_CFG[k]) { EQ_CFG[k][n] = EQ_CFG[k][viejo]; delete EQ_CFG[k][viejo]; }
     const M = {}; for (const [k, v] of Object.entries(MIEMBROS)) M[k === viejo ? n : k] = v; for (const k of Object.keys(MIEMBROS)) delete MIEMBROS[k]; Object.assign(MIEMBROS, M);
     ETQ.forEach(e => { if (eqDeEtapa(e) === viejo) e[2] = n; });
     ETIQS.forEach(e => { if (eqDeEtiq(e) === viejo) e[2] = n; });

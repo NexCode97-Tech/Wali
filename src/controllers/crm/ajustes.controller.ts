@@ -174,6 +174,7 @@ function mezclarDeLider(valor: Record<string, unknown>, antes: EquiposNorm, a: A
     miembros: {} as Record<string, unknown>, ids: {} as Record<string, unknown>, lideres: {} as Record<string, unknown>, roles: {} as Record<string, unknown>,
     subequipos: {} as Record<string, unknown>, metodos: {} as Record<string, unknown>, colores: {} as Record<string, unknown>,
     transferibles: { ...antes.transferibles }, porNombre: antes.porNombre,
+    cola: {} as Record<string, unknown>, iconos: {} as Record<string, unknown>,
   }
   for (const eq of equipos) {
     if (a.lidera.includes(eq)) {
@@ -185,6 +186,8 @@ function mezclarDeLider(valor: Record<string, unknown>, antes: EquiposNorm, a: A
       out.subequipos[eq] = Array.isArray(subs) ? subs.map(x => (ajenos.has(String(obj(x).id)) ? { ...obj(x), id: undefined } : x)) : []
       if (de('metodos')[eq] !== undefined) out.metodos[eq] = de('metodos')[eq]
       if (de('colores')[eq] !== undefined) out.colores[eq] = de('colores')[eq]
+      if (de('cola')[eq] !== undefined) out.cola[eq] = de('cola')[eq]; else if (eq in antes.cola) out.cola[eq] = antes.cola[eq]
+      if (de('iconos')[eq] !== undefined) out.iconos[eq] = de('iconos')[eq]; else if (eq in antes.iconos) out.iconos[eq] = antes.iconos[eq]
     } else {
       out.miembros[eq] = antes.miembros[eq]
       out.ids[eq] = antes.ids[eq]
@@ -193,6 +196,8 @@ function mezclarDeLider(valor: Record<string, unknown>, antes: EquiposNorm, a: A
       out.subequipos[eq] = antes.subequipos[eq]
       if (eq in antes.metodos) out.metodos[eq] = antes.metodos[eq]
       if (eq in antes.colores) out.colores[eq] = antes.colores[eq]
+      if (eq in antes.cola) out.cola[eq] = antes.cola[eq]
+      if (eq in antes.iconos) out.iconos[eq] = antes.iconos[eq]
     }
   }
   return out

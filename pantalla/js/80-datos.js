@@ -208,7 +208,7 @@ const crmDatos = (() => {
     equipos: () => { const m = def('MIEMBROS'); if (!m) return undefined; const E = typeof EQ_CFG !== 'undefined' ? EQ_CFG : null;
       if (!E) return {miembros: m};
       const eqs = Object.keys(m), deEquipos = o => Object.fromEntries(eqs.filter(eq => o && o[eq] !== undefined).map(eq => [eq, o[eq]]));
-      return {miembros: m, ids: Object.fromEntries(eqs.map(eq => [eq, idsDe(eq)])), colores: E.colores, metodos: E.metodos, transferibles: E.transferibles, topes: E.topes,
+      return {miembros: m, ids: Object.fromEntries(eqs.map(eq => [eq, idsDe(eq)])), colores: E.colores, metodos: E.metodos, transferibles: E.transferibles, topes: E.topes, cola: E.cola || {}, iconos: E.iconos || {},
         lideres: deEquipos(E.lideres), roles: deEquipos(E.roles), subequipos: deEquipos(E.subequipos)}; },
     carpetas: () => def('CARP'),
     agentes: () => def('AGENTES'), ag: () => def('AG'), kb: () => def('KB'), difusiones: () => DIFUSIONES, segmentos: () => st.ct.propios, material: () => MATERIAL,
@@ -232,7 +232,7 @@ const crmDatos = (() => {
       for (const k of Object.keys(M)) delete M[k];
       // El nombre del servidor viene en el mismo orden que los ids: sirve para quien aún no está en USUARIOS (lo acaban de agregar).
       for (const [eq, nombres] of Object.entries(v.miembros)) M[eq] = ids && Array.isArray(ids[eq]) ? ids[eq].map((id, i) => nombreDe(id) || (Array.isArray(nombres) ? nombres[i] : null)).filter(Boolean) : (Array.isArray(nombres) ? nombres : []);
-      if (typeof EQ_CFG !== 'undefined') { EQ_CFG.ids = ids ? {...ids} : {}; for (const k of ['colores', 'metodos', 'transferibles', 'topes']) EQ_CFG[k] = v[k] && typeof v[k] === 'object' ? {...v[k]} : {};
+      if (typeof EQ_CFG !== 'undefined') { EQ_CFG.ids = ids ? {...ids} : {}; for (const k of ['colores', 'metodos', 'transferibles', 'topes', 'cola', 'iconos']) EQ_CFG[k] = v[k] && typeof v[k] === 'object' ? {...v[k]} : {};
         // Líderes, rol de los integrantes y subequipos (lote 4): copias, para que ningún borrador toque lo que llegó.
         const o = x => x && typeof x === 'object' && !Array.isArray(x) ? x : {};
         EQ_CFG.lideres = Object.fromEntries(Object.entries(o(v.lideres)).map(([eq, l]) => [eq, Array.isArray(l) ? l.map(String) : []]));

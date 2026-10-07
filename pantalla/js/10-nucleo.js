@@ -29,7 +29,7 @@ const QR = [];
 // Productos con los enlaces de pago de la persona (módulo Enlaces): GET /crm/catalogo.
 const CATALOGO = [];
 const FALTANTES = [];
-const AVC = ['#0b0b10','#7c5cff','#f97316','#0d9488','#e11d48','#64748b','#ca8a04'];
+const AVC = ['#1f93ff','#7c5cff','#f97316','#0d9488','#e11d48','#64748b','#ca8a04'];
 // Array.from: un emoji (dos unidades de texto) sale entero y no partido.
 const ini = n => String(n || '').split(' ').filter(Boolean).slice(0,2).map(w => Array.from(w)[0]).join('').toUpperCase();
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -589,7 +589,7 @@ function listaTags(c, q){
 }
 const prioridadDe = c => c.prioridad || (c.etq.includes('Caliente') ? 'Alta' : 'Normal');
 // Prioridad con ícono de señal, un color por nivel: cuántas barras se llenan y de qué color.
-const PRIORIDADES = [['Urgente', '#dc2626', 4], ['Alta', '#ea580c', 3], ['Normal', '#0b0b10', 2], ['Baja', '#9ca3af', 1]];
+const PRIORIDADES = [['Urgente', '#dc2626', 4], ['Alta', '#ea580c', 3], ['Normal', '#1f93ff', 2], ['Baja', '#9ca3af', 1]];
 const senal = p => { const [, col, n] = PRIORIDADES.find(x => x[0] === p) || PRIORIDADES[2]; return `<svg class="pc-senal" viewBox="0 0 16 16" aria-hidden="true">${[0, 1, 2, 3].map(i => `<rect x="${1 + i * 4}" y="${11 - i * 3}" width="2.6" height="${4 + i * 3}" rx="1" fill="${i < n ? col : '#dfe4ec'}"/>`).join('')}</svg>`; };
 const silenciado = c => (AJ.silenciados || []).includes(c.contactoId || c.id);
 // Conversaciones finalizadas del mismo contacto, más las que el API trae en la ficha.
@@ -1590,7 +1590,7 @@ const CFG = {
   lineas: [],
   meta: {ig:true, fb:true, igEq:'Ventas', fbEq:'Ventas'},
   telegram: {on:true, eq:'Ventas'}, tiktok: {on:true, eq:'Ventas'},
-  web: {on:false, color:'#0b0b10', saludo:'¡Hola! ¿En qué te podemos ayudar?', pedir:true, horario:true},
+  web: {on:false, color:'#1f93ff', saludo:'¡Hola! ¿En qué te podemos ayudar?', pedir:true, horario:true},
   correo: {on:true, firma:''},
   reparto: {metodo:'Por turnos', tope:25, minutos:15, ausente:true, familiares:true, conocido:true},
   horario: [['Lunes','7:00','22:00',true],['Martes','7:00','22:00',true],['Miércoles','7:00','22:00',true],['Jueves','7:00','22:00',true],['Viernes','7:00','22:00',true],['Sábado','7:00','22:00',true],['Domingo','7:00','22:00',true]],
@@ -1616,7 +1616,7 @@ function paginaCfg(k){
       ${fila('<b>Chat activo</b>', w.on ? 'La burbuja se ve en las páginas donde se pegó el código' : 'Apagado, la burbuja no aparece aunque el código esté pegado', sw('web-on', w.on))}
       <label class="fld">Saludo<input data-cfg-in="web.saludo" value="${esc(w.saludo)}"></label>
       <label class="fld">Enlace a tu política de datos<input data-cfg-in="web.privacidad" type="url" placeholder="https://tuempresa.com/privacidad" value="${esc(w.privacidad || '')}"><span class="muted" style="font-size:12px">La Ley 1581 pide informar para qué usas los datos. Aparece como enlace debajo del formulario de la burbuja.</span></label>
-      <div class="fld">Color<div style="display:flex;gap:6px">${['#0b0b10','#0f172a','#059669','#7c3aed','#dc2626'].map(c => `<button type="button" data-cfg-color="${c}" aria-label="Color" style="width:24px;height:24px;border-radius:50%;background:${c};outline:${w.color === c ? '2px solid var(--ink)' : 'none'};outline-offset:2px"></button>`).join('')}</div></div>
+      <div class="fld">Color<div style="display:flex;gap:6px">${['#1f93ff','#0f172a','#059669','#7c3aed','#dc2626'].map(c => `<button type="button" data-cfg-color="${c}" aria-label="Color" style="width:24px;height:24px;border-radius:50%;background:${c};outline:${w.color === c ? '2px solid var(--ink)' : 'none'};outline-offset:2px"></button>`).join('')}</div></div>
       ${fila('Pedir nombre y WhatsApp antes de chatear', 'Así el contacto queda completo desde el primer mensaje', sw('web-pedir', w.pedir))}
       ${fila('Mostrar solo en horario de atención', 'Fuera de horario sale un formulario para dejar el mensaje', sw('web-horario', w.horario))}</div>
       <div class="box2"><h4>${I('file')}Código para pegar en la página</h4><code>${esc(codigo)}</code><p class="muted" style="margin:0">Va antes de &lt;/body&gt;. El color y el saludo se cambian aquí, sin tocar la página.</p><div><button type="button" class="btn" data-cfg-copiar="${esc(codigo)}">${I('link')}Copiar código</button></div></div></div>
@@ -2388,7 +2388,7 @@ function paginaInformes(el){
   const nNuevas = inf.nuevas ?? nuevas.length, nFin = inf.finalizadas ?? fin.length, par = (l, k = 'n') => (l || []).map(x => Array.isArray(x) ? x : [x[k], x.v ?? x.n]);
   const porDia = cuenta(nuevas, c => hcDia(t(c, 'creado'))), pico = porDia[0];
   const plat = c => !c.pauta ? 'Orgánico o sin dato' : /instagram/i.test(c.pauta.plataforma) ? 'Meta · Instagram' : /facebook/i.test(c.pauta.plataforma) ? 'Meta · Facebook' : c.pauta.plataforma;
-  const colPlat = n => /^Meta/.test(n) ? '#0b0b10' : /tiktok/i.test(n) ? '#111827' : /google/i.test(n) ? '#eab308' : '#cbd5e1';
+  const colPlat = n => /^Meta/.test(n) ? '#1f93ff' : /tiktok/i.test(n) ? '#111827' : /google/i.test(n) ? '#eab308' : '#cbd5e1';
   const franja = h => h >= 6 && h < 12 ? '6 a 12' : h >= 12 && h < 18 ? '12 a 18' : h >= 18 && h < 22 ? '18 a 22' : '22 a 6';
   const porPauta = (inf.porOrigen ? par(inf.porOrigen) : cuenta(nuevas, plat)).map(([n, v]) => [n, v, colPlat(n)]);
   const porCampana = inf.porCampana ? par(inf.porCampana) : cuenta(nuevas.filter(c => c.pauta && c.pauta.campana), c => c.pauta.campana);

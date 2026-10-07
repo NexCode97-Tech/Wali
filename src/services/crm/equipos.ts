@@ -46,6 +46,10 @@ export interface EquiposNorm {
   /** turnos | menos | lider. Sin clave: la forma general (cfg.reparto.metodo). */
   metodos: Record<string, string>
   transferibles: Record<string, boolean>
+  /** «Guardar los leads cuando no haya nadie disponible» (7-oct): false = quedan sin asignar hasta que alguien los tome. Sin clave: encendido. */
+  cola: Record<string, boolean>
+  /** Ícono del equipo: un nombre de la lista de íconos o un SVG subido (data:image/svg+xml;base64). */
+  iconos: Record<string, string>
   /** Máximo de conversaciones abiertas por persona, de 1 a 500. */
   topes: Record<string, number>
   lideres: Record<string, string[]>
@@ -55,8 +59,9 @@ export interface EquiposNorm {
 
 export const METODOS_VALIDOS = ['turnos', 'menos', 'lider'] as const
 /** Rol inicial de los integrantes por equipo. */
-export const ROL_INICIAL: Record<string, string> = { Ventas: 'Asesor', 'Moderación': 'Auditor' }
-export const ROL_POR_DEFECTO = 'Integrante'
+// Desde el 7-oct todos los equipos tienen líderes y miembros: el rol de los integrantes ya no se escribe.
+export const ROL_INICIAL: Record<string, string> = {}
+export const ROL_POR_DEFECTO = 'Miembro'
 export const MAX_SUBEQUIPOS = 30
 export const MAX_ROL = 40
 export const MAX_NOMBRE_SUBEQUIPO = 60
@@ -70,6 +75,18 @@ const ROLES_LIDER_INICIAL = new Set(['ADMIN', 'LIDER'])
 const ROL_INICIAL_PLANO = new Map(Object.entries(ROL_INICIAL).map(([eq, r]) => [planoNombre(eq), r]))
 const ID_SUBEQUIPO = /^sq-[a-z0-9]{4,24}$/
 const COLOR = /^#[0-9a-f]{6}$/i
+const ICONO = /^[a-z][a-z0-9-]{0,24}$/
+const ICONO_SVG = /^data:image\/svg\+xml;base64,[A-Za-z0-9+/=]+$/
+export const MAX_ICONO_SVG = 40_000
+/** Un ícono válido: nombre de la lista o un SVG subido sin scripts ni enlaces (se pinta como <img>, igual se revisa). */
+export function iconoValido(v: unknown): string | null {
+  if (typeof v !== 'string') return null
+  if (ICONO.test(v)) return v
+  if (v.length > MAX_ICONO_SVG || !ICONO_SVG.test(v)) return null
+  const svg = Buffer.from(v.slice(v.indexOf(',') + 1), 'base64').toString('utf8')
+  if (!/<svg[\s>]/i.test(svg) || /<script|on[a-z]+\s*=|javascript:|<foreignObject|xlink:href\s*=\s*["'](?!#)|href\s*=\s*["'](?!#)/i.test(svg)) return null
+  return v
+}
 const sinControl = (t: string) => !/[\u0000-\u001f\u007f]/.test(t)
 const unicos = (xs: string[]) => [...new Set(xs)]
 const limpio = (v: unknown) => (typeof v === 'string' ? v.trim().replace(/\s+/g, ' ') : '')
@@ -114,10 +131,12 @@ export function normalizarEquipos(valor: unknown, usuarios: UsuarioCrm[], op: Op
   const coloresIn = obj(v.colores)
   const metodosIn = obj(v.metodos)
   const transfIn = obj(v.transferibles)
+  const colaIn = obj(v.cola)
+  const iconosIn = obj(v.iconos)
   const rolDe = new Map(usuarios.map(u => [u.id, u.rol]))
   const nombreDe = new Map(usuarios.map(u => [u.id, u.nombre]))
   const idPorNombre = new Map(usuarios.map(u => [u.nombre.trim().toLowerCase(), u.id]))
-  const out: EquiposNorm = { miembros: {}, ids: {}, porNombre: {}, colores: {}, metodos: {}, transferibles: {}, topes: {}, lideres: {}, roles: {}, subequipos: {} }
+  const out: EquiposNorm = { miembros: {}, ids: {}, porNombre: {}, colores: {}, metodos: {}, transferibles: {}, cola: {}, iconos: {}, topes: {}, lideres: {}, roles: {}, subequipos: {} }
   const error = (texto: string) => { if (op.estricto) throw new ValidationError(texto) }
 
   const equipos = Object.keys(miembrosIn)
@@ -139,15 +158,19 @@ export function normalizarEquipos(valor: unknown, usuarios: UsuarioCrm[], op: Op
       ? ids.filter(id => (lid as unknown[]).map(String).includes(id))
       : ids.filter(id => ROLES_LIDER_INICIAL.has(rolDe.get(id) ?? ''))
 
-    const rol = limpio(rolesIn[eq])
-    if (rol && rol.length > MAX_ROL) error(`El rol de los integrantes de ${eq} puede tener máximo ${MAX_ROL} caracteres.`)
-    if (rol && !sinControl(rol)) error(`El rol de los integrantes de ${eq} tiene caracteres que no se pueden guardar.`)
-    out.roles[eq] = rol && rol.length <= MAX_ROL && sinControl(rol) ? rol : rolInicial(eq)
+    void rolesIn
+    out.roles[eq] = ROL_POR_DEFECTO
 
     if (typeof coloresIn[eq] === 'string' && COLOR.test(coloresIn[eq] as string)) out.colores[eq] = coloresIn[eq] as string
     const m = metodoValido(metodosIn[eq])
     if (m) out.metodos[eq] = m
     if (typeof transfIn[eq] === 'boolean') out.transferibles[eq] = transfIn[eq] as boolean
+    if (typeof colaIn[eq] === 'boolean') out.cola[eq] = colaIn[eq] as boolean
+    if (iconosIn[eq] !== undefined && iconosIn[eq] !== null) {
+      const ic = iconoValido(iconosIn[eq])
+      if (ic) out.iconos[eq] = ic
+      else error(`El ícono de ${eq} no es válido: elige uno de la lista o sube un SVG sin scripts de máximo 30 KB.`)
+    }
 
     const lista = Array.isArray(subIn[eq]) ? subIn[eq] as unknown[] : []
     if (lista.length > MAX_SUBEQUIPOS) error(`${eq} puede tener máximo ${MAX_SUBEQUIPOS} subequipos.`)

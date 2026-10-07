@@ -176,8 +176,8 @@ async function guardarTurno(clave: string, userId: string) {
 // Un reparto a la vez: si dos corren juntos, los dos ven la misma carga y el mismo turno,
 // y la conversación se asigna dos veces o se pasa el tope (hay una sola instancia del API).
 let colaReparto: Promise<unknown> = Promise.resolve()
-export function repartirA(convId: number, excluir: string[] = []): Promise<string | null> {
-  const turno = colaReparto.then(() => repartirAhora(convId, excluir))
+export function repartirA(convId: number, excluir: string[] = [], desdeFila = false): Promise<string | null> {
+  const turno = colaReparto.then(() => repartirAhora(convId, excluir, desdeFila))
   colaReparto = turno.catch(() => undefined)
   // Las reglas de «Se asigna una conversación» corren fuera de la fila: una regla que vuelve a
   // repartir esperaría a esta misma vuelta y nunca terminaría.
@@ -187,7 +187,8 @@ export function repartirA(convId: number, excluir: string[] = []): Promise<strin
   })
 }
 
-async function repartirAhora(convId: number, excluir: string[] = []): Promise<string | null> {
+/** `desdeFila`: la vuelta periódica a las que esperan asesor. Con «Guardar los leads» apagado en su equipo, no se tocan. */
+async function repartirAhora(convId: number, excluir: string[] = [], desdeFila = false): Promise<string | null> {
   const c = await prisma.crmConversacion.findUnique({ where: { id: convId }, include: { contacto: true, linea: { select: { ajustes: true } } } })
   if (!c || c.estado === 'finalizadas') return null
   const cfg = await configReparto()
@@ -196,6 +197,8 @@ async function repartirAhora(convId: number, excluir: string[] = []): Promise<st
   const eqs = await leerEquipos()
   // Pasada a un subequipo de su equipo: se reparte solo entre su gente y con su forma de repartir.
   const sub = subequipoDe(eqs, equipo, c.extra)
+  const guardaLeads = eqs.cola[equipo] !== false
+  if (desdeFila && !guardaLeads) return null
   const metodo = sub ? METODOS[sub.metodo] ?? METODOS.turnos : await metodoDe(equipo, cfg)
   if (!automatico(metodo)) {
     // «Solo un líder la asigna»: nadie la recibe sola, pero queda en su equipo (así la ven sus líderes).
@@ -245,7 +248,7 @@ async function repartirAhora(convId: number, excluir: string[] = []): Promise<st
     // Nadie disponible: queda sin asignar. Se deja constancia una sola vez.
     if (!previo.sinCandidatos && !c.asignadoId) {
       await prisma.crmConversacion.update({ where: { id: convId }, data: { extra: { ...extra, _reparto: { ...previo, sinCandidatos: true } } as Prisma.InputJsonValue } })
-      const m = await prisma.crmMensaje.create({ data: { conversacionId: convId, tipo: 'ev', datos: { ev: 'clock', t: `Sin asignar. Nadie de ${sub ? sub.n : equipo} está disponible; el reparto automático la entrega cuando alguien se conecte.` } } })
+      const m = await prisma.crmMensaje.create({ data: { conversacionId: convId, tipo: 'ev', datos: { ev: 'clock', t: guardaLeads ? `En espera. Nadie de ${sub ? sub.n : equipo} está disponible; se le entrega, en orden de llegada, a la primera persona que vuelva a estar disponible.` : `Sin asignar. Nadie de ${sub ? sub.n : equipo} está disponible; queda para que alguien del equipo la tome.` } } })
       emitirMsg(convId, m, null)
       await emitirConv(convId, null)
     }
@@ -305,11 +308,11 @@ export async function tomarAlResponder(convId: number, userId: string): Promise<
 }
 
 /** Asigna una conversación nueva según las reglas de reparto del equipo. Nunca lanza. */
-export async function repartir(convId: number): Promise<void> {
+export async function repartir(convId: number, desdeFila = false): Promise<void> {
   try {
     const c = await prisma.crmConversacion.findUnique({ where: { id: convId }, select: { asignadoId: true, estado: true } })
     if (!c || c.asignadoId || c.estado === 'finalizadas') return
-    await repartirA(convId)
+    await repartirA(convId, [], desdeFila)
   } catch (e) {
     logger.error(`[CRM reparto] conversación ${convId}: ${(e as Error)?.message ?? e}`)
   }
