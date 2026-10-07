@@ -733,13 +733,17 @@ guardarAgregar = async function(){
 const dlgAgregarSinInvitar = dlgAgregarPersona;
 dlgAgregarPersona = function(){
   const h = dlgAgregarSinInvitar(), A = st.pa;
+  const sinPie = () => h.slice(0, h.lastIndexOf('<div class="ft2">'));
   if (A.sel) return h.replace('<div class="ft2">', `<p class="muted" style="margin:0;font-size:12.5px">Al agregarla a un equipo le llega un correo con el enlace para entrar${A.sel.nueva ? ' y crear su contraseña' : ''}.</p><div class="ft2">`);
   const v = A.inv || {};
   const caja = A.inv
-    ? `<div class="pa-inv"><b>Invitar por correo</b><div class="cx-f" style="margin:0"><label>Nombre completo<input id="pa-inv-n" value="${esc(v.nombre || '')}" autocomplete="off"></label><label>Correo<input id="pa-inv-c" type="email" value="${esc(v.email || '')}" autocomplete="off" placeholder="nombre@empresa.com"></label></div>
-        <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn" data-pa-inv-cerrar="1">Cancelar</button><button type="button" class="btn pri" data-pa-invitar="1"${v.enviando ? ' disabled' : ''}>${v.enviando ? 'Creando…' : 'Continuar'}</button></div></div>`
+    ? `<div class="pa-inv"><b>Invitar por correo</b><div class="cx-f" style="margin:0"><label>Nombre completo<input id="pa-inv-n" value="${esc(v.nombre || '')}" autocomplete="off"></label><label>Correo<input id="pa-inv-c" type="email" value="${esc(v.email || '')}" autocomplete="off" placeholder="nombre@empresa.com"></label>
+        <div class="fld">Teléfono (opcional)${campoTel('pa-inv-t', v.telefono || '', {placeholder: '300 123 4567'})}</div></div>
+        <div class="fld">Equipos<div class="cx-list">${equiposAdministrables().map(n => `<button type="button" class="cx-op eq-op" role="checkbox" aria-checked="${(v.eqs || []).includes(n)}" data-pa-inv-eq="${esc(n)}"><span class="eq-caja">${I('check')}</span><span class="eq-nom">${esc(n)}</span></button>`).join('')}</div></div>
+        <p class="muted" style="margin:0;font-size:12.5px">Le llega un correo con el enlace para crear su contraseña y entrar. Entra como integrante: ve solo lo que le asignen.</p></div>`
     : `<button type="button" class="pa-inv-abrir" data-pa-inv-abrir="1">${I('plus')}¿No está en la lista? Invitar por correo</button>`;
-  return h.replace('<div class="ft2">', `${caja}<div class="ft2">`);
+  if (A.inv) return sinPie().replace(/<label class="cn-q"[\s\S]*$/, '') + `${caja}<div class="ft2"><button type="button" class="btn" data-pa-inv-cerrar="1">Cancelar</button><button type="button" class="btn pri" data-pa-invitar="1"${v.enviando ? ' disabled' : ''}>${I('send')}${v.enviando ? 'Enviando…' : 'Enviar invitación'}</button></div>`;
+  return sinPie() + caja;
 };
 document.head.insertAdjacentHTML('beforeend', `<style>
 .pa-inv-abrir{display:flex;align-items:center;gap:8px;width:100%;padding:10px 12px;border:1px dashed #cbd5e1;border-radius:10px;background:#fff;color:var(--ink2);font:inherit;font-size:13.5px;font-weight:500;cursor:pointer}
@@ -752,17 +756,23 @@ document.getElementById('ov-x').addEventListener('input', e => {
   const A = st.pa; if (!A || !A.inv) return;
   if (e.target.id === 'pa-inv-n') A.inv.nombre = e.target.value;
   if (e.target.id === 'pa-inv-c') A.inv.email = e.target.value;
+  if (e.target.id === 'pa-inv-t') A.inv.telefono = valorTel('pa-inv-t');
 });
 document.getElementById('ov-x').addEventListener('click', e => {
   const A = st.pa; if (!A) return;
-  if (e.target.closest('[data-pa-inv-abrir]')) { A.inv = {nombre: '', email: /@/.test(A.q || '') ? A.q.trim() : ''}; pintarPa(); setTimeout(() => { const x = document.getElementById('pa-inv-n'); if (x) x.focus(); }, 30); return; }
+  const ie = e.target.closest('[data-pa-inv-eq]'); if (ie && A.inv) { const n = ie.dataset.paInvEq, s = A.inv.eqs || []; A.inv.telefono = valorTel('pa-inv-t'); A.inv.eqs = s.includes(n) ? s.filter(x => x !== n) : [...s, n]; pintarPa(); return; }
+  if (e.target.closest('[data-pa-inv-abrir]')) { delete TEL_PAIS['pa-inv-t']; A.inv = {nombre: '', email: /@/.test(A.q || '') ? A.q.trim() : '', eqs: equiposAdministrables().length === 1 ? [...equiposAdministrables()] : []}; pintarPa(); setTimeout(() => { const x = document.getElementById('pa-inv-n'); if (x) x.focus(); }, 30); return; }
   if (e.target.closest('[data-pa-inv-cerrar]')) { A.inv = null; pintarPa(); return; }
   if (!e.target.closest('[data-pa-invitar]') || !A.inv || A.inv.enviando) return;
   const nombre = (A.inv.nombre || '').trim(), email = (A.inv.email || '').trim().toLowerCase();
   if (nombre.length < 2) { toast('Escribe el nombre completo'); return; }
   if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(email)) { toast('Ese correo no parece completo'); return; }
+  const telefono = valorTel('pa-inv-t'); A.inv.telefono = telefono;
+  if (telefono && telefono.replace(/\D/g, '').length < 7) { toast('El teléfono está incompleto'); return; }
+  const eqs = (A.inv.eqs || []).filter(puedeAdministrarEquipo); if (!eqs.length) { toast('Elige al menos un equipo'); return; }
   A.inv.enviando = true; pintarPa();
-  crmApi('POST', '/crm/personas/invitar', {nombre, email})
-    .then(p => { if (st.pa !== A) return; A.inv = null; A.res = [p, ...A.res.filter(x => x.id !== p.id)]; PERSONAS_EXTRA[p.id] = {...(PERSONAS_EXTRA[p.id] || {}), nombre: p.nombre, rol: p.rol, foto: p.foto || null}; elegirPa(p.id); })
+  // Al quedar en un equipo le llega el correo de invitación (invitaciones.ts, al guardar los equipos).
+  crmApi('POST', '/crm/personas/invitar', {nombre, email, telefono: telefono.replace(/[^\d+]/g, '')})
+    .then(p => { if (st.pa !== A) return; PERSONAS_EXTRA[p.id] = {...(PERSONAS_EXTRA[p.id] || {}), nombre: p.nombre, rol: p.rol, foto: p.foto || null}; eqrMembresias(p.id, eqs); st.pa = null; cerrarDialogo(); render(); toast(`Le enviamos la invitación a ${p.nombre} (${email})`); })
     .catch(err => { if (st.pa !== A) return; A.inv.enviando = false; pintarPa(); toast(err.message || 'No se pudo invitar'); });
 });

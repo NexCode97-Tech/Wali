@@ -390,13 +390,14 @@ export async function buscarPersonas(req: Request, res: Response) {
 const invitarSchema = z.object({
   nombre: z.string().trim().min(2, 'Escribe el nombre completo').max(80),
   email: z.string().trim().toLowerCase().email('Ese correo no parece completo').max(200),
+  telefono: z.string().trim().regex(/^\+?\d{7,15}$/, 'El teléfono está incompleto').optional().or(z.literal('')),
 })
 export async function invitarPersona(req: Request, res: Response) {
   exigirEscritura(req)
   await exigirAdminEquipos(req, 'invitar personas al CRM')
   const p = invitarSchema.safeParse(req.body, { errorMap: errorEs })
   if (!p.success) throw new ValidationError(p.error.issues[0].message)
-  const { nombre, email } = p.data
+  const { nombre, email } = p.data, telefono = p.data.telefono ? '+' + p.data.telefono.replace(/\D/g, '') : null
   const espacio = espacioActual()
   const miembros = await prismaGlobal.crmMiembro.findMany({ where: { espacioId: espacio }, select: { userId: true } })
   const existe = await prismaGlobal.user.findFirst({ where: { email: { equals: email, mode: 'insensitive' } }, select: { id: true, nombre: true, email: true, role: true, image: true, suspendido: true } })
@@ -408,7 +409,7 @@ export async function invitarPersona(req: Request, res: Response) {
   if (!(existe && enCuenta.includes(existe.id)) && enCuenta.length >= tope) throw new ForbiddenError(`Tu plan incluye ${tope} usuarios y ya están en uso. Sube de plan en Ajustes, Plan y pagos, para agregar más.`)
   const u = existe ?? await prismaGlobal.user.create({
     // Sin contraseña que alguien conozca: la crea la persona con el enlace del correo.
-    data: { nombre, email, role: 'AGENTE', passwordHash: await cifrarClave(crypto.randomBytes(32).toString('base64url')) },
+    data: { nombre, email, telefono, role: 'AGENTE', passwordHash: await cifrarClave(crypto.randomBytes(32).toString('base64url')) },
     select: { id: true, nombre: true, email: true, role: true, image: true, suspendido: true },
   })
   await prismaGlobal.crmMiembro.create({ data: { espacioId: espacio, userId: u.id } })
