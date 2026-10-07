@@ -1122,6 +1122,30 @@ async function espacioDeEntrada(entrada: Json, conexionId: string | null): Promi
   return l?.espacioId ?? null
 }
 
+/**
+ * Coexistencia («Con tu app de WhatsApp Business»): lo que se respondió desde la app del celular llega como eco
+ * (`smb_message_echoes`) y queda en la conversación como enviado «Desde la app de WhatsApp Business». Solo en
+ * conversaciones que ya existen en el CRM con esa persona y esa línea.
+ */
+async function procesarEcoWhatsapp(linea: { id: string }, e: Json): Promise<void> {
+  const mid = txt(e?.id), para = txt(e?.to).replace(/\D/g, '')
+  if (!mid || para.length < 7) return
+  if (await prisma.crmMensaje.findUnique({ where: { waId: mid }, select: { id: true } })) return
+  const k = await prisma.crmContacto.findFirst({ where: { telefono: { endsWith: para.slice(-10) } }, select: { id: true } })
+  const conv = k ? await prisma.crmConversacion.findFirst({ where: { contactoId: k.id, lineaId: linea.id }, orderBy: { createdAt: 'desc' } }) : null
+  if (!conv) return
+  const tipo = txt(e.type)
+  const textos: Record<string, string> = { image: 'Imagen', video: 'Video', audio: 'Nota de voz', document: 'Documento', sticker: 'Sticker', location: 'Ubicación', contacts: 'Contacto' }
+  const cuerpoTxt = tipo === 'text' ? txt(obj(e.text).body) : txt(obj(e[tipo]).caption) || `${textos[tipo] ?? 'Mensaje'} enviado desde el celular`
+  const cuando = Number(e.timestamp) > 0 ? new Date(Number(e.timestamp) * 1000) : new Date()
+  try {
+    const m = await prisma.crmMensaje.create({ data: { conversacionId: conv.id, tipo: 'out', datos: json({ out: cuerpoTxt, by: 'Desde la app de WhatsApp Business' }), waId: mid, estado: 'enviado', createdAt: cuando } })
+    await prisma.crmConversacion.update({ where: { id: conv.id }, data: { ultimoMensajeAt: cuando > (conv.ultimoMensajeAt ?? new Date(0)) ? cuando : conv.ultimoMensajeAt, esperaDesde: null } })
+    emitirMsg(conv.id, m)
+    await emitirConv(conv.id)
+  } catch (err) { if (!(err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002')) throw err }
+}
+
 export async function procesarWebhookCrm(cuerpo: Json, conexionId: string | null = null): Promise<void> {
   const fallas: string[] = []
   for (const entrada of Array.isArray(cuerpo?.entry) ? cuerpo.entry : []) {
@@ -1150,6 +1174,10 @@ export async function procesarWebhookCrm(cuerpo: Json, conexionId: string | null
             olvidarPlantillas()
             emitirCrm({ tipo: 'plantillas' })
             if (cambio.field === 'message_template_status_update') await avisarPlantilla(v).catch(e => logger.warn(`[CRM WA] aviso de plantilla: ${(e as Error)?.message ?? e}`))
+          } else if (cambio?.field === 'smb_message_echoes') {
+            const pnid = String(v.metadata?.phone_number_id ?? '')
+            const linea = pnid ? await prisma.crmLinea.findUnique({ where: { phoneNumberId: pnid }, select: { id: true } }) : null
+            if (linea) for (const e of v.message_echoes ?? []) await procesarEcoWhatsapp(linea, e).catch(err => { fallas.push(`eco ${e?.id}: ${(err as Error).message}`) })
           } else if (cambio?.field === 'phone_number_quality_update') {
             await actualizarCalidad(v)
           } else {

@@ -433,6 +433,7 @@ function pasoCuenta(x){
   if (!x.manual) return `<p>Elige cómo conectar la cuenta de WhatsApp Business de tu empresa.</p>
     <div class="cx-list">
       <button type="button" class="opc" data-cx-fb="1" ${fbListo && !x.fbCargando ? '' : 'disabled'}><span class="marca fb">${LOGO.fb}</span><span class="tx"><b>${x.fbCargando ? 'Abriendo Facebook…' : 'Continuar con Facebook'}${fbListo ? '<span class="etq-rec">Recomendado</span>' : prov == null ? '' : '<span class="etq-pronto">No disponible todavía</span>'}</b><small>${prov == null ? 'Revisando…' : fbListo ? 'Inicias sesión con Facebook, eliges o creas el número y listo.' : 'Se activa cuando Meta apruebe este CRM. Mientras tanto, usa los datos de tu app.'}</small></span>${fbListo ? I('chev', 'i ch') : ''}</button>
+      <button type="button" class="opc" data-cx-coex="1" ${fbListo && !x.fbCargando ? '' : 'disabled'}><span class="marca wa">${I('wa')}</span><span class="tx"><b>${x.fbCargando && x.coex ? 'Abriendo Meta…' : 'Con tu app de WhatsApp Business'}${fbListo ? '<span class="etq-rec">Escaneas un QR</span>' : prov == null ? '' : '<span class="etq-pronto">No disponible todavía</span>'}</b><small>${prov == null ? 'Revisando…' : fbListo ? 'El número sigue funcionando en tu celular y también en el CRM. Escaneas un QR desde la app.' : 'Se activa cuando Meta apruebe este CRM.'}</small></span>${fbListo ? I('chev', 'i ch') : ''}</button>
       <button type="button" class="opc" data-cx-manual="1"><span class="marca neutra">${LOGO.llave}</span><span class="tx"><b>Con los datos de tu app de Meta</b><small>Si ya tienes una app en developers.facebook.com: pegas su identificador, su clave secreta y un token.</small></span>${I('chev', 'i ch')}</button>
     </div>${x.errorCx ? `<div class="ll-nota">${esc(x.errorCx)}</div>` : ''}`;
   const a = x.app;
@@ -494,12 +495,13 @@ function pintarConexion(){
     h = `${cab('Elige el número', 'Los números de la cuenta que todavía no están en el CRM')}${pasos}${cuerpo}${otra}
     <div class="ft2"><button type="button" class="btn atras" data-cx-ir="1">Atrás</button><button type="button" class="btn pri" data-cx-ir="3" ${x.sel ? '' : 'disabled'}>Siguiente</button></div>`;
   }
-  if (x.paso === 3) h = `${cab(`Conectar ${tel}`, 'Ponle nombre, elige el equipo que la atiende y confirma con el PIN')}${pasos}
+  const sinPin = !!(x.coex && numeroSel(x) && numeroSel(x).phoneNumberId === x.coexNum);
+  if (x.paso === 3) h = `${cab(`Conectar ${tel}`, sinPin ? 'Ponle nombre y elige el equipo que la atiende' : 'Ponle nombre, elige el equipo que la atiende y confirma con el PIN')}${pasos}
     <div class="cx-f"><label>Nombre de la línea<input id="cx-n" value="${esc(x.nombre)}" placeholder="Ej. Soporte 1"></label>
       <div class="fld">Equipo que la atiende${ddSel('data-cx-eq', EQUIPOS.map(e => [e.n, e.n]), x.eq)}</div>
-      <label>PIN de seguridad de 6 dígitos<input id="cx-pin" value="${esc(x.pin)}" inputmode="numeric" maxlength="6" placeholder="Ej. 482913"><small>Es la verificación en dos pasos del número en Meta. Se usa solo para registrarlo; el CRM no lo guarda.</small></label>
+      ${sinPin ? '<p class="muted" style="margin:0">Este número sigue en tu app de WhatsApp Business: lo que respondas desde el celular también queda en el CRM.</p>' : ''}<label${sinPin ? ' hidden' : ''}>PIN de seguridad de 6 dígitos<input id="cx-pin" value="${esc(x.pin)}" inputmode="numeric" maxlength="6" placeholder="Ej. 482913"><small>Es la verificación en dos pasos del número en Meta. Se usa solo para registrarlo; el CRM no lo guarda.</small></label>
       ${fila('Activar llamadas por WhatsApp', 'Se prenden cuando Meta las active en la línea, con el botón de llamar visible y el horario de atención', `<button type="button" class="tg" role="switch" data-cx-llam="1" aria-checked="${x.llamadas}" aria-label="Activar llamadas"></button>`)}</div>
-    <div class="ft2"><button type="button" class="btn atras" data-cx-ir="2">Atrás</button><button type="button" class="btn pri" data-cx-conectar="1" ${x.nombre.trim() && /^\d{6}$/.test(x.pin) ? '' : 'disabled'}>${I('check')}Conectar</button></div>`;
+    <div class="ft2"><button type="button" class="btn atras" data-cx-ir="2">Atrás</button><button type="button" class="btn pri" data-cx-conectar="1" ${x.nombre.trim() && (sinPin || /^\d{6}$/.test(x.pin)) ? '' : 'disabled'}>${I('check')}Conectar</button></div>`;
   if (x.paso === 4) {
     // Maqueta aprobada «CRM · línea conectada» (28-sep): tres estados centrados, sin la barra de pasos.
     const L = x.linea, lim = L ? limiteNum(L.limite) : null, n = numeroSel(x);
@@ -639,34 +641,34 @@ function cargarSdkFacebook(appId){
   });
   return fbSdk;
 }
-function conectarConFacebook(x){
+function conectarConFacebook(x, coex){
   const p = x.prov; if (!p || !p.listo) return;
-  x.fbCargando = true; x.errorCx = ''; pintarConexion();
+  x.coex = !!coex; x.fbCargando = true; x.errorCx = ''; pintarConexion();
   let sesion = {};
   const oir = ev => {
     if (!/(^|\.)facebook\.com$/.test(new URL(ev.origin).hostname)) return;
     try { const d = typeof ev.data === 'string' ? JSON.parse(ev.data) : ev.data; if (d && d.type === 'WA_EMBEDDED_SIGNUP') {
-      if (d.event === 'FINISH' || d.event === 'FINISH_ONLY_WABA') sesion = d.data || {};
+      if (d.event === 'FINISH' || d.event === 'FINISH_ONLY_WABA' || d.event === 'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING') sesion = d.data || {};
       if (d.event === 'CANCEL') x.errorCx = d.data && d.data.current_step ? 'Se cerró la ventana de Meta antes de terminar.' : 'Se canceló la conexión con Meta.';
     } } catch { /* otro mensaje de Facebook */ }
   };
   window.addEventListener('message', oir);
-  cargarSdkFacebook(p.appId).then(() => new Promise(ok => FB.login(r => ok(r), {config_id:p.configId, response_type:'code', override_default_response_type:true, extras:{setup:{}, featureType:'', sessionInfoVersion:'3'}})))
+  cargarSdkFacebook(p.appId).then(() => new Promise(ok => FB.login(r => ok(r), {config_id:p.configId, response_type:'code', override_default_response_type:true, extras:{setup:{}, featureType:coex ? 'whatsapp_business_app_onboarding' : '', sessionInfoVersion:'3'}})))
     .then(r => {
       const code = r && r.authResponse && r.authResponse.code;
       if (!code) throw new Error(x.errorCx || 'No se terminó la conexión con Meta.');
       // El número llega por el mensaje de Meta; a veces después de la respuesta: se le da un momento.
       return new Promise(ok => setTimeout(ok, sesion.waba_id ? 0 : 800)).then(() =>
-        crmApi('POST', '/crm/conexiones/whatsapp/meta', {code, wabaId:sesion.waba_id || '', phoneNumberId:sesion.phone_number_id || ''}));
+        crmApi('POST', '/crm/conexiones/whatsapp/meta', {code, wabaId:sesion.waba_id || '', phoneNumberId:sesion.phone_number_id || '', coexistencia:!!coex}));
     })
-    .then(c => { mezclarConexion(c); x.conexionId = c.id; x.preferido = c.phoneNumberId || null; x.paso = 2; x.sel = null; toast('Cuenta de WhatsApp conectada con Meta'); buscarNumeros(x); })
+    .then(c => { mezclarConexion(c); x.conexionId = c.id; x.preferido = c.phoneNumberId || null; x.coexNum = coex ? c.phoneNumberId || null : null; x.paso = 2; x.sel = null; toast(coex ? 'Tu app de WhatsApp Business quedó conectada' : 'Cuenta de WhatsApp conectada con Meta'); buscarNumeros(x); })
     .catch(err => { x.errorCx = err.message || 'No se pudo conectar con Meta'; })
     .finally(() => { window.removeEventListener('message', oir); x.fbCargando = false; if (st.cx === x && !document.getElementById('ov-x').hidden) pintarConexion(); });
 }
 function conectarLinea(x){
   const n = numeroSel(x);
   x.paso = 4; x.estado = 'conectando'; x.error = ''; pintarConexion();
-  crmApi('POST', '/crm/lineas', {conexionId:x.conexionId, phoneNumberId:n.phoneNumberId, wabaId:n.wabaId, nombre:x.nombre.trim(), equipo:x.eq, pin:x.pin, llamadas:x.llamadas})
+  crmApi('POST', '/crm/lineas', {conexionId:x.conexionId, phoneNumberId:n.phoneNumberId, wabaId:n.wabaId, nombre:x.nombre.trim(), equipo:x.eq, pin:x.pin, llamadas:x.llamadas, coexistencia:!!(x.coex && n.phoneNumberId === x.coexNum)})
     .then(L => {
       x.linea = L; x.estado = 'listo';
       if (!LINEAS.some(l => l.id === L.id)) LINEAS.push(L);
@@ -687,6 +689,7 @@ document.getElementById('ov-x').addEventListener('click', e => {
   if (t.closest('[data-cx-manual]')) { x.manual = true; x.errorCx = ''; pintarConexion(); return; }
   if (t.closest('[data-cx-atrasman]')) { x.manual = false; x.errorCx = ''; pintarConexion(); return; }
   const fb = t.closest('[data-cx-fb]'); if (fb && !fb.disabled) { conectarConFacebook(x); return; }
+  const co = t.closest('[data-cx-coex]'); if (co && !co.disabled) { conectarConFacebook(x, true); return; }
   const cc = t.closest('[data-cx-conectarcuenta]'); if (cc && !cc.disabled) { conectarCuenta(x); return; }
   if (t.closest('[data-cx-seguir]')) { x.avisoCx = null; x.paso = 2; x.sel = null; buscarNumeros(x); pintarConexion(); return; }
   const s = t.closest('[data-cx-sel]'); if (s && !s.disabled) { x.sel = s.dataset.cxSel; pintarConexion(); return; }
@@ -710,7 +713,7 @@ document.getElementById('ov-x').addEventListener('input', e => {
   if (e.target.id === 'cx-sec') x.app.appSecret = e.target.value;
   if (e.target.id === 'cx-tok') x.app.token = e.target.value;
   if (e.target.id === 'cx-waba') { e.target.value = e.target.value.replace(/\D/g, ''); x.app.wabaId = e.target.value; }
-  const b = document.querySelector('[data-cx-conectar]'); if (b && x.paso === 3) b.disabled = !(x.nombre.trim() && /^\d{6}$/.test(x.pin));
+  const b = document.querySelector('[data-cx-conectar]'); if (b && x.paso === 3) b.disabled = !(x.nombre.trim() && ((x.coex && numeroSel(x) && numeroSel(x).phoneNumberId === x.coexNum) || /^\d{6}$/.test(x.pin)));
   const bc = document.querySelector('[data-cx-conectarcuenta]'); if (bc) bc.disabled = x.enviandoCx || !!faltaCx(x, true);
   // Qué le falta a cada dato, en vivo: el botón deshabilitado sin explicación no dice nada (6-oct).
   const fa = document.getElementById('cx-falta'); if (fa) { const t = faltaCx(x); fa.textContent = t; fa.hidden = !t; }

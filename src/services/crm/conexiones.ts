@@ -41,6 +41,8 @@ export interface DatosWhatsapp {
   wabas: string[]
   /** El código que Meta repite al verificar la dirección de los avisos. No es secreto de acceso. */
   verifyToken: string
+  /** Números conectados «Con tu app de WhatsApp Business» (coexistencia): siguen en la app del celular, sin PIN. */
+  coex?: string[]
   /** propio: la app manda sus avisos a esta conexión. otro: la app ya tenía otra dirección; se desvía cada línea. */
   webhookApp?: 'propio' | 'otro'
   webhookUrl?: string
@@ -335,6 +337,9 @@ export async function conectarWhatsappMeta(entrada: Json, por: string | null): P
   if (!code) throw new ValidationError('Meta no devolvió el código de la conexión. Vuelve a intentarlo')
   if (!/^\d{5,30}$/.test(wabaId)) throw new ValidationError('Meta no devolvió la cuenta de WhatsApp. Vuelve a intentarlo y elige la cuenta hasta el final')
   if (phoneNumberId && !/^\d{5,30}$/.test(phoneNumberId)) throw new ValidationError('Meta devolvió un número que no se reconoce')
+  // «Con tu app de WhatsApp Business» (coexistencia): el número sigue en la app del celular; no se registra con PIN.
+  const coexistencia = entrada.coexistencia === true
+  if (coexistencia && !phoneNumberId) throw new ValidationError('Meta no devolvió el número de tu app de WhatsApp Business. Vuelve a intentarlo y escanea el QR hasta el final')
 
   let token: string
   try {
@@ -351,7 +356,8 @@ export async function conectarWhatsappMeta(entrada: Json, por: string | null): P
   } catch (e) { throw porQueNoConecta(e, 'No se pudo suscribir el CRM a la cuenta de WhatsApp') }
 
   const previa = (await prisma.crmConexion.findMany({ where: { tipo: 'whatsapp', modo: 'meta' } })).find(c => (obj(c.datos).wabas ?? []).includes(wabaId))
-  const datos: DatosWhatsapp = { appId: p.appId, wabas: [wabaId], verifyToken: '' }
+  const coexAntes = previa ? (obj(previa.datos) as DatosWhatsapp).coex ?? [] : []
+  const datos: DatosWhatsapp = { appId: p.appId, wabas: [wabaId], verifyToken: '', ...(coexistencia || coexAntes.length ? { coex: [...new Set([...coexAntes, ...(coexistencia ? [phoneNumberId] : [])])] } : {}) }
   const c = previa
     ? await prisma.crmConexion.update({ where: { id: previa.id }, data: { secretos: cifrar({ token }), datos: datos as unknown as Prisma.InputJsonValue, estado: 'conectada', error: null }, include: { _count: { select: { lineas: true } } } })
     : await prisma.crmConexion.create({

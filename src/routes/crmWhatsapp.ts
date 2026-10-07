@@ -251,18 +251,20 @@ rutasWaCrm.post('/lineas', soloLideres, asyncHandler(async (req: Request, res: R
   if (!/^\w{1,40}$/.test(phoneNumberId) || !/^\w{1,40}$/.test(wabaId)) throw new ValidationError('Elige el número que vas a conectar')
   if (!nombre) throw new ValidationError('Ponle un nombre a la línea')
   if (nombre.length > 60) throw new ValidationError('El nombre de la línea es demasiado largo')
-  if (!/^\d{6}$/.test(pin)) throw new ValidationError('El PIN debe tener 6 dígitos')
   if (await prismaGlobal.crmLinea.findUnique({ where: { phoneNumberId } })) throw new ConflictError('Esa línea ya está conectada al CRM')
 
   const { c, datos, token } = await conexionConClaves(conexionId)
+  // «Con tu app de WhatsApp Business» (coexistencia): el número ya está registrado por la app; no lleva PIN ni /register.
+  const coex = b.coexistencia === true && ((datos as DatosWhatsapp).coex ?? []).includes(phoneNumberId)
+  if (!coex && !/^\d{6}$/.test(pin)) throw new ValidationError('El PIN debe tener 6 dígitos')
   if (!(datos.wabas ?? []).includes(wabaId)) throw new ValidationError('Ese número no es de las cuentas de WhatsApp de esta conexión')
   const cred = { token }
   const n = (await numerosDeWaba(wabaId, cred).catch(e => { throw enPaso('No se pudo leer la cuenta de WhatsApp en Meta', e) })).find(x => x.id === phoneNumberId)
   if (!n) throw new ValidationError('Ese número no está en esa cuenta de WhatsApp de Meta, o el token no tiene acceso a ella')
   if (!numeroListo(n)) throw new ValidationError('El número no está verificado. Verifícalo por SMS en el administrador de WhatsApp de Meta y vuelve a intentar')
 
-  // 1. Registrar el número en la API en la nube con el PIN de verificación en dos pasos.
-  try {
+  // 1. Registrar el número en la API en la nube con el PIN de verificación en dos pasos (no en coexistencia).
+  if (!coex) try {
     await graph(`/${phoneNumberId}/register`, { cred, method: 'POST', body: { messaging_product: 'whatsapp', pin } })
   } catch (e) {
     if (!(e instanceof ErrorMeta && /already registered|ya est[aá] registrad/i.test(`${e.textoMeta} ${e.message}`))) {
@@ -292,14 +294,21 @@ rutasWaCrm.post('/lineas', soloLideres, asyncHandler(async (req: Request, res: R
       data: {
         conexionId: c.id, nombre, telefono: telVisible(telDigitos(n.display_phone_number)) || n.display_phone_number || '', phoneNumberId, wabaId,
         estado: 'conectada', calidad: calidadTexto(n.quality_rating), limite: limiteTexto(n.messaging_limit_tier),
-        ajustes: { equipo, llamadas: Boolean(b.llamadas) },
+        ajustes: { equipo, llamadas: Boolean(b.llamadas), ...(coex ? { coex: true } : {}) },
       },
     })
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') throw new ConflictError('Esa línea ya está conectada al CRM')
     throw e
   }
-  logger.info(`[CRM WA] línea conectada: ${linea.nombre} ${linea.telefono} por ${req.userId}`)
+  logger.info(`[CRM WA] línea conectada: ${linea.nombre} ${linea.telefono} por ${req.userId}${coex ? ' (con la app de WhatsApp Business)' : ''}`)
+  // Coexistencia: Meta pide sincronizar en las primeras 24 horas los contactos de la app y su historial (6 meses).
+  if (coex) {
+    for (const sync_type of ['smb_app_state_sync', 'history']) {
+      await graph(`/${phoneNumberId}/smb_app_data`, { cred, method: 'POST', body: { messaging_product: 'whatsapp', sync_type } })
+        .catch(e => logger.warn(`[CRM WA] coexistencia ${phoneNumberId}: ${sync_type} sin sincronizar: ${(e as Error)?.message ?? e}`))
+    }
+  }
   const front = lineaAFront(linea)
   emitirCrm({ tipo: 'linea', linea: front }, req.userId ?? null)
   return ApiResponse.created(res, front)
