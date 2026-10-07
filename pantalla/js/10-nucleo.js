@@ -274,6 +274,38 @@ function kanban(){
     col.addEventListener('dragleave', () => col.classList.remove('over'));
     col.addEventListener('drop', e => { e.preventDefault(); col.classList.remove('over'); const c = CONV.find(x => x.id === dragId); if (!c) return; c.etq = [col.dataset.col]; c.msgs.push({ev:'tag', t:`Etapa: ${col.dataset.col} · ahora`}); render(); toast(`${c.n}: ${col.dataset.col}`); });
   });
+  // En el celular (6-oct): mantener presionada la tarjeta y arrastrarla con el dedo hasta otra etapa. Al soltarla se
+  // dispara el mismo «drop» de arriba, así todo lo que escucha el cambio de etapa funciona igual.
+  let toque = null;
+  const colBajo = (x, y) => { const el = document.elementFromPoint(x, y); return el && el.closest('.kcol'); };
+  el.querySelectorAll('.kc').forEach(k => {
+    k.addEventListener('touchstart', e => {
+      const t = e.touches[0];
+      toque = {k, x:t.clientX, y:t.clientY, listo:false, fantasma:null, col:null, espera:setTimeout(() => {
+        if (!toque) return; toque.listo = true; k.classList.add('drag');
+        const r = k.getBoundingClientRect(), f = k.cloneNode(true);
+        Object.assign(f.style, {position:'fixed', left:r.left + 'px', top:r.top + 'px', width:r.width + 'px', pointerEvents:'none', opacity:'.9', zIndex:'60', boxShadow:'0 12px 30px rgba(0,0,0,.2)', transform:'rotate(2deg)'});
+        document.body.appendChild(f); toque.fantasma = f; toque.dx = toque.x - r.left; toque.dy = toque.y - r.top;
+        if (navigator.vibrate) navigator.vibrate(15);
+      }, 300)};
+    }, {passive:true});
+    k.addEventListener('touchmove', e => {
+      if (!toque) return; const t = e.touches[0];
+      if (!toque.listo) { if (Math.hypot(t.clientX - toque.x, t.clientY - toque.y) > 8) { clearTimeout(toque.espera); toque = null; } return; }
+      e.preventDefault();
+      toque.fantasma.style.left = (t.clientX - toque.dx) + 'px'; toque.fantasma.style.top = (t.clientY - toque.dy) + 'px';
+      const c = colBajo(t.clientX, t.clientY);
+      if (c !== toque.col) { if (toque.col) toque.col.classList.remove('over'); if (c) c.classList.add('over'); toque.col = c; }
+    }, {passive:false});
+    const soltar = () => {
+      if (!toque) return; clearTimeout(toque.espera);
+      const {listo, fantasma, col} = toque; toque = null; k.classList.remove('drag'); if (fantasma) fantasma.remove();
+      if (!listo || !col) return;
+      col.classList.remove('over'); dragId = +k.dataset.kc;
+      col.dispatchEvent(new Event('drop', {bubbles:true, cancelable:true}));
+    };
+    k.addEventListener('touchend', soltar); k.addEventListener('touchcancel', soltar);
+  });
 }
 // Público de una difusión por etapa: los contactos reales que se pueden contactar, por etapa del embudo.
 const audiencia = () => { const t = ctTodos().filter(c => !c.noContactar); return nombresEtapas().map(n => [n, t.filter(c => c.etapa === n).length]); };
@@ -596,7 +628,10 @@ function abrirMenuPanel(k){
 const esLiderDe = (id, eq) => ((typeof EQ_CFG !== 'undefined' && EQ_CFG.lideres && EQ_CFG.lideres[eq]) || []).includes(id);
 function opcionesAsesor(c, q){
   const eq = equipoConv(c), n = norm(q), abiertas = id => CONV.filter(x => x.asigId === id && x.est === 'abiertas').length;
-  const gente = personasDeEquipo(eq).filter(u => !n || norm(u.nombre).includes(n));
+  // Primero los conectados (en línea, ocupados, ausentes y al final los desconectados), luego por nombre (6-oct).
+  const ORDEN_EST = {'En línea':0, 'Ocupada':1, 'Ausente':2, 'Desconectado':3};
+  const gente = personasDeEquipo(eq).filter(u => !n || norm(u.nombre).includes(n))
+    .sort((a, b) => (ORDEN_EST[estadoDe(a)] ?? 3) - (ORDEN_EST[estadoDe(b)] ?? 3) || a.nombre.localeCompare(b.nombre, 'es'));
   const sin = !n || norm('Sin asignar').includes(n) ? `<button type="button" role="option" class="pc-op" data-a="" aria-selected="${!c.asig}"><span class="av" style="background:#e5e9f0;color:#6b7280">–</span><span class="pc-tx"><span>Sin asignar</span><small>La toma el reparto del equipo</small></span>${!c.asig ? I('check','i ck') : ''}</button>` : '';
   const vacio = gente.length ? '' : `<p class="muted" style="padding:8px 10px;margin:0">${n ? 'Nadie coincide.' : esc(eq) + ' todavía no tiene personas. Agrégalas en Equipos y reparto.'}</p>`;
   return sin + gente.map(u => { const e = estadoDe(u), k = abiertas(u.id), sel = c.asig === u.nombre;
@@ -1097,7 +1132,9 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') ovRes.hidden
 document.addEventListener('keydown', e => {
   if (st.pagina || !CONV.some(x => x.id === st.sel) || document.getElementById('app').classList.contains('sinchat')) return;
   if (!document.getElementById('ov-x').hidden || !ovRes.hidden || !document.getElementById('ov').hidden) return;
-  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && e.target.id === 'ta') { e.preventDefault(); document.getElementById('enviar').click(); return; }
+  // Enter envía en el computador (6-oct); Shift+Enter hace un salto de línea. En el celular, Enter sigue siendo salto de línea.
+  const enterEnvia = e.key === 'Enter' && !e.shiftKey && !e.altKey && !e.isComposing && !e.defaultPrevented && !matchMedia('(pointer: coarse)').matches;
+  if (e.target.id === 'ta' && (enterEnvia || ((e.ctrlKey || e.metaKey) && e.key === 'Enter'))) { e.preventDefault(); document.getElementById('enviar').click(); return; }
   if (!e.altKey || e.ctrlKey || e.metaKey) return;
   if (e.code === 'KeyN') { e.preventDefault(); setModo(st.modo === 'n' ? 'r' : 'n'); ta.focus(); }
   else if (e.code === 'KeyE') { e.preventDefault(); const bl = document.getElementById('b-link'); if (!bl.hidden) bl.click(); }
@@ -2418,13 +2455,14 @@ document.getElementById('ov').addEventListener('click', e => { if (e.target.clos
 let grabacion = null;
 async function notaDeVoz(boton){
   if (grabacion) { grabacion.rec.stop(); return; }
+  if (notaLista) { URL.revokeObjectURL(notaLista.url); notaLista = null; }
   const c = conv(); if (!c) return;
   if (/cerrada/i.test(c.ventana)) { toast(cerradaTxt(c)); return; }
   if (!navigator.mediaDevices || !window.MediaRecorder) { toast('Este navegador no deja grabar audio'); return; }
   let flujo; try { flujo = await navigator.mediaDevices.getUserMedia({audio:true}); } catch { toast('Permite el micrófono para grabar la nota de voz'); return; }
   const tipo = ['audio/ogg;codecs=opus', 'audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'].find(t => MediaRecorder.isTypeSupported(t)) || '';
   const rec = new MediaRecorder(flujo, tipo ? {mimeType: tipo} : undefined), partes = [], inicio = Date.now(), adj = document.getElementById('adj');
-  const pintar = () => { const s = Math.floor((Date.now() - inicio) / 1000); adj.innerHTML = `${I('mic')}<span>Grabando nota de voz · ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}<small>Toca el micrófono otra vez para enviarla</small></span><button type="button" id="voz-x" aria-label="Cancelar la nota de voz">${I('x')}</button>`; adj.hidden = false; };
+  const pintar = () => { const s = Math.floor((Date.now() - inicio) / 1000); adj.innerHTML = `${I('mic')}<span>Grabando nota de voz · ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}<small>Toca el micrófono otra vez para detenerla</small></span><button type="button" id="voz-x" aria-label="Cancelar la nota de voz">${I('x')}</button>`; adj.hidden = false; };
   grabacion = {rec, c, cancelada:false, t:setInterval(pintar, 500)};
   rec.ondataavailable = e => { if (e.data.size) partes.push(e.data); };
   rec.onstop = async () => {
@@ -2432,14 +2470,36 @@ async function notaDeVoz(boton){
     if (g.cancelada) { toast('Nota de voz cancelada'); return; }
     const dur = Math.round((Date.now() - inicio) / 1000); if (dur < 1 || !partes.length) { toast('La nota de voz quedó vacía'); return; }
     const mime = (rec.mimeType || tipo || 'audio/webm').split(';')[0], ext = mime.includes('ogg') ? 'ogg' : mime.includes('mp4') ? 'm4a' : 'webm';
-    toast('Enviando la nota de voz…');
-    try { const r = await crmSubir(new File(partes, `nota-de-voz.${ext}`, {type: mime})); g.c.msgs.push({out:'', audio:{url:r.url, dur, mime:r.mime || mime}, by:yo, h:'ahora'}); if (st.sel === g.c.id) { chat(); lista(); } toast('Nota de voz enviada'); }
-    catch (err) { toast(err.message); }
+    // Como en WhatsApp (6-oct): al detenerla no sale sola; se puede escuchar, borrar o enviar.
+    const blob = new Blob(partes, {type: mime});
+    notaLista = {c: g.c, blob, mime, ext, dur, url: URL.createObjectURL(blob)};
+    pintarNotaLista();
   };
   rec.start(); boton.classList.add('rec'); boton.setAttribute('aria-pressed', 'true'); pintar();
 }
 document.querySelector('.box .bar [aria-label="Nota de voz"]').addEventListener('click', e => notaDeVoz(e.currentTarget));
 document.getElementById('adj').addEventListener('click', e => { if (e.target.closest('#voz-x') && grabacion) { grabacion.cancelada = true; grabacion.rec.stop(); } });
+// La nota grabada, lista para escuchar, borrar o enviar.
+let notaLista = null;
+function pintarNotaLista(){
+  const adj = document.getElementById('adj'), n = notaLista; adj.replaceChildren();
+  if (!n) { adj.hidden = true; return; }
+  const m = Math.floor(n.dur / 60), s = String(n.dur % 60).padStart(2, '0');
+  adj.insertAdjacentHTML('beforeend', `${I('mic')}<span style="display:flex;align-items:center;gap:10px;flex:1;min-width:0"><audio controls preload="metadata" src="${n.url}" style="height:34px;flex:1;min-width:0;max-width:340px"></audio><small style="white-space:nowrap">${m}:${s}</small></span><button type="button" class="btn" id="voz-borrar" aria-label="Borrar la nota de voz">${I('x')}Borrar</button><button type="button" class="btn pri" id="voz-enviar">${I('send')}Enviar</button>`);
+  adj.hidden = false;
+}
+document.getElementById('adj').addEventListener('click', async e => {
+  if (!notaLista) return;
+  if (e.target.closest('#voz-borrar')) { URL.revokeObjectURL(notaLista.url); notaLista = null; pintarNotaLista(); toast('Nota de voz borrada'); return; }
+  const b = e.target.closest('#voz-enviar'); if (!b) return;
+  const n = notaLista; b.disabled = true; toast('Enviando la nota de voz…');
+  try {
+    const r = await crmSubir(new File([n.blob], `nota-de-voz.${n.ext}`, {type: n.mime}));
+    n.c.msgs.push({out:'', audio:{url:r.url, dur:n.dur, mime:r.mime || n.mime}, by:yo, h:'ahora'}); n.c.unread = 0;
+    URL.revokeObjectURL(n.url); notaLista = null; pintarNotaLista();
+    if (st.sel === n.c.id) { chat(); lista(); } toast('Nota de voz enviada');
+  } catch (err) { b.disabled = false; toast(err.message); }
+});
 
 // Los interruptores sin nombre toman el de su fila (Lunes, Flujo activo…), para que los lectores de pantalla digan qué prenden.
 new MutationObserver(() => {
