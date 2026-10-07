@@ -20,8 +20,9 @@ import { accesoCrm, alcanceDe } from '../services/crm/alcance'
 import { borrarEnlace, crearEnlace, editarEnlace, listarEnlaces } from '../services/crm/enlaces'
 import { ApiResponse } from '../utils/response'
 import { z } from 'zod'
-import { estadoPlan, historialPagos, pagarPlan, pagoDeEspacio, planesDelSitio, portalPagos, PLANES, type Plan } from '../services/crm/plan'
+import { estadoPlan, historialPagos, pagarPlan, pagoDeEspacio, planesDelSitio, portalPagos, usoDeCuenta, PLANES, type Plan } from '../services/crm/plan'
 import { nombreRecibo, reciboPdf } from '../services/crm/recibo'
+import { crearEspacio, entrarAEspacio, listarEspacios } from '../services/crm/espacios'
 import { leerAjuste } from '../services/crm/ajustes'
 import { urlPublica } from './acceso'
 import { prisma } from '../config/prisma'
@@ -39,15 +40,25 @@ router.use(authenticate, accesoCrm, conEspacio)
 
 // Plan y pagos (Creem). Van antes de la guarda: con el plan vencido hay que poder ver el plan y pagar.
 router.get('/plan', asyncHandler(async (req: Request, res: Response) => {
-  const [estado, historial, catalogo, usuarios, agentes] = await Promise.all([
-    estadoPlan(req.espacioId!), historialPagos(req.espacioId!), planesDelSitio(),
-    usuariosDeEspacio(req.espacioId!), leerAjuste<unknown>('agentes'),
+  // El uso es de la cuenta: personas y agentes sumados entre todos sus espacios de trabajo (6-oct).
+  const [estado, historial, catalogo, uso] = await Promise.all([
+    estadoPlan(req.espacioId!), historialPagos(req.espacioId!), planesDelSitio(), usoDeCuenta(req.espacioId!),
   ])
   return ApiResponse.success(res, {
-    ...estado, historial, catalogo,
-    uso: { usuarios: usuarios.length, agentesIA: Array.isArray(agentes) ? agentes.length : 0 },
+    ...estado, historial, catalogo, uso,
     administra: req.userRole === 'ADMIN' && !req.soloLectura,
   })
+}))
+// Espacios de trabajo (6-oct): listar, crear y cambiar de espacio. Antes de la guarda: con el plan vencido se puede cambiar.
+router.get('/espacios', asyncHandler(async (req: Request, res: Response) => ApiResponse.success(res, await listarEspacios(req.userId!, req.espacioId!))))
+router.post('/espacios', asyncHandler(async (req: Request, res: Response) => {
+  if (req.soloLectura) throw new ForbiddenError('Modo de solo lectura: puedes ver todo, pero no hacer cambios.')
+  const d = z.object({ nombre: z.string().max(80), adminNombre: z.string().max(80).optional(), adminCorreo: z.string().max(200).optional(), yo: z.boolean().default(true) }).parse(req.body)
+  return ApiResponse.created(res, { id: await crearEspacio(req.userId!, req.espacioId!, d) })
+}))
+router.post('/espacios/:id/entrar', asyncHandler(async (req: Request, res: Response) => {
+  await entrarAEspacio(req.userId!, String(req.params.id))
+  return ApiResponse.success(res, { ok: true })
 }))
 router.get('/plan/recibo/:numero', asyncHandler(async (req: Request, res: Response) => {
   if (req.userRole !== 'ADMIN') throw new ForbiddenError('Solo el administrador del espacio puede descargar los recibos.')

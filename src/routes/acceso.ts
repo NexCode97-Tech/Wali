@@ -54,7 +54,7 @@ router.get('/opciones', (_req: Request, res: Response) => ApiResponse.success(re
 // ─── Crear cuenta ────────────────────────────────────────────────────────────
 
 /** El identificador del espacio sale del nombre de la empresa: minúsculas, sin tildes; si ya existe, con un sufijo. */
-async function idDeEspacio(empresa: string): Promise<string> {
+export async function idDeEspacio(empresa: string): Promise<string> {
   let base = empresa.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24).replace(/-+$/, '')
   if (base.length < 2) base = 'empresa'
   for (let i = 0; i < 12; i++) {

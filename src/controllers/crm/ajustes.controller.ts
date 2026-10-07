@@ -17,6 +17,7 @@ import { normalizarEquipos, type EquiposNorm } from '../../services/crm/equipos'
 import { conectarCalendario, conectarHotmart, desconectar, estadoIntegraciones } from '../../services/crm/integraciones'
 import { invitarNuevos } from '../../services/crm/invitaciones'
 import { limiteUsuarios } from '../../services/crm/plan'
+import { cuentaDe, usuariosDeCuenta } from '../../services/crm/espacio'
 import { cifrarClave } from '../../routes/auth'
 import crypto from 'node:crypto'
 import { conectarMotor, conOpciones, desconectarMotor, estadoMotor, motorIA, usarMotor } from '../../services/crm/motorIA'
@@ -391,7 +392,9 @@ export async function invitarPersona(req: Request, res: Response) {
   if (existe && miembros.some(m => m.userId === existe.id)) throw new ValidationError('Esa persona ya está en el CRM: búscala por su nombre o su correo.')
   if (existe?.suspendido) throw new ValidationError('Esa cuenta está suspendida. Escríbenos para revisarla.')
   const tope = await limiteUsuarios(espacio)
-  if (miembros.length >= tope) throw new ForbiddenError(`Tu plan incluye ${tope} usuarios y ya están en uso. Sube de plan en Ajustes, Plan y pagos, para agregar más.`)
+  // El límite es de la cuenta: personas sumadas entre todos sus espacios de trabajo (alguien de otro espacio no suma).
+  const enCuenta = await usuariosDeCuenta(await cuentaDe(espacio))
+  if (!(existe && enCuenta.includes(existe.id)) && enCuenta.length >= tope) throw new ForbiddenError(`Tu plan incluye ${tope} usuarios y ya están en uso. Sube de plan en Ajustes, Plan y pagos, para agregar más.`)
   const u = existe ?? await prismaGlobal.user.create({
     // Sin contraseña que alguien conozca: la crea la persona con el enlace del correo.
     data: { nombre, email, role: 'AGENTE', passwordHash: await cifrarClave(crypto.randomBytes(32).toString('base64url')) },

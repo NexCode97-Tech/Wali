@@ -47,7 +47,9 @@ function nuevosPorPersona(antes: EquiposNorm, despues: EquiposNorm): Map<string,
 
 const lista = (l: string[]) => (l.length < 2 ? l[0] : `${l.slice(0, -1).join(', ')} y ${l[l.length - 1]}`)
 
-async function invitar(userId: string, equipos: string[], empresa: string, quien: string) {
+/** El correo de invitación. Sin equipos: lo agregaron al CRM de la empresa (por ejemplo, como su administrador). */
+export async function invitar(userId: string, equipos: string[], empresa: string, quien: string) {
+  if (!process.env.RESEND_API_KEY || !urlCrm()) { logger.warn({ evento: 'INVITACION_SIN_CORREO', userId }); return }
   const u = await prismaGlobal.user.findUnique({ where: { id: userId }, select: { id: true, email: true, nombre: true, ultimoIngreso: true, suspendido: true } })
   if (!u || u.suspendido) return
   const base = urlCrm()!
@@ -65,7 +67,7 @@ async function invitar(userId: string, equipos: string[], empresa: string, quien
   }
   const nombre = (u.nombre ?? '').trim().split(/\s+/)[0]
   const hola = nombre ? `Hola, ${nombre}` : 'Hola'
-  const donde = `${equipos.length === 1 ? 'el equipo' : 'los equipos'} ${lista(equipos)}`
+  const donde = !equipos.length ? 'su equipo de trabajo' : `${equipos.length === 1 ? 'el equipo' : 'los equipos'} ${lista(equipos)}`
   await enviarCorreo(u.email, `Te agregaron al CRM de ${empresa}`,
     correoMarca({
       preencabezado: `${quien} te agregó a ${donde} en el CRM de ${empresa}.`,

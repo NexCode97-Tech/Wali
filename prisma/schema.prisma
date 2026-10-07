@@ -33,6 +33,8 @@ model User {
   /// Operador de la plataforma: configura lo común a todos los espacios (apps de Meta, Instagram y TikTok).
   operador      Boolean   @default(false)
   ultimoIngreso DateTime? @map("ultimo_ingreso")
+  /// El espacio de trabajo en que está (si entra a varios). null = el primero al que entró.
+  espacioActivo String?   @map("espacio_activo")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -293,6 +295,9 @@ model CrmEspacio {
   cancelaAlFinal Boolean           @default(false) @map("cancela_al_final")
   creemCliente   String?           @map("creem_cliente")
   creemSuscripcion String?         @map("creem_suscripcion")
+  /// Espacios de trabajo (6-oct): la cuenta que paga el plan. null = este espacio es la cuenta (tiene el plan).
+  /// Los espacios de una cuenta comparten su plan, sus usuarios y sus agentes (sumados entre todos).
+  cuentaId       String?           @map("cuenta_id")
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
   miembros       CrmMiembro[]
@@ -307,6 +312,7 @@ model CrmEspacio {
   clics          CrmClic[]
   pagos          CrmPago[]
 
+  @@index([cuentaId])
   @@map("crm_espacios")
 }
 

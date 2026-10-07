@@ -29,10 +29,35 @@ export function espacioActual(): string {
 
 export const espacioOpcional = (): string | null => contexto.getStore()?.espacioId ?? null
 
-/** El espacio de una persona: su fila en `crm_miembros`. null si no entra a ninguno. */
+/**
+ * El espacio de una persona: el que eligió en el selector (`espacioActivo`) si todavía entra a él; si no, el primero al
+ * que entró (su fila más vieja en `crm_miembros`). null si no entra a ninguno.
+ */
 export async function espacioDeUsuario(userId: string, _rol?: string | null): Promise<string | null> {
-  const m = await base.crmMiembro.findFirst({ where: { userId }, orderBy: { createdAt: 'asc' }, select: { espacioId: true } })
-  return m?.espacioId ?? null
+  const [u, ms] = await Promise.all([
+    base.user.findUnique({ where: { id: userId }, select: { espacioActivo: true } }),
+    base.crmMiembro.findMany({ where: { userId }, orderBy: { createdAt: 'asc' }, select: { espacioId: true } }),
+  ])
+  if (u?.espacioActivo && ms.some(m => m.espacioId === u.espacioActivo)) return u.espacioActivo
+  return ms[0]?.espacioId ?? null
+}
+
+/** La cuenta (el espacio que tiene el plan) de un espacio de trabajo: él mismo si no depende de otro. */
+export async function cuentaDe(espacioId: string): Promise<string> {
+  const e = await base.crmEspacio.findUnique({ where: { id: espacioId }, select: { cuentaId: true } })
+  return e?.cuentaId || espacioId
+}
+
+/** Todos los espacios de una cuenta (la cuenta primero). */
+export async function espaciosDeCuenta(cuentaId: string): Promise<string[]> {
+  const l = await base.crmEspacio.findMany({ where: { OR: [{ id: cuentaId }, { cuentaId }] }, orderBy: { createdAt: 'asc' }, select: { id: true } })
+  return l.map(e => e.id).sort((a, b) => (a === cuentaId ? -1 : b === cuentaId ? 1 : 0))
+}
+
+/** Las personas de toda la cuenta, sin repetir (el límite de usuarios del plan se suma entre sus espacios). */
+export async function usuariosDeCuenta(cuentaId: string): Promise<string[]> {
+  const ids = await espaciosDeCuenta(cuentaId)
+  return [...new Set((await base.crmMiembro.findMany({ where: { espacioId: { in: ids } }, select: { userId: true } })).map(m => m.userId))]
 }
 
 /** Quiénes entran a un espacio (para el tiempo real y las listas de usuarios). */

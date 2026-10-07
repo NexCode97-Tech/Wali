@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { Prisma } from '@prisma/client'
 import { prisma, prismaGlobal } from './bd'
-import { espacioActual } from './espacio'
+import { cuentaDe, espacioActual } from './espacio'
 import { leerAjuste } from './ajustes'
 import { cifrar, descifrar } from './cifrado'
 import { emitirCrm } from './tiempoReal'
@@ -83,7 +83,8 @@ async function escribir(cambiar: (g: Guardado) => Guardado, por: string | null) 
 // ─── Plan: Starter no trae IA ────────────────────────────────────────────────
 
 async function planDelEspacio(): Promise<{ conIA: boolean; interno: boolean }> {
-  const e = await prismaGlobal.crmEspacio.findUnique({ where: { id: espacioActual() }, select: { plan: true, estadoPlan: true } })
+  // El plan es de la cuenta (6-oct): un espacio de trabajo usa el de su cuenta.
+  const e = await prismaGlobal.crmEspacio.findUnique({ where: { id: await cuentaDe(espacioActual()) }, select: { plan: true, estadoPlan: true } })
   if (!e) return { conIA: false, interno: false }
   const interno = e.estadoPlan === 'interno'
   const lim = LIMITES[e.plan as Plan] ?? LIMITES.starter

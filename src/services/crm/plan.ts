@@ -2,6 +2,7 @@ import crypto from 'crypto'
 import { prisma } from '../../config/prisma'
 import { logger } from '../../utils/logger'
 import { AppError, ValidationError } from '../../utils/errors'
+import { cuentaDe, espaciosDeCuenta, usuariosDeCuenta } from './espacio'
 
 /**
  * El plan de cada espacio y el cobro con Creem (Merchant of Record: cobra, factura y declara impuestos).
@@ -17,11 +18,14 @@ export type Periodo = 'mensual' | 'anual'
 export const PLANES: Plan[] = ['starter', 'growth', 'business']
 export const DIAS_PRUEBA = 10
 
-/** Lo que permite cada plan. Infinity = sin límite. */
-export const LIMITES: Record<Plan, { usuarios: number; agentesIA: number }> = {
-  starter: { usuarios: 10, agentesIA: 0 },
-  growth: { usuarios: 20, agentesIA: 2 },
-  business: { usuarios: Infinity, agentesIA: Infinity },
+/**
+ * Lo que permite cada plan. Infinity = sin límite. Es de la cuenta (6-oct): usuarios y agentes se suman entre todos
+ * sus espacios de trabajo, y `espacios` es cuántos espacios puede tener.
+ */
+export const LIMITES: Record<Plan, { usuarios: number; agentesIA: number; espacios: number }> = {
+  starter: { usuarios: 10, agentesIA: 0, espacios: 1 },
+  growth: { usuarios: 20, agentesIA: 2, espacios: 3 },
+  business: { usuarios: Infinity, agentesIA: Infinity, espacios: 6 },
 }
 
 const API = () => (process.env.CREEM_API_URL || 'https://test-api.creem.io').replace(/\/+$/, '')
@@ -80,7 +84,7 @@ export interface EstadoPlan {
   cancelaAlFinal: boolean
   /** Si el espacio puede trabajar normal. Si no, queda en solo lectura hasta pagar. */
   vigente: boolean
-  limites: { usuarios: number | null; agentesIA: number | null }
+  limites: { usuarios: number | null; agentesIA: number | null; espacios: number | null }
   pagos: boolean
   /** Ya pagó alguna vez: tiene portal de Creem (facturas, tarjeta y cancelación). */
   portal: boolean
@@ -88,7 +92,9 @@ export interface EstadoPlan {
 
 const esPlan = (v: string): v is Plan => (PLANES as string[]).includes(v)
 
-export async function estadoPlan(espacioId: string): Promise<EstadoPlan> {
+export async function estadoPlan(espacioDado: string): Promise<EstadoPlan> {
+  // El plan es de la cuenta: un espacio de trabajo usa el de la cuenta a la que pertenece.
+  const espacioId = await cuentaDe(espacioDado)
   const e = await prisma.crmEspacio.findUnique({ where: { id: espacioId } })
   if (!e) throw new ValidationError('Espacio no encontrado')
   const plan: Plan = esPlan(e.plan) ? e.plan : 'starter'
@@ -106,14 +112,15 @@ export async function estadoPlan(espacioId: string): Promise<EstadoPlan> {
     renuevaEl: e.renuevaEl?.toISOString() ?? null,
     cancelaAlFinal: e.cancelaAlFinal,
     vigente,
-    limites: { usuarios: Number.isFinite(lim.usuarios) ? lim.usuarios : null, agentesIA: Number.isFinite(lim.agentesIA) ? lim.agentesIA : null },
+    limites: { usuarios: Number.isFinite(lim.usuarios) ? lim.usuarios : null, agentesIA: Number.isFinite(lim.agentesIA) ? lim.agentesIA : null, espacios: e.estadoPlan === 'interno' ? null : lim.espacios },
     pagos: pagosListos(),
     portal: !!e.creemCliente,
   }
 }
 
 /** Cuántos usuarios permite el plan del espacio (Infinity si no hay límite o es interno). */
-export async function limiteUsuarios(espacioId: string): Promise<number> {
+export async function limiteUsuarios(espacioDado: string): Promise<number> {
+  const espacioId = await cuentaDe(espacioDado)
   const e = await prisma.crmEspacio.findUnique({ where: { id: espacioId }, select: { plan: true, estadoPlan: true } })
   if (!e || e.estadoPlan === 'interno') return Infinity
   return LIMITES[esPlan(e.plan) ? e.plan : 'starter'].usuarios
@@ -125,8 +132,9 @@ export async function limiteUsuarios(espacioId: string): Promise<number> {
  * Lleva al pago de un plan. Si el espacio ya tiene una suscripción, la cambia de plan (con prorrateo) en vez de
  * abrir otro pago. Devuelve la dirección a la que hay que enviar a la persona, o null si el cambio ya quedó hecho.
  */
-export async function pagarPlan(espacioId: string, plan: Plan, periodo: Periodo, email: string, volverA: string): Promise<{ url: string | null }> {
+export async function pagarPlan(espacioDado: string, plan: Plan, periodo: Periodo, email: string, volverA: string): Promise<{ url: string | null }> {
   if (!pagosListos()) throw new AppError('Los pagos todavía no están activos. Escríbenos y te activamos el plan.', 503)
+  const espacioId = await cuentaDe(espacioDado)
   const producto = productos()[`${plan}-${periodo}`]
   if (!producto) throw new ValidationError('Ese plan no está disponible.')
   const e = await prisma.crmEspacio.findUnique({ where: { id: espacioId }, select: { creemSuscripcion: true, estadoPlan: true } })
@@ -146,7 +154,8 @@ export async function pagarPlan(espacioId: string, plan: Plan, periodo: Periodo,
 }
 
 /** El portal del cliente en Creem: facturas, tarjeta y cancelación. */
-export async function portalPagos(espacioId: string): Promise<{ url: string }> {
+export async function portalPagos(espacioDado: string): Promise<{ url: string }> {
+  const espacioId = await cuentaDe(espacioDado)
   const e = await prisma.crmEspacio.findUnique({ where: { id: espacioId }, select: { creemCliente: true } })
   if (!e?.creemCliente) throw new ValidationError('Todavía no tienes pagos registrados.')
   const r = await creem<{ customer_portal_link: string }>('/customers/billing', { customer_id: e.creemCliente })
@@ -286,8 +295,23 @@ export interface PagoHistorial {
   desde: string | null; hasta: string | null; subtotal: number; impuestos: number; total: number; reembolso: number; moneda: string
 }
 
+/**
+ * Lo que usa la cuenta, sumado entre todos sus espacios de trabajo: personas (sin repetir), agentes de IA y espacios.
+ * Cada agente trabaja solo en el espacio donde se creó; aquí solo se cuentan.
+ */
+export async function usoDeCuenta(espacioDado: string): Promise<{ usuarios: number; agentesIA: number; espacios: number }> {
+  const cuenta = await cuentaDe(espacioDado)
+  const ids = await espaciosDeCuenta(cuenta)
+  const [personas, ajustes] = await Promise.all([
+    usuariosDeCuenta(cuenta),
+    prisma.crmAjuste.findMany({ where: { espacioId: { in: ids }, clave: 'agentes' }, select: { valor: true } }),
+  ])
+  return { usuarios: personas.length, agentesIA: ajustes.reduce((n, a) => n + (Array.isArray(a.valor) ? a.valor.length : 0), 0), espacios: ids.length }
+}
+
 /** Los cobros del espacio, del más reciente al más viejo. */
-export async function historialPagos(espacioId: string, limite = 24): Promise<PagoHistorial[]> {
+export async function historialPagos(espacioDado: string, limite = 24): Promise<PagoHistorial[]> {
+  const espacioId = await cuentaDe(espacioDado)
   const filas = await prisma.crmPago.findMany({ where: { espacioId }, orderBy: { fecha: 'desc' }, take: limite })
   return filas.map(p => ({
     numero: p.numero, fecha: p.fecha.toISOString(), plan: p.plan, periodo: p.periodo, estado: p.estado,
@@ -296,7 +320,8 @@ export async function historialPagos(espacioId: string, limite = 24): Promise<Pa
 }
 
 /** Un cobro del espacio para su recibo. Solo los pagados o reembolsados tienen recibo. */
-export async function pagoDeEspacio(espacioId: string, numero: number) {
+export async function pagoDeEspacio(espacioDado: string, numero: number) {
+  const espacioId = await cuentaDe(espacioDado)
   const p = await prisma.crmPago.findFirst({ where: { espacioId, numero, estado: { in: ['pagado', 'reembolsado'] } } })
   if (!p) throw new ValidationError('Ese recibo no existe.')
   return p
