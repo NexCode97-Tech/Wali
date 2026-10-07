@@ -1,5 +1,5 @@
 import type { Prisma } from '@prisma/client'
-import { dispararReglas } from './reglas'
+import { dispararReglas, festivosCO } from './reglas'
 import { prisma } from './bd'
 import { espacioActual } from './espacio'
 import { logger } from '../../utils/logger'
@@ -109,15 +109,41 @@ async function abiertasPor(ids: string[]): Promise<Map<string, number>> {
   return new Map(filas.map(f => [f.asignadoId as string, f._count._all]))
 }
 
+/**
+ * Turnos (Ajustes, Horario de atención, `cfg.turnos`): quien está en algún turno solo recibe dentro de uno de ellos y
+ * fuera de su almuerzo de ese día; quien no tiene turno recibe a cualquier hora. Festivos como domingo si así está.
+ * Cada día del turno va como [díaDeLaSemana 0-6, desde, hasta, almuerzoDesde?, almuerzoHasta?], en hora de Colombia.
+ */
+async function enTurnoAhora(): Promise<(id: string) => boolean> {
+  const cfg = obj(await leerAjuste('cfg'))
+  const turnos = Array.isArray(cfg.turnos) ? cfg.turnos.map(obj) : []
+  if (!turnos.length) return () => true
+  const b = new Date(Date.now() - 5 * 3600_000), hoy = b.toISOString().slice(0, 10)
+  const dia = cfg.festivos !== false && festivosCO(b.getUTCFullYear()).includes(hoy) ? 0 : b.getUTCDay()
+  const min = b.getUTCHours() * 60 + b.getUTCMinutes()
+  const m = (s: unknown) => { const x = String(s ?? '').match(/^(\d{1,2})(?::(\d{2}))?$/); return x ? Number(x[1]) * 60 + Number(x[2] ?? 0) : null }
+  const dentro = (a: number | null, c: number | null) => a !== null && c !== null && (a <= c ? min >= a && min < c : min >= a || min < c)
+  const con = new Set<string>(), activos = new Set<string>()
+  for (const t of turnos) {
+    const ids = Array.isArray(t.ids) ? t.ids.map(String) : []
+    ids.forEach(i => con.add(i))
+    const f = (Array.isArray(t.dias) ? t.dias : []).find(z => Array.isArray(z) && Number(z[0]) === dia) as unknown[] | undefined
+    if (f && dentro(m(f[1]), m(f[2])) && !dentro(m(f[3]), m(f[4]))) ids.forEach(i => activos.add(i))
+  }
+  return id => !con.has(id) || activos.has(id)
+}
+
 /** ¿Puede recibir una conversación ya mismo? */
 async function disponibles(personas: UsuarioCrm[], cfg: CfgReparto, excluir: Set<string>) {
   const conectados = usuariosConectados()
+  const enTurno = await enTurnoAhora()
   const carga = await abiertasPor(personas.map(p => p.id))
   // El máximo de cada persona (pestaña Personas); si no tiene uno propio, el general.
   const topes = obj(obj(await leerAjuste('equipos')).topes)
   const out: { u: UsuarioCrm; abiertas: number }[] = []
   for (const u of personas) {
     if (excluir.has(u.id)) continue
+    if (!enTurno(u.id)) continue
     const pref = await leerPreferencias(u.id)
     if (pref.reparto === false) continue
     if ((typeof pref.estado === 'string' ? pref.estado : 'En línea') !== 'En línea') continue
