@@ -267,12 +267,12 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ck-bar{display:flex;flex-wrap:nowrap;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid #eef1f5}
 .ck-bar > *{flex-shrink:0}
 .ck-bar .search{flex:1 1 200px;min-width:170px;max-width:340px;margin:0}
-.ck-pill{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:999px;border:1px solid #e5e9f0;background:#fff;font:inherit;font-size:13px;color:#374151;cursor:pointer;white-space:nowrap}
+.ck-pill{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:8px;border:1px solid #e5e9f0;background:#fff;font:inherit;font-size:13px;color:#374151;cursor:pointer;white-space:nowrap}
 .ck-pill:hover{border-color:#cbd5e1}
 .ck-pill svg{width:14px;height:14px;color:#9ca3af}
 .ck-pill.on{border-color:#FFF200;background:#FFF200;color:#0b0b10;padding:0 4px 0 12px;gap:2px}
 .ck-pill.on button{border:0;background:none;color:inherit;font:inherit;cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:4px}
-.ck-pill.on .q{width:26px;height:26px;border-radius:50%;justify-content:center}
+.ck-pill.on .q{width:26px;height:26px;border-radius:6px;justify-content:center}
 .ck-pill.on .q:hover{background:rgba(11,11,16,.1)}
 .ck-pill.on svg{color:#0b0b10}
 .ck-pill b{font-weight:600}
