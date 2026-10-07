@@ -38,7 +38,7 @@
 /* ── Lista ── */
 #app .list-h{padding-bottom:12px;border-bottom:1px solid var(--line2)}
 #app .tabs{gap:4px;border-bottom:0;background:#f6f7f9;border-radius:11px;padding:3px}
-#app .tabs button{flex:1;justify-content:center;height:30px;padding:0;margin:0;border-bottom:0;border-radius:9px;color:var(--ink2)}
+#app .tabs button{flex:1;justify-content:center;height:30px;padding:0 8px;font-size:12.5px;gap:6px;white-space:nowrap;margin:0;border-bottom:0;border-radius:9px;color:var(--ink2)}
 #app .tabs button[aria-pressed="true"]{background:var(--nx-negro);color:#fff}
 #app .tabs button[aria-pressed="true"] .n{background:rgba(255,255,255,.16);color:#fff}
 #app .search:focus-within{border-color:var(--nx-negro)}
