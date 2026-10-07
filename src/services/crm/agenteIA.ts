@@ -107,6 +107,8 @@ interface Agente extends AgenteMaqueta {
   siempre?: { on?: boolean; canales?: string[]; pausa?: number | string }
   /** Si el agente se limita a unas líneas: sus ids. Vacío o sin definir = todas. */
   lineas?: string[]
+  /** Cuentas (conexiones) de Instagram, Messenger, Telegram, TikTok o correo donde atiende (7-oct). Sin las de un canal: todas. */
+  cuentas?: string[]
 }
 
 /** Lo que se sabe del contacto en la plataforma, resumido para el modelo. */
@@ -220,6 +222,11 @@ function atiendeCanal(a: Agente, canal: string): boolean {
   return canal === 'wa'
 }
 const permiteLinea = (a: Agente, lineaId: string) => (Array.isArray(a.lineas) && a.lineas.length ? a.lineas.includes(lineaId) : true)
+/** Con cuentas elegidas para su canal, solo esas; sin ninguna de ese canal (agente de antes), todas. */
+const permiteCuenta = (a: Agente, conexionId: string, delCanal: string[]) => {
+  const elegidas = Array.isArray(a.cuentas) ? a.cuentas.filter(id => delCanal.includes(id)) : []
+  return elegidas.length ? elegidas.includes(conexionId) : true
+}
 /** Qué tanto le toca al agente una conversación por su equipo: 2 su subequipo, 1 su equipo, 0 agente sin equipo
  *  (atiende cualquiera), -1 no le toca. */
 function afinidad(a: Agente, eq: string, sub: string | null): number {
@@ -1231,7 +1238,8 @@ export async function agenteIniciar(ctx: CtxEntrante): Promise<boolean> {
     if (leerEstado(conv.extra)) return true
     if (obj(conv.extra)._flujo) return false
 
-    const agentes = (await leerAgentes()).filter(a => encendido(a) && atiendeCanal(a, conv.canal) && (!conv.lineaId || permiteLinea(a, conv.lineaId)))
+    const delCanal = conv.conexionId ? (await prisma.crmConexion.findMany({ where: { tipo: (await prisma.crmConexion.findUnique({ where: { id: conv.conexionId }, select: { tipo: true } }))?.tipo ?? '' }, select: { id: true } })).map(c => c.id) : []
+    const agentes = (await leerAgentes()).filter(a => encendido(a) && atiendeCanal(a, conv.canal) && (!conv.lineaId || permiteLinea(a, conv.lineaId)) && (!conv.conexionId || conv.canal === 'wa' || permiteCuenta(a, conv.conexionId, delCanal)))
     if (!agentes.length) return false
     // El más específico primero: el de su subequipo, el de su equipo y los que no tienen equipo.
     const eq = equipoDeConv(conv), sub = txt(obj(conv.extra).subequipo) || null

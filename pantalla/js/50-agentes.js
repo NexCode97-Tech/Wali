@@ -28,7 +28,8 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ag-tpl.cero{align-items:center;justify-content:center;text-align:center;background:var(--bg2)}
 .ag-ed{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:18px;align-items:start}
 @media (max-width:1150px){.ag-ed{grid-template-columns:1fr}}
-.ag-top{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.ag-top{display:flex;align-items:flex-end;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.ag-top .t{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
 .ag-top h2{margin:0;flex:1}
 .ag-card{border:1px solid var(--line);border-radius:12px;background:#fff;padding:16px;display:grid;gap:10px;margin-bottom:14px}
 .ag-card > h4{margin:0;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
@@ -194,7 +195,7 @@ function editorAgente(a){
   const propio = agTonoPropio(a), pide = agRecopilar(a), rec = agRec(a), ina = agIna(a);
   const tabs = `<div class="cn-tabs ag-pest" role="tablist" aria-label="Partes del agente">${AG_PEST.map(([k, n]) => `<button type="button" role="tab" aria-selected="${pest === k}" data-ag-pest="${k}">${n}${k === 'kb' && kbCuenta(a) ? `<span class="kb-n">${kbCuenta(a)}</span>` : ''}</button>`).join('')}</div>`;
   const config = `<div class="ag-card"><h4>${I('wa')}Dónde atiende</h4>
-        <div class="fld">Canales<div class="chips2">${canalesConectados().length ? canalesConectados().map(k => `<button type="button" data-ag-canal="${k}" aria-pressed="${!!(a.canales || {})[k]}">${CANALES[k].n}</button>`).join('') : ''}</div>${canalesConectados().length ? '' : `<p class="muted" style="margin:4px 0 0">Todavía no hay canales conectados al CRM. Se conectan en Ajustes del CRM, Canales.</p><div style="margin-top:6px"><button type="button" class="btn" data-ir="cfg-canales">${I('share')}Ir a Canales</button></div>`}</div>
+        ${agCanalesHTML(a)}
         ${fila('Cuándo atiende', '', ddSel('data-ag-cuando', ['Siempre', 'Solo fuera del horario de atención', 'Solo en el horario de atención'], a.cuando))}
         ${fila('Equipo del agente', 'Atiende primero lo que entra a ese equipo y al terminar lo pasa a su gente', ddSel('data-ag-eq', [['', 'Todos los equipos'], ...EQUIPOS.map(e => [e.n, e.n])], (a.equipoAg || {}).equipo || ''))}
         ${(a.equipoAg || {}).equipo && ((EQ_CFG.subequipos || {})[a.equipoAg.equipo] || []).length ? fila('Subequipo', 'Solo lo que se pasa a ese subequipo', ddSel('data-ag-sub', [['', 'Todo el equipo'], ...EQ_CFG.subequipos[a.equipoAg.equipo].map(s => [s.id, s.n])], a.equipoAg.sub || '')) : ''}
@@ -250,7 +251,7 @@ function editorAgente(a){
   const cap = `<div class="ag-card"><h4>${I('bolt')}Lo que puede hacer en el CRM</h4>
         <div class="ag-acc">${AG_ACC.filter(([k]) => !AG_ACC_FUERA.includes(k)).map(([k, ic, n]) => `<button type="button" aria-pressed="${!!a.acc[k]}" data-ag-acc="${k}">${I(a.acc[k] ? 'check' : ic)}${n}</button>`).join('')}</div></div>
       ${consultasHTML(a, sw)}`;
-  return `<div class="ajw ancho ag-w"><div class="ag-top"><button type="button" class="volver" data-ag-ir="lista" style="margin:0">${I('back')}Agentes IA</button><h2>${a.estado && a.estado !== 'borrador' ? 'Editar' : 'Crear'} agente IA</h2>
+  return `<div class="ajw ancho ag-w"><div class="ag-top"><div class="t"><button type="button" class="volver" data-ag-ir="lista" style="margin:0">${I('back')}Agentes IA</button><h2>${a.estado && a.estado !== 'borrador' ? 'Editar' : 'Crear'} agente IA</h2></div>
       <button type="button" class="btn" data-ag-ir="lista">Cancelar</button><button type="button" class="btn pri" data-ag-publicar="1">${I('check')}Publicar</button></div>
     <div class="ag-ed"><div>${tabs}
       ${pest === 'config' ? config : pest === 'kb' ? conocimientoHTML(a) : pest === 'comp' ? comp : pest === 'hab' ? habilidadesHTML(a) : pest === 'cap' ? cap : mejorarHTML(a)}
@@ -260,6 +261,76 @@ function editorAgente(a){
 
 /* Chat de prueba: responde el modelo de IA de verdad con las instrucciones del agente (POST /crm/agentes/probar) */
 function agReiniciar(){ st.agChat = {msgs:[], datos:{}, fase:'', escribiendo:false}; }
+/* «Dónde atiende» (7-oct): una tarjeta por canal con su logo y color, si está conectado al CRM y cuántas líneas o
+   cuentas tiene, y el interruptor para que el agente atienda ahí. Lo que no está conectado lleva a conectarlo. */
+const AG_CANAL_COL = {wa: '#25D366', ig: 'linear-gradient(45deg,#f9ce34,#ee2a7b 50%,#6228d7)', fb: '#0866FF', tg: '#26A5E4', tt: '#0b0b10', web: '#0b0b10', mail: '#f97316'};
+// Lo que se puede elegir de cada canal: sus líneas (WhatsApp, a.lineas) o sus cuentas (los demás, a.cuentas).
+// El chat de la web es uno solo: se elige el canal entero.
+// Logo real de cada canal dentro de su círculo (centrado). Telegram ya trae su círculo azul.
+const agLogo = (k, cls) => { const L = {wa: [AG_CANAL_COL.wa, LOGO.wa], ig: [AG_CANAL_COL.ig, LOGO.ig], fb: [AG_CANAL_COL.fb, LOGO.msg], tg: ['transparent', LOGO.tg], tt: ['#000', LOGO.tt]}[k] || [AG_CANAL_COL[k] || '#0b0b10', I(CANALES[k].ic)];
+  return `<span class="${cls}${k === 'tg' ? ' lleno' : ''}" style="background:${L[0]}">${L[1]}</span>`; };
+function agItems(k){
+  if (k === 'wa') return LINEAS.map(l => ({id: l.id, n: l.n || 'Línea', d: l.tel || ''}));
+  if (k === 'web') return CFG.web && CFG.web.on ? [{id: 'web', n: 'Burbuja de tu sitio web', d: ''}] : [];
+  return cxDe(k).map(c => ({id: c.id, n: c.nombre || CANALES[k].n, d: ''}));
+}
+// Elegidos de un canal. Un agente de antes (canal marcado sin lista) atiende todas sus líneas o cuentas.
+function agElegidos(a, k){
+  const items = agItems(k).map(x => x.id); if (!(a.canales || {})[k]) return [];
+  if (k === 'web') return items;
+  const lista = k === 'wa' ? a.lineas : a.cuentas;
+  const mios = Array.isArray(lista) ? items.filter(id => lista.includes(id)) : [];
+  return Array.isArray(lista) && lista.some(id => items.includes(id)) ? mios : items;
+}
+function agMarcar(a, k, id){
+  const items = agItems(k).map(x => x.id), antes = agElegidos(a, k);
+  const ahora = k === 'web' ? (antes.length ? [] : items) : antes.includes(id) ? antes.filter(x => x !== id) : [...antes, id];
+  a.canales = {...(a.canales || {}), [k]: ahora.length > 0};
+  if (k === 'wa') a.lineas = ahora;
+  else if (k !== 'web') a.cuentas = [...(Array.isArray(a.cuentas) ? a.cuentas.filter(x => !items.includes(x)) : []), ...ahora];
+}
+function agCanalesHTML(a){
+  const con = canalesConectados(), sin = Object.keys(CANALES).filter(k => !con.includes(k));
+  const total = con.reduce((s, k) => s + agItems(k).length, 0), elegidas = con.reduce((s, k) => s + agElegidos(a, k).length, 0);
+  const bloque = k => { const c = CANALES[k], items = agItems(k), el = agElegidos(a, k), plural = k === 'wa' ? ['línea', 'líneas'] : ['cuenta', 'cuentas'];
+    const res = k === 'web' ? (el.length ? 'Atiende aquí' : 'No atiende') : el.length ? `Atiende en ${el.length} de ${items.length} ${items.length === 1 ? plural[0] : plural[1]}` : `No atiende · ${items.length} ${items.length === 1 ? plural[0] : plural[1]}`;
+    const ab = (st.agcAb || []).includes(k);
+    return `<div class="agc${el.length ? ' on' : ''}${ab ? ' ab' : ''}"><button type="button" class="agc-h" data-agc-ab="${k}" aria-expanded="${ab}" aria-label="${ab ? 'Cerrar' : 'Ver'} las opciones de ${esc(c.n)}">${agLogo(k, 'agc-ic')}<span class="agc-tx"><b>${esc(c.n)}</b><small>${res}</small></span><span class="agc-fl">${I('chev')}</span></button>
+      ${ab ? `<div class="agc-items">${items.map(x => { const on = el.includes(x.id); return `<div class="agc-it${on ? ' on' : ''}"><span class="agc-pt"></span><span class="agc-n"><b>${esc(x.n)}</b>${x.d ? `<small>${esc(x.d)}</small>` : ''}</span><button type="button" class="q-sw" role="switch" aria-checked="${on}" data-ag-item="${k}|${esc(x.id)}" aria-label="Atender en ${esc(x.n)}"></button></div>`; }).join('')}</div>` : ''}</div>`; };
+  return `<div class="agc-cab"><span>Canales y líneas</span><small>${total ? `Atiende en ${elegidas} de ${total}` : 'Todavía no hay canales conectados al CRM'}</small></div>
+    <div class="agc-lista">${con.map(bloque).join('')}</div>
+    ${sin.length ? `<div class="agc-sin"><span>Sin conectar:</span>${sin.map(k => `<span class="agc-mini" title="${esc(CANALES[k].n)}">${agLogo(k, 'agc-mi')}${esc(CANALES[k].n)}</span>`).join('')}<button type="button" class="agc-cx" data-ir="cfg-canales">Conectar canales${I('next')}</button></div>` : ''}`;
+}
+document.head.insertAdjacentHTML('beforeend', `<style>
+.agc-cab{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px}
+.agc-cab span{font-size:13px;font-weight:600;color:var(--ink2)}.agc-cab small{font-size:12.5px;color:#6b7280}
+.agc-lista{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}
+@media (max-width:760px){.agc-lista{grid-template-columns:1fr}}
+.agc{border:1.5px solid #e5e9f0;border-radius:14px;background:#fff;overflow:hidden}
+.agc.on{border-color:#0b0b10}
+.agc-h{display:flex;align-items:center;gap:12px;padding:12px 14px;width:100%;border:0;background:none;font:inherit;text-align:left;cursor:pointer;color:inherit}
+.agc-fl{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex:none;color:#6b7280;transition:transform .2s cubic-bezier(.22,1,.36,1),background .15s}.agc-fl svg{width:16px;height:16px}
+.agc-h:hover .agc-fl{background:#f3f4f6}.agc.ab .agc-fl{transform:rotate(180deg)}
+.agc.on .agc-h{background:#fffde6}
+.agc-ic,.agc-mi{border-radius:50%;display:grid;place-items:center;color:#fff;flex:none;line-height:0}
+.agc-ic{width:38px;height:38px}.agc-ic svg{width:20px;height:20px;display:block}
+.agc-mi{width:22px;height:22px}.agc-mi svg{width:12px;height:12px;display:block}
+.agc-ic.lleno svg,.agc-mi.lleno svg{width:100%;height:100%}
+.agc-tx{flex:1;min-width:0;display:flex;flex-direction:column}.agc-tx b{font-size:14px;font-weight:600}.agc-tx small{font-size:12.5px;color:#6b7280}
+.agc-items{border-top:1px solid #eef0f4}
+.agc-it{display:flex;align-items:center;gap:12px;padding:10px 14px 10px 20px;border-top:1px solid #f3f4f6}.agc-it:first-child{border-top:0}
+.agc-pt{width:8px;height:8px;border-radius:50%;background:#cbd5e1;flex:none}.agc-it.on .agc-pt{background:#16a34a}
+.agc-n{flex:1;min-width:0;display:flex;flex-direction:column}.agc-n b{font-size:13.5px;font-weight:550}.agc-n small{font-size:12.5px;color:#6b7280;font-variant-numeric:tabular-nums}
+.agc .q-sw{display:block;flex:none;width:44px;height:24px;border:0;padding:0;border-radius:999px;background:#cbd5e1;position:relative;cursor:pointer}
+.agc .q-sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:left .2s cubic-bezier(.22,1,.36,1)}
+.agc .q-sw[aria-checked="true"]{background:#FFF200}.agc .q-sw[aria-checked="true"]::after{left:23px;background:#0b0b10}
+.agc-sin{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:10px;font-size:12.5px;color:#6b7280}
+.agc-mini{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 3px;border-radius:999px;background:#f3f4f6;color:#4b5563}
+
+.agc-cx{display:inline-flex;align-items:center;gap:4px;border:0;background:none;font:inherit;font-size:12.5px;font-weight:600;color:#0b0b10;cursor:pointer;padding:5px 8px;border-radius:8px;margin-left:auto}
+.agc-cx:hover{background:#FFF200}.agc-cx svg{width:14px;height:14px}
+
+</style>`);
 function chatPruebaAgente(a){
   if (!st.agChat) agReiniciar();
   const ch = st.agChat, nom = ((a.presenta || '').split(',')[0] || a.nombre).trim();
@@ -367,6 +438,10 @@ document.getElementById('page').addEventListener('click', e => {
     toast(LINEAS.length ? `${a.nombre} quedó guardado y apagado. Enciéndelo con el botón de encendido para que conteste en WhatsApp` : `${a.nombre} quedó guardado. Conecta una línea de WhatsApp para encender el agente`); return; }
   if (t.closest('[data-ag-edit]')) { st.agEdit = !st.agEdit; render(); return; }
   const ac = t.closest('[data-ag-acc]'); if (ac) { const k = ac.dataset.agAcc; a.acc[k] = !a.acc[k]; render(); toast(`${AG_ACC.find(x => x[0] === k)[2]}: ${a.acc[k] ? 'sí' : 'no'}`); return; }
+  const ag = t.closest('[data-agc-ab]'); if (ag) { const k = ag.dataset.agcAb, l = st.agcAb || []; const cierra = l.includes(k); st.agcAb = cierra ? l.filter(x => x !== k) : [...l, k]; render(); if (cierra) toast(`${CANALES[k].n}: quedó guardado`); return; }
+  const it = t.closest('[data-ag-item]'); if (it) { const s = it.dataset.agItem, p = s.indexOf('|'); agMarcar(a, s.slice(0, p), s.slice(p + 1));
+    if (!agAtiende(a) && agListo(a)) { a.estado = 'pausado'; render(); toast(`${a.nombre} quedó apagado: sin canales no contesta`); return; }
+    render(); return; }
   const cn = t.closest('[data-ag-canal]'); if (cn) { a.canales[cn.dataset.agCanal] = !a.canales[cn.dataset.agCanal];
     // Sin WhatsApp no contesta en ningún lado: un agente encendido queda apagado, así la lista no dice «Encendido» sin serlo.
     if (!agAtiende(a) && agListo(a)) { a.estado = 'pausado'; render(); toast(`${a.nombre} quedó apagado: sin canales no contesta`); return; }
