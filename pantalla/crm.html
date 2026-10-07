@@ -1,6 +1,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Bandeja de conversaciones</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,800&display=swap">
 <style>
 [hidden]{display:none!important}
 :root{
@@ -182,6 +182,9 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 .brand .brand-ic svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .brand .brand-ic.logo{background:none;overflow:hidden}
 .brand .brand-ic.logo img{display:block;width:100%;height:100%;object-fit:cover}
+.brand .w-logo{display:inline-flex;align-items:center;gap:8px;min-width:0}
+.brand .w-iso{width:38px;height:38px;flex:none;overflow:visible}
+.brand .w-txt{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-weight:800;font-size:31px;line-height:1;letter-spacing:-.02em;color:#FFF8E6}
 .brand #brand-n{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .brand i{width:26px;height:26px;border-radius:8px;background:var(--blue);display:grid;place-items:center;color:#fff;font-style:normal;font-size:12px;font-weight:600}
 .topbar{display:flex;gap:6px;align-items:center}
@@ -1097,7 +1100,7 @@ h4 .marca.mini{margin-right:2px}
 
 <div class="app" id="app">
   <nav class="nav" aria-label="Menú">
-    <div class="brand"><span class="brand-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12Z"/></svg></span><span id="brand-n"></span></div>
+    <div class="brand"><span class="w-logo" role="img" aria-label="wali"><svg class="w-iso" viewBox="0 0 100 100" aria-hidden="true"><path d="M22 10h56a18 18 0 0 1 18 18v36a18 18 0 0 1-18 18H40L20 98V82a18 18 0 0 1-16-18V28A18 18 0 0 1 22 10z" fill="#FFD21F"/><text x="50" y="66" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="62" fill="#17140F" letter-spacing="-2">w</text><circle cx="92" cy="12" r="11" fill="#FF4D1A" stroke="#17140F" stroke-width="5"/></svg><span class="w-txt" aria-hidden="true">wali</span></span><span id="brand-n" hidden></span></div>
     <div class="topbar"><button type="button" class="nueva-conv" id="nuevo"><svg class="i"><use href="#i-pen"/></svg>Conversación nueva</button></div>
     <ul id="principal"></ul>
     <div><div class="sec">Carpetas</div><ul id="carpetas"></ul></div>
