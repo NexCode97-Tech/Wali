@@ -14,7 +14,7 @@ import { leerWeb, extraerTexto, TIPOS_DOC, EXT_DOC, MENSAJE_TIPOS } from '../../
 import { probarAgente } from '../../services/crm/agentes'
 import { alcanceDe, alcanceDePersona, alcanceParaFront, entraPorRol, sincronizarMiembros, type Alcance } from '../../services/crm/alcance'
 import { normalizarEquipos, type EquiposNorm } from '../../services/crm/equipos'
-import { conectarCalendario, conectarHotmart, desconectar, estadoIntegraciones } from '../../services/crm/integraciones'
+import { conectarShopify, conectarCalendario, conectarHotmart, desconectar, estadoIntegraciones } from '../../services/crm/integraciones'
 import { invitarNuevos } from '../../services/crm/invitaciones'
 import { limiteUsuarios } from '../../services/crm/plan'
 import { cuentaDe, usuariosDeCuenta } from '../../services/crm/espacio'
@@ -710,6 +710,12 @@ export async function integracionHotmart(req: Request, res: Response) {
   exigirLider(req, 'conectar Hotmart')
   const b = obj(req.body)
   return ApiResponse.success(res, await conectarHotmart({ clientId: b.clientId, clientSecret: b.clientSecret }, req.userId ?? null))
+}
+export async function integracionShopify(req: Request, res: Response) {
+  exigirEscritura(req)
+  exigirLider(req, 'conectar Shopify')
+  const b = obj(req.body)
+  return ApiResponse.success(res, await conectarShopify({ tienda: b.tienda, token: b.token }, req.userId ?? null))
 }
 export async function integracionCalendario(req: Request, res: Response) {
   exigirEscritura(req)
