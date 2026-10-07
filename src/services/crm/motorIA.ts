@@ -5,7 +5,7 @@ import { cuentaDe, espacioActual } from './espacio'
 import { leerAjuste } from './ajustes'
 import { cifrar, descifrar } from './cifrado'
 import { emitirCrm } from './tiempoReal'
-import { LIMITES, type Plan } from './plan'
+import { limitesDe } from './plan'
 import { MODELO } from '../../config/ia'
 import { logger } from '../../utils/logger'
 import { AppError, ValidationError } from '../../utils/errors'
@@ -84,10 +84,11 @@ async function escribir(cambiar: (g: Guardado) => Guardado, por: string | null) 
 
 async function planDelEspacio(): Promise<{ conIA: boolean; interno: boolean }> {
   // El plan es de la cuenta (6-oct): un espacio de trabajo usa el de su cuenta.
-  const e = await prismaGlobal.crmEspacio.findUnique({ where: { id: await cuentaDe(espacioActual()) }, select: { plan: true, estadoPlan: true } })
+  const e = await prismaGlobal.crmEspacio.findUnique({ where: { id: await cuentaDe(espacioActual()) }, select: { plan: true, estadoPlan: true, pruebaHasta: true } })
   if (!e) return { conIA: false, interno: false }
   const interno = e.estadoPlan === 'interno'
-  const lim = LIMITES[e.plan as Plan] ?? LIMITES.starter
+  // En la prueba de 10 días tiene todo (también el motor de IA).
+  const lim = limitesDe(e)
   return { conIA: interno || lim.agentesIA > 0, interno }
 }
 

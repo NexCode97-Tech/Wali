@@ -92,6 +92,15 @@ export interface EstadoPlan {
 
 const esPlan = (v: string): v is Plan => (PLANES as string[]).includes(v)
 
+/**
+ * Lo que permite una cuenta hoy (6-oct): en la prueba de 10 días, todo lo de Business (agentes IA, espacios, usuarios);
+ * la prueba es de la cuenta y no se reinicia al crear espacios de trabajo. Después, lo de su plan.
+ */
+export function limitesDe(e: { plan: string; estadoPlan: string; pruebaHasta?: Date | null }): { usuarios: number; agentesIA: number; espacios: number } {
+  const enPrueba = e.estadoPlan === 'prueba' && !!e.pruebaHasta && e.pruebaHasta.getTime() > Date.now()
+  return LIMITES[enPrueba ? 'business' : esPlan(e.plan) ? e.plan : 'starter']
+}
+
 export async function estadoPlan(espacioDado: string): Promise<EstadoPlan> {
   // El plan es de la cuenta: un espacio de trabajo usa el de la cuenta a la que pertenece.
   const espacioId = await cuentaDe(espacioDado)
@@ -103,7 +112,7 @@ export async function estadoPlan(espacioDado: string): Promise<EstadoPlan> {
   const pagado = e.estadoPlan === 'activo' || e.estadoPlan === 'pago-pendiente'
     || (e.estadoPlan === 'cancelado' && !!e.renuevaEl && e.renuevaEl.getTime() > ahora)
   const vigente = e.estadoPlan === 'interno' || enPrueba || pagado
-  const lim = LIMITES[plan]
+  const lim = limitesDe(e)
   return {
     plan, estado: e.estadoPlan, periodo: e.periodo,
     pruebaHasta: e.pruebaHasta?.toISOString() ?? null,
@@ -121,9 +130,9 @@ export async function estadoPlan(espacioDado: string): Promise<EstadoPlan> {
 /** Cuántos usuarios permite el plan del espacio (Infinity si no hay límite o es interno). */
 export async function limiteUsuarios(espacioDado: string): Promise<number> {
   const espacioId = await cuentaDe(espacioDado)
-  const e = await prisma.crmEspacio.findUnique({ where: { id: espacioId }, select: { plan: true, estadoPlan: true } })
+  const e = await prisma.crmEspacio.findUnique({ where: { id: espacioId }, select: { plan: true, estadoPlan: true, pruebaHasta: true } })
   if (!e || e.estadoPlan === 'interno') return Infinity
-  return LIMITES[esPlan(e.plan) ? e.plan : 'starter'].usuarios
+  return limitesDe(e).usuarios
 }
 
 // ─── Pagar, cambiar de plan y portal ────────────────────────────────────────
