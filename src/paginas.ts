@@ -129,4 +129,10 @@ router.get('/chat.js', (req: Request, res: Response) => {
   res.send(leer('chat/burbuja.js').replace("'__API__'", () => JSON.stringify(`${propia}/api`)))
 })
 
+/** El fondo del chat de prueba de Agentes IA (como el de WhatsApp). */
+router.get('/img/wa-fondo.jpg', (_req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'public, max-age=604800')
+  res.sendFile(join(PANTALLA, 'img', 'wa-fondo.jpg'))
+})
+
 export default router

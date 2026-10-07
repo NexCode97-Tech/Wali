@@ -266,15 +266,53 @@ function chatPruebaAgente(a){
   const tabs = `<button type="button" class="tab" role="tab" aria-selected="${st.agTab === 'chat'}" data-ag-tab="chat">Chatear</button><button type="button" class="tab" role="tab" aria-selected="${st.agTab === 'datos'}" data-ag-tab="datos">Datos del contacto</button><button type="button" class="re" data-ag-re="1">${I('swap')}Reiniciar</button>`;
   if (st.agTab === 'datos') { const d = ch.datos;
     return `<aside class="ag-chat"><div class="hd">${tabs}</div><div class="ag-dat"><dl class="kv">${[['Nombre', d.nombre], ['Correo de la compra', d.correo], ['Equipo', d.equipo]].map(([k, v]) => `<dt>${k}</dt><dd class="${v ? '' : 'vacio'}">${esc(v || '—')}</dd>`).join('')}</dl>${d.nota ? `<div class="ag-nota"><b>Nota interna</b><br>${esc(d.nota)}</div>` : ''}</div></aside>`; }
-  const cuerpo = ch.msgs.length ? ch.msgs.map(m => m.yo ? `<div class="ag-m yo">${esc(m.yo)}</div>` : m.ia ? `<div class="ag-m ia"><span class="lb">${esc(nom)} · IA</span>${esc(m.ia)}${m.fu ? `<span class="fu">Fuente: ${esc(m.fu)}</span>` : ''}</div>` : `<div class="ag-acn${m.mal ? ' mal' : ''}">${I(m.ic || 'check')}${esc(m.acn)}</div>`).join('') + (ch.escribiendo ? `<div class="ag-esc">${esc(nom)} está escribiendo…</div>` : '')
-    : `<div class="vacio">${I('bot')}<b>Prueba tu agente</b><p>Escríbele como si fueras un cliente y mira cómo responde y a quién pasa la conversación.</p></div>`;
+  // Se ve como WhatsApp (7-oct): cabecera verde con el agente, fondo de WhatsApp, burbujas con hora y chulos.
+  const hora = m => { if (!m.t) m.t = Date.now(); const d = new Date(m.t); return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`; };
+  const chulos = '<svg class="wa-ck" viewBox="0 0 16 11" aria-hidden="true"><path d="M11.1.6 5.4 7.9 3 5.6l-.9.9L5.5 9.8l6.5-8.4zM14.6.6 8.9 7.9l-.7-.7-.9 1L8.9 9.8l6.6-8.4z" fill="currentColor"/></svg>';
+  const cuerpo = (ch.msgs.length ? '<span class="wa-dia">Hoy</span>' : '') + (ch.msgs.length ? ch.msgs.map(m => m.yo ? `<div class="ag-m yo">${esc(m.yo)}<span class="wa-h">${hora(m)}${chulos}</span></div>` : m.ia ? `<div class="ag-m ia">${esc(m.ia)}${m.fu ? `<span class="fu">Fuente: ${esc(m.fu)}</span>` : ''}<span class="wa-h">${hora(m)}</span></div>` : `<div class="ag-acn${m.mal ? ' mal' : ''}">${I(m.ic || 'check')}${esc(m.acn)}</div>`).join('') + (ch.escribiendo ? `<div class="ag-m ia wa-esc"><i></i><i></i><i></i></div>` : '')
+    : `<div class="vacio">${I('bot')}<b>Prueba tu agente</b><p>Escríbele como si fueras un cliente y mira cómo responde y a quién pasa la conversación.</p></div>`);
+  const waCab = `<div class="wa-cab"><span class="wa-av">${I('user')}</span><span class="wa-n"><b>${esc(nom || 'Tu agente')}</b><small>${ch.escribiendo ? 'escribiendo…' : 'en línea'}</small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11z" fill="currentColor"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z" fill="currentColor"/></svg></div>`;
   const sug = ch.msgs.length ? [] : a.tpl === 'recep' ? ['Hola, quiero información', 'No me ha llegado mi compra', 'Tengo un problema con mi pedido', '¿Eres un robot?'] : ['Hola, quiero información', 'No me ha llegado mi compra', 'Tengo un problema con mi pedido', 'Quiero hablar con una persona'];
   const cerrado = ch.fase === 'pasada';
-  return `<aside class="ag-chat"><div class="hd">${tabs}</div><div class="ag-msgs" id="ag-msgs">${cuerpo}</div>
+  return `<aside class="ag-chat wa"><div class="hd">${tabs}</div>${waCab}<div class="ag-msgs" id="ag-msgs">${cuerpo}</div>
     ${sug.length ? `<div class="ag-sug">${sug.map(x => `<button type="button" data-ag-sug="${esc(x)}">${esc(x)}</button>`).join('')}</div>` : ''}
-    <form class="ag-in" id="ag-form"><input id="ag-in" placeholder="${cerrado ? 'La conversación ya la tiene un asesor' : 'Escribe como si fueras el cliente'}" autocomplete="off" ${cerrado ? 'disabled' : ''} aria-label="Mensaje de prueba"><button type="submit" aria-label="Enviar" ${cerrado ? 'disabled' : ''}>${I('send')}</button></form>
-    <p class="muted" style="margin:0 12px 10px;font-size:11.5px">Lo que pasa aquí es solo de prueba: no cambia contactos reales.</p></aside>`;
+    <form class="ag-in" id="ag-form"><span class="wa-in"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="9" cy="10" r="1.2" fill="currentColor"/><circle cx="15" cy="10" r="1.2" fill="currentColor"/><path d="M8 14.5a4.5 4.5 0 0 0 8 0" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><input id="ag-in" placeholder="${cerrado ? 'La conversación ya la tiene un asesor' : 'Escribe como si fueras el cliente'}" autocomplete="off" ${cerrado ? 'disabled' : ''} aria-label="Mensaje de prueba"></span><button type="submit" aria-label="Enviar" ${cerrado ? 'disabled' : ''}>${I('send')}</button></form>
+    <p class="wa-nota">Lo que pasa aquí es solo de prueba: no cambia contactos reales.</p></aside>`;
 }
+// El fondo de WhatsApp: el beige con sus dibujos suaves.
+const WA_FONDO = "url('__BASE__/img/wa-fondo.jpg')";
+document.head.insertAdjacentHTML('beforeend', `<style>
+.ag-chat.wa{overflow:hidden}
+.wa-cab{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#075e54;color:#fff}
+.wa-av{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.18);display:grid;place-items:center;flex:none}.wa-av svg{width:18px;height:18px;color:#fff}
+.wa-n{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}.wa-n b{font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.wa-n small{font-size:12px;opacity:.85}
+.wa-cab > svg{width:20px;height:20px;margin-left:10px;flex:none}
+.ag-chat.wa .ag-msgs{background-color:#efeae2;background-image:${WA_FONDO};background-size:cover;background-position:center;background-blend-mode:multiply;gap:4px;padding:12px 14px}
+.wa-dia{align-self:center;font-size:12px;color:#54656f;background:#e1f3fb;border-radius:8px;padding:4px 12px;margin:2px 0 8px;box-shadow:0 1px .5px rgba(11,20,26,.13)}
+.ag-chat.wa .ag-m{position:relative;max-width:82%;padding:6px 9px 8px;border-radius:8px;font-size:14px;line-height:1.4;color:#111b21;box-shadow:0 1px .5px rgba(11,20,26,.13);white-space:pre-wrap;word-wrap:break-word}
+.ag-chat.wa .ag-m.yo{align-self:flex-end;background:#d9fdd3;border-top-right-radius:0}
+.ag-chat.wa .ag-m.ia{align-self:flex-start;background:#fff;border-top-left-radius:0}
+.ag-chat.wa .ag-m.yo::after,.ag-chat.wa .ag-m.ia::after{content:"";position:absolute;top:0;width:8px;height:13px}
+.ag-chat.wa .ag-m.yo::after{right:-8px;background:#d9fdd3;clip-path:polygon(0 0,100% 0,0 100%)}
+.ag-chat.wa .ag-m.ia::after{left:-8px;background:#fff;clip-path:polygon(0 0,100% 0,100% 100%)}
+.ag-chat.wa .ag-m .lb{display:none}
+.wa-h{float:right;display:inline-flex;align-items:center;gap:3px;margin:6px 0 -4px 10px;font-size:11px;color:#667781;line-height:1}
+.wa-ck{width:16px;height:11px;color:#53bdeb}
+.ag-chat.wa .ag-m .fu{display:block;font-size:11.5px;color:#667781;margin-top:4px}
+.wa-esc{display:flex;gap:4px;padding:12px 14px !important}.wa-esc i{width:7px;height:7px;border-radius:50%;background:#8696a0;animation:wa-p 1.2s infinite}.wa-esc i:nth-child(2){animation-delay:.2s}.wa-esc i:nth-child(3){animation-delay:.4s}
+@keyframes wa-p{0%,60%,100%{opacity:.35}30%{opacity:1}}
+.ag-chat.wa .ag-acn{background:#fff9c5;color:#54656f;border-radius:8px;box-shadow:0 1px .5px rgba(11,20,26,.13);margin:6px 0}
+.ag-chat.wa .ag-acn.mal{background:#fff;color:#b91c1c}
+.ag-chat.wa .ag-in{background:#f0f2f5;padding:8px 10px;align-items:center}
+.wa-in{flex:1;display:flex;align-items:center;gap:10px;background:#fff;border-radius:24px;padding:0 14px;min-width:0}
+.wa-in svg{width:22px;height:22px;color:#54656f;flex:none}
+.ag-chat.wa .wa-in input{border:0;outline:0;padding:11px 0;font-size:14px;background:none;border-radius:0}
+.ag-chat.wa .ag-in button{width:44px;height:44px;background:#00a884;color:#fff;flex:none}
+.ag-chat.wa .ag-in button svg{width:20px;height:20px}
+.ag-chat.wa .ag-in button:disabled{background:#8696a0}
+.ag-chat.wa .ag-sug{background:#f0f2f5}
+.wa-nota{margin:0;padding:0 12px 10px;font-size:11.5px;color:#667781;background:#f0f2f5;text-align:center}
+</style>`);
 // Repinta solo el chat de prueba, para no borrar lo que se esté escribiendo en el resto del editor.
 function pintarChatAg(a){
   const el = document.querySelector('#page .ag-chat');
