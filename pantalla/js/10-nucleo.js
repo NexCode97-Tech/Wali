@@ -188,7 +188,6 @@ const CARPETAS = [
   {id:'favoritos', ic:'estrella', n:'Favoritos', f:c => (AJ.favoritos || []).includes(c.id)},
   {id:'calientes', ic:'flame', n:'Calientes', f:c => !!c.fuego || c.etq.includes('Caliente')},
   {id:'pauta', ic:'ad', n:'Vienen de un anuncio', f:c => !!c.pauta},
-  {id:'cuota', ic:'cart', n:'Con cuotas pendientes', f:c => !!(c.ficha.compras && c.ficha.compras.pagadas < c.ficha.compras.total)},
 ];
 const EQUIPOS = [
   {id:'ventas', n:'Ventas', f:c => !c.ficha.compras},
