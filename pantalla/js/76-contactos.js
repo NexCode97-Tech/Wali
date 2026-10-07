@@ -20,7 +20,7 @@ const ckCampo = k => CK_CAMPOS.find(x => x[0] === k) || CK_CAMPOS[0];
 const ckTexto = (k, v) => ((ckCampo(k)[3]().find(o => o[0] === v) || [])[1]) || v;
 const CK_PILLS = ['etapa', 'asig', 'canal', 'tag', 'origen'];
 const CK_ICONOS = ['star', 'flame', 'users', 'tag', 'cart', 'ad', 'bolt', 'clock'];
-const CK_COLORES = ['#FFF200', '#0b0b10', '#3b82f6', '#22c55e', '#f97316', '#a855f7'];
+const CK_COLORES = ['#FFD21F', '#0b0b10', '#3b82f6', '#22c55e', '#f97316', '#a855f7'];
 const CK_COLS = [['etapa', 'Etapa'], ['asig', 'Asesor'], ['canal', 'Canal'], ['tags', 'Etiquetas'], ['ultimo', 'Último mensaje'], ['producto', 'Producto'], ['empresa', 'Empresa'], ['ciudad', 'Ciudad'], ['origen', 'Origen'], ['agregado', 'Agregado']];
 st.ct.cols = new Set(['etapa', 'asig', 'canal', 'tags', 'ultimo']);
 st.ckPill = null; st.ckBulk = null; st.ckSeg = null;
@@ -168,7 +168,7 @@ document.addEventListener('scroll', e => { if (document.querySelector('.ck-flmen
 
 /* ── Modal «Nuevo segmento» ── */
 function ckSegNuevo(){
-  st.ckSeg = {n: '', ic: 'star', col: '#FFF200', modo: 'todas', reglas: [['etapa', 'es', (etapasActivas()[0] || '')]], mas: false};
+  st.ckSeg = {n: '', ic: 'star', col: '#FFD21F', modo: 'todas', reglas: [['etapa', 'es', (etapasActivas()[0] || '')]], mas: false};
   ckSegPintar();
 }
 function ckSegDialogo(){
@@ -240,12 +240,12 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ck-vistas h5{margin:14px 8px 6px;font-size:11.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#6b7280;display:flex;align-items:center;justify-content:space-between}
 .ck-vistas h5:first-child{margin-top:0}
 .ck-vistas h5 button{display:inline-flex;align-items:center;gap:4px;border:0;background:none;padding:3px 6px;border-radius:7px;font:inherit;font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;color:#0b0b10;cursor:pointer}
-.ck-vistas h5 button:hover{background:#FFF200}
+.ck-vistas h5 button:hover{background:#FFD21F}
 .ck-vistas h5 button svg{width:13px;height:13px}
 .ck-vw{position:relative}
 .ck-v{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border:0;border-radius:9px;background:none;font:inherit;font-size:13.5px;color:#374151;text-align:left;cursor:pointer}
 .ck-v:hover{background:#eef1f5}
-.ck-v[aria-current="true"]{background:#FFF200;color:#0b0b10;font-weight:600}
+.ck-v[aria-current="true"]{background:#FFD21F;color:#0b0b10;font-weight:600}
 .ck-v[aria-current="true"] .n{color:#0b0b10}
 .ck-v svg{width:16px;height:16px;flex:none}
 .ck-v .dot{width:9px;height:9px;border-radius:50%;flex:none;margin:0 3.5px}
@@ -270,7 +270,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ck-pill{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:8px;border:1px solid #e5e9f0;background:#fff;font:inherit;font-size:13px;color:#374151;cursor:pointer;white-space:nowrap}
 .ck-pill:hover{border-color:#cbd5e1}
 .ck-pill svg{width:14px;height:14px;color:#9ca3af}
-.ck-pill.on{border-color:#FFF200;background:#FFF200;color:#0b0b10;padding:0 4px 0 12px;gap:2px}
+.ck-pill.on{border-color:#FFD21F;background:#FFD21F;color:#0b0b10;padding:0 4px 0 12px;gap:2px}
 .ck-pill.on button{border:0;background:none;color:inherit;font:inherit;cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:4px}
 .ck-pill.on .q{width:26px;height:26px;border-radius:6px;justify-content:center}
 .ck-pill.on .q:hover{background:rgba(11,11,16,.1)}
@@ -314,7 +314,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ck-flota b{font-size:13.5px;margin-right:6px}
 .ck-flota button{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:9px;border:1px solid #2b2b35;background:#15151c;color:#fff;font:inherit;font-size:13px;cursor:pointer}
 .ck-flota button:hover{background:#22222c}
-.ck-flota button[aria-expanded="true"]{background:#FFF200;border-color:#FFF200;color:#0b0b10}
+.ck-flota button[aria-expanded="true"]{background:#FFD21F;border-color:#FFD21F;color:#0b0b10}
 .ck-flota button svg{width:15px;height:15px}
 .ck-flota .x{border:0;background:none;width:34px;padding:0;justify-content:center}
 .ck-fw{position:relative}
@@ -344,18 +344,18 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .sg2-lab{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#6b7280;margin-bottom:8px;display:block}
 .sg2-nom{display:flex;gap:10px;align-items:center}
 .sg2-nom input{flex:1;height:44px;border:1px solid #e5e9f0;border-radius:11px;padding:0 14px;font:inherit;font-size:15px}
-.sg2-nom input:focus{outline:none;border-color:#0b0b10;box-shadow:0 0 0 3px rgba(255,242,0,.45)}
+.sg2-nom input:focus{outline:none;border-color:#0b0b10;box-shadow:0 0 0 3px rgba(255,210,31,.45)}
 .sg2-look{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
 .sg2-icos,.sg2-cols{display:flex;gap:6px;flex-wrap:wrap}
 .sg2-icos button{width:34px;height:34px;border-radius:9px;border:1px solid #e5e9f0;background:#fff;display:grid;place-items:center;cursor:pointer}
 .sg2-icos button svg{width:16px;height:16px}
-.sg2-icos button[aria-pressed="true"]{border-color:#FFF200;background:#FFF200;color:#0b0b10}
+.sg2-icos button[aria-pressed="true"]{border-color:#FFD21F;background:#FFD21F;color:#0b0b10}
 .sg2-cols button{width:26px;height:26px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #e5e9f0;cursor:pointer}
 .sg2-cols button[aria-pressed="true"]{box-shadow:0 0 0 2px #0b0b10}
 .sg2-modo{display:flex;align-items:center;gap:8px;font-size:14px;color:#374151;flex-wrap:wrap}
 .sg2-modo .seg{display:inline-flex;padding:3px;border-radius:10px;background:#eef1f5}
 .sg2-modo .seg button{height:28px;padding:0 12px;border:0;border-radius:8px;background:none;font:inherit;font-size:13px;font-weight:500;color:#4b5563;cursor:pointer}
-.sg2-modo .seg button[aria-pressed="true"]{background:#FFF200;color:#0b0b10;font-weight:600}
+.sg2-modo .seg button[aria-pressed="true"]{background:#FFD21F;color:#0b0b10;font-weight:600}
 .sg2-num{display:flex;align-items:baseline;gap:8px}
 .sg2-num b{font-size:40px;line-height:1;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .sg2-num span{font-size:14px;color:#6b7280}
@@ -385,7 +385,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .sgm-nodo .x{width:30px;height:30px;border-radius:8px;border:0;background:none;display:grid;place-items:center;cursor:pointer;color:#9ca3af;flex:none}
 .sgm-nodo .x:hover{background:#fee2e2;color:#b91c1c}
 .sgm-nodo .x svg{width:15px;height:15px}
-.sgm-une{font-size:11.5px;font-weight:700;padding:2px 10px;border-radius:999px;background:#FFF200;color:#0b0b10}
+.sgm-une{font-size:11.5px;font-weight:700;padding:2px 10px;border-radius:999px;background:#FFD21F;color:#0b0b10}
 .sgm-ayuda{margin:8px 0 0;font-size:12.5px;color:#6b7280}
 .sgm-ayuda b{color:#0b0b10}
 .sgm-mas-w{position:relative;display:flex;flex-direction:column;align-items:center}

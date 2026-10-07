@@ -10,7 +10,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ig-est.mt-int{color:#3730a3;background:#eef2ff}
 .ig-est.mt-pru{color:#92400e;background:#fef3c7}
 .ig-est.mt-mal{color:#991b1b;background:#fee2e2}
-.me-logo{width:48px;height:48px;border-radius:12px;display:grid;place-items:center;font-weight:700;font-size:14px;flex:none;background:#FFF200;color:#0b0b10}
+.me-logo{width:48px;height:48px;border-radius:12px;display:grid;place-items:center;font-weight:700;font-size:14px;flex:none;background:#FFD21F;color:#0b0b10}
 .me-num{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0}
 .me-num div{display:flex;flex-direction:column;gap:2px}
 .me-num dt{font-size:12px;color:#6b7280}
@@ -29,8 +29,8 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .me-wrap{position:relative;margin:2px 0 4px}
 #app .nav .me-sw{display:flex;align-items:center;gap:10px;width:100%;height:44px;padding:0 10px;border-radius:12px;border:1px solid var(--nx-negro-3);background:var(--nx-negro-2);color:#fff;font:inherit;text-align:left;cursor:pointer}
 #app .nav .me-sw:hover{border-color:#3a3a46}
-#app .nav .me-sw[aria-expanded="true"]{border-color:var(--nx-amarillo);box-shadow:0 0 0 3px rgba(255,242,0,.25)}
-.me-mini{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;font-size:10.5px;font-weight:700;flex:none;background:#FFF200;color:#0b0b10}
+#app .nav .me-sw[aria-expanded="true"]{border-color:var(--nx-amarillo);box-shadow:0 0 0 3px rgba(255,210,31,.25)}
+.me-mini{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;font-size:10.5px;font-weight:700;flex:none;background:#FFD21F;color:#0b0b10}
 .me-sw .me-tx{display:flex;flex-direction:column;flex:1;min-width:0;line-height:1.2}
 .me-sw .me-tx small{font-size:11px;color:var(--nx-mut)}
 .me-sw .me-tx b{font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

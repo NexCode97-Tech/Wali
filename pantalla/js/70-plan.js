@@ -10,7 +10,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .pl-cab{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;padding:22px 24px}
 .pl-id{display:flex;align-items:center;gap:16px;min-width:0;flex:1 1 380px}
 .pl-id > div{min-width:0;max-width:600px}
-.pl-sello{flex:none;width:52px;height:52px;border-radius:14px;background:#0b0b10;color:#FFF200;display:grid;place-items:center;font-size:24px;font-weight:800;letter-spacing:-.04em}
+.pl-sello{flex:none;width:52px;height:52px;border-radius:14px;background:#0b0b10;color:#FFD21F;display:grid;place-items:center;font-size:24px;font-weight:800;letter-spacing:-.04em}
 .pl-fila{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .pl-fila h3{margin:0;font-size:22px;font-weight:700;letter-spacing:-.02em;line-height:1.2;color:var(--ink)}
 .pl-est{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--bg3);color:var(--ink2)}
@@ -52,7 +52,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .pl-plan.pl-sel{border-color:#0b0b10;box-shadow:0 0 0 1px #0b0b10}
 .pl-tope{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .pl-tope h4{margin:0;font-size:17px;font-weight:700;color:var(--ink)}
-.pl-chip{font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px;background:#FFF200;color:#0b0b10}
+.pl-chip{font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px;background:#FFD21F;color:#0b0b10}
 .pl-chip.gris{background:var(--bg3);color:var(--ink2)}
 .pl-precio{display:flex;align-items:baseline;gap:6px}
 .pl-precio b{font-size:32px;font-weight:800;letter-spacing:-.03em;color:var(--ink);font-variant-numeric:tabular-nums}
@@ -70,7 +70,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .pl-plan li{display:flex;gap:8px}
 .pl-plan li svg{flex:none;width:15px;height:15px;margin-top:3px;color:var(--ink)}
 .pl-plan .btn{justify-content:center;margin-top:auto;height:40px}
-.pl-plan .btn.amarillo{background:#FFF200;border-color:#FFF200;color:#0b0b10;font-weight:600}
+.pl-plan .btn.amarillo{background:#FFD21F;border-color:#FFD21F;color:#0b0b10;font-weight:600}
 .pl-plan .btn.amarillo:hover{background:#e6d900;border-color:#e6d900}
 .pl-plan .btn:disabled{opacity:.55;cursor:default}
 .pl-caja{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden}
@@ -117,7 +117,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .pl-listo .pl-papel{transform:none}
 @keyframes pl-imprimir{to{transform:translateY(0)}}
 .pl-papel .c{text-align:center}
-.pl-papel .logo{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#FFF200;font-family:Inter,sans-serif;font-weight:800;font-size:13px;margin-bottom:4px}
+.pl-papel .logo{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#FFD21F;font-family:Inter,sans-serif;font-weight:800;font-size:13px;margin-bottom:4px}
 .pl-papel hr{border:0;border-top:1px dashed #b9bcc8;margin:8px 0}
 .pl-papel .l{display:flex;justify-content:space-between;gap:8px}
 .pl-papel .tot{font-size:13px;font-weight:700}

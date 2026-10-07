@@ -67,10 +67,10 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .mm-panel .dsel{min-width:0 !important}
 .mm-nodo{width:100%;max-width:420px;display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:14px;background:#fff;border:1.5px solid #e5e9f0;box-shadow:0 1px 2px rgba(15,23,42,.04);text-align:left;font:inherit;cursor:pointer;position:relative}
 .mm-nodo:hover{border-color:#cbd5e1}
-.mm-nodo[aria-pressed="true"]{border-color:#0b0b10;box-shadow:0 0 0 3px rgba(255,242,0,.45)}
+.mm-nodo[aria-pressed="true"]{border-color:#0b0b10;box-shadow:0 0 0 3px rgba(255,210,31,.45)}
 .mm-ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;flex:none}
 .mm-ic svg{width:19px;height:19px}
-.mm-ic.cuando{background:#FFF200;color:#0b0b10}
+.mm-ic.cuando{background:#FFD21F;color:#0b0b10}
 .mm-ic.si{background:#eef2ff;color:#3730a3}
 .mm-ic.ent{background:#0b0b10;color:#fff}
 .mm-tx{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}

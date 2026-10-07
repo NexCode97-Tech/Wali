@@ -13,7 +13,7 @@
 :root{
   --fondo:#0a0a0d; --campo:#121217; --campo-foco:#18181f; --linea:#26262f; --linea-2:#33333e;
   --texto:#f4f4f6; --texto-2:#a1a1ad; --texto-3:#6f6f7c;
-  --amarillo:#FFF200; --amarillo-2:#e6d900; --rojo:#f87171; --rojo-bg:rgba(248,113,113,.1);
+  --amarillo:#FFD21F; --amarillo-2:#e6d900; --rojo:#f87171; --rojo-bg:rgba(248,113,113,.1);
   --f:Inter,"Segoe UI",system-ui,sans-serif; color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -85,7 +85,7 @@ input[type="password"]::-ms-reveal,input[type="password"]::-ms-clear{display:non
 .listo b{color:var(--texto)}
 .con-google{margin:0;display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--linea);border-radius:10px;background:var(--campo);font-size:13px;color:var(--texto-2)}
 .con-google svg{width:16px;height:16px;flex:none}
-.plan-elegido{margin:0 0 4px;display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid rgba(255,242,0,.35);border-radius:10px;background:rgba(255,242,0,.07);font-size:13px;color:var(--texto-2);line-height:1.4}
+.plan-elegido{margin:0 0 4px;display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid rgba(255,210,31,.35);border-radius:10px;background:rgba(255,210,31,.07);font-size:13px;color:var(--texto-2);line-height:1.4}
 .plan-elegido[hidden]{display:none}
 .plan-elegido b{color:var(--amarillo)}
 .plan-elegido svg{width:18px;height:18px;flex:none;color:var(--amarillo);fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -101,7 +101,7 @@ input[type="password"]::-ms-reveal,input[type="password"]::-ms-clear{display:non
    Cada rayo le deja un borde de luz por el lado donde cae (--destello y --lado los pone el canvas). */
 .der .astro{position:absolute;left:50%;top:45%;width:min(380px,62%);transform:translate(-50%,-50%)}
 .der .astro svg{display:block;width:100%;height:auto;overflow:visible;
-  filter:drop-shadow(0 0 34px rgba(255,242,0,.2)) drop-shadow(calc(var(--lado,1) * 7px) -4px 7px rgba(255,250,215,calc(var(--destello,0) * .95))) brightness(calc(1 + var(--destello,0) * .35))}
+  filter:drop-shadow(0 0 34px rgba(255,210,31,.2)) drop-shadow(calc(var(--lado,1) * 7px) -4px 7px rgba(255,250,215,calc(var(--destello,0) * .95))) brightness(calc(1 + var(--destello,0) * .35))}
 #a-flota{transform-box:view-box;transform-origin:200px 260px;animation:flotar 4.5s ease-in-out infinite alternate}
 @keyframes flotar{from{transform:translateY(-8px) rotate(-2deg)}to{transform:translateY(10px) rotate(2deg)}}
 #a-vuelo{transition:transform 1.2s cubic-bezier(.16,.84,.3,1)}
@@ -248,10 +248,10 @@ input[type="password"]::-ms-reveal,input[type="password"]::-ms-clear{display:non
         <defs>
           <linearGradient id="visor" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1e1b4b"/><stop offset=".55" stop-color="#3b0764"/><stop offset="1" stop-color="#0b0b10"/></linearGradient>
           <linearGradient id="traje" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dcdcf3"/></linearGradient>
-          <radialGradient id="luz" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="rgba(255,242,0,.45)"/><stop offset="1" stop-color="rgba(255,242,0,0)"/></radialGradient>
+          <radialGradient id="luz" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="rgba(255,210,31,.45)"/><stop offset="1" stop-color="rgba(255,210,31,0)"/></radialGradient>
           <linearGradient id="nube-g" gradientUnits="userSpaceOnUse" x1="0" y1="352" x2="0" y2="452"><stop offset="0" stop-color="#433b70"/><stop offset="1" stop-color="#1a172b"/></linearGradient>
-          <linearGradient id="fuego-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".22" stop-color="#FFF200"/><stop offset=".65" stop-color="#ff9500" stop-opacity=".85"/><stop offset="1" stop-color="#ff3d00" stop-opacity="0"/></linearGradient>
-          <linearGradient id="haz-g" gradientUnits="userSpaceOnUse" x1="56" y1="0" x2="340" y2="0"><stop offset="0" stop-color="#FFF200" stop-opacity=".55"/><stop offset="1" stop-color="#FFF200" stop-opacity="0"/></linearGradient>
+          <linearGradient id="fuego-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".22" stop-color="#FFD21F"/><stop offset=".65" stop-color="#ff9500" stop-opacity=".85"/><stop offset="1" stop-color="#ff3d00" stop-opacity="0"/></linearGradient>
+          <linearGradient id="haz-g" gradientUnits="userSpaceOnUse" x1="56" y1="0" x2="340" y2="0"><stop offset="0" stop-color="#FFD21F" stop-opacity=".55"/><stop offset="1" stop-color="#FFD21F" stop-opacity="0"/></linearGradient>
           <clipPath id="visor-c"><rect x="134" y="88" width="132" height="90" rx="42"/></clipPath>
         </defs>
         <g id="a-flota">
@@ -259,7 +259,7 @@ input[type="password"]::-ms-reveal,input[type="password"]::-ms-clear{display:non
           <g id="a-nube">
             <g fill="#14142a"><circle cx="112" cy="420" r="31"/><circle cx="152" cy="402" r="41"/><circle cx="200" cy="394" r="49"/><circle cx="248" cy="402" r="41"/><circle cx="288" cy="420" r="31"/><ellipse cx="200" cy="428" rx="112" ry="25"/></g>
             <g fill="url(#nube-g)"><circle cx="112" cy="420" r="26"/><circle cx="152" cy="402" r="36"/><circle cx="200" cy="394" r="44"/><circle cx="248" cy="402" r="36"/><circle cx="288" cy="420" r="26"/><ellipse cx="200" cy="428" rx="107" ry="20"/></g>
-            <path d="M96 410 Q102 398 116 396 M134 384 Q146 372 164 372 M262 378 Q276 374 286 384" fill="none" stroke="rgba(255,242,0,.4)" stroke-width="3.5" stroke-linecap="round"/>
+            <path d="M96 410 Q102 398 116 396 M134 384 Q146 372 164 372 M262 378 Q276 374 286 384" fill="none" stroke="rgba(255,210,31,.4)" stroke-width="3.5" stroke-linecap="round"/>
           </g>
           <g id="a-vuelo">
             <!-- Propulsores de las botas: solo al despegar -->
@@ -291,12 +291,12 @@ input[type="password"]::-ms-reveal,input[type="password"]::-ms-clear{display:non
               <rect x="134" y="188" width="132" height="150" rx="46" fill="url(#traje)"/>
               <rect x="140" y="304" width="120" height="16" rx="8" fill="#7c3aed"/>
               <rect x="180" y="222" width="40" height="18" rx="6" fill="#24243c" stroke-width="4"/>
-              <g class="luces" stroke="none"><circle cx="190" cy="231" r="3" fill="#FFF200"/><circle cx="200" cy="231" r="3" fill="#a78bfa"/><circle cx="210" cy="231" r="3" fill="#22c55e"/></g>
+              <g class="luces" stroke="none"><circle cx="190" cy="231" r="3" fill="#FFD21F"/><circle cx="200" cy="231" r="3" fill="#a78bfa"/><circle cx="210" cy="231" r="3" fill="#22c55e"/></g>
             </g>
             <!-- Casco: gira para mirarte o mirar lo que escribes -->
             <g id="a-cabeza" stroke="#14142a" stroke-width="5" stroke-linejoin="round">
               <path d="M238 52 L256 24" fill="none" stroke-linecap="round"/>
-              <circle class="antena-luz" cx="258" cy="21" r="8" fill="#FFF200"/>
+              <circle class="antena-luz" cx="258" cy="21" r="8" fill="#FFD21F"/>
               <circle cx="116" cy="132" r="15" fill="#7c3aed"/>
               <circle cx="284" cy="132" r="15" fill="#7c3aed"/>
               <circle cx="200" cy="128" r="84" fill="url(#traje)"/>
@@ -304,13 +304,13 @@ input[type="password"]::-ms-reveal,input[type="password"]::-ms-clear{display:non
               <g clip-path="url(#visor-c)" stroke="none">
                 <g class="reflejo" fill="#fff" opacity=".55"><circle cx="146" cy="100" r="1.4"/><circle cx="168" cy="160" r="1"/><circle cx="196" cy="108" r="1.6"/><circle cx="226" cy="164" r="1.1"/><circle cx="252" cy="118" r="1.2"/><circle cx="278" cy="100" r="1.4"/><circle cx="300" cy="160" r="1"/><circle cx="328" cy="108" r="1.6"/><circle cx="358" cy="164" r="1.1"/><circle cx="384" cy="118" r="1.2"/></g>
                 <g id="a-ojos">
-                  <rect class="ojo-a" x="170" y="119" width="16" height="26" rx="8" fill="#FFF200"/>
-                  <rect class="ojo-a" x="214" y="119" width="16" height="26" rx="8" fill="#FFF200"/>
-                  <path class="ojo-f" d="M168 138 Q178 122 188 138 M212 138 Q222 122 232 138" fill="none" stroke="#FFF200" stroke-width="5" stroke-linecap="round"/>
+                  <rect class="ojo-a" x="170" y="119" width="16" height="26" rx="8" fill="#FFD21F"/>
+                  <rect class="ojo-a" x="214" y="119" width="16" height="26" rx="8" fill="#FFD21F"/>
+                  <path class="ojo-f" d="M168 138 Q178 122 188 138 M212 138 Q222 122 232 138" fill="none" stroke="#FFD21F" stroke-width="5" stroke-linecap="round"/>
                 </g>
                 <rect class="destello-visor" x="134" y="88" width="132" height="90" fill="#fff8d8"/>
               </g>
-              <path d="M150 112 Q166 97 190 94" fill="none" stroke="#FFF200" stroke-width="6" stroke-linecap="round" opacity=".85"/>
+              <path d="M150 112 Q166 97 190 94" fill="none" stroke="#FFD21F" stroke-width="6" stroke-linecap="round" opacity=".85"/>
             </g>
             <!-- Brazos: el código los mueve a cada pose -->
             <g id="brazo-i"><path class="b-borde"/><path class="b-relleno"/><circle class="guante" r="17"/></g>
@@ -320,19 +320,19 @@ input[type="password"]::-ms-reveal,input[type="password"]::-ms-clear{display:non
                   <path class="haz" d="M56 -9 L340 -92 L340 92 L56 9 Z" fill="url(#haz-g)"/>
                   <rect x="-16" y="-8" width="52" height="16" rx="4" fill="#3a3a52" stroke="#14142a" stroke-width="4"/>
                   <path d="M36 -10 L52 -15 L52 15 L36 10 Z" fill="#4b4b66" stroke="#14142a" stroke-width="4" stroke-linejoin="round"/>
-                  <rect x="51" y="-13" width="5" height="26" rx="2" fill="#FFF200"/>
+                  <rect x="51" y="-13" width="5" height="26" rx="2" fill="#FFD21F"/>
                 </g>
                 <g class="prop p-sobre">
                   <rect x="-62" y="-24" width="62" height="42" rx="5" fill="#fff" stroke="#14142a" stroke-width="4"/>
                   <path d="M-59 -20 L-31 2 L-3 -20" fill="none" stroke="#14142a" stroke-width="3.5" stroke-linejoin="round"/>
-                  <circle cx="-31" cy="4" r="8" fill="#FFF200" stroke="#14142a" stroke-width="3"/>
+                  <circle cx="-31" cy="4" r="8" fill="#FFD21F" stroke="#14142a" stroke-width="3"/>
                   <path d="M-35 4 l3 3 l5 -6" fill="none" stroke="#14142a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                 </g>
                 <g class="prop p-llave">
                   <circle cx="0" cy="-48" r="14" fill="none" stroke="#14142a" stroke-width="14"/>
-                  <circle cx="0" cy="-48" r="14" fill="none" stroke="#FFF200" stroke-width="7"/>
-                  <rect x="-4.5" y="-35" width="9" height="66" rx="3" fill="#FFF200" stroke="#14142a" stroke-width="3"/>
-                  <path d="M4 14 h10 v6 h-10 M4 24 h7 v5 h-7" fill="#FFF200" stroke="#14142a" stroke-width="3" stroke-linejoin="round"/>
+                  <circle cx="0" cy="-48" r="14" fill="none" stroke="#FFD21F" stroke-width="7"/>
+                  <rect x="-4.5" y="-35" width="9" height="66" rx="3" fill="#FFD21F" stroke="#14142a" stroke-width="3"/>
+                  <path d="M4 14 h10 v6 h-10 M4 24 h7 v5 h-7" fill="#FFD21F" stroke="#14142a" stroke-width="3" stroke-linejoin="round"/>
                   <path class="brillo" d="M20 -70 l3 8 l8 3 l-8 3 l-3 8 l-3 -8 l-8 -3 l8 -3 Z" fill="#fff"/>
                 </g>
               </g>
@@ -387,7 +387,7 @@ function preparar(){
   let g; [fondo, g] = lienzo();
   g.fillStyle = '#050507'; g.fillRect(0, 0, W, H);
   const b = g.createRadialGradient(W / 2, H * .45, 0, W / 2, H * .45, Math.max(W, H) * .6);
-  b.addColorStop(0, 'rgba(255,242,0,.09)'); b.addColorStop(1, 'rgba(255,242,0,0)'); g.fillStyle = b; g.fillRect(0, 0, W, H);
+  b.addColorStop(0, 'rgba(255,210,31,.09)'); b.addColorStop(1, 'rgba(255,210,31,0)'); g.fillStyle = b; g.fillRect(0, 0, W, H);
   estrellas.forEach(([x, y, s, a]) => { g.fillStyle = `rgba(255,255,255,${.2 + a * .55})`; g.fillRect(x * W, y * H, s, s); });
   nubes.forEach(([x, y, s]) => { const r2 = R(s), n = g.createRadialGradient(x * W, y * H, 0, x * W, y * H, r2); n.addColorStop(0, 'rgba(22,21,32,.95)'); n.addColorStop(1, 'rgba(10,10,16,0)'); g.fillStyle = n; g.fillRect(x * W - r2, y * H - r2, r2 * 2, r2 * 2); });
   [luzNubes, g] = lienzo();

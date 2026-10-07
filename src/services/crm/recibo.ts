@@ -22,12 +22,12 @@ export function reciboPdf(p: CrmPago, empresa: string, correo: string): Buffer {
 
   // Encabezado oscuro con la marca y la franja amarilla.
   doc.setFillColor(11, 11, 16); doc.rect(0, 0, ancho, 40, 'F')
-  doc.setFillColor(255, 242, 0); doc.rect(0, 40, ancho, 2.2, 'F')
-  doc.setFillColor(255, 242, 0); doc.circle(m + 6, 20, 6, 'F')
+  doc.setFillColor(255, 210, 31); doc.rect(0, 40, ancho, 2.2, 'F')
+  doc.setFillColor(255, 210, 31); doc.circle(m + 6, 20, 6, 'F')
   doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(11, 11, 16); doc.text('N', m + 6, 22.2, { align: 'center' })
   doc.setFontSize(15); doc.setTextColor(255, 255, 255); doc.text('NexCode97', m + 16, 19)
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(201, 201, 211); doc.text('CRM · nexcode97.com', m + 16, 24.5)
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(255, 242, 0); doc.text('RECIBO DE PAGO', ancho - m, 19, { align: 'right' })
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(255, 210, 31); doc.text('RECIBO DE PAGO', ancho - m, 19, { align: 'right' })
   doc.setFont('helvetica', 'normal'); doc.setTextColor(255, 255, 255); doc.text(`NX-${p.numero}`, ancho - m, 24.5, { align: 'right' })
 
   // Para quién y cuándo.

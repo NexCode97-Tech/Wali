@@ -5,7 +5,7 @@
    en celular el CRM conserva su diseño de una columna. ── */
 (() => {
   const css = `
-#app{--nx-amarillo:#FFF200;--nx-amarillo-2:#e6d900;--nx-negro:#0b0b10;--nx-negro-2:#15151c;--nx-negro-3:#22222c;--nx-gris:#f2f4f6;--nx-violeta:#7c3aed;--nx-txt:#c9c9d3;--nx-mut:#7d7d8a}
+#app{--nx-amarillo:#FFD21F;--nx-amarillo-2:#e6d900;--nx-negro:#0b0b10;--nx-negro-2:#15151c;--nx-negro-3:#22222c;--nx-gris:#f2f4f6;--nx-violeta:#7c3aed;--nx-txt:#c9c9d3;--nx-mut:#7d7d8a}
 :focus-visible{outline-color:#7c3aed}
 
 /* ── Barra lateral negra (también como cajón en celular) ── */
@@ -28,7 +28,7 @@
 #app .nav .me .cu-est{background:var(--nx-negro-2);border-color:var(--nx-negro-3);color:#e4e4ea}
 #app .nav .me .cu-est:hover{border-color:#3a3a46}
 #app .nav .me .cu-est #me-e{color:#e4e4ea;font-size:13px}
-#app .nav .me .cu-est[aria-expanded="true"]{border-color:var(--nx-amarillo);box-shadow:0 0 0 3px rgba(255,242,0,.25)}
+#app .nav .me .cu-est[aria-expanded="true"]{border-color:var(--nx-amarillo);box-shadow:0 0 0 3px rgba(255,210,31,.25)}
 #app .nav .me #b-ajustes{background:var(--nx-negro-2);border:1px solid var(--nx-negro-3);color:var(--nx-txt)}
 #app .nav .me #b-ajustes:hover{background:var(--nx-negro-3);color:#fff}
 #app .nav .brand .mc-campana{color:var(--nx-txt)}
@@ -71,7 +71,7 @@
 #app .pc-act.on{background:none;color:var(--ink2)}
 #app .pc-act.on svg{background:var(--nx-negro);color:var(--nx-amarillo)}
 #app .pc-info{background:#f6f7f9;border-radius:14px;padding:4px 12px}
-#app .pc-ps[aria-expanded="true"]{border-color:var(--nx-negro);box-shadow:0 0 0 3px rgba(255,242,0,.45)}
+#app .pc-ps[aria-expanded="true"]{border-color:var(--nx-negro);box-shadow:0 0 0 3px rgba(255,210,31,.45)}
 
 /* ── Escritorio: barra negra a todo lo alto y las columnas como tarjetas sobre un fondo claro redondeado ── */
 @media (min-width:1001px){

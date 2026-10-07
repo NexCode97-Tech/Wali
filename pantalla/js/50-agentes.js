@@ -323,12 +323,12 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .agc-n{flex:1;min-width:0;display:flex;flex-direction:column}.agc-n b{font-size:13.5px;font-weight:550}.agc-n small{font-size:12.5px;color:#6b7280;font-variant-numeric:tabular-nums}
 .agc .q-sw{display:block;flex:none;width:44px;height:24px;border:0;padding:0;border-radius:999px;background:#cbd5e1;position:relative;cursor:pointer}
 .agc .q-sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:left .2s cubic-bezier(.22,1,.36,1)}
-.agc .q-sw[aria-checked="true"]{background:#FFF200}.agc .q-sw[aria-checked="true"]::after{left:23px;background:#0b0b10}
+.agc .q-sw[aria-checked="true"]{background:#FFD21F}.agc .q-sw[aria-checked="true"]::after{left:23px;background:#0b0b10}
 .agc-sin{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:10px;font-size:12.5px;color:#6b7280}
 .agc-mini{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 3px;border-radius:999px;background:#f3f4f6;color:#4b5563}
 
 .agc-cx{display:inline-flex;align-items:center;gap:4px;border:0;background:none;font:inherit;font-size:12.5px;font-weight:600;color:#0b0b10;cursor:pointer;padding:5px 8px;border-radius:8px;margin-left:auto}
-.agc-cx:hover{background:#FFF200}.agc-cx svg{width:14px;height:14px}
+.agc-cx:hover{background:#FFD21F}.agc-cx svg{width:14px;height:14px}
 
 </style>`);
 function chatPruebaAgente(a){

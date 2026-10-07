@@ -16,7 +16,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .rp-seg button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:32px;border-radius:9px;border:1px solid #e5e9f0;background:#fff;font:inherit;font-size:12.5px;font-weight:500;color:#4b5563;cursor:pointer;white-space:nowrap}
 .rp-seg button[aria-pressed="true"]{border-color:#0b0b10;color:#0b0b10;box-shadow:inset 0 0 0 1px #0b0b10}
 .rp-seg button .n{min-width:20px;height:20px;border-radius:999px;display:inline-grid;place-items:center;font-size:11px;font-weight:600;padding:0 6px;background:#f1f5f9;color:#4b5563}
-.rp-seg button[data-rp="por"] .n{background:#FFF200;color:#0b0b10}
+.rp-seg button[data-rp="por"] .n{background:#FFD21F;color:#0b0b10}
 </style>`);
 function respPintar(){
   const tabs = document.getElementById('tabs'); if (!tabs) return;

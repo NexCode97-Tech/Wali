@@ -71,7 +71,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 :is(.eqr,.eqr-dlg) .btn.eqr-b{height:38px;padding:0 16px;gap:6px;border:1px solid #e5e9f0;border-radius:10px;background:#fff;color:#1f2937;font-size:13.5px;font-weight:500}
 :is(.eqr,.eqr-dlg) .btn.eqr-b:hover{background:#f3f6fa}
 :is(.eqr,.eqr-dlg) .btn.eqr-b.pri{background:#0b0b10;border-color:#0b0b10;color:#fff}
-:is(.eqr,.eqr-dlg) .btn.eqr-b.pri:hover{background:#e6da00;border-color:#e6da00}
+:is(.eqr,.eqr-dlg) .btn.eqr-b.pri:hover{background:#E6BC12;border-color:#E6BC12}
 :is(.eqr,.eqr-dlg) .btn.eqr-b svg{width:16px;height:16px}
 .eqr-ed{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:18px;align-items:start}
 @media (max-width:1100px){.eqr-ed{grid-template-columns:minmax(0,1fr)}}

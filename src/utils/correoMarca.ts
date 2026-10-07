@@ -28,7 +28,7 @@ export function correoMarca(c: CorreoMarca): string {
   const p = (html: string) => `<p style="margin:0 0 16px;font-family:${FUENTE};font-size:15px;line-height:1.6;color:#33333e">${html}</p>`
   const boton = c.boton ? `
           <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px">
-            <tr><td bgcolor="#FFF200" style="border-radius:10px">
+            <tr><td bgcolor="#FFD21F" style="border-radius:10px">
               <a href="${escaparHtml(c.boton.url)}" target="_blank" style="display:inline-block;padding:14px 28px;font-family:${FUENTE};font-size:15px;font-weight:700;color:#0a0a0d;text-decoration:none;border-radius:10px">${escaparHtml(c.boton.texto)}</a>
             </td></tr>
           </table>` : ''
@@ -58,7 +58,7 @@ export function correoMarca(c: CorreoMarca): string {
         <tr><td bgcolor="#0a0a0d" style="border-radius:16px 16px 0 0;padding:26px 32px">
           <a href="${escaparHtml(sitio)}" target="_blank"><img src="${escaparHtml(LOGO())}" width="150" height="42" alt="NexCode97" style="display:block;border:0;outline:none;width:150px;height:auto"></a>
         </td></tr>
-        <tr><td bgcolor="#FFF200" height="4" style="font-size:0;line-height:0">&nbsp;</td></tr>
+        <tr><td bgcolor="#FFD21F" height="4" style="font-size:0;line-height:0">&nbsp;</td></tr>
         <tr><td bgcolor="#ffffff" style="padding:36px 32px 28px">
           <h1 style="margin:0 0 16px;font-family:${FUENTE};font-size:22px;line-height:1.3;font-weight:700;color:#0a0a0d">${escaparHtml(c.titulo)}</h1>
           ${c.parrafos.map(p).join('\n          ')}${boton}${aviso}${respaldo}

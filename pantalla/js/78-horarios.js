@@ -46,7 +46,7 @@ function htDialogo(){
   return `<div class="ht-dlg"><h3>${d.id ? 'Editar turno' : 'Crear turno'}</h3>
     <div class="ht-dc"><div class="ht-izq">
       <label class="ht-lab">Nombre del turno<input id="ht-n" value="${esc(d.n)}" placeholder="Ej. Mañana" maxlength="40" autocomplete="off"></label>
-      <span class="ht-lab">Color</span><div class="qe-sw">${['#FFF200', '#a855f7', '#22c55e', '#3b82f6', '#f97316', '#ec4899'].map(c => `<button type="button" style="background:${c}" aria-pressed="${d.col === c}" data-ht-col="${c}" aria-label="Color"></button>`).join('')}</div>
+      <span class="ht-lab">Color</span><div class="qe-sw">${['#FFD21F', '#a855f7', '#22c55e', '#3b82f6', '#f97316', '#ec4899'].map(c => `<button type="button" style="background:${c}" aria-pressed="${d.col === c}" data-ht-col="${c}" aria-label="Color"></button>`).join('')}</div>
       <span class="ht-lab">Días y horas</span>
       <div class="ht-dias">${HT_DIAS.map(([n, c, l]) => { const x = d.dias.find(z => z[0] === n); return `<div class="ht-dr${x ? ' on' : ''}"><button type="button" class="q-sw" role="switch" aria-checked="${!!x}" data-ht-dia="${n}" aria-label="${l}"></button><span class="ht-dn">${l}</span>${x ? `<input class="inl" value="${esc(x[1])}" data-ht-h="${n}|1" inputmode="numeric" maxlength="5" aria-label="${l} desde"><span>a</span><input class="inl" value="${esc(x[2])}" data-ht-h="${n}|2" inputmode="numeric" maxlength="5" aria-label="${l} hasta">${x[3] !== undefined ? '' : `<button type="button" class="ht-alm-b" data-ht-alm="${n}">${I('plus')}Almuerzo</button>`}` : '<span class="muted">No trabaja</span>'}</div>${x && x[3] !== undefined ? `<div class="ht-alm"><span>Almuerzo</span><input class="inl" value="${esc(x[3])}" data-ht-h="${n}|3" inputmode="numeric" maxlength="5" aria-label="${l}, almuerzo desde"><span>a</span><input class="inl" value="${esc(x[4])}" data-ht-h="${n}|4" inputmode="numeric" maxlength="5" aria-label="${l}, almuerzo hasta"><button type="button" class="ht-alm-x" data-ht-almx="${n}" aria-label="Quitar el almuerzo del ${l.toLowerCase()}">${I('x')}</button></div>` : ''}`; }).join('')}</div>
       <p class="ht-ay">${I('clock')}En el almuerzo la persona pasa sola a Ausente y no recibe conversaciones; al terminar vuelve a En línea.</p>
@@ -100,7 +100,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ht-aj textarea{border:1px solid #e5e9f0;border-radius:10px;padding:10px 12px;font:inherit;font-size:13.5px;text-transform:none;letter-spacing:0;color:#0b0b10;font-weight:400;resize:vertical}
 .ht-sw{display:block;flex:none;width:44px;height:24px;border:0;padding:0;border-radius:999px;background:#cbd5e1;position:relative;cursor:pointer}
 .ht-sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s}
-.ht-sw[aria-checked="true"]{background:#FFF200}.ht-sw[aria-checked="true"]::after{left:23px;background:#0b0b10}
+.ht-sw[aria-checked="true"]{background:#FFD21F}.ht-sw[aria-checked="true"]::after{left:23px;background:#0b0b10}
 @media (max-width:1180px){.ht-cols{grid-template-columns:1fr}.ht-aj{position:static}}
 .ht-card{border:1px solid #e5e9f0;border-radius:16px;background:#fff;padding:16px 18px;display:flex;flex-direction:column;gap:14px}
 .ht-card header{display:flex;align-items:center;gap:12px}
@@ -134,15 +134,15 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ht-est.alm i{background:#f59e0b}.ht-est.alm{color:#b45309}
 .ht-dr .q-sw{display:block;flex:none;width:38px;height:22px;border:0;padding:0;border-radius:999px;background:#cbd5e1;position:relative;cursor:pointer}
 .ht-dr .q-sw::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s cubic-bezier(.22,1,.36,1)}
-.ht-dr .q-sw[aria-checked="true"]{background:#FFF200}.ht-dr .q-sw[aria-checked="true"]::after{left:19px;background:#0b0b10}
+.ht-dr .q-sw[aria-checked="true"]{background:#FFD21F}.ht-dr .q-sw[aria-checked="true"]::after{left:19px;background:#0b0b10}
 .ht-ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-.ht-cnt{font-size:12px;font-weight:650;padding:2px 10px;border-radius:999px;background:#FFF200}
+.ht-cnt{font-size:12px;font-weight:650;padding:2px 10px;border-radius:999px;background:#FFD21F}
 .ht-ps{max-height:360px;overflow-y:auto;border:1px solid #e5e9f0;border-radius:12px;padding:4px}
 .ht-g{padding:4px 0}.ht-gh{display:flex;align-items:center;justify-content:space-between;padding:6px 10px 4px}.ht-gh b{font-size:12px;font-weight:650;text-transform:uppercase;letter-spacing:.04em;color:#6b7280}
-.ht-gh button{border:0;background:none;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;padding:2px 6px;border-radius:6px}.ht-gh button:hover{background:#FFF200}
+.ht-gh button{border:0;background:none;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;padding:2px 6px;border-radius:6px}.ht-gh button:hover{background:#FFD21F}
 .ht-p{display:flex;align-items:center;gap:10px;width:100%;padding:7px 10px;border:0;background:none;border-radius:9px;font:inherit;text-align:left;cursor:pointer}
 .ht-p:hover{background:#f6f7f9}.ht-p.on{background:#fffde6}
-.ht-ck{width:18px;height:18px;border-radius:5px;border:1.5px solid #cbd5e1;display:grid;place-items:center;flex:none}.ht-p.on .ht-ck{background:#0b0b10;border-color:#0b0b10;color:#FFF200}.ht-ck svg{width:12px;height:12px}
+.ht-ck{width:18px;height:18px;border-radius:5px;border:1.5px solid #cbd5e1;display:grid;place-items:center;flex:none}.ht-p.on .ht-ck{background:#0b0b10;border-color:#0b0b10;color:#FFD21F}.ht-ck svg{width:12px;height:12px}
 .ht-p .av{width:30px;height:30px}.ht-pn{flex:1;min-width:0;display:flex;flex-direction:column}.ht-pn b{font-size:13.5px;font-weight:550}.ht-pn small{font-size:12px;color:#6b7280}
 @media (max-width:1400px){.ht-lista{grid-template-columns:1fr}}
 @media (max-width:860px){.ht-dc{grid-template-columns:1fr}}

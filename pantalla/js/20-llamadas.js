@@ -109,7 +109,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ln-cab > div{flex:1 1 420px;min-width:0}
 .ln-cab h2{margin:0}
 .ln-cab .sub{margin:4px 0 0}
-.ln-conectar{height:38px;padding:0 16px;border-radius:10px;background:#FFF200;color:#0b0b10;font-weight:600;font-size:13.5px;display:inline-flex;align-items:center;gap:8px;border:0;cursor:pointer;transition:background .15s}
+.ln-conectar{height:38px;padding:0 16px;border-radius:10px;background:#FFD21F;color:#0b0b10;font-weight:600;font-size:13.5px;display:inline-flex;align-items:center;gap:8px;border:0;cursor:pointer;transition:background .15s}
 .ln-conectar:hover{background:#e6d900}
 .ln-conectar svg{width:16px;height:16px;transition:transform .35s cubic-bezier(.22,1,.36,1)}
 .ln-conectar:hover svg{transform:rotate(90deg)}
