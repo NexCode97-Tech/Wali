@@ -100,3 +100,44 @@ export async function crearEspacio(userId: string, actual: string, d: { nombre: 
   logger.info({ evento: 'ESPACIO_CREADO', cuenta, espacio: id, por: userId })
   return id
 }
+
+/** Solo el administrador de la cuenta cambia o borra espacios, y solo los de su cuenta. */
+async function exigirAdminCuenta(userId: string, actual: string, espacioId: string): Promise<string> {
+  const cuenta = await cuentaDe(actual)
+  const [yo, miembro, todos] = await Promise.all([
+    base.user.findUnique({ where: { id: userId }, select: { role: true } }),
+    base.crmMiembro.findUnique({ where: { espacioId_userId: { espacioId: cuenta, userId } } }),
+    espaciosDeCuenta(cuenta),
+  ])
+  if (yo?.role !== 'ADMIN' || !miembro) throw new ForbiddenError('Solo el administrador de la cuenta cambia los espacios de trabajo.')
+  if (!todos.includes(espacioId)) throw new ForbiddenError('Ese espacio de trabajo no es de tu cuenta.')
+  return cuenta
+}
+
+/** Cambia el nombre de un espacio de trabajo (7-oct). */
+export async function renombrarEspacio(userId: string, actual: string, espacioId: string, nombre: string): Promise<void> {
+  await exigirAdminCuenta(userId, actual, espacioId)
+  const n = nombre.trim().replace(/\s+/g, ' ')
+  if (n.length < 2 || n.length > 80) throw new ValidationError('Escribe el nombre de la empresa (de 2 a 80 caracteres).')
+  await base.crmEspacio.update({ where: { id: espacioId }, data: { nombre: n } })
+  logger.info({ evento: 'ESPACIO_RENOMBRADO', espacio: espacioId, por: userId })
+}
+
+/**
+ * Elimina un espacio de trabajo y todo lo suyo (líneas, conversaciones, contactos, ajustes: en cascada) (7-oct). El
+ * principal no (tiene el plan de la cuenta) ni el espacio en que se está trabajando. Quien lo tenía abierto vuelve al
+ * principal. La confirmación es escribir su nombre exacto.
+ */
+export async function eliminarEspacio(userId: string, actual: string, espacioId: string, confirmacion: string): Promise<void> {
+  const cuenta = await exigirAdminCuenta(userId, actual, espacioId)
+  if (espacioId === cuenta) throw new ForbiddenError('El espacio principal tiene el plan de la cuenta: no se puede eliminar.')
+  if (espacioId === actual) throw new ForbiddenError('Estás trabajando en ese espacio. Entra a otro y elimínalo desde allá.')
+  const e = await base.crmEspacio.findUnique({ where: { id: espacioId }, select: { nombre: true } })
+  if (!e) throw new ValidationError('Ese espacio de trabajo ya no existe.')
+  if (confirmacion.trim() !== e.nombre.trim()) throw new ValidationError('Escribe el nombre exacto del espacio para confirmar.')
+  await base.$transaction([
+    base.user.updateMany({ where: { espacioActivo: espacioId }, data: { espacioActivo: cuenta } }),
+    base.crmEspacio.delete({ where: { id: espacioId } }),
+  ])
+  logger.info({ evento: 'ESPACIO_ELIMINADO', cuenta, espacio: espacioId, nombre: e.nombre, por: userId })
+}

@@ -57,7 +57,7 @@ function espAviso(e){
 }
 function espTarjeta(e){
   const [t, c] = ESP_EST[e.estado] || [e.estado, 'off'], aviso = espAviso(e);
-  return `<article class="ig-c"><div class="ig-cab"><span class="me-logo">${esc(espIni(e.n))}</span><span class="ig-nom"><b>${esc(e.n)}</b><small>${esc([e.admin, e.correo].filter(Boolean).join(' · ') || 'Sin administrador')}</small></span><span class="ig-est ${c}">${esc(t)}${e.dias ? ' · ' + e.dias + ' días' : ''}</span></div>
+  return `<article class="ig-c"><div class="ig-cab"><span class="me-logo">${esc(espIni(e.n))}</span><span class="ig-nom"><b>${esc(e.n)}</b><small>${esc([e.admin, e.correo].filter(Boolean).join(' · ') || 'Sin administrador')}</small></span><span class="ig-est ${c}">${esc(t)}${e.dias ? ' · ' + e.dias + ' días' : ''}</span>${ESP.puedeCrear ? `<button type="button" class="me-mas" data-me-mas="${esc(e.id)}" aria-label="Más opciones de ${esc(e.n)}" aria-haspopup="menu">${I('more')}</button>` : ''}</div>
     <dl class="me-num"><div><dt>Plan</dt><dd>${esc(PL_NOMBRE[e.plan] || e.plan)}</dd></div><div><dt>Personas</dt><dd>${e.personas}</dd></div><div><dt>Líneas</dt><dd>${e.lineas}</dd></div><div><dt>Chats</dt><dd>${e.chats}</dd></div></dl>
     ${aviso ? `<p class="me-aviso">${esc(aviso)}</p>` : ''}
     <div class="ig-pie"><span class="sp">${esc(e.principal ? 'Espacio principal' : espFecha(e.desde))}</span>${e.actual ? '<span class="ig-est on">Estás aquí</span>' : `<button type="button" class="btn" data-me-ajustes="${esc(e.id)}">${I('cog')}Ajustes</button><button type="button" class="btn pri" data-me-entrar="${esc(e.id)}">Entrar</button>`}</div></article>`;
@@ -134,3 +134,68 @@ document.addEventListener('click', e => {
   }
 }, true);
 document.addEventListener('input', e => { if (e.target.id === 'me-q') { ESP.q = e.target.value; const pos = e.target.selectionStart; render(); const q = document.getElementById('me-q'); if (q) { q.focus(); q.setSelectionRange(pos, pos); } } });
+
+/* Editar y eliminar espacios (7-oct): el «⋯» de cada tarjeta (solo el administrador de la cuenta). El principal no se
+   elimina (tiene el plan) ni el espacio en que se está; eliminar pide escribir su nombre. */
+const meCerrarMenu = () => document.querySelectorAll('.me-flmenu').forEach(m => m.remove());
+function meDlgEditar(e){
+  abrirDialogo(`<h3>Editar espacio de trabajo</h3><div class="frm"><label>Nombre de la empresa<input id="me-ren" value="${esc(e.n)}" maxlength="80" autocomplete="off"></label></div>
+    <div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" data-me-ren-ok="${esc(e.id)}">${I('check')}Guardar</button></div>`, 'dlg-per');
+  setTimeout(() => { const x = document.getElementById('me-ren'); if (x) { x.focus(); x.select(); } }, 30);
+}
+function meDlgEliminar(e){
+  abrirDialogo(`<h3>Eliminar ${esc(e.n)}</h3><p>Se borra todo lo de este espacio y no se puede deshacer:</p>
+    <ul class="me-borra"><li><b>${e.lineas}</b> ${e.lineas === 1 ? 'línea' : 'líneas'} de WhatsApp desconectadas del CRM</li><li><b>${e.chats}</b> ${e.chats === 1 ? 'conversación abierta' : 'conversaciones abiertas'}, y también las cerradas, los contactos y los mensajes</li><li>Sus equipos, agentes IA, reglas, etapas y ajustes</li><li><b>${e.personas}</b> ${e.personas === 1 ? 'persona deja' : 'personas dejan'} de entrar a este espacio (sus cuentas siguen)</li></ul>
+    <div class="frm"><label><span>Para confirmar, escribe <b>${esc(e.n)}</b></span><input id="me-del" autocomplete="off" placeholder="${esc(e.n)}"></label></div>
+    <div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn me-del-b" data-me-del-ok="${esc(e.id)}" disabled>Eliminar espacio</button></div>`, 'dlg-per');
+  setTimeout(() => { const x = document.getElementById('me-del'); if (x) x.focus(); }, 30);
+}
+document.addEventListener('click', ev => {
+  const t = ev.target instanceof Element ? ev.target : null; if (!t) return;
+  if (!t.closest('.me-flmenu') && !t.closest('[data-me-mas]')) meCerrarMenu();
+  const b = t.closest('[data-me-mas]');
+  if (b) {
+    ev.stopPropagation(); if (document.querySelector('.me-flmenu')) { meCerrarMenu(); return; }
+    const e = (ESP.lista || []).find(x => x.id === b.dataset.meMas); if (!e) return;
+    const motivo = e.principal ? 'Tiene el plan de la cuenta' : e.actual ? 'Estás trabajando aquí' : '';
+    const r = b.getBoundingClientRect();
+    document.body.insertAdjacentHTML('beforeend', `<div class="me-flmenu" role="menu"><button type="button" role="menuitem" data-me-ed="${esc(e.id)}">${I('pen')}Editar nombre</button><button type="button" role="menuitem" class="peligro" data-me-el="${esc(e.id)}" ${motivo ? 'disabled' : ''}>${I('x')}<span>Eliminar espacio${motivo ? `<small>${motivo}</small>` : ''}</span></button></div>`);
+    const m = document.querySelector('.me-flmenu'); m.style.top = (r.bottom + 6) + 'px'; m.style.left = Math.max(8, r.right - m.offsetWidth) + 'px';
+    return;
+  }
+  const ed = t.closest('[data-me-ed]'); if (ed) { meCerrarMenu(); const e = ESP.lista.find(x => x.id === ed.dataset.meEd); if (e) meDlgEditar(e); return; }
+  const el = t.closest('[data-me-el]'); if (el && !el.disabled) { meCerrarMenu(); const e = ESP.lista.find(x => x.id === el.dataset.meEl); if (e) meDlgEliminar(e); return; }
+  const ok = t.closest('[data-me-ren-ok]');
+  if (ok && !ok.disabled) {
+    const n = (document.getElementById('me-ren') || {}).value || ''; if (n.trim().length < 2) { toast('Escribe el nombre de la empresa'); return; }
+    ok.disabled = true;
+    crmApi('PATCH', '/crm/espacios/' + encodeURIComponent(ok.dataset.meRenOk), {nombre: n.trim()})
+      .then(() => { cerrarDialogo(); toast('Nombre guardado'); const e = ESP.lista.find(x => x.id === ok.dataset.meRenOk); if (e) e.n = n.trim(); if (e && e.actual && typeof ESPACIO !== 'undefined') { ESPACIO.nombre = n.trim(); if (typeof pintarMarca === 'function') pintarMarca(); } espSelector(); render(); espCargar(); })
+      .catch(err => { ok.disabled = false; toast(err.message || 'No se pudo guardar'); });
+    return;
+  }
+  const del = t.closest('[data-me-del-ok]');
+  if (del && !del.disabled) {
+    const id = del.dataset.meDelOk, conf = (document.getElementById('me-del') || {}).value || ''; del.disabled = true; del.textContent = 'Eliminando…';
+    crmApi('DELETE', '/crm/espacios/' + encodeURIComponent(id), {confirmacion: conf})
+      .then(() => { cerrarDialogo(); ESP.lista = ESP.lista.filter(x => x.id !== id); toast('Espacio de trabajo eliminado'); espSelector(); render(); espCargar(); })
+      .catch(err => { del.disabled = false; del.textContent = 'Eliminar espacio'; toast(err.message || 'No se pudo eliminar'); });
+  }
+});
+document.addEventListener('input', ev => {
+  if (ev.target.id !== 'me-del') return;
+  const b = document.querySelector('[data-me-del-ok]'), e = b && ESP.lista.find(x => x.id === b.dataset.meDelOk);
+  if (b && e) b.disabled = ev.target.value.trim() !== e.n.trim();
+});
+window.addEventListener('resize', meCerrarMenu);
+document.head.insertAdjacentHTML('beforeend', `<style>
+.me-mas{width:32px;height:32px;margin-left:4px;border:0;background:none;border-radius:8px;display:grid;place-items:center;color:#6b7280;cursor:pointer;flex:none}
+.me-mas:hover{background:#f3f4f6}.me-mas svg{width:16px;height:16px}
+.me-flmenu{position:fixed;z-index:60;min-width:220px;background:#fff;border:1px solid #e5e9f0;border-radius:12px;box-shadow:0 18px 40px -12px rgba(15,23,42,.3);padding:6px;display:grid;gap:2px}
+.me-flmenu button{display:flex;align-items:flex-start;gap:10px;width:100%;padding:8px 10px;border:0;background:none;border-radius:8px;font:inherit;font-size:13.5px;color:var(--ink);text-align:left;cursor:pointer}
+.me-flmenu button:hover:not(:disabled){background:#f3f4f6}.me-flmenu button svg{width:16px;height:16px;color:#6b7280;margin-top:1px;flex:none}
+.me-flmenu button.peligro{color:#b91c1c}.me-flmenu button.peligro svg{color:#b91c1c}
+.me-flmenu button:disabled{opacity:.5;cursor:not-allowed}.me-flmenu small{display:block;font-size:12px;color:#6b7280}
+.me-borra{margin:0 0 4px;padding-left:18px;font-size:13.5px;line-height:1.6;color:#374151}
+.me-del-b{background:#dc2626;border-color:#dc2626;color:#fff}.me-del-b:disabled{opacity:.45}
+</style>`);

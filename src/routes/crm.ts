@@ -22,7 +22,7 @@ import { ApiResponse } from '../utils/response'
 import { z } from 'zod'
 import { estadoPlan, historialPagos, pagarPlan, pagoDeEspacio, planesDelSitio, portalPagos, usoDeCuenta, PLANES, type Plan } from '../services/crm/plan'
 import { nombreRecibo, reciboPdf } from '../services/crm/recibo'
-import { crearEspacio, entrarAEspacio, listarEspacios } from '../services/crm/espacios'
+import { crearEspacio, renombrarEspacio, eliminarEspacio, entrarAEspacio, listarEspacios } from '../services/crm/espacios'
 import { leerAjuste } from '../services/crm/ajustes'
 import { urlPublica } from './acceso'
 import { prisma } from '../config/prisma'
@@ -55,6 +55,18 @@ router.post('/espacios', asyncHandler(async (req: Request, res: Response) => {
   if (req.soloLectura) throw new ForbiddenError('Modo de solo lectura: puedes ver todo, pero no hacer cambios.')
   const d = z.object({ nombre: z.string().max(80), adminNombre: z.string().max(80).optional(), adminCorreo: z.string().max(200).optional(), yo: z.boolean().default(true) }).parse(req.body)
   return ApiResponse.created(res, { id: await crearEspacio(req.userId!, req.espacioId!, d) })
+}))
+router.patch('/espacios/:id', asyncHandler(async (req: Request, res: Response) => {
+  if (req.soloLectura) throw new ForbiddenError('Modo de solo lectura: puedes ver todo, pero no hacer cambios.')
+  const d = z.object({ nombre: z.string().max(80) }).parse(req.body)
+  await renombrarEspacio(req.userId!, req.espacioId!, String(req.params.id), d.nombre)
+  return ApiResponse.success(res, { ok: true })
+}))
+router.delete('/espacios/:id', asyncHandler(async (req: Request, res: Response) => {
+  if (req.soloLectura) throw new ForbiddenError('Modo de solo lectura: puedes ver todo, pero no hacer cambios.')
+  const d = z.object({ confirmacion: z.string().max(80) }).parse(req.body ?? {})
+  await eliminarEspacio(req.userId!, req.espacioId!, String(req.params.id), d.confirmacion)
+  return ApiResponse.success(res, { ok: true })
 }))
 router.post('/espacios/:id/entrar', asyncHandler(async (req: Request, res: Response) => {
   await entrarAEspacio(req.userId!, String(req.params.id))
