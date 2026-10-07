@@ -197,6 +197,7 @@ const crmDatos = (() => {
     CN: () => typeof CN !== 'undefined' ? CN : undefined, MIEMBROS: () => typeof MIEMBROS !== 'undefined' ? MIEMBROS : undefined,
     AGENTES: () => typeof AGENTES !== 'undefined' ? AGENTES : undefined, AG: () => typeof AG !== 'undefined' ? AG : undefined,
     KB: () => typeof KB !== 'undefined' ? KB : undefined,
+    CARP: () => typeof CARP !== 'undefined' ? CARP : undefined,
   };
   const def = n => MOD[n]();
   const AJUSTES = {
@@ -209,6 +210,7 @@ const crmDatos = (() => {
       const eqs = Object.keys(m), deEquipos = o => Object.fromEntries(eqs.filter(eq => o && o[eq] !== undefined).map(eq => [eq, o[eq]]));
       return {miembros: m, ids: Object.fromEntries(eqs.map(eq => [eq, idsDe(eq)])), colores: E.colores, metodos: E.metodos, transferibles: E.transferibles, topes: E.topes,
         lideres: deEquipos(E.lideres), roles: deEquipos(E.roles), subequipos: deEquipos(E.subequipos)}; },
+    carpetas: () => def('CARP'),
     agentes: () => def('AGENTES'), ag: () => def('AG'), kb: () => def('KB'), difusiones: () => DIFUSIONES, segmentos: () => st.ct.propios, material: () => MATERIAL,
   };
   const DE_ASESORAS = new Set(['etiquetas', 'segmentos']);

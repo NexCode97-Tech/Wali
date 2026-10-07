@@ -2,6 +2,7 @@ import { prisma as base } from '../../config/prisma'
 import { cuentaDe, espaciosDeCuenta } from './espacio'
 import { estadoPlan } from './plan'
 import { invitar } from './invitaciones'
+import { ajustesIniciales } from './inicial'
 import { cifrarClave } from '../../routes/auth'
 import { idDeEspacio } from '../../routes/acceso'
 import { logger } from '../../utils/logger'
@@ -87,7 +88,7 @@ export async function crearEspacio(userId: string, actual: string, d: { nombre: 
   await base.$transaction(async tx => {
     await tx.crmEspacio.create({ data: { id, nombre, cuentaId: cuenta, plan: plan.plan, estadoPlan: plan.estado === 'interno' ? 'interno' : 'activo' } })
     // Empieza desde cero, como una empresa nueva.
-    await tx.crmAjuste.createMany({ data: ['etapas', 'etiquetas', 'reglas'].map(clave => ({ espacioId: id, clave, valor: [] })), skipDuplicates: true })
+    await tx.crmAjuste.createMany({ data: ajustesIniciales(id), skipDuplicates: true })
     if (d.yo) await tx.crmMiembro.create({ data: { espacioId: id, userId } })
     if (correo) {
       const existe = await tx.user.findFirst({ where: { email: { equals: correo, mode: 'insensitive' } }, select: { id: true } })

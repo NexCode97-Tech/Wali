@@ -794,6 +794,7 @@ function pagina(){
         ['moon','Atención de noche','El agente IA responde de 10 p. m. a 7 a. m. y deja resumen','cfg-recepcion']]],
       ['Automatización y datos', [
         ['flow','Flujos',`${FLUJOS.filter(f => f.on).length} activo · lo que pasa antes de que el lead llegue al asesor`,'flujos'],
+        ['folder','Carpetas','Atajos de la barra: crea las tuyas y esconde las que no usas','cfg-carpetas'],
         ['flow','Reglas automáticas',`${REGLAS.filter(r => r.on).length} activas · «si pasa esto, haz esto»`,'reglas'],
         ['ad','Enlaces de pauta','De qué anuncio llega cada persona: Google, TikTok, Meta y tu página','cfg-pauta'],
         ['lock','Protección de datos','Autorizaciones, menores, horario legal y números excluidos','cfg-datos'],

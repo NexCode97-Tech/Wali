@@ -14,6 +14,7 @@ import { BASE } from '../utils/base'
 import { abrirSesion, cifrarClave, claveValida, RUTA_COOKIE } from './auth'
 import { correoMarca, escaparHtml } from '../utils/correoMarca'
 import { DIAS_PRUEBA } from '../services/crm/plan'
+import { ajustesIniciales } from '../services/crm/inicial'
 
 /**
  * Las puertas de entrada que no piden sesión: crear una cuenta (con su espacio), recuperar la contraseña por
@@ -106,7 +107,7 @@ router.post('/registro', limiteRegistro, asyncHandler(async (req: Request, res: 
       const u = await tx.user.create({ data: { email, nombre: d.nombre, image: foto, role: 'ADMIN', passwordHash } })
       await tx.crmMiembro.create({ data: { espacioId, userId: u.id } })
       // La empresa empieza desde cero: sin las etapas, etiquetas ni reglas de ejemplo (6-oct).
-      await tx.crmAjuste.createMany({ data: ['etapas', 'etiquetas', 'reglas'].map(clave => ({ espacioId, clave, valor: [] })), skipDuplicates: true })
+      await tx.crmAjuste.createMany({ data: ajustesIniciales(espacioId), skipDuplicates: true })
       // Al crear la cuenta aceptó los términos, el uso aceptable y la política de datos: queda la prueba.
       await tx.consentimiento.create({ data: { userId: u.id, email, tipo: d.google ? 'registro-google' : 'registro', version: VERSION_DOCUMENTOS, ip: req.ip ?? null, userAgent: String(req.headers['user-agent'] ?? '').slice(0, 300) || null } })
       return u

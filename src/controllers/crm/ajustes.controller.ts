@@ -32,6 +32,8 @@ import { convVigente, esLider, exigirAdminEquipos, exigirEscritura, exigirLider,
 export const CLAVES_AJUSTE = new Set([
   'etapas', 'etiquetas', 'respuestas', 'campos', 'reglas', 'flujos', 'cfg', 'cvcfg', 'pd', 'llam', 'llcfg',
   'cn', 'equipos', 'agentes', 'ag', 'kb', 'difusiones', 'segmentos',
+  // Carpetas de la barra: las del CRM escondidas y las propias con sus condiciones (6-oct).
+  'carpetas',
   // Archivos del equipo para «Enviar material» (Ajustes > Archivos).
   'material',
 ])
