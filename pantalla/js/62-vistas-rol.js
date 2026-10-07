@@ -169,8 +169,8 @@ const vrPrimerNombre = n => String(n || '').trim().split(/\s+/)[0] || '';
 function vrEmbudo(){
   const pg = document.getElementById('page'), eq = st.embEq, cfg = puedeConfigurarCrm();
   const der = pg.querySelector('.pg-h > div:last-child'), et = pg.querySelector('.pg-h [data-ir="cfg-etapas"]');
-  if (!cfg && et) et.remove();
-  if (cfg && !et && der) der.insertAdjacentHTML('afterbegin', `<button type="button" class="btn" data-ir="cfg-etapas">${I('kanban')}Etapas del embudo</button>`);
+  // Sin el botón «Etapas del embudo» en el Embudo (6-oct): las etapas se cambian en Ajustes del CRM.
+  if (et) et.remove();
   const vacio = [...pg.querySelectorAll('p.muted')].find(x => / todavía no tiene etapas\./.test(x.textContent));
   if (vacio) vacio.textContent = `${eq} todavía no tiene etapas. ${cfg ? 'Créalas en Etapas del embudo.' : esLiderCrm() ? 'Las crea un administrador.' : 'Las crea su líder.'}`;
   if (!subequiposDe(eq).length) return;
