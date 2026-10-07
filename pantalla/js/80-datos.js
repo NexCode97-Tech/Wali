@@ -842,8 +842,9 @@ function crmArrancar(){
     // dirección vuelve a /crm: así el mismo aviso se puede volver a tocar y recargar no lo repite.
     try { const top = window.top; if (abrirDesdeAviso(new URLSearchParams(top.location.search), false) || top.location.search) top.history.replaceState(top.history.state, '', top.location.pathname); } catch { /* sin acceso al marco */ }
     crmCargado = true; colLista.removeAttribute('aria-busy');
-    pintarYo(); render(); crmListoOk(); crmMenciones();
+    pintarYo(); render(); crmListoOk(); crmMenciones(); if (window.wCargaFin) window.wCargaFin();
   }, err => {
+    if (window.wCargaFin) window.wCargaFin();
     colLista.removeAttribute('aria-busy');
     document.getElementById('items').innerHTML = `<div class="nothing"><b>No se pudo cargar el CRM</b><span>${esc(err.message)}</span><button type="button" class="btn" id="crm-reintentar">Intentar de nuevo</button></div>`;
     document.getElementById('crm-reintentar').addEventListener('click', crmArrancar, {once: true});
