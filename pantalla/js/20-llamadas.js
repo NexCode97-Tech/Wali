@@ -566,7 +566,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .lc-n b{font-size:15px;font-weight:600;color:var(--ink)}
 .lc-n small{font-size:13px;color:#6b7280}
 .lc-eq{display:inline-flex;align-items:center;gap:7px;height:28px;padding:0 12px;border:1px solid #e5e9f0;border-radius:999px;background:#fff;font-size:12.5px;color:var(--ink);white-space:nowrap}
-.lc-eq i{width:9px;height:9px;border-radius:3px;display:inline-block}
+.lc-eq i{width:9px;height:9px;border-radius:50%;display:inline-block}
 .lc-fila{display:flex;align-items:center;gap:16px;padding:12px 16px;border-top:1px solid #eef1f5}
 .lc-q{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
 .lc-q b{font-size:13px;font-weight:600;color:#374151}

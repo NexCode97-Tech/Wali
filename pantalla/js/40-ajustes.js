@@ -353,7 +353,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .rq-f.pers{grid-template-columns:minmax(0,1fr) 160px 200px 220px 110px 40px}
 .rq-f.hd{border-top:0;background:var(--bg2);padding-top:10px;padding-bottom:10px;font-size:12px;font-weight:600;color:var(--ink2)}
 .rq-eq{display:flex;align-items:center;gap:10px;font-size:14px;min-width:0}
-.rq-dot{width:10px;height:10px;border-radius:3px;flex:none}
+.rq-dot{width:10px;height:10px;border-radius:50%;flex:none}
 .rq-d{font-size:13px;line-height:1.45;min-width:0}
 .rq-sub{display:block;font-size:12px;color:var(--ink3)}
 .rq-stack{display:flex;align-items:center}
@@ -366,7 +366,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .rq-per{display:flex;align-items:center;gap:10px;font-size:13.5px;min-width:0}
 .rq-per .av{width:32px;height:32px;font-size:11px;flex:none}
 .rq-chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;background:#fff;margin:2px 4px 2px 0}
-.rq-chip i{width:8px;height:8px;border-radius:2px;display:inline-block}
+.rq-chip i{width:8px;height:8px;border-radius:50%;display:inline-block}
 .rq-rol{font-size:11.5px;font-weight:500;color:var(--ink2);background:var(--bg3);border-radius:999px;padding:2px 9px;white-space:nowrap}
 .rq-num{width:64px;height:32px;border:1px solid var(--line);border-radius:8px;padding:0 10px;font:inherit;font-size:13px}
 .rq-ed{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:18px;align-items:start}
@@ -852,7 +852,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .et-card{border:1px solid #e5e9f0;border-radius:14px;background:#fff;padding:16px 18px;display:flex;flex-direction:column;gap:14px}
 .et-cab{display:flex;align-items:center;gap:10px}
 .et-cab b{font-size:14.5px;font-weight:600}
-.et-dot{width:10px;height:10px;border-radius:3px;flex:none;display:inline-block}
+.et-dot{width:10px;height:10px;border-radius:50%;flex:none;display:inline-block}
 .et-ic{display:inline-grid;place-items:center;color:#4b5563}
 .et-ic svg{width:17px;height:17px}
 .et-ic.sm svg{width:15px;height:15px}
@@ -900,7 +900,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .tg-q svg{width:15px;height:15px;flex:none}
 .tg-q input{border:0;outline:none;flex:1;min-width:0;font:inherit;font-size:13px;color:var(--ink);background:transparent;padding:0}
 .tg-grp{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:#6b7280;padding:8px 12px 4px}
-.tg-sq{width:8px;height:8px;border-radius:2px;display:inline-block}
+.tg-sq{width:8px;height:8px;border-radius:50%;display:inline-block}
 .tg-menu #tag-l button{padding:8px 12px;font-size:13px;font-weight:400}
 .tg-menu #tag-l button .dot{width:9px;height:9px;border-radius:50%}
 .tg-vacio{font-size:12.5px;color:#6b7280;padding:4px 12px 8px}
@@ -980,7 +980,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .e2-tabs{display:flex;gap:24px;border-bottom:1px solid var(--line);margin:18px 0 16px}
 .e2-tab{border:0;background:none;padding:10px 2px;font-size:13.5px;font-weight:500;color:var(--ink3);border-bottom:2px solid transparent;display:inline-flex;gap:8px;align-items:center;margin-bottom:-1px}
 .e2-tab[aria-selected="true"]{color:var(--blue-ink);border-bottom-color:var(--blue-ink)}
-.e2-tab i{width:9px;height:9px;border-radius:3px;display:inline-block}
+.e2-tab i{width:9px;height:9px;border-radius:50%;display:inline-block}
 .e2-n{min-width:20px;height:20px;border-radius:999px;background:var(--bg3);font-size:11px;font-weight:600;color:var(--ink2);padding:0 6px;display:inline-grid;place-items:center;box-sizing:border-box}
 .e2-lista{display:flex;flex-direction:column;gap:8px;max-width:760px}
 .e2-r{display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:#fff}
@@ -998,7 +998,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .e2-bt{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
 #e2c-m button small{margin-left:auto}
 .emb-sel{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:13.5px;font-weight:400;color:var(--ink)}
-.emb-sel i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.emb-sel i{width:10px;height:10px;border-radius:50%;display:inline-block}
 .emb-sel svg{width:14px;height:14px;color:var(--ink4)}
 #emb-m{min-width:220px}
 #emb-m button{font-weight:400}

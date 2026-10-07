@@ -67,7 +67,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .eqr-top .volver.eqr-vol{display:inline-flex;align-items:center;gap:4px;margin:0;font-size:13px;font-weight:400;color:#1976d2;align-self:flex-start}
 .eqr-top .volver.eqr-vol svg{width:15px;height:15px}
 .eqr-top h1{margin:0;font-size:21px;font-weight:600;display:flex;align-items:center;gap:10px;color:#1f2937;min-width:0;overflow-wrap:anywhere}
-.eqr-cuadro{width:12px;height:12px;border-radius:3px;flex:none}
+.eqr-cuadro{width:12px;height:12px;border-radius:50%;flex:none}
 :is(.eqr,.eqr-dlg) .btn.eqr-b{height:38px;padding:0 16px;gap:6px;border:1px solid #e5e9f0;border-radius:10px;background:#fff;color:#1f2937;font-size:13.5px;font-weight:500}
 :is(.eqr,.eqr-dlg) .btn.eqr-b:hover{background:#f3f6fa}
 :is(.eqr,.eqr-dlg) .btn.eqr-b.pri{background:#1f93ff;border-color:#1f93ff;color:#fff}
@@ -126,7 +126,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .eqr-subc{display:flex;align-items:center;gap:10px;min-width:0}
 .eqr-subc b{font-size:14px;font-weight:600;color:#1f2937;min-width:0;overflow-wrap:anywhere}
 .eqr-subc small{font-size:12.5px;color:#6b7280;white-space:nowrap}
-.eqr-sq{width:10px;height:10px;border-radius:3px;opacity:.6;flex:none}
+.eqr-sq{width:10px;height:10px;border-radius:50%;opacity:.6;flex:none}
 .eqr .btn.eqr-b.eqr-bs{height:32px;padding:0 12px;font-size:12.5px}
 .eqr-chips{display:flex;flex-wrap:wrap;gap:6px}
 .eqr-chip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px 0 4px;border:1px solid #e5e9f0;border-radius:999px;background:#fff;font-size:12.5px;font-weight:400;color:#1f2937;max-width:100%}
@@ -168,7 +168,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .eqr-tb td:nth-child(1),.eqr-tb td:nth-child(2),.eqr-tb td:nth-child(4){white-space:nowrap}
 .eqr-par{display:inline-flex;gap:6px;white-space:nowrap}
 .eqr-tag{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 8px;border-radius:999px;background:#f1f5f9;font-size:12px;font-weight:400;color:#374151;white-space:nowrap}
-.eqr-tag i{width:8px;height:8px;border-radius:2px;display:inline-block;flex:none}
+.eqr-tag i{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
 .eqr-tag.lid{background:#e8f3ff;color:#1976d2}
 .eqr-sin{color:#6b7280}
 .eqr-tb td.eqr-lap{text-align:right;width:1%}

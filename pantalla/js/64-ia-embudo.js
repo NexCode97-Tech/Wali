@@ -245,7 +245,7 @@
 .iae-pg .row2 > span{min-width:0}
 .iae-tabs{display:flex;gap:22px;border-bottom:1px solid var(--line)}
 .iae-tab{padding:8px 2px 10px;font-size:13.5px;color:var(--ink3);display:flex;align-items:center;gap:8px;border-bottom:2px solid transparent;margin-bottom:-1px;line-height:1.5}
-.iae-tab i{width:9px;height:9px;border-radius:3px;display:inline-block;flex:none}
+.iae-tab i{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
 .iae-tab[aria-selected="true"]{color:var(--blue-ink);border-bottom-color:var(--blue);font-weight:500}
 .iae-tit{font-size:13px;font-weight:600;color:var(--ink2);margin-top:2px}
 .iae-eta{display:grid;grid-template-columns:190px minmax(0,1fr);gap:14px;align-items:start;padding:12px 0;border-top:1px solid var(--line2)}

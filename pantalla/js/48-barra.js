@@ -177,7 +177,7 @@ function chFotoEvento(m){
 
 document.head.insertAdjacentHTML('beforeend', `<style>
 .nav li button.bl-gr{height:30px;padding:0 10px;gap:8px;border-radius:8px;font-size:12.5px;font-weight:500;color:#4b5563}
-.nav li button.bl-gr i{width:9px;height:9px;border-radius:3px;flex:none}
+.nav li button.bl-gr i{width:9px;height:9px;border-radius:50%;flex:none}
 .nav li button.bl-gr .n{font-weight:400;color:#9ca3af}
 .nav li button.bl-gr .bl-fl{width:14px;height:14px;flex:none;color:#9ca3af;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
 .nav ul:has(> li.bl-g){gap:0}

@@ -101,7 +101,7 @@
   #app .panel .pc-ps:hover{background:#f8fafc}
   #app .panel .pc-ps[aria-expanded="true"]{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-soft);background:#fff}
   #app .panel .pc-ps .mini{width:20px;height:20px;font-size:8.5px}
-  #app .panel .pc-ps .pc-sq{width:9px;height:9px;border-radius:3px}
+  #app .panel .pc-ps .pc-sq{width:9px;height:9px;border-radius:50%}
   #app .panel .pc-ps .pc-dot{width:9px;height:9px}
   #app .panel .pc-ps > svg.cv{width:14px;height:14px;color:#9ca3af}
   #app .panel .pc-pr .tagsel{padding:0;gap:6px;align-items:flex-start}
