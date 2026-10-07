@@ -523,7 +523,7 @@ function chat(){
   const bl = document.getElementById('b-link'); bl.hidden = !usaEnlacesPago(c) || !CATALOGO.length;   // sin catálogo conectado (GET /crm/catalogo vacío) el botón no sale if (bl.hidden) document.getElementById('lk').hidden = true;
   panel(c);
   const box = document.getElementById('msgs'); box.scrollTop = box.scrollHeight;
-  if (laVeo()) c.unread = 0;
+  // Leído al responder (6-oct): abrir el chat ya no lo marca como leído; responderle sí (más abajo, en Enviar).
 }
 // Solo cuenta como leída si de verdad se está viendo: pestaña visible y, en celular, el chat abierto.
 function laVeo(){ return document.visibilityState === 'visible' && (innerWidth >= 760 || document.getElementById('app').classList.contains('open')); }
@@ -653,7 +653,6 @@ function panel(c){
 }
 
 function render(){
-  if (!st.pagina && laVeo()) { const ab = CONV.find(x => x.id === st.sel); if (ab && visibles().some(x => x.id === ab.id)) ab.unread = 0; }
   nav();
   document.getElementById('app').classList.toggle('pg', !!st.pagina);
   if (st.pagina) { pagina(); return; }
@@ -955,6 +954,8 @@ document.getElementById('enviar').addEventListener('click', () => {
   const t = st.modo === 'n' ? t0 : conFirma(t0);
   const c = CONV.find(x => x.id === st.sel); if (!c) return;
   if (st.modo !== 'n' && /cerrada/i.test(c.ventana) && sinPlantillas(c)) { toast(cerradaTxt(c)); return; }
+  // Responder es lo que la marca como leída (el API manda las palomitas azules a WhatsApp).
+  if (st.modo !== 'n') c.unread = 0;
   if (st.modo !== 'n' && /cerrada/i.test(c.ventana) && !st.tplUsada && !(st.adj && hayTpl('Enlace de pago'))) {
     toast(st.adj ? 'La ventana de 24 h está cerrada y falta la plantilla «Enlace de pago» aprobada por Meta. Créala en Plantillas.' : 'La ventana de 24 h está cerrada: retoma con una plantilla aprobada');
     return;

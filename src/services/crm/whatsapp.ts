@@ -619,6 +619,15 @@ async function armarCuerpo(m: MsgConTodo, cred: CredMeta): Promise<Json> {
 }
 
 /** Envía por WhatsApp un CrmMensaje de salida ya guardado. Nunca lanza: deja el estado en la fila. */
+/** Marca como leído en WhatsApp el último mensaje del cliente en la conversación. Si falla, no pasa nada. */
+async function marcarLeidoEnWhatsapp(convId: number, phoneNumberId: string, cred: CredMeta) {
+  try {
+    const ultimo = await prisma.crmMensaje.findFirst({ where: { conversacionId: convId, tipo: 'in', waId: { not: null } }, orderBy: { createdAt: 'desc' }, select: { waId: true } })
+    if (!ultimo?.waId) return
+    await graph(`/${phoneNumberId}/messages`, { cred, method: 'POST', body: { messaging_product: 'whatsapp', status: 'read', message_id: ultimo.waId } })
+  } catch (e) { logger.info(`[CRM WA] no se pudo marcar como leído en ${convId}: ${(e as Error).message}`) }
+}
+
 /** Códigos de Meta que dicen que el token de la cuenta ya no sirve para esa línea. */
 const TOKEN_MALO = new Set([10, 190, 200, 131005])
 
@@ -671,6 +680,8 @@ export async function enviarPorWhatsapp(msgId: string): Promise<void> {
     })
     const wamid = r.messages?.[0]?.id
     if (!wamid) throw new ErrorEnvio('Meta no devolvió el id del mensaje')
+    // Leído al responder (6-oct): al cliente le salen las palomitas azules en su último mensaje.
+    void marcarLeidoEnWhatsapp(m.conversacionId, m.conversacion.linea.phoneNumberId, cred)
     const final = textoFinalPlantilla.get(msgId)
     textoFinalPlantilla.delete(msgId)
     const f = await prisma.crmMensaje.update({

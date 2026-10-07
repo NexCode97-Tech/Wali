@@ -158,8 +158,14 @@ async function armarDatos(m: WaMensaje, linea: CrmLinea): Promise<Json> {
     })
     if (lineas.length) return { in: lineas.join('\n') }
   }
-  return { in: 'Mensaje de un tipo que el CRM todavía no muestra', tipoWa: t }
+  return { in: t === 'unsupported' ? NO_LLEGA : 'Mensaje de un tipo que el CRM todavía no muestra', tipoWa: t }
 }
+
+/**
+ * Lo que WhatsApp no le pasa a ningún sistema (6-oct): fotos y videos de «ver una vez», encuestas, ubicación en vivo y
+ * tipos nuevos. Meta solo avisa que llegó algo («unsupported»): el chat dice qué pudo ser y qué pedirle a la persona.
+ */
+export const NO_LLEGA = 'La persona mandó algo que WhatsApp solo deja ver en el celular: una foto o un video de «ver una vez», una encuesta, su ubicación en tiempo real o un mensaje de un tipo nuevo. Pídele que lo mande de otra forma: la foto o el video normal, la ubicación fija o la respuesta escrita.'
 
 // ─── Contacto y conversación ─────────────────────────────────────────────────
 
