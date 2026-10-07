@@ -8,11 +8,11 @@
   --bg:#ffffff; --bg2:#f8fafc; --bg3:#f1f5f9; --hover:#f3f6fa;
   --line:#e5e9f0; --line2:#eef1f5;
   --ink:#1f2937; --ink2:#4b5563; --ink3:#6b7280; --ink4:#9ca3af;
-  --blue:#0b0b10; --blue-ink:#1976d2; --blue-soft:#fffde6;
+  --blue:#0b0b10; --blue-ink:#0b0b10; --blue-soft:#fffde6;
   --green:#22c55e; --green-ink:#15803d; --green-soft:#e8f8ee;
   --amber-soft:#fff8e1; --amber-line:#f4e3a1; --amber-ink:#7a5a00;
   --red-ink:#b91c1c; --red-soft:#fee2e2;
-  --out:#1f93ff; --out-ink:#ffffff; --in:#f1f5f9;
+  --out:#0b0b10; --out-ink:#ffffff; --in:#f1f5f9;
   --r:12px;
 }
 *{box-sizing:border-box}
@@ -376,7 +376,7 @@ button.pill svg{width:12px;height:12px}
 .it{display:grid;grid-template-columns:40px minmax(0,1fr);column-gap:12px;padding:12px;border-radius:12px;width:100%;text-align:left;align-items:start;line-height:normal}
 .it + .it{margin-top:2px}
 .it:hover{background:var(--hover)}
-.it[aria-current="true"]{background:#e8f3ff}
+.it[aria-current="true"]{background:#fffde6}
 .it .tj-foto{position:relative;width:40px;height:40px}
 .it .tj-av{width:40px;height:40px;font-size:13px;font-weight:600;color:#fff}
 .it .tj-canal{position:absolute;right:-3px;bottom:-3px;width:18px;height:18px;border-radius:50%;background:#fff;display:grid;place-items:center}
@@ -387,11 +387,11 @@ button.pill svg{width:12px;height:12px}
 .it .tj-l1 b{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .it .tj-l1 time{margin-left:auto;font-size:12px;color:#9ca3af;flex:none;font-variant-numeric:tabular-nums}
 .it.unread .tj-l1 b{font-weight:600}
-.it.unread .tj-l1 time{color:#1976d2;font-weight:500}
+.it.unread .tj-l1 time{color:#0b0b10;font-weight:500}
 .it .tj-l2{display:flex;align-items:center;gap:8px;margin-top:2px;min-width:0}
 .it .tj-msg{flex-grow:1;min-width:0;font-size:13px;font-weight:400;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .it.unread .tj-msg{color:#4b5563;font-weight:400}
-.it .tj-cnt{min-width:18px;height:18px;border-radius:999px;background:#1f93ff;color:#fff;font-size:11px;font-weight:600;display:grid;place-items:center;padding:0 5px;flex:none}
+.it .tj-cnt{min-width:18px;height:18px;border-radius:999px;background:#0b0b10;color:#fff;font-size:11px;font-weight:600;display:grid;place-items:center;padding:0 5px;flex:none}
 /* Windows lee de Poppins otras medidas (usWin 1135/627) y el número quedaba 1 px arriba; recortado a la altura de las mayúsculas queda centrado en todos. */
 @supports (text-box: trim-both cap alphabetic){.it .tj-cnt{display:block;text-align:center;text-box:trim-both cap alphabetic;padding-block:calc((18px - 1cap) / 2)}}
 .it .tj-l3{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12px;color:#6b7280;min-width:0}
@@ -432,8 +432,8 @@ button.pill svg{width:12px;height:12px}
 @keyframes tj-flotar{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 .tj-carga{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding-bottom:60px}
 .tj-carga > span{font-size:13px;font-weight:400;color:#6b7280}
-.tj-bu{display:flex;align-items:center;gap:6px;padding:14px 18px;border-radius:18px 18px 18px 6px;background:#e8f3ff;animation:tj-flotar 2.4s ease-in-out infinite}
-.tj-bu i{width:8px;height:8px;border-radius:50%;background:#1f93ff;display:block;animation:tj-saltar 1.2s ease-in-out infinite}
+.tj-bu{display:flex;align-items:center;gap:6px;padding:14px 18px;border-radius:18px 18px 18px 6px;background:#fffde6;animation:tj-flotar 2.4s ease-in-out infinite}
+.tj-bu i{width:8px;height:8px;border-radius:50%;background:#0b0b10;display:block;animation:tj-saltar 1.2s ease-in-out infinite}
 .tj-bu i:nth-child(2){animation-delay:.15s}
 .tj-bu i:nth-child(3){animation-delay:.3s}
 @media (prefers-reduced-motion: reduce){.tj-bu,.tj-bu i{animation:none}.tj-bu i{opacity:.7}}

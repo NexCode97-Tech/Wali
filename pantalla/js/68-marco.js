@@ -17,7 +17,7 @@
 .app.cj-abierto .brand .mc-campana + .cj-cerrar{margin-left:0}
 .nav .me .cu-fila.mc-cuenta{margin:-4px;padding:4px;border-radius:9px;cursor:pointer}
 .nav .me .cu-fila.mc-cuenta:hover,.nav .me .cu-fila.mc-cuenta[aria-expanded="true"]{background:#f1f4f9}
-.nav .me .cu-fila.mc-cuenta:focus-visible{outline:2px solid #1f93ff;outline-offset:1px}
+.nav .me .cu-fila.mc-cuenta:focus-visible{outline:2px solid #0b0b10;outline-offset:1px}
 .nav .me .cu-fila .mc-flecha{margin-left:auto;flex:none;width:16px;height:16px;fill:none;stroke:#9ca3af;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 </style>`);
 

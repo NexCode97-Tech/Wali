@@ -104,7 +104,7 @@
 .mj-dlg .btn.rojo{background:#dc2626;border-color:#dc2626;color:#fff}
 /* Embudo: la tarjeta que se acaba de mover */
 @keyframes mj-caer{0%{transform:translateY(-10px) rotate(-2deg) scale(1.03);box-shadow:0 18px 36px -14px rgba(15,23,42,.45)}60%{transform:translateY(0) rotate(1deg) scale(1.02);box-shadow:0 18px 36px -14px rgba(15,23,42,.35)}100%{transform:none;box-shadow:0 1px 2px rgba(15,23,42,.06)}}
-@keyframes mj-resaltar{0%{background:#e8f3ff}100%{background:transparent}}
+@keyframes mj-resaltar{0%{background:#fffde6}100%{background:transparent}}
 .kc.mj-llega{animation:mj-caer .5s cubic-bezier(.4,0,.2,1)}
 .kcol.mj-recibe{animation:mj-resaltar 1.1s ease-out}
 .kc.drag{transform:rotate(-2deg) scale(1.03);box-shadow:0 18px 36px -14px rgba(15,23,42,.45)}

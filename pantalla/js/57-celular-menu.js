@@ -18,7 +18,7 @@
   /* ☰ de 34 px, sin borde, a la izquierda del título; resaltado mientras el cajón está abierto (tableros 1, 2 y 4). */
   .cj-abrir{display:grid;place-items:center;flex:none;width:34px;height:34px;margin-left:-6px;padding:0;border:0;border-radius:8px;background:none;color:#1f2937}
   .cj-abrir svg{width:20px;height:20px}
-  .cj-abrir[aria-expanded="true"]{background:#e8f3ff;color:#1565c0}
+  .cj-abrir[aria-expanded="true"]{background:#fffde6;color:#1565c0}
   /* El título se recorta con puntos si no cabe (una carpeta o una etapa de nombre largo). La cabecera es una rejilla de
      columna automática que crecía con la fila: sin minmax(0,1fr) la fila se salía de la pantalla con Filtrar y Ordenar. */
   .list-h{grid-template-columns:minmax(0,1fr)}
@@ -49,7 +49,7 @@
   /* Los encabezados de grupo (el equipo en Etapas y Etiquetas) conservan su gris #4b5563, como en la maqueta. */
   .app.cj-abierto > .nav li button:not(.bl-gr){color:#374151}
   .app.cj-abierto > .nav li button > svg.i:is(:first-child,.cj-ic):not(.wa){color:#6b7280}
-  /* La opción elegida, sobre #e8f3ff, con su ícono y su número en #1565c0, para que se lean (30-sep). En la barra por
+  /* La opción elegida, sobre #fffde6, con su ícono y su número en #1565c0, para que se lean (30-sep). En la barra por
      roles (62-vistas-rol.js) la de #principal pesa más por el id: se repite con #app. */
   .app.cj-abierto > .nav li button[aria-current="true"],.app.cj-abierto > .nav li button[aria-current="true"] > svg.i:is(:first-child,.cj-ic):not(.wa){color:#1565c0}
   .app.cj-abierto > .nav li button[aria-current="true"] > .n,#app.cj-abierto > .nav #principal button[aria-current="true"],#app.cj-abierto > .nav #principal button[aria-current="true"] > svg.vr-ic{color:#1565c0}
@@ -88,7 +88,7 @@
   .list-h .t .ic > .dd > button::after{content:"";position:absolute;inset:-5px 0}
   /* Con una sola columna no hay chat al lado: ninguna tarjeta sale resaltada como la abierta. */
   .items .it[aria-current="true"]{background:none}
-  /* Tu estado: el elegido va sobre #e8f3ff; su descripción en #4b5563 y el ✓ en #1565c0, para que se lean (30-sep). */
+  /* Tu estado: el elegido va sobre #fffde6; su descripción en #4b5563 y el ✓ en #1565c0, para que se lean (30-sep). */
   .cu-op[aria-selected="true"] small{color:#4b5563}
   .cu-op[aria-selected="true"] > svg{color:#1565c0}
 }
@@ -104,7 +104,7 @@
 .nav .me .cu-ctl{display:flex;align-items:center;gap:8px}
 .nav .me .cu-est{flex-grow:1;min-width:0;display:flex;align-items:center;gap:8px;height:34px;padding:0 10px;border:1px solid #e5e9f0;border-radius:9px;background:#fff;font-size:13px;color:#1f2937;text-align:left}
 .nav .me .cu-est:hover{border-color:#cbd5e1}
-.nav .me .cu-est[aria-expanded="true"]{border-color:#1f93ff;box-shadow:0 0 0 3px #e8f3ff}
+.nav .me .cu-est[aria-expanded="true"]{border-color:#0b0b10;box-shadow:0 0 0 3px #fffde6}
 .nav .me #me-e{flex-grow:1;min-width:0;display:flex;align-items:center;gap:8px;font-size:13px;color:#1f2937;white-space:nowrap;overflow:hidden}
 .nav .me #me-e .est-dot{flex:none;width:8px;height:8px;margin:0;vertical-align:0}
 .nav .me .cu-est > svg{width:14px;height:14px;color:#9ca3af;stroke-width:1.8}
@@ -114,12 +114,12 @@
 .cu-menu{position:fixed;z-index:63;width:296px;display:flex;flex-direction:column;gap:2px;padding:6px;border:1px solid #e5e9f0;border-radius:12px;background:#fff;box-shadow:0 14px 30px -12px rgba(21,32,58,.35);line-height:normal}
 .cu-op{display:flex;align-items:flex-start;gap:10px;width:100%;padding:9px 10px;border-radius:9px;text-align:left;color:#1f2937}
 .cu-op:hover{background:#f3f6fa}
-.cu-op[aria-selected="true"]{background:#e8f3ff}
+.cu-op[aria-selected="true"]{background:#fffde6}
 .cu-op > i{flex:none;width:8px;height:8px;margin-top:6px;border-radius:50%}
 .cu-op > span{flex-grow:1;min-width:0;display:flex;flex-direction:column;gap:1px}
 .cu-op b{font-size:13.5px;font-weight:400;color:#1f2937}
 .cu-op small{font-size:12px;line-height:1.35;color:#6b7280}
-.cu-op > svg{width:16px;height:16px;margin-top:2px;color:#1976d2;stroke-width:1.8}
+.cu-op > svg{width:16px;height:16px;margin-top:2px;color:#0b0b10;stroke-width:1.8}
 </style>`);
 
   /* ── 1 · El cajón. Es la misma barra (con sus grupos por equipo, 48-barra.js): se le agrega la X y lo del medio va en una

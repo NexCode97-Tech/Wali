@@ -342,7 +342,7 @@ const PERSONAS_EXTRA = {};
 const ROL_NOMBRE = {ADMIN:'Administrador', LIDER_VENTAS:'Líder de ventas', VENDEDOR:'Asesor de ventas', MARKETING:'Marketing', EDITOR:'Editor de video', COMMUNITY:'Community manager', LIDER_EDICION:'Líder de edición', LIDER_CREADORES:'Líder de creadores', SOCIAL_MEDIA:'Social media', LIDER_DISENO:'Líder de diseño', DISENADOR:'Diseñador', AUDITOR:'Auditor', VISITANTE:'Visitante', COLABORADOR:'Colaborador'};
 const METODOS_EQ = [['turnos', 'Por turnos', 'Una conversación para cada persona conectada del equipo, en orden.'], ['menos', 'A quien tenga menos conversaciones', 'Le llega a la persona conectada con menos conversaciones abiertas.'], ['todos', 'Todos ven y cualquiera la toma', 'La conversación les aparece a todas las personas del equipo. La primera que responde se la queda.'], ['lider', 'Solo un líder la asigna', 'Nadie la recibe sola: queda sin asignar hasta que un líder o administrador la entrega.']];
 // Sin color elegido, cada equipo toma uno por su posición: Ventas azul, Soporte morado, Soporte de ventas cian, Recuperación naranja.
-const COLORES_EQ = [['#1f93ff', 'Azul'], ['#7c3aed', 'Morado'], ['#0891b2', 'Cian'], ['#ea580c', 'Naranja'], ['#db2777', 'Rosado'], ['#0d9488', 'Verde azulado']];
+const COLORES_EQ = [['#0b0b10', 'Azul'], ['#7c3aed', 'Morado'], ['#0891b2', 'Cian'], ['#ea580c', 'Naranja'], ['#db2777', 'Rosado'], ['#0d9488', 'Verde azulado']];
 document.head.insertAdjacentHTML('beforeend', `<style>
 .rq-bar{display:flex;align-items:center;gap:10px;margin:0 0 14px;flex-wrap:wrap}
 .rq-bar .cn-q{margin:0;width:340px;max-width:100%}
@@ -857,7 +857,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .et-ic svg{width:17px;height:17px}
 .et-ic.sm svg{width:15px;height:15px}
 .et-n{display:inline-grid;place-items:center;min-width:20px;height:20px;border-radius:999px;background:#f1f5f9;font-size:11px;font-weight:600;color:#4b5563;padding:0 6px;box-sizing:border-box}
-.et-add{margin-left:auto;display:inline-flex;align-items:center;gap:4px;border:0;background:none;color:#1976d2;font:inherit;font-size:13px;font-weight:500;cursor:pointer;padding:0}
+.et-add{margin-left:auto;display:inline-flex;align-items:center;gap:4px;border:0;background:none;color:#0b0b10;font:inherit;font-size:13px;font-weight:500;cursor:pointer;padding:0}
 .et-add svg{width:15px;height:15px}
 .et-sub{font-size:12.5px;color:#6b7280;margin-top:-8px}
 .et-chips{display:flex;flex-wrap:wrap;gap:8px}
@@ -893,7 +893,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .tagsel .tagx{height:28px;padding:0 6px 0 10px;gap:6px;font-size:12.5px;color:var(--ink);box-sizing:border-box}
 .tagsel .tagx i{width:8px;height:8px}
 .tagsel .tagx button svg{width:12px;height:12px}
-.tg-add{display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 10px;border:1px dashed #cbd5e1;border-radius:999px;background:#fff;font:inherit;font-size:12.5px;color:#1976d2;cursor:pointer}
+.tg-add{display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 10px;border:1px dashed #cbd5e1;border-radius:999px;background:#fff;font:inherit;font-size:12.5px;color:#0b0b10;cursor:pointer}
 .tg-add svg{width:13px;height:13px}
 .menu.tg-menu{right:0;left:auto;min-width:300px;padding:6px;border-radius:12px}
 .tg-q{display:flex;align-items:center;gap:8px;height:38px;padding:0 10px;border:1px solid var(--blue);border-radius:9px;box-shadow:0 0 0 3px var(--blue-soft);color:#6b7280;margin-bottom:4px}
@@ -905,7 +905,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .tg-menu #tag-l button .dot{width:9px;height:9px;border-radius:50%}
 .tg-vacio{font-size:12.5px;color:#6b7280;padding:4px 12px 8px}
 .tg-crear{border-top:1px solid #eef1f5;margin-top:2px;padding-top:4px}
-.tg-menu #tag-l .tg-crear button{color:#1976d2}
+.tg-menu #tag-l .tg-crear button{color:#0b0b10}
 </style>`);
 
 /* ── Etapas por equipo: igual a la maqueta aprobada «CRM · líderes, subequipos y etapas por equipo»,

@@ -321,7 +321,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .app.vr-int > .nav .sec{margin:2px 0 6px;border-bottom:0}
 .app.vr-int > .nav li button:not(.bl-gr){color:#374151}
 .app.vr-int > .nav #principal button > svg.vr-ic{width:18px;height:18px;color:#6b7280;stroke-width:1.8}
-.app.vr-int > .nav #principal button[aria-current="true"],.app.vr-int > .nav #principal button[aria-current="true"] > svg.vr-ic{color:#1976d2}
+.app.vr-int > .nav #principal button[aria-current="true"],.app.vr-int > .nav #principal button[aria-current="true"] > svg.vr-ic{color:#0b0b10}
 .app.vr-int > .nav #etiquetas .dot,.app.vr-int > .nav #tags .dot{width:8px;height:8px}
 /* Sin acceso al CRM: sin buscador, filtrar, ordenar ni el estado de la lista (no hay nada que buscar). */
 .app.vr-sin .list-h .t > .dd,.app.vr-sin .list-h .t > .ic,.app.vr-sin .list-h .lq{display:none}

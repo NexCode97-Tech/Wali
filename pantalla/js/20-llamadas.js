@@ -554,7 +554,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .lc-badge svg{width:13px;height:13px;color:#fff;stroke-width:3.2}
 .lc-mal{width:60px;height:60px;border-radius:50%;background:#fee2e2;color:#dc2626;display:grid;place-items:center}
 .lc-mal svg{width:28px;height:28px}
-.lc-gira{width:60px;height:60px;border-radius:50%;border:4px solid #d6e9ff;border-top-color:#1f93ff;box-sizing:border-box;animation:lc-gira .9s linear infinite}
+.lc-gira{width:60px;height:60px;border-radius:50%;border:4px solid #d6e9ff;border-top-color:#0b0b10;box-sizing:border-box;animation:lc-gira .9s linear infinite}
 @keyframes lc-gira{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.lc-gira,.lc-t.gira{animation-duration:2.4s}}
 .lc-card{border:1px solid #eef1f5;border-radius:14px;background:#f8fafc;display:flex;flex-direction:column}
@@ -587,10 +587,10 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .lc-t.pend svg{stroke-width:2.2}
 .lc-t.mal{background:#fee2e2;color:#dc2626}
 .lc-t.mal svg{width:12px;height:12px}
-.lc-t.gira{border:2.5px solid #d6e9ff;border-top-color:#1f93ff;animation:lc-gira .9s linear infinite}
+.lc-t.gira{border:2.5px solid #d6e9ff;border-top-color:#0b0b10;animation:lc-gira .9s linear infinite}
 .lc-t.espera{border:2px dashed #cbd5e1}
 .lc-nota{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:12px;background:#eef6ff;color:#1e3a5f;font-size:13px;line-height:1.55}
-.lc-nota > svg{width:18px;height:18px;flex:none;margin-top:1px;color:#1976d2}
+.lc-nota > svg{width:18px;height:18px;flex:none;margin-top:1px;color:#0b0b10}
 .lc-nota b{font-weight:600}
 .lc-error{display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid #fecaca;border-radius:12px;background:#fef2f2}
 .lc-error b{font-size:12px;font-weight:600;color:#991b1b}

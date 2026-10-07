@@ -205,7 +205,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .acb:has(> .pf-foto) .ft2{margin-top:0}
 .acb:has(> .pf-foto) .btn{height:38px;padding:0 14px;border-radius:10px;font-size:13.5px;gap:6px;color:#1f2937}
 .acb:has(> .pf-foto) .btn.pri{color:#fff}
-.acb:has(> .pf-foto) .btn.lnk{border-color:transparent;color:#1976d2;padding:0 8px}
+.acb:has(> .pf-foto) .btn.lnk{border-color:transparent;color:#0b0b10;padding:0 8px}
 .acb:has(> .pf-foto) .btn:disabled{opacity:.6;cursor:default}
 .acb:has(> .pf-foto) .btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
 .ch-mini{width:18px;height:18px;font-size:8px;flex:none;overflow:hidden}

@@ -54,7 +54,7 @@
   /* Pestañas con la espera a la derecha, como en la tarjeta de la lista. */
   #app .subtabs{gap:20px;padding:0 16px;align-items:center;line-height:normal}
   #app .subtabs button{flex:none;padding:10px 0;font-size:13.5px;color:#6b7280;border-bottom:0;margin-bottom:0;white-space:nowrap}
-  #app .subtabs button[aria-pressed="true"]{color:#1976d2;border-bottom:2px solid #1f93ff;margin-bottom:-1px;font-weight:500}
+  #app .subtabs button[aria-pressed="true"]{color:#0b0b10;border-bottom:2px solid #0b0b10;margin-bottom:-1px;font-weight:500}
   #app .subtabs .cch-esp{display:inline-flex;margin-left:auto;flex:none;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:999px;background:#fee2e2;color:#b91c1c;font-size:12px;font-weight:500;white-space:nowrap}
   #app .subtabs .cch-esp.ok{background:#e8f8ee;color:#15803d}
   #app .subtabs .cch-esp svg{width:13px;height:13px}
@@ -78,7 +78,7 @@
   #app .ficha .hist > div,#app .ficha .hist > .cch-hl{display:flex;justify-content:space-between;gap:10px;color:#374151;font-size:13px;font-weight:400;text-align:left;width:100%}
   #app .ficha .hist > * > span:first-child{min-width:0;overflow-wrap:anywhere}
   #app .ficha .hist > * > span:last-child{flex:none;color:#6b7280;white-space:nowrap}
-  #app .ficha .hist > .cch-hl:hover > span:first-child{color:#1976d2}
+  #app .ficha .hist > .cch-hl:hover > span:first-child{color:#0b0b10}
   /* 3.2 · Panel del contacto a pantalla completa: ocupa el lugar del chat mientras está abierto. */
   #app.cch-ct:not(.pg):not(.sinchat) > .chat{display:none}
   #app.cch-ct:not(.pg):not(.sinchat) > .panel{display:block;position:static;width:auto;min-width:0;min-height:0;border-left:0;box-shadow:none;background:#fff;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;line-height:normal}
@@ -124,8 +124,8 @@
   #app .panel .rec.hecho .ck{background:var(--green);border-color:var(--green)}
   #app .panel .rec .x{flex:none;position:relative;margin:-2px -4px -2px 10px;color:#a16207}
   #app .panel .rec .x::after{content:"";position:absolute;inset:-9px}
-  #app .panel .btn.cch-lnk{align-self:flex-start;height:auto;padding:0;gap:4px;border:0;background:none;font-size:13px;font-weight:500;color:#1976d2}
-  #app .panel .btn.cch-lnk:hover{background:none;color:#1976d2;text-decoration:underline}
+  #app .panel .btn.cch-lnk{align-self:flex-start;height:auto;padding:0;gap:4px;border:0;background:none;font-size:13px;font-weight:500;color:#0b0b10}
+  #app .panel .btn.cch-lnk:hover{background:none;color:#0b0b10;text-decoration:underline}
   #app .panel .btn.cch-lnk svg{width:14px;height:14px}
   /* Los mensajes con el fondo y el margen de 16 px de la maqueta (tablero 3). Un aviso de error con una palabra larga (una
      dirección, un enlace) se parte en vez de salirse por la izquierda y quedar cortado. */
