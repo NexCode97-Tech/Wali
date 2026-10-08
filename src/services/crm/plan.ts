@@ -23,8 +23,8 @@ export const DIAS_PRUEBA = 10
  * sus espacios de trabajo, y `espacios` es cuántos espacios puede tener.
  */
 export const LIMITES: Record<Plan, { usuarios: number; agentesIA: number; espacios: number }> = {
-  starter: { usuarios: 10, agentesIA: 0, espacios: 1 },
-  growth: { usuarios: 20, agentesIA: 2, espacios: 3 },
+  starter: { usuarios: 5, agentesIA: 0, espacios: 1 },
+  growth: { usuarios: 10, agentesIA: 2, espacios: 3 },
   business: { usuarios: Infinity, agentesIA: Infinity, espacios: 6 },
 }
 
