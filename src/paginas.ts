@@ -129,6 +129,16 @@ router.get('/chat.js', (req: Request, res: Response) => {
   res.send(leer('chat/burbuja.js').replace("'__API__'", () => JSON.stringify(`${propia}/api`)))
 })
 
+/** El favicon de Wali (maqueta aprobada el 8-oct): 32 px para la pestaña, 180 para iPhone y el .ico de respaldo. */
+router.get(/^\/img\/wali-(32|180|512)\.png$/, (req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'public, max-age=604800')
+  res.sendFile(join(PANTALLA, 'img', `wali-${req.params[0]}.png`))
+})
+router.get('/favicon.ico', (_req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'public, max-age=604800')
+  res.sendFile(join(PANTALLA, 'img', 'wali.ico'))
+})
+
 /** El fondo del chat de prueba de Agentes IA (como el de WhatsApp). */
 router.get('/img/wa-fondo.jpg', (_req: Request, res: Response) => {
   res.setHeader('Cache-Control', 'public, max-age=604800')
