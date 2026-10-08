@@ -19,7 +19,7 @@ import eventosRoutes from './routes/eventos'
 import crmRoutes from './routes/crm'
 import crmWebRoutes from './routes/crmWeb'
 import crmPautaRoutes from './routes/crmPauta'
-import { regresoCrm, webhookCrmMeta, webhookCrmTelegram, webhookCrmTiktok, webhookCrmWa } from './routes/crmWhatsapp'
+import { regresoCrm, webhookCrmManychat, webhookCrmMeta, webhookCrmTelegram, webhookCrmTiktok, webhookCrmWa } from './routes/crmWhatsapp'
 import paginas from './paginas'
 
 /**
@@ -147,6 +147,7 @@ app.use('/api/eventos',        eventosRoutes)
 app.use('/api/crm/whatsapp', webhookCrmWa)
 app.use('/api/crm/meta',     webhookCrmMeta)
 app.use('/api/crm/telegram', webhookCrmTelegram)
+app.use('/api/crm/manychat', webhookCrmManychat)
 app.use('/api/crm/tiktok',   webhookCrmTiktok)
 app.use('/api/crm',          regresoCrm) // regreso de las ventanas de autorización de TikTok e Instagram (público)
 app.use('/api/crm/web',      crmWebRoutes)

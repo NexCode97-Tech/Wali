@@ -1,3 +1,5 @@
+import { ajustarManychat, conectarManychat } from '../../services/crm/manychat'
+import { urlApi } from '../../services/crm/conexiones'
 import type { Request, Response } from 'express'
 import { Prisma } from '@prisma/client'
 import { z } from 'zod'
@@ -727,6 +729,13 @@ export async function integracionHotmart(req: Request, res: Response) {
   exigirLider(req, 'conectar Hotmart')
   const b = obj(req.body)
   return ApiResponse.success(res, await conectarHotmart({ clientId: b.clientId, clientSecret: b.clientSecret }, req.userId ?? null))
+}
+export async function integracionManychat(req: Request, res: Response) {
+  exigirEscritura(req)
+  exigirLider(req, 'conectar ManyChat')
+  const b = obj(req.body)
+  if (b.soloAjustes) return ApiResponse.success(res, { integraciones: await ajustarManychat({ equipo: b.equipo, etapa: b.etapa }, req.userId ?? null) })
+  return ApiResponse.success(res, await conectarManychat({ equipo: b.equipo, etapa: b.etapa }, req.userId ?? null, urlApi(req)))
 }
 export async function integracionShopify(req: Request, res: Response) {
   exigirEscritura(req)

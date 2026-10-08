@@ -46,6 +46,8 @@ export const SISTEMAS: Sistema[] = [
     d: 'Los horarios libres de tu agenda, para ofrecer citas.',
     consultas: [{ id: 'gcal.horarios', n: 'Horarios libres en Google Calendar', d: 'Los espacios libres de la agenda en los próximos días, dentro del horario de citas' }],
   },
+  // ManyChat no es una consulta del agente: manda los leads de sus flujos a Contactos (manychat.ts).
+  { id: 'manychat', n: 'ManyChat', d: 'Los leads que capturan tus flujos de ManyChat entran solos a Contactos.', consultas: [] },
 ]
 export const CONSULTAS = SISTEMAS.flatMap(s => s.consultas.map(c => ({ ...c, sistema: s.id })))
 
@@ -58,6 +60,10 @@ async function guardadas(): Promise<Record<string, Json>> {
   const v = obj(await leerAjuste<unknown>(CLAVE))
   return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, obj(x)]))
 }
+
+/** Lo guardado de un sistema (manychat.ts). */
+export const integracionGuardada = async (sistema: string): Promise<Json> => (await guardadas())[sistema] ?? {}
+export const escribirIntegracion = (sistema: string, valor: Json | null, por: string | null) => escribir(sistema, valor, por)
 
 async function escribir(sistema: string, valor: Json | null, por: string | null) {
   const espacio = espacioActual()
@@ -77,6 +83,8 @@ export interface EstadoSistema {
   id: string; n: string; d: string; conectado: boolean; desde: string | null; por: string | null; consultas: Consulta[]
   /** Lo que se configuró al conectar, para la tarjeta (nunca claves). */
   datos?: [string, string][]
+  /** ManyChat: la parte de la dirección que identifica a la empresa (la pantalla arma la dirección completa). */
+  ruta?: string
   /** Google Calendar: el correo del CRM con el que se comparte el calendario. */
   cuenta?: string | null
 }
@@ -93,6 +101,7 @@ export async function estadoIntegraciones(): Promise<EstadoSistema[]> {
     desde: conectado(s.id) ? txt(g[s.id]?.desde) || null : null,
     por: conectado(s.id) ? nombres.get(txt(g[s.id]?.por)) || null : null,
     ...(s.id === 'shopify' && conectado(s.id) ? { datos: [['Tienda', txt(g.shopify?.tiendaVisible)]] as [string, string][] } : {}),
+    ...(s.id === 'manychat' && conectado(s.id) ? { datos: datosManychat(g.manychat), ruta: txt(g.manychat?.ruta) } : {}),
     ...(s.id === 'gcal' ? { cuenta: cuentaGoogle()?.client_email ?? null, ...(conectado(s.id) ? { datos: datosCalendario(obj(g.gcal?.ajustes)) } : {}) } : {}),
   }))
 }
@@ -104,6 +113,13 @@ export async function consultasDe(a: { consultas?: unknown }): Promise<string[]>
   const g = await guardadas()
   return pedidas.filter(id => !!txt(g[CONSULTAS.find(c => c.id === id)!.sistema]?.secretos))
 }
+
+function datosManychat(m: Json): [string, string][] {
+  const n = Number(m.recibidos) || 0
+  return [['Equipo', txt(m.equipo) || 'Sin equipo'], ['Etapa', txt(m.etapa) || 'Sin etapa'], ['Leads recibidos', n ? String(n) : 'Todavía ninguno']]
+}
+
+export const avisarIntegraciones = (por: string | null) => avisar(por)
 
 async function avisar(por: string | null) {
   emitirCrm({ tipo: 'integraciones', integraciones: await estadoIntegraciones() }, por)

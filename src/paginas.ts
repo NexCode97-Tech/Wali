@@ -22,7 +22,7 @@ import { BASE } from './utils/base'
  * - /chat.js: la burbuja del chat para las páginas web de la empresa (pública).
  */
 const PANTALLA = join(process.cwd(), 'pantalla')
-const SCRIPTS = ['10-nucleo', '20-llamadas', '30-legal', '40-ajustes', '45-canales', '46-correo', '47-pauta', '48-barra', '50-agentes', '56-compositor', '57-celular-menu', '58-celular-chat', '59-celular-ajustes', '61-equipos-roles', '62-vistas-rol', '63-ia-sugerencias', '64-ia-embudo', '65-encuesta', '66-finalizadas', '67-mejoras', '60-kb', '68-marco', '69-tema', '70-plan', '72-espacios', '73-carpetas', '74-reglas', '75-respondidas', '76-contactos', '77-equipos', '78-horarios', '80-datos', '90-arranque']
+const SCRIPTS = ['10-nucleo', '20-llamadas', '30-legal', '40-ajustes', '45-canales', '46-correo', '47-pauta', '48-barra', '50-agentes', '56-compositor', '57-celular-menu', '58-celular-chat', '59-celular-ajustes', '61-equipos-roles', '62-vistas-rol', '63-ia-sugerencias', '64-ia-embudo', '65-encuesta', '66-finalizadas', '67-mejoras', '60-kb', '68-marco', '69-tema', '70-plan', '72-espacios', '73-carpetas', '74-reglas', '75-respondidas', '76-contactos', '77-equipos', '78-horarios', '79-manychat', '80-datos', '90-arranque']
 
 /** El nombre del producto que se ve en la pestaña, el inicio de sesión y la barra. */
 const MARCA = () => (process.env.CRM_NOMBRE || 'CRM').slice(0, 40)

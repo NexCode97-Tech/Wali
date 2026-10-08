@@ -26,6 +26,7 @@ import {
 } from '../services/crm/tiktok'
 import { descifrar } from '../services/crm/cifrado'
 import { enEspacio } from '../services/crm/espacio'
+import { recibirManychat } from '../services/crm/manychat'
 import { emitirConexiones as emitirConexionesDe } from '../services/crm/conexiones'
 
 /**
@@ -361,6 +362,20 @@ rutasWaCrm.post('/plantillas', soloLideres, asyncHandler(async (req: Request, re
 // ─── Telegram, TikTok y el regreso de las ventanas de autorización (públicos) ─
 
 /** Telegram: cada bot tiene su dirección, y cada aviso trae el código secreto que se le dio al bot. */
+/** ManyChat: la «Solicitud externa» de un flujo, con «Authorization: Bearer <clave>» (manychat.ts). */
+export const webhookCrmManychat = Router()
+webhookCrmManychat.post('/:ruta', async (req: Request, res: Response) => {
+  const cuerpo = (req.body && typeof req.body === 'object' && !Buffer.isBuffer(req.body)) ? req.body as Json : {}
+  try {
+    const r = await recibirManychat(String(req.params.ruta), String(req.get('authorization') ?? ''), cuerpo)
+    const msg: Record<number, string> = { 400: 'Falta el teléfono o el correo del lead', 401: 'La clave no coincide', 404: 'Esta dirección no existe' }
+    return res.status(r.codigo).json(r.codigo < 300 ? { ok: true, contacto: r.contactoId } : { ok: false, error: msg[r.codigo] })
+  } catch (e) {
+    logger.error(`[CRM ManyChat] ${(e as Error)?.message ?? e}`)
+    return res.status(500).json({ ok: false, error: 'No se pudo guardar el lead' })
+  }
+})
+
 export const webhookCrmTelegram = Router()
 webhookCrmTelegram.post('/webhook/:clave', async (req: Request, res: Response) => {
   const c = await conexionPorClave(String(req.params.clave)).catch(() => null)

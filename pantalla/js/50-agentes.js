@@ -685,14 +685,14 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 function paginaIntegraciones(){
   integPedir();
   const volver = `<button type="button" class="volver" data-ir="ajustes-crm">${I('back')}Ajustes del CRM</button>`;
-  const cab = `${volver}<h2>Integraciones</h2><p class="sub ig-sub">Conecta otras plataformas que usa tu empresa. Los agentes IA pueden consultar las que estén conectadas; en Capacidades de cada agente eliges cuáles usa. Solo consultan: nunca crean, cambian ni borran nada.</p>`;
+  const cab = `${volver}<h2>Integraciones</h2><p class="sub ig-sub">Conecta otras plataformas que usa tu empresa. Los agentes IA pueden consultar las que estén conectadas; en Capacidades de cada agente eliges cuáles usa.</p>`;
   if (!INTEG.lista) return `<div class="ajw ancho">${cab}<p class="muted">${INTEG.error ? `No se pudo cargar: ${esc(INTEG.error)}` : 'Cargando…'}</p></div>`;
   const incluida = '';
   const tarjeta = s => { const u = INTEG_UI[s.id] || {};
     const usan = AGENTES.filter(a => (a.consultas || []).some(id => s.consultas.some(c => c.id === id))).map(a => a.nombre).filter(Boolean);
     return `<article class="ig-c"><div class="ig-cab"><span class="ig-logo">${integLogo(s.id)}</span><span class="ig-nom"><b>${esc(s.n)}</b><small>${esc(u.cat || 'Otras plataformas')}</small></span><span class="ig-est ${s.conectado ? 'on' : 'off'}">${s.conectado ? 'Conectada' : 'Sin conectar'}</span></div>
       <p>${esc(u.res || s.d)}</p>
-      ${s.conectado ? `<dl class="ig-kv">${(s.datos || []).map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}<dt>La usan</dt><dd>${usan.length ? esc(usan.join(', ')) : 'Ningún agente todavía'}</dd>${s.desde ? `<dt>Conectada</dt><dd>${esc(fechaCorta(s.desde))}${s.por ? `, por ${esc(s.por)}` : ''}</dd>` : ''}</dl>
+      ${s.conectado ? `<dl class="ig-kv">${(s.datos || []).map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}${s.consultas.length ? `<dt>La usan</dt><dd>${usan.length ? esc(usan.join(', ')) : 'Ningún agente todavía'}</dd>` : ''}${s.desde ? `<dt>Conectada</dt><dd>${esc(fechaCorta(s.desde))}${s.por ? `, por ${esc(s.por)}` : ''}</dd>` : ''}</dl>
         <div class="ig-pie"><span class="sp"></span><button type="button" class="btn" data-integ-quitar="${esc(s.id)}">${I('x')}Desconectar</button></div>`
       : `<div class="ig-pie"><span class="sp">${esc(u.ayuda || '')}</span><button type="button" class="btn" data-integ-conectar="${esc(s.id)}">${I('link')}Conectar</button></div>`}</article>`; };
   // Una sola sección, con las conectadas primero: el estado de cada una lo dice su etiqueta (5-oct).
