@@ -30,10 +30,6 @@ const seguridad = [
 const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
-  // Mientras se diseña el home de Wali, la portada lleva a los precios.
-  async redirects() {
-    return [{ source: "/", destination: "/precios", permanent: false }];
-  },
   async rewrites() {
     return [
       { source: "/crm", destination: `${CRM_ORIGEN}/` },
