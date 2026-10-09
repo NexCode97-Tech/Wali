@@ -40,11 +40,13 @@ export const firmar = (p: JwtPayload, expiresIn: jwt.SignOptions['expiresIn']) =
 
 /** El usuario del token, si el token vale y la cuenta sigue activa. */
 export async function usuarioDeToken(token: string) {
-  const payload = jwt.verify(token, secreto()) as JwtPayload
+  const payload = jwt.verify(token, secreto()) as JwtPayload & { iat?: number }
   const user = await prisma.user.findUnique({ where: { id: payload.sub } })
   if (!user) throw new ForbiddenError('USUARIO_NO_REGISTRADO')
   // Se valida aquí, y no solo al entrar, para que la suspensión aplique de inmediato aunque haya una sesión abierta.
   if (user.suspendido) throw new ForbiddenError('CUENTA_SUSPENDIDA')
+  // Una sesión de antes del último cambio de contraseña ya no vale (iat va en segundos).
+  if (user.sesionesDesde && (payload.iat ?? 0) < Math.floor(user.sesionesDesde.getTime() / 1000)) throw new UnauthorizedError('SESION_CERRADA')
   return user
 }
 

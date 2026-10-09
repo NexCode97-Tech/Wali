@@ -201,7 +201,7 @@ router.post('/nueva-clave', limiteEnlace, asyncHandler(async (req: Request, res:
     // Gana una sola petición aunque lleguen dos con el mismo enlace.
     const { count } = await tx.recuperacionClave.updateMany({ where: { id: r.id, usado: null }, data: { usado: new Date() } })
     if (!count) throw new ValidationError('El enlace venció o ya se usó. Pide uno nuevo.')
-    return tx.user.update({ where: { id: r.userId }, data: { passwordHash } })
+    return tx.user.update({ where: { id: r.userId }, data: { passwordHash, sesionesDesde: new Date() } })
   })
   logSecurityEvent('CLAVE_RECUPERADA', { userId: user.id, ip: req.ip })
   await abrirSesion(req, res, user)

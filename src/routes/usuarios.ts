@@ -76,7 +76,7 @@ router.patch('/:id', asyncHandler(async (req: Request, res: Response) => {
   }
   const u = await prisma.user.update({
     where: { id },
-    data: { ...(d.role ? { role: d.role as never } : {}), ...(d.suspendido !== undefined ? { suspendido: d.suspendido } : {}), ...(d.password ? { passwordHash: await cifrarClave(d.password) } : {}) },
+    data: { ...(d.role ? { role: d.role as never } : {}), ...(d.suspendido !== undefined ? { suspendido: d.suspendido } : {}), ...(d.password ? { passwordHash: await cifrarClave(d.password), sesionesDesde: new Date() } : {}) },
     select: publica,
   })
   // Con otro rol o suspendida, su conexión en vivo se corta: la pestaña vuelve a pedir permiso con los datos de hoy.

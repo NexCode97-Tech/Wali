@@ -33,6 +33,8 @@ model User {
   /// Operador de la plataforma: configura lo común a todos los espacios (apps de Meta, Instagram y TikTok).
   operador      Boolean   @default(false)
   ultimoIngreso DateTime? @map("ultimo_ingreso")
+  /// Las sesiones abiertas antes de esta fecha ya no valen (al cambiar o recuperar la contraseña, 8-oct).
+  sesionesDesde DateTime? @map("sesiones_desde")
   /// El espacio de trabajo en que está (si entra a varios). null = el primero al que entró.
   espacioActivo String?   @map("espacio_activo")
   createdAt     DateTime  @default(now())

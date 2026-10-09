@@ -61,7 +61,9 @@ app.use(helmet({
       fontSrc:        ["'self'", 'data:', 'https://fonts.gstatic.com'],
       imgSrc:         ["'self'", 'data:', 'blob:', 'https:'],
       mediaSrc:       ["'self'", 'blob:', 'https:'],
-      connectSrc:     ["'self'", 'https:'],
+      // Solo a donde la pantalla de verdad llama (revisión de seguridad 8-oct): el propio CRM, los archivos de la nube
+      // (base de conocimiento) y el botón de Meta. Antes era cualquier https:, por donde un script colado podía sacar datos.
+      connectSrc:     ["'self'", 'https://res.cloudinary.com', 'https://*.facebook.com', 'https://*.facebook.net'],
       frameSrc:       ["'self'", 'https://www.facebook.com', 'https://web.facebook.com'],
       frameAncestors: ["'self'"],
       objectSrc:      ["'none'"],

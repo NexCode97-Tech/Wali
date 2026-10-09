@@ -119,7 +119,9 @@ router.patch('/me/clave', authenticate, asyncHandler(async (req: Request, res: R
   const { actual, nueva } = z.object({ actual: z.string().min(1).max(200), nueva: claveValida }).parse(req.body)
   const u = await prisma.user.findUnique({ where: { id: req.userId } })
   if (!u || !(await bcrypt.compare(actual, u.passwordHash))) throw new ValidationError('La contraseña actual no coincide')
-  await prisma.user.update({ where: { id: u.id }, data: { passwordHash: await cifrarClave(nueva) } })
+  // Cierra las demás sesiones y deja abierta esta, con una cookie nueva.
+  const nuevo = await prisma.user.update({ where: { id: u.id }, data: { passwordHash: await cifrarClave(nueva), sesionesDesde: new Date() } })
+  res.cookie(COOKIE_SESION, firmar({ sub: nuevo.id, email: nuevo.email, role: nuevo.role }, `${DIAS_SESION}d`), cookieOpts())
   auditLog(req, 'UPDATE', 'mi_clave', u.id)
   return ApiResponse.success(res, { ok: true })
 }))
