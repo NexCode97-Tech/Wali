@@ -1,0 +1,474 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Rol de la cuenta en el CRM. Lo que cada persona ve dentro de un espacio lo deciden además sus equipos
+/// (ajuste `equipos`): integrante, líder o administrador del equipo.
+enum Role {
+  /// Administra el espacio: ve todo (si no está en un equipo) y cambia la configuración general.
+  ADMIN
+  /// Cambia la configuración general del espacio, pero ve solo lo de sus equipos.
+  LIDER
+  /// Atiende conversaciones: ve lo que tiene asignado y lo de los equipos que lidera.
+  AGENTE
+  /// Cuenta de solo lectura: ve todo como un administrador y no puede cambiar nada.
+  LECTOR
+}
+
+/// Persona que entra al CRM. A qué espacio pertenece lo dice `crm_miembros`.
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  nombre        String?
+  telefono      String?
+  image         String?
+  passwordHash  String    @map("password_hash")
+  role          Role      @default(AGENTE)
+  suspendido    Boolean   @default(false)
+  /// Operador de la plataforma: configura lo común a todos los espacios (apps de Meta, Instagram y TikTok).
+  operador      Boolean   @default(false)
+  ultimoIngreso DateTime? @map("ultimo_ingreso")
+  /// Las sesiones abiertas antes de esta fecha ya no valen (al cambiar o recuperar la contraseña, 8-oct).
+  sesionesDesde DateTime? @map("sesiones_desde")
+  /// El espacio de trabajo en que está (si entra a varios). null = el primero al que entró.
+  espacioActivo String?   @map("espacio_activo")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("usuarios")
+}
+
+/// Prueba de que una persona aceptó los términos y la política de datos (Ley 1581): quién, cuándo, qué versión y desde dónde.
+model Consentimiento {
+  id        String   @id @default(cuid())
+  userId    String?  @map("user_id")
+  email     String
+  /// registro (cuenta nueva con contraseña) o registro-google.
+  tipo      String
+  /// Fecha de la versión de los documentos aceptados (la de nexcode97.com/privacidad).
+  version   String
+  ip        String?
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([email])
+  @@map("consentimientos")
+}
+
+/// Enlace de un solo uso para crear una contraseña nueva (vence en 30 minutos). Se guarda el hash del token, nunca el token.
+model RecuperacionClave {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  expira    DateTime
+  usado     DateTime?
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("recuperaciones_clave")
+}
+
+// ── CRM propio ─────────────────────────────────────────
+// La bandeja de WhatsApp de Ventas, con el diseño de la maqueta aprobada. La
+// pantalla guarda sus objetos con la misma forma de la maqueta: lo que no
+// tiene columna propia va en `extra` o en `datos` (JSON). Contrato completo en
+// docs/crm/CONTRATO-CRM.md. Los usuarios se guardan por id sin llave foránea:
+// una cuenta se suspende, no se borra.
+
+/// Una persona que escribe o a quien se le escribe (lead, cliente, representante).
+model CrmContacto {
+  id             Int               @id @default(autoincrement())
+  espacioId      String            @default("") @map("espacio_id")
+  espacio        CrmEspacio        @relation(fields: [espacioId], references: [id], onDelete: Cascade)
+  /// Número de cliente: lo pone la base de datos al crear el contacto, es único
+  /// en todo el CRM (entre todas las empresas) y nunca se repite ni se reutiliza, aunque el contacto se borre.
+  numero         Int               @unique @default(autoincrement())
+  nombre         String?
+  /// Solo dígitos con indicativo (573001234567): es el `wa_id` de WhatsApp. Único dentro del espacio.
+  telefono       String?
+  /// Id de la persona en Messenger (PSID, lo da cada página) y en Instagram (IGSID). Únicos dentro del espacio.
+  fbId           String?           @map("fb_id")
+  igId           String?           @map("ig_id")
+  /// Id de la persona en Telegram (from.id) y en TikTok (unique_identifier). Únicos dentro del espacio.
+  tgId           String?           @map("tg_id")
+  ttId           String?           @map("tt_id")
+  correo         String?
+  /// Canal por el que llegó: wa, ig, fb, web, mail.
+  canal          String            @default("wa")
+  etapa          String?
+  /// Dueño del contacto (el asesor que lo atiende).
+  asignadoId     String?           @map("asignado_id")
+  tags           String[]          @default([])
+  campos         Json              @default("{}")
+  /// origen, interes, ciudad, nota, correo, compras, previas.
+  ficha          Json              @default("{}")
+  pauta          Json?
+  menor          Boolean           @default(false)
+  /// Autorización de datos (Ley 1581): {via, fecha, texto}.
+  autorizacion   Json?
+  representante  Json?
+  rne            Json?
+  noContactar    Json?             @map("no_contactar")
+  permisoLlamada Json?             @map("permiso_llamada")
+  /// Agregado a Contactos a propósito (no solo porque escribió).
+  guardado       Boolean           @default(false)
+  externoId      String?           @map("externo_id")
+  /// Lo demás que la pantalla guarde del contacto.
+  extra          Json              @default("{}")
+  conversaciones CrmConversacion[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@unique([espacioId, telefono])
+  @@unique([espacioId, fbId])
+  @@unique([espacioId, igId])
+  @@unique([espacioId, tgId])
+  @@unique([espacioId, ttId])
+  @@index([asignadoId])
+  @@index([correo])
+  @@map("crm_contactos")
+}
+
+model CrmLinea {
+  id             String            @id @default(cuid())
+  espacioId      String            @default("") @map("espacio_id")
+  espacio        CrmEspacio        @relation(fields: [espacioId], references: [id], onDelete: Cascade)
+  /// La conexión (app de Meta y su token) por la que la línea manda y recibe.
+  conexionId     String?           @map("conexion_id")
+  conexion       CrmConexion?      @relation(fields: [conexionId], references: [id], onDelete: Cascade)
+  nombre         String
+  /// Como lo muestra Meta: +57 300 123 4567.
+  telefono       String
+  phoneNumberId  String            @unique @map("phone_number_id")
+  wabaId         String            @map("waba_id")
+  /// conectada, error, desconectada.
+  estado         String            @default("conectada")
+  calidad        String?
+  limite         String?
+  /// Ajustes propios de la línea (equipo, llamadas, agente de noche…).
+  ajustes        Json              @default("{}")
+  conversaciones CrmConversacion[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([espacioId])
+  @@index([conexionId])
+  @@map("crm_lineas")
+}
+
+model CrmConversacion {
+  id               Int          @id @default(autoincrement())
+  espacioId        String       @default("") @map("espacio_id")
+  espacio          CrmEspacio   @relation(fields: [espacioId], references: [id], onDelete: Cascade)
+  contactoId       Int          @map("contacto_id")
+  contacto         CrmContacto  @relation(fields: [contactoId], references: [id], onDelete: Cascade)
+  canal            String       @default("wa")
+  lineaId          String?      @map("linea_id")
+  linea            CrmLinea?    @relation(fields: [lineaId], references: [id], onDelete: SetNull)
+  /// Instagram y Messenger: la página de Facebook (conexión) por la que se habla.
+  conexionId       String?      @map("conexion_id")
+  conexion         CrmConexion? @relation(fields: [conexionId], references: [id], onDelete: SetNull)
+  asignadoId       String?      @map("asignado_id")
+  equipo           String?
+  /// abiertas, pendientes, finalizadas.
+  estado           String       @default("abiertas")
+  prioridad        String?
+  soloLider        Boolean      @default(false) @map("solo_lider")
+  motivoFin        String?      @map("motivo_fin")
+  finalizadaAt     DateTime?    @map("finalizada_at")
+  encuestada       Boolean      @default(false)
+  /// Recordatorios: [{t, fecha, hecho, por}].
+  recs             Json         @default("[]")
+  noLeidos         Int          @default(0) @map("no_leidos")
+  ultimoMensajeAt  DateTime?    @map("ultimo_mensaje_at")
+  /// Último mensaje del cliente: abre la ventana de 24 h de WhatsApp.
+  ultimoEntranteAt DateTime?    @map("ultimo_entrante_at")
+  /// Desde cuándo espera respuesta (null si ya se le respondió).
+  esperaDesde      DateTime?    @map("espera_desde")
+  extra            Json         @default("{}")
+  mensajes         CrmMensaje[]
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([espacioId, estado, ultimoMensajeAt])
+  @@index([conexionId])
+  @@index([estado, ultimoMensajeAt])
+  @@index([asignadoId])
+  @@index([contactoId])
+  @@map("crm_conversaciones")
+}
+
+model CrmMensaje {
+  id             String          @id @default(cuid())
+  espacioId      String          @default("") @map("espacio_id")
+  espacio        CrmEspacio      @relation(fields: [espacioId], references: [id], onDelete: Cascade)
+  conversacionId Int             @map("conversacion_id")
+  conversacion   CrmConversacion @relation(fields: [conversacionId], references: [id], onDelete: Cascade)
+  /// in, out, note, ev, bot, ia, call, csat, prog, sugT…: la clave que usa `burbuja()`.
+  tipo           String
+  /// El mensaje con la forma de la maqueta.
+  datos          Json
+  autorId        String?         @map("autor_id")
+  /// Id del mensaje en WhatsApp (wamid), para los estados que llegan después.
+  waId           String?         @unique @map("wa_id")
+  /// enviando, enviado, entregado, leido, fallido.
+  estado         String?
+  error          String?
+  /// Mensajes programados: cuándo salen.
+  programadoPara DateTime?       @map("programado_para")
+  createdAt      DateTime        @default(now())
+
+  @@index([conversacionId, createdAt])
+  @@index([programadoPara])
+  @@index([espacioId, createdAt])
+  @@map("crm_mensajes")
+}
+
+/// Configuración del equipo, por clave (etapas, etiquetas, flujos, cfg…).
+model CrmAjuste {
+  espacioId        String     @default("") @map("espacio_id")
+  espacio          CrmEspacio @relation(fields: [espacioId], references: [id], onDelete: Cascade)
+  clave            String
+  valor            Json
+  actualizadoPorId String?    @map("actualizado_por_id")
+  updatedAt        DateTime   @updatedAt
+
+  @@id([espacioId, clave])
+  @@map("crm_ajustes")
+}
+
+/// Preferencias de cada persona en el CRM (estado, reparto, firma, avisos).
+model CrmPreferencia {
+  espacioId String     @default("") @map("espacio_id")
+  espacio   CrmEspacio @relation(fields: [espacioId], references: [id], onDelete: Cascade)
+  userId    String     @map("user_id")
+  valor     Json       @default("{}")
+  updatedAt DateTime   @updatedAt
+
+  @@id([espacioId, userId])
+  @@map("crm_preferencias")
+}
+
+/// Avisos del webhook de WhatsApp del CRM, guardados antes de procesarlos: si
+/// el proceso falla (o el servidor se reinicia a mitad), se reintentan solos.
+model CrmWebhookEvento {
+  id         String   @id @default(cuid())
+  /// De qué espacio y por qué conexión llegó (null si Meta mandó un número que ya no está en ningún espacio).
+  espacioId  String?  @map("espacio_id")
+  conexionId String?  @map("conexion_id")
+  cuerpo     Json
+  /// pendiente, hecho, fallido (después de 5 intentos).
+  estado     String   @default("pendiente")
+  intentos   Int      @default(0)
+  error      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([estado, createdAt])
+  @@map("crm_webhook_eventos")
+}
+
+/// Espacio de trabajo del CRM: cada empresa que usa el CRM
+/// tiene el suyo y nada se ve de uno a otro. Todo lo del CRM cuelga de un
+/// espacio y la consulta lo filtra sola (services/crm/bd.ts). El `espacioId`
+/// de las tablas vale "" por defecto, que no es ningún espacio: lo que se cree
+/// sin pasar por bd.ts choca con la llave foránea en vez de caer en otra empresa.
+/// Se crean con `pnpm crear-espacio`.
+model CrmEspacio {
+  id             String            @id
+  nombre         String
+  /// Plan del CRM: starter, growth o business. Lo cambia el webhook de Creem al pagar.
+  plan           String            @default("starter")
+  /// prueba (14 días de Starter), activo, pago-pendiente (cobro fallido, Creem reintenta), cancelado, vencido,
+  /// o interno (espacios de NexCode97, sin cobro).
+  estadoPlan     String            @default("prueba") @map("estado_plan")
+  /// mensual o anual.
+  periodo        String?
+  pruebaHasta    DateTime?         @map("prueba_hasta")
+  /// Fin del periodo pagado (Creem: current_period_end_date).
+  renuevaEl      DateTime?         @map("renueva_el")
+  /// Canceló pero el plan sigue hasta renuevaEl.
+  cancelaAlFinal Boolean           @default(false) @map("cancela_al_final")
+  creemCliente   String?           @map("creem_cliente")
+  creemSuscripcion String?         @map("creem_suscripcion")
+  /// Espacios de trabajo (6-oct): la cuenta que paga el plan. null = este espacio es la cuenta (tiene el plan).
+  /// Los espacios de una cuenta comparten su plan, sus usuarios y sus agentes (sumados entre todos).
+  cuentaId       String?           @map("cuenta_id")
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  miembros       CrmMiembro[]
+  conexiones     CrmConexion[]
+  contactos      CrmContacto[]
+  lineas         CrmLinea[]
+  conversaciones CrmConversacion[]
+  mensajes       CrmMensaje[]
+  ajustes        CrmAjuste[]
+  preferencias   CrmPreferencia[]
+  enlaces        CrmEnlace[]
+  clics          CrmClic[]
+  pagos          CrmPago[]
+
+  @@index([cuentaId])
+  @@map("crm_espacios")
+}
+
+/// Un cobro del plan del CRM, tal como lo avisó Creem: pagado, rechazado o reembolsado. Es el historial de
+/// Ajustes → Plan y pagos y de él sale el recibo en PDF. Los montos van en centavos de la moneda del cobro.
+model CrmPago {
+  id         String     @id @default(cuid())
+  espacioId  String     @map("espacio_id")
+  espacio    CrmEspacio @relation(fields: [espacioId], references: [id], onDelete: Cascade)
+  /// Consecutivo del recibo (NX-10001, NX-10002…), único en todo el CRM.
+  numero     Int        @unique @default(autoincrement())
+  /// La transacción de Creem (tran_…); en un cobro rechazado, la suscripción y el periodo.
+  creemId    String     @unique @map("creem_id")
+  plan       String
+  periodo    String
+  /// pagado, rechazado o reembolsado.
+  estado     String
+  subtotal   Int
+  impuestos  Int        @default(0)
+  total      Int
+  reembolso  Int        @default(0)
+  moneda     String     @default("USD")
+  desde      DateTime?
+  hasta      DateTime?
+  fecha      DateTime
+  createdAt  DateTime   @default(now()) @map("created_at")
+
+  @@index([espacioId, fecha])
+  @@map("crm_pagos")
+}
+
+/// Enlace de pauta. Lleva a WhatsApp
+/// y registra cada clic con lo que la plataforma de anuncios pone sola en el enlace (campaña, grupo,
+/// anuncio, gclid, ttclid…). El mensaje sale escrito con un código corto del clic; cuando la
+/// persona escribe, el CRM la atribuye a ese clic. `plataforma` web: el de la página web del
+/// espacio (pauta.js), que respeta el número y el texto del botón de la página. Guía: docs/crm/enlaces-pauta.md.
+model CrmEnlace {
+  id         String     @id @default(cuid())
+  espacioId  String     @default("") @map("espacio_id")
+  espacio    CrmEspacio @relation(fields: [espacioId], references: [id], onDelete: Cascade)
+  /// Va en la dirección pública: /w/<codigo>. Único en toda la plataforma.
+  codigo     String     @unique
+  nombre     String
+  /// google, tiktok, meta, otro o web.
+  plataforma String
+  /// La línea de WhatsApp a la que lleva (null en el de la página web: va al número del botón).
+  lineaId    String?    @map("linea_id")
+  /// Lo que le llega escrito a la persona, antes del código.
+  mensaje    String     @default("Hola, quiero más información")
+  activo     Boolean    @default(true)
+  creadoPor  String?    @map("creado_por")
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+  clics      CrmClic[]
+
+  @@index([espacioId])
+  @@map("crm_enlaces")
+}
+
+/// Un clic en un enlace de pauta: de dónde vino (los parámetros del anuncio) y, cuando la persona
+/// escribe con su código, a qué contacto y conversación quedó atribuido.
+model CrmClic {
+  id             String     @id @default(cuid())
+  espacioId      String     @default("") @map("espacio_id")
+  espacio        CrmEspacio @relation(fields: [espacioId], references: [id], onDelete: Cascade)
+  enlaceId       String     @map("enlace_id")
+  enlace         CrmEnlace  @relation(fields: [enlaceId], references: [id], onDelete: Cascade)
+  /// El código que sale en el mensaje (5 caracteres sin letras que se confundan). Único en toda la plataforma.
+  ref            String     @unique
+  /// utm_*, gclid, gbraid, wbraid, ttclid, fbclid y los parámetros de campaña, grupo y anuncio.
+  params         Json       @default("{}")
+  /// Para no contar dos veces al mismo que toca dos veces (huella de IP y navegador, sin guardarlos).
+  huella         String?
+  referer        String?
+  contactoId     Int?       @map("contacto_id")
+  conversacionId Int?       @map("conversacion_id")
+  atribuidoEn    DateTime?  @map("atribuido_en")
+  createdAt      DateTime   @default(now()) @map("created_at")
+
+  @@index([enlaceId, createdAt])
+  @@index([espacioId, createdAt])
+  @@map("crm_clics")
+}
+
+/// Quién entra a qué espacio (services/crm/espacio.ts). Una cuenta entra a un solo espacio.
+model CrmMiembro {
+  espacioId String     @map("espacio_id")
+  espacio   CrmEspacio @relation(fields: [espacioId], references: [id], onDelete: Cascade)
+  userId    String     @map("user_id")
+  createdAt DateTime   @default(now())
+
+  @@id([espacioId, userId])
+  @@index([userId])
+  @@map("crm_miembros")
+}
+
+/// Un canal que el propio espacio conecta desde el CRM, sin tocar el servidor
+///: una app de Meta
+/// con su token (WhatsApp, Instagram, Messenger), un bot de Telegram, una cuenta
+/// de Twilio, una bandeja de correo. Las claves van cifradas en `secretos`
+/// (AES-256-GCM, services/crm/cifrado.ts) y nunca salen del servidor; lo que se
+/// puede mostrar va en `datos`.
+model CrmConexion {
+  id             String            @id @default(cuid())
+  espacioId      String            @default("") @map("espacio_id")
+  espacio        CrmEspacio        @relation(fields: [espacioId], references: [id], onDelete: Cascade)
+  /// whatsapp, instagram, messenger, telegram, twilio, correo, tiktok.
+  tipo           String
+  /// manual: claves pegadas por el cliente. meta: registro integrado con el botón de Meta.
+  modo           String            @default("manual")
+  nombre         String
+  /// pendiente, conectada, error, desconectada.
+  estado         String            @default("pendiente")
+  error          String?
+  datos          Json              @default("{}")
+  secretos       String?
+  /// Va en la dirección del webhook propia de la conexión y sirve de código de verificación.
+  clave          String            @unique
+  /// Cuándo el proveedor verificó el webhook y cuándo llegó el último aviso.
+  verificadoEn   DateTime?         @map("verificado_en")
+  ultimoEventoEn DateTime?         @map("ultimo_evento_en")
+  lineas         CrmLinea[]
+  conversaciones CrmConversacion[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([espacioId, tipo])
+  @@map("crm_conexiones")
+}
+
+/// Aviso guardado en la campana de una persona (menciones, asignaciones, recordatorios, avisos del sistema).
+model Notificacion {
+  id          String    @id @default(cuid())
+  userId      String    @map("user_id")
+  autorId     String?   @map("autor_id")
+  tipo        String
+  titulo      String    @default("")
+  texto       String
+  url         String
+  contenidoId String?   @map("contenido_id")
+  leidaEn     DateTime? @map("leida_en")
+  createdAt   DateTime  @default(now())
+
+  @@index([userId, leidaEn])
+  @@index([userId, createdAt])
+  @@map("notificaciones")
+}
+
+/// Configuración común a todos los espacios (las apps de Meta, Instagram y TikTok para los botones de conexión).
+model ConfigApp {
+  id        String   @id @default(cuid())
+  clave     String   @unique
+  valor     String
+  updatedAt DateTime @updatedAt
+
+  @@map("config_app")
+}

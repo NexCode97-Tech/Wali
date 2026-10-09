@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>Wali</title>
+<link rel="icon" type="image/png" sizes="32x32" href="__BASE__/img/wali-32.png">
+<link rel="apple-touch-icon" href="__BASE__/img/wali-180.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;color:#1f2937;background:#f4f6fa;display:flex;flex-direction:column;height:100dvh;overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.menu{position:fixed;z-index:50;min-width:220px;background:#fff;border:1px solid #e5e9f0;border-radius:12px;padding:6px;box-shadow:0 18px 40px -18px rgba(15,23,42,.35)}
+.menu[hidden]{display:none}
+.menu a,.menu button{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border-radius:8px;font-size:13.5px;color:#1f2937;text-decoration:none;text-align:left}
+.menu a:hover,.menu button:hover{background:#f1f4f9}
+.menu hr{border:0;border-top:1px solid #eef1f6;margin:6px 0}
+.campana{width:340px;max-width:calc(100vw - 24px);padding:0}
+.campana .cab{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #eef1f6}
+.campana .cab b{font-weight:600}
+.campana .cab button{width:auto;padding:0;font-size:12.5px;color:#1976d2}
+.campana .cab button:hover{background:none;text-decoration:underline}
+.campana .lista{max-height:min(60vh,420px);overflow-y:auto;padding:6px}
+.campana .aviso{display:block;width:100%;padding:10px;border-radius:8px}
+.campana .aviso b{display:block;font-weight:600;font-size:13px;margin-bottom:2px}
+.campana .aviso span{display:block;font-size:12.5px;color:#4b5563;line-height:1.4}
+.campana .aviso small{display:block;margin-top:4px;font-size:11.5px;color:#6b7280}
+.campana .aviso.nueva{background:#f3f8fe}
+.campana .vacio{padding:26px 14px;text-align:center;color:#6b7280;font-size:13px}
+.aviso-plan{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 12px 9px 18px;font-size:13.5px;font-weight:600;background:#FFD21F;color:#0b0b10}
+.aviso-plan[hidden]{display:none}
+.aviso-plan.vencido{background:#dc2626;color:#fff}
+.aviso-plan.pendiente{background:#d97706;color:#fff}
+.aviso-plan span{min-width:0}
+.aviso-plan .acc{display:flex;align-items:center;gap:6px;flex:none}
+.aviso-plan .ir{height:32px;padding:0 14px;border-radius:999px;background:#0b0b10;color:#fff;font-weight:600;font-size:13px}
+.aviso-plan.vencido .ir,.aviso-plan.pendiente .ir{background:#fff;color:#0b0b10}
+.aviso-plan .x{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;opacity:.7}
+.aviso-plan .x:hover{opacity:1;background:rgba(0,0,0,.08)}
+.aviso-plan .x[hidden]{display:none}
+main{flex:1;min-height:0;position:relative;overflow:hidden}
+iframe{position:absolute;left:0;top:0;display:block;border:0;transform-origin:top left;width:100%;height:100%}
+.ov{position:fixed;inset:0;z-index:80;background:rgba(15,23,42,.45);display:grid;place-items:center;padding:20px}
+.ov[hidden]{display:none}
+.dlg{width:100%;max-width:400px;background:#fff;border-radius:14px;padding:22px}
+.dlg h2{margin:0 0 14px;font-size:17px;font-weight:600}
+.dlg label{display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:12px}
+.dlg input{display:block;width:100%;height:40px;margin-top:6px;padding:0 12px;border:1px solid #d7dde7;border-radius:10px;font:inherit;outline:none}
+.dlg input:focus{border-color:#1976d2;box-shadow:0 0 0 3px rgba(25,118,210,.15)}
+.dlg .pie{display:flex;justify-content:flex-end;gap:8px;margin-top:6px}
+.btn{height:38px;padding:0 14px;border:1px solid #e5e9f0;border-radius:10px;background:#fff;font-weight:500;font-size:13.5px}
+.btn:hover{background:#f1f4f9}
+.btn.pri{background:#1976d2;border-color:#1976d2;color:#fff}
+.btn.pri:hover{background:#1565c0}
+.btn:disabled{opacity:.6;cursor:default}
+.dlg .error{display:none;margin:0 0 12px;padding:9px 12px;border-radius:10px;background:#fef2f2;color:#b91c1c;font-size:13px}
+.dlg .error.ver{display:block}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:90;background:#1f2937;color:#fff;padding:10px 16px;border-radius:10px;font-size:13.5px;opacity:0;pointer-events:none;transition:opacity .2s}
+#toast.ver{opacity:1}
+</style>
+</head>
+<body>
+<div class="menu campana" id="m-campana" hidden>
+  <div class="cab"><b>Avisos</b><button type="button" id="b-leidas">Marcar todos como leídos</button></div>
+  <div class="lista" id="avisos"></div>
+</div>
+<div class="menu" id="m-yo" role="menu" hidden>
+  <a href="__BASE__/usuarios" id="ir-usuarios" role="menuitem" hidden><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M18 14.3a6.5 6.5 0 0 1 3.5 5.7"/></svg>Usuarios</a>
+  <button type="button" id="b-clave" role="menuitem"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Cambiar la contraseña</button>
+  <hr>
+  <button type="button" id="b-salir" role="menuitem"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>Cerrar sesión</button>
+</div>
+<div class="aviso-plan" id="aviso-plan" role="status" hidden><span id="ap-txt"></span><div class="acc"><button type="button" class="ir" id="ap-ir"></button><button type="button" class="x" id="ap-x" aria-label="Cerrar el aviso"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div></div>
+<main id="caja"><iframe id="marco" src="__BASE__/app" title="CRM" allow="microphone; clipboard-write"></iframe></main>
+<div class="ov" id="ov-clave" hidden>
+  <form class="dlg" id="f-clave" role="dialog" aria-labelledby="t-clave" novalidate>
+    <h2 id="t-clave">Cambiar la contraseña</h2>
+    <div class="error" id="e-clave" role="alert"></div>
+    <label>Contraseña actual<input id="c-actual" type="password" autocomplete="current-password"></label>
+    <label>Contraseña nueva, de 10 caracteres o más<input id="c-nueva" type="password" autocomplete="new-password"></label>
+    <div class="pie"><button type="button" class="btn" id="c-cancelar">Cancelar</button><button type="submit" class="btn pri" id="c-guardar">Guardar</button></div>
+  </form>
+</div>
+<div id="toast" role="status"></div>
+<script>
+/*MARCO_INICIO*/
+const M = window.MARCO || {yo: {}, espacio: {}};
+const $ = id => document.getElementById(id);
+const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(t){ const el = $('toast'); el.textContent = t; el.classList.add('ver'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('ver'), 3200); }
+
+if (M.yo.admin) $('ir-usuarios').hidden = false;
+
+/* ── Token del API: se pide con la cookie de la sesión y se guarda 50 minutos ── */
+const tk = {v: null, en: 0, p: null};
+function token(fresco){
+  if (!fresco && tk.v && Date.now() - tk.en < 50 * 60_000) return Promise.resolve(tk.v);
+  if (tk.p) return tk.p;
+  tk.p = fetch('__BASE__/api/auth/token', {credentials: 'same-origin', cache: 'no-store'}).then(async r => {
+    if (r.status === 401 || r.status === 403) { location.href = '__BASE__/entrar'; throw new Error('Tu sesión venció'); }
+    const j = await r.json(); tk.v = j.token; tk.en = Date.now(); return tk.v;
+  }).finally(() => { tk.p = null; });
+  return tk.p;
+}
+async function api(metodo, ruta, cuerpo){
+  for (let i = 0; i < 2; i++) {
+    const r = await fetch('__BASE__/api' + ruta, {method: metodo, cache: 'no-store', headers: {Authorization: 'Bearer ' + await token(i > 0), ...(cuerpo ? {'Content-Type': 'application/json'} : {})}, body: cuerpo ? JSON.stringify(cuerpo) : undefined});
+    if (r.status === 401 && i === 0) continue;
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || 'No se pudo completar. Intenta de nuevo.');
+    return j.data;
+  }
+}
+
+/* ── El CRM se dibuja a 1600 px de ancho lógico y se encoge entero en pantallas de escritorio más angostas, así
+      se ven sus cuatro columnas. En celular (menos de 760 px) no se escala: ahí tiene su diseño de una columna. ── */
+const ANCHO = 1600, MINIMO = 0.7, CELULAR = 760;
+const caja = $('caja'), marco = $('marco');
+let escala = 1;
+function medir(){
+  const w = caja.clientWidth, h = caja.clientHeight;
+  const s = escala = w < CELULAR ? 1 : Math.max(MINIMO, Math.min(1, w / ANCHO));
+  marco.style.width = (w / s) + 'px'; marco.style.height = (h / s) + 'px'; marco.style.transform = s === 1 ? '' : `scale(${s})`;
+}
+medir(); new ResizeObserver(medir).observe(caja);
+
+/* ── Menús. No hay barra arriba: la campana y tu cuenta son botones de la barra lateral del CRM
+      (pantalla/js/68-marco.js), que llaman a CRM_MARCO con la posición de su botón. El CRM puede ir escalado, así que
+      esa posición se multiplica por la escala. Un clic dentro del CRM cierra los menús con CRM_MARCO.cerrar(). ── */
+const hijo = () => { try { return marco.contentWindow; } catch { return null; } };
+let abierto = null, sinLeer = 0;
+function cerrarMenus(){ $('m-campana').hidden = true; $('m-yo').hidden = true; abierto = null; hijo()?.crmMarcoAbierto?.(null); }
+function abrir(cual, panel, r, haciaAbajo){
+  if (abierto === cual) { cerrarMenus(); return false; }
+  cerrarMenus(); panel.hidden = false; abierto = cual; hijo()?.crmMarcoAbierto?.(cual);
+  panel.style.left = Math.max(8, Math.min(r.left * escala, innerWidth - panel.offsetWidth - 8)) + 'px';
+  if (haciaAbajo) { panel.style.bottom = ''; panel.style.top = (r.bottom * escala + 6) + 'px'; }
+  else { panel.style.top = ''; panel.style.bottom = (innerHeight - r.top * escala + 8) + 'px'; }
+  return true;
+}
+for (const p of ['m-campana', 'm-yo']) $(p).addEventListener('click', e => e.stopPropagation());
+document.addEventListener('click', cerrarMenus);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarMenus(); cerrarClave(); } });
+window.CRM_MARCO = {
+  campana: r => { if (abrir('campana', $('m-campana'), r, true)) cargarAvisos(); },
+  cuenta: r => { abrir('cuenta', $('m-yo'), r, false); },
+  cerrar: () => { if (abierto) cerrarMenus(); },
+  sinLeer: () => sinLeer,
+  plan: () => avisoPlan(),
+};
+
+/* ── Aviso del plan, arriba de todo: la prueba gratis (se puede cerrar por esta sesión), el pago pendiente y el plan
+      vencido, que deja el CRM en solo lectura. El botón abre Ajustes → Plan y pagos dentro del CRM. ── */
+async function avisoPlan(){
+  let P;
+  try { P = await api('GET', '/crm/plan'); } catch { return; }
+  const dias = P.diasPrueba ?? 0;
+  const a = P.estado === 'prueba' && P.vigente ? ['', dias === 1 ? 'Te queda 1 día de prueba gratis de Starter.' : `Te quedan ${dias} días de prueba gratis de Starter.`, 'Elegir plan', true]
+    : !P.vigente && P.estado !== 'interno' ? ['vencido', `${P.estado === 'prueba' ? 'Tu prueba gratis terminó.' : 'Tu plan no está activo.'} Puedes ver todo, pero no responder ni hacer cambios.`, P.estado === 'prueba' ? 'Elegir plan' : 'Renovar plan', false]
+    : P.estado === 'pago-pendiente' ? ['pendiente', 'No pudimos cobrar tu tarjeta. Actualízala para no perder el acceso.', 'Ver mi plan', false]
+    : null;
+  let cerrado = false; try { cerrado = sessionStorage.getItem('aviso-plan-prueba') === '1'; } catch { /* sin almacenamiento */ }
+  const caja = $('aviso-plan');
+  if (!a || (a[3] && cerrado)) { caja.hidden = true; return; }
+  caja.className = 'aviso-plan' + (a[0] ? ' ' + a[0] : ''); $('ap-txt').textContent = a[1]; $('ap-ir').textContent = a[2]; $('ap-x').hidden = !a[3]; caja.hidden = false;
+}
+$('ap-ir').addEventListener('click', () => marco.contentWindow.postMessage({tipo: 'crm-aviso', q: 'ir=cfg-plan'}, location.origin));
+$('ap-x').addEventListener('click', () => { try { sessionStorage.setItem('aviso-plan-prueba', '1'); } catch { /* sin almacenamiento */ } $('aviso-plan').hidden = true; });
+avisoPlan();
+
+/* ── Campana ── */
+const HORA = new Intl.DateTimeFormat('es-CO', {day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit'});
+function pintarGlobo(n){ sinLeer = n || 0; hijo()?.crmGloboAvisos?.(sinLeer); }
+async function cargarAvisos(){
+  try {
+    const d = await api('GET', '/notificaciones');
+    pintarGlobo(d.sinLeer);
+    $('avisos').innerHTML = d.avisos.length ? d.avisos.map(a => `<button type="button" class="aviso${a.leidaEn ? '' : ' nueva'}" data-id="${esc(a.id)}" data-url="${esc(a.url)}">${a.titulo ? `<b>${esc(a.titulo)}</b>` : ''}<span>${esc(a.texto)}</span><small>${esc(HORA.format(new Date(a.createdAt)))}</small></button>`).join('') : '<div class="vacio">No tienes avisos.</div>';
+  } catch (err) { $('avisos').innerHTML = `<div class="vacio">${esc(err.message)}</div>`; }
+}
+$('avisos').addEventListener('click', e => {
+  const a = e.target.closest('.aviso'); if (!a) return;
+  api('POST', '/notificaciones/leidas', {id: a.dataset.id}).then(contarAvisos, () => {});
+  cerrarMenus();
+  // El aviso abre su conversación o su página dentro del CRM, sin recargarlo.
+  const q = String(a.dataset.url || '').split('?')[1] || '';
+  if (q) marco.contentWindow.postMessage({tipo: 'crm-aviso', q}, location.origin);
+});
+$('b-leidas').addEventListener('click', () => api('POST', '/notificaciones/leidas', {}).then(cargarAvisos, err => toast(err.message)));
+function contarAvisos(){ api('GET', '/notificaciones').then(d => pintarGlobo(d.sinLeer), () => {}); }
+
+/* ── Tiempo real: el globito de la campana sube solo ── */
+let fuente = null;
+async function conectar(){
+  try {
+    const d = await api('POST', '/eventos/ticket');
+    fuente = new EventSource('__BASE__/api/eventos?ticket=' + encodeURIComponent(d.ticket));
+    fuente.addEventListener('notificacion-nueva', contarAvisos);
+    fuente.onerror = () => { fuente.close(); setTimeout(conectar, 5000); };
+  } catch { setTimeout(conectar, 15000); }
+}
+contarAvisos(); conectar();
+
+/* ── Contraseña y salida ── */
+function cerrarClave(){ $('ov-clave').hidden = true; $('f-clave').reset(); $('e-clave').classList.remove('ver'); }
+$('b-clave').addEventListener('click', () => { cerrarMenus(); $('ov-clave').hidden = false; $('c-actual').focus(); });
+$('c-cancelar').addEventListener('click', cerrarClave);
+$('ov-clave').addEventListener('click', e => { if (e.target === $('ov-clave')) cerrarClave(); });
+$('f-clave').addEventListener('submit', async e => {
+  e.preventDefault();
+  const actual = $('c-actual').value, nueva = $('c-nueva').value, error = $('e-clave');
+  if (!actual || nueva.length < 10) { error.textContent = !actual ? 'Escribe tu contraseña actual.' : 'La contraseña nueva debe tener 10 caracteres o más.'; error.classList.add('ver'); return; }
+  $('c-guardar').disabled = true;
+  try { await api('PATCH', '/auth/me/clave', {actual, nueva}); cerrarClave(); toast('Contraseña cambiada'); }
+  catch (err) { error.textContent = err.message; error.classList.add('ver'); }
+  finally { $('c-guardar').disabled = false; }
+});
+$('b-salir').addEventListener('click', async () => { try { await fetch('__BASE__/api/auth/logout', {method: 'POST', credentials: 'same-origin'}); } finally { location.href = '__BASE__/entrar'; } });
+</script>
+</body>
+</html>

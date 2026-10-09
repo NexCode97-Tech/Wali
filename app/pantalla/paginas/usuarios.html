@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Usuarios · Wali</title>
+<link rel="icon" type="image/png" sizes="32x32" href="__BASE__/img/wali-32.png">
+<link rel="apple-touch-icon" href="__BASE__/img/wali-180.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;color:#1f2937;background:#f4f6fa}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.barra{height:52px;display:flex;align-items:center;gap:12px;padding:0 16px;background:#fff;border-bottom:1px solid #e5e9f0}
+.barra a{display:flex;align-items:center;gap:6px;color:#374151;text-decoration:none;font-weight:500;height:36px;padding:0 10px 0 6px;border-radius:10px}
+.barra a:hover{background:#f1f4f9}
+.barra b{font-weight:600;font-size:15px}
+main{max-width:980px;margin:0 auto;padding:28px 16px 60px}
+.cab{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap}
+h1{margin:0;font-size:22px;font-weight:600}
+.cab p{margin:4px 0 0;color:#6b7280}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:38px;padding:0 14px;border:1px solid #e5e9f0;border-radius:10px;background:#fff;font-weight:500;font-size:13.5px;white-space:nowrap}
+.btn:hover{background:#f1f4f9}
+.btn.pri{background:#1976d2;border-color:#1976d2;color:#fff}
+.btn.pri:hover{background:#1565c0}
+.btn:disabled{opacity:.6;cursor:default}
+.tabla{background:#fff;border:1px solid #e5e9f0;border-radius:14px;overflow:visible}
+.fila{display:grid;grid-template-columns:minmax(0,1.5fr) 190px 150px 44px;gap:12px;align-items:center;padding:12px 16px;border-top:1px solid #eef1f6}
+.fila:first-child{border-top:0}
+.fila.enc{font-size:12px;font-weight:600;color:#6b7280;padding:10px 16px}
+.quien{display:flex;align-items:center;gap:10px;min-width:0}
+.av{width:36px;height:36px;border-radius:50%;background:#e8f1fb;color:#1565c0;font-size:12.5px;font-weight:600;display:grid;place-items:center;flex:none;overflow:hidden}
+.av img{width:100%;height:100%;object-fit:cover}
+.quien > div{min-width:0}
+.quien b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.quien > div > span{display:block;font-size:12.5px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fila.susp .quien,.fila.susp .ingreso{opacity:.55}
+.pill{display:inline-flex;align-items:center;height:20px;padding:0 8px;margin-left:8px;border-radius:999px;background:#f3f4f6;color:#4b5563;font-size:11.5px;font-weight:500;vertical-align:1px}
+.ingreso{font-size:12.5px;color:#6b7280}
+.sel{position:relative}
+.sel > button{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;height:38px;padding:0 10px 0 12px;border:1px solid #d7dde7;border-radius:10px;background:#fff;font-size:13.5px}
+.sel > button:hover{background:#f8fafc}
+.sel > button[aria-expanded="true"]{border-color:#1976d2;box-shadow:0 0 0 3px rgba(25,118,210,.15)}
+.sel > button svg{width:14px;height:14px;color:#9ca3af}
+.sel > button:disabled{opacity:.6;cursor:default}
+.ops{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:40;min-width:250px;background:#fff;border:1px solid #e5e9f0;border-radius:12px;padding:6px;box-shadow:0 18px 40px -18px rgba(15,23,42,.35)}
+.ops[hidden]{display:none}
+.ops button{display:block;width:100%;padding:8px 10px;border-radius:8px;text-align:left}
+.ops button:hover,.ops button:focus-visible{background:#f1f4f9;outline:none}
+.ops button[aria-selected="true"]{background:#eaf3fd}
+.ops b{display:block;font-weight:500;font-size:13.5px}
+.ops span{display:block;font-size:12px;color:#6b7280;line-height:1.35}
+.mas{position:relative}
+.mas > button{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:#4b5563}
+.mas > button:hover,.mas > button[aria-expanded="true"]{background:#f1f4f9}
+.menu{position:absolute;right:0;top:calc(100% + 4px);z-index:40;min-width:220px;background:#fff;border:1px solid #e5e9f0;border-radius:12px;padding:6px;box-shadow:0 18px 40px -18px rgba(15,23,42,.35)}
+.menu[hidden]{display:none}
+.menu button{display:block;width:100%;padding:9px 10px;border-radius:8px;text-align:left;font-size:13.5px}
+.menu button:hover{background:#f1f4f9}
+.menu button.rojo{color:#b91c1c}
+.vacio{padding:40px 16px;text-align:center;color:#6b7280}
+.ov{position:fixed;inset:0;z-index:80;background:rgba(15,23,42,.45);display:grid;place-items:center;padding:20px}
+.ov[hidden]{display:none}
+.dlg{width:100%;max-width:420px;background:#fff;border-radius:14px;padding:22px}
+.dlg h2{margin:0 0 4px;font-size:17px;font-weight:600}
+.dlg p{margin:0 0 14px;color:#6b7280;font-size:13px}
+.dlg label,.dlg .campo{display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:12px}
+.dlg input{display:block;width:100%;height:40px;margin-top:6px;padding:0 12px;border:1px solid #d7dde7;border-radius:10px;font:inherit;outline:none}
+.dlg input:focus{border-color:#1976d2;box-shadow:0 0 0 3px rgba(25,118,210,.15)}
+.dlg .sel{margin-top:6px;font-weight:400}
+.dlg .pie{display:flex;justify-content:flex-end;gap:8px;margin-top:6px}
+.error{display:none;margin:0 0 12px;padding:9px 12px;border-radius:10px;background:#fef2f2;color:#b91c1c;font-size:13px}
+.error.ver{display:block}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:90;background:#1f2937;color:#fff;padding:10px 16px;border-radius:10px;font-size:13.5px;opacity:0;pointer-events:none;transition:opacity .2s}
+#toast.ver{opacity:1}
+@media (max-width:719.98px){
+  .fila{grid-template-columns:minmax(0,1fr) 44px;row-gap:10px}
+  .fila.enc{display:none}
+  .fila .sel{grid-column:1}
+  .fila .ingreso{display:none}
+  .fila .mas{grid-row:1;grid-column:2}
+}
+</style>
+</head>
+<body>
+<header class="barra">
+  <a href="__BASE__/"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Volver al CRM</a>
+</header>
+<main>
+  <div class="cab">
+    <div><h1>Usuarios</h1><p id="sub">Las cuentas que entran a este espacio de trabajo.</p></div>
+    <button type="button" class="btn pri" id="b-nuevo"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Crear usuario</button>
+  </div>
+  <div class="tabla" id="tabla"><div class="vacio">Cargando</div></div>
+</main>
+<div class="ov" id="ov" hidden><div class="dlg" id="dlg" role="dialog" aria-modal="true"></div></div>
+<div id="toast" role="status"></div>
+<script>
+/*USUARIOS_INICIO*/
+const I = window.INICIO || {yo: {}, espacio: {}};
+const $ = id => document.getElementById(id);
+const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(t){ const el = $('toast'); el.textContent = t; el.classList.add('ver'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('ver'), 3200); }
+if (I.espacio && I.espacio.nombre) $('sub').textContent = `Las cuentas que entran al espacio de ${I.espacio.nombre}.`;
+
+const ROLES = [
+  ['ADMIN', 'Administrador', 'Ve todo, cambia la configuración y gestiona las cuentas.'],
+  ['LIDER', 'Líder', 'Cambia la configuración general. Ve lo de sus equipos.'],
+  ['AGENTE', 'Agente', 'Atiende las conversaciones que tiene asignadas.'],
+  ['LECTOR', 'Solo lectura', 'Ve todo, pero no puede cambiar nada.'],
+];
+const nombreRol = r => (ROLES.find(x => x[0] === r) || [, r])[1];
+const CHEV = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+const iniciales = n => String(n || '').trim().split(/\s+/).slice(0, 2).map(p => p[0] || '').join('').toUpperCase();
+const FECHA = new Intl.DateTimeFormat('es-CO', {day: 'numeric', month: 'short', year: 'numeric'});
+
+const tk = {v: null, en: 0};
+async function token(fresco){
+  if (!fresco && tk.v && Date.now() - tk.en < 50 * 60_000) return tk.v;
+  const r = await fetch('__BASE__/api/auth/token', {credentials: 'same-origin', cache: 'no-store'});
+  if (r.status === 401 || r.status === 403) { location.href = '__BASE__/entrar'; throw new Error('Tu sesión venció'); }
+  tk.v = (await r.json()).token; tk.en = Date.now(); return tk.v;
+}
+async function api(metodo, ruta, cuerpo){
+  for (let i = 0; i < 2; i++) {
+    const r = await fetch('__BASE__/api' + ruta, {method: metodo, cache: 'no-store', headers: {Authorization: 'Bearer ' + await token(i > 0), ...(cuerpo ? {'Content-Type': 'application/json'} : {})}, body: cuerpo ? JSON.stringify(cuerpo) : undefined});
+    if (r.status === 401 && i === 0) continue;
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || 'No se pudo completar. Intenta de nuevo.');
+    return j.data;
+  }
+}
+
+/* ── Desplegable propio del rol ── */
+const selRol = (id, valor, apagado) => `<div class="sel" data-sel="${esc(id)}"><button type="button" aria-haspopup="listbox" aria-expanded="false"${apagado ? ' disabled' : ''}><span>${esc(nombreRol(valor))}</span>${CHEV}</button><div class="ops" role="listbox" hidden>${ROLES.map(([k, n, d]) => `<button type="button" role="option" data-rol="${k}" aria-selected="${k === valor}"><b>${n}</b><span>${d}</span></button>`).join('')}</div></div>`;
+function cerrarTodo(menos){
+  document.querySelectorAll('.ops,.menu').forEach(p => { if (p !== menos) { p.hidden = true; const b = p.parentElement.querySelector(':scope > button'); if (b) b.setAttribute('aria-expanded', 'false'); } });
+}
+document.addEventListener('click', e => {
+  const abre = e.target.closest('.sel > button, .mas > button');
+  if (abre) {
+    const panel = abre.parentElement.querySelector('.ops, .menu'), abrir = panel.hidden;
+    cerrarTodo(); panel.hidden = !abrir; abre.setAttribute('aria-expanded', String(abrir));
+    return;
+  }
+  const op = e.target.closest('.ops [data-rol]');
+  if (op) { const sel = op.closest('.sel'); cerrarTodo(); elegirRol(sel.dataset.sel, op.dataset.rol, sel); return; }
+  const ac = e.target.closest('.menu [data-ac]');
+  if (ac) { cerrarTodo(); accion(ac.dataset.ac, ac.closest('[data-u]').dataset.u); return; }
+  cerrarTodo();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarTodo(); cerrarDlg(); } });
+
+/* ── Lista ── */
+let USUARIOS = [];
+function pintar(){
+  if (!USUARIOS.length) { $('tabla').innerHTML = '<div class="vacio">Todavía no hay cuentas.</div>'; return; }
+  $('tabla').innerHTML = '<div class="fila enc"><span>Persona</span><span>Rol</span><span>Último ingreso</span><span></span></div>' + USUARIOS.map(u => {
+    const yo = u.id === I.yo.id;
+    return `<div class="fila${u.suspendido ? ' susp' : ''}" data-u="${esc(u.id)}">
+      <div class="quien"><span class="av">${u.image ? `<img src="${esc(u.image)}" alt="">` : esc(iniciales(u.nombre || u.email))}</span><div><b>${esc(u.nombre || u.email)}${yo ? '<span class="pill">Tú</span>' : ''}${u.suspendido ? '<span class="pill">Suspendida</span>' : ''}</b><span>${esc(u.email)}</span></div></div>
+      ${selRol(u.id, u.role, yo || u.suspendido)}
+      <span class="ingreso">${u.ultimoIngreso ? esc(FECHA.format(new Date(u.ultimoIngreso))) : 'Nunca ha entrado'}</span>
+      <div class="mas"><button type="button" aria-label="Más opciones de ${esc(u.nombre || u.email)}" aria-haspopup="menu" aria-expanded="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg></button>
+        <div class="menu" role="menu" hidden><button type="button" data-ac="clave">Poner una contraseña nueva</button>${yo ? '' : u.suspendido ? '<button type="button" data-ac="activar">Reactivar la cuenta</button>' : '<button type="button" class="rojo" data-ac="suspender">Suspender la cuenta</button>'}</div></div>
+    </div>`;
+  }).join('');
+}
+async function cargar(){
+  try { USUARIOS = await api('GET', '/usuarios'); pintar(); }
+  catch (err) { $('tabla').innerHTML = `<div class="vacio">${esc(err.message)}</div>`; }
+}
+async function cambiar(id, cambios, listo){
+  try { const u = await api('PATCH', '/usuarios/' + encodeURIComponent(id), cambios); USUARIOS = USUARIOS.map(x => x.id === id ? u : x); pintar(); toast(listo); return true; }
+  catch (err) { toast(err.message); pintar(); return false; }
+}
+
+/* ── Diálogos ── */
+let nuevoRol = 'AGENTE';
+function abrirDlg(html){ $('dlg').innerHTML = html; $('ov').hidden = false; const i = $('dlg').querySelector('input'); if (i) i.focus(); }
+function cerrarDlg(){ $('ov').hidden = true; $('dlg').innerHTML = ''; }
+$('ov').addEventListener('click', e => { if (e.target === $('ov') || e.target.closest('[data-cerrar]')) cerrarDlg(); });
+function elegirRol(id, rol, sel){
+  if (id === 'nuevo') { nuevoRol = rol; sel.outerHTML = selRol('nuevo', rol); return; }
+  const u = USUARIOS.find(x => x.id === id); if (!u || u.role === rol) return;
+  cambiar(id, {role: rol}, `${u.nombre || u.email} ahora es ${nombreRol(rol).toLowerCase()}`);
+}
+function accion(ac, id){
+  const u = USUARIOS.find(x => x.id === id); if (!u) return;
+  const quien = esc(u.nombre || u.email);
+  if (ac === 'activar') { cambiar(id, {suspendido: false}, 'Cuenta reactivada'); return; }
+  if (ac === 'suspender') {
+    abrirDlg(`<h2>Suspender a ${quien}</h2><p>No podrá entrar. Sus conversaciones abiertas quedan sin asignar para que el reparto las entregue a otra persona. Lo que ya escribió se conserva con su nombre.</p><div class="pie"><button type="button" class="btn" data-cerrar>Cancelar</button><button type="button" class="btn pri" id="d-ok">Suspender</button></div>`);
+    $('d-ok').addEventListener('click', async () => { $('d-ok').disabled = true; if (await cambiar(id, {suspendido: true}, 'Cuenta suspendida')) cerrarDlg(); else $('d-ok').disabled = false; });
+    return;
+  }
+  if (ac === 'clave') {
+    abrirDlg(`<h2>Contraseña nueva para ${quien}</h2><p>Entrégasela por un medio seguro. Puede cambiarla después desde su cuenta.</p><div class="error" id="d-error" role="alert"></div><label>Contraseña, de 10 caracteres o más<input id="d-clave" type="text" autocomplete="off"></label><div class="pie"><button type="button" class="btn" data-cerrar>Cancelar</button><button type="button" class="btn pri" id="d-ok">Guardar</button></div>`);
+    $('d-ok').addEventListener('click', async () => {
+      const clave = $('d-clave').value;
+      if (clave.length < 10) { $('d-error').textContent = 'La contraseña debe tener 10 caracteres o más.'; $('d-error').classList.add('ver'); return; }
+      $('d-ok').disabled = true; if (await cambiar(id, {password: clave}, 'Contraseña cambiada')) cerrarDlg(); else $('d-ok').disabled = false;
+    });
+  }
+}
+$('b-nuevo').addEventListener('click', () => {
+  nuevoRol = 'AGENTE';
+  abrirDlg(`<h2>Crear usuario</h2><p>Entra con su correo y la contraseña que le pongas aquí.</p><div class="error" id="d-error" role="alert"></div>
+    <label>Nombre<input id="d-nombre" type="text" autocomplete="off"></label>
+    <label>Correo<input id="d-email" type="email" autocomplete="off"></label>
+    <div class="campo">Rol${selRol('nuevo', nuevoRol)}</div>
+    <label>Contraseña, de 10 caracteres o más<input id="d-clave" type="text" autocomplete="off"></label>
+    <div class="pie"><button type="button" class="btn" data-cerrar>Cancelar</button><button type="button" class="btn pri" id="d-ok">Crear</button></div>`);
+  $('d-ok').addEventListener('click', async () => {
+    const nombre = $('d-nombre').value.trim(), email = $('d-email').value.trim(), password = $('d-clave').value, error = $('d-error');
+    const falta = nombre.length < 2 ? 'Escribe el nombre.' : !/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(email) ? 'Ese correo no parece completo.' : password.length < 10 ? 'La contraseña debe tener 10 caracteres o más.' : '';
+    if (falta) { error.textContent = falta; error.classList.add('ver'); return; }
+    $('d-ok').disabled = true;
+    try { const u = await api('POST', '/usuarios', {nombre, email, role: nuevoRol, password}); USUARIOS.push(u); pintar(); cerrarDlg(); toast('Usuario creado'); }
+    catch (err) { error.textContent = err.message; error.classList.add('ver'); $('d-ok').disabled = false; }
+  });
+});
+cargar();
+</script>
+</body>
+</html>
