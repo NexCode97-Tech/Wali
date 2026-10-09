@@ -131,14 +131,19 @@ if (MV.addEventListener) MV.addEventListener('change', mvAlCambiar); else MV.add
 
 document.head.insertAdjacentHTML('beforeend', `<style>
 :root{--mv-tinta:#0b0b10;--mv-t2:#374151;--mv-t3:#6b7280;--mv-t4:#9ca3af;--mv-linea:#e5e9f0;--mv-linea2:#eef1f5;--mv-fondo:#f6f7f9;--mv-amarillo:#FFD21F;--mv-amarillo-s:#fffbe6;--mv-rojo:#dc2626;--mv-rojo-s:#fdecec}
+/* La página usa todo el ancho del celular, sea cual sea: márgenes que crecen con la pantalla (12 a 20 px) en vez de
+   los 28 px de escritorio. Vale para todas las páginas en celular. */
+@media (max-width:760px){
+  #app .page{padding:12px clamp(12px,3.5vw,20px) calc(20px + env(safe-area-inset-bottom,0px))}
+}
 .mv-i{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 /* Fila de herramientas: buscador y botones de solo ícono. */
-.mv-barra{display:flex;gap:6px;align-items:center}
-.mv-bus{display:flex;align-items:center;gap:9px;flex:1;min-width:0;height:44px;padding:0 12px;margin:0;border-radius:12px;border:1px solid var(--mv-linea);background:#fff;color:var(--mv-t4)}
+.mv-barra{display:flex;gap:clamp(4px,1.5vw,8px);align-items:center}
+.mv-bus{display:flex;align-items:center;gap:8px;flex:1;min-width:96px;height:44px;padding:0 10px 0 12px;margin:0;border-radius:12px;border:1px solid var(--mv-linea);background:#fff;color:var(--mv-t4)}
 .mv-bus:focus-within{border-color:var(--mv-tinta);box-shadow:0 0 0 3px rgba(255,210,31,.45)}
 .mv-bus svg{width:16px;height:16px;flex:none}
 .mv-bus input{flex:1;min-width:0;border:0!important;outline:none;background:none!important;box-shadow:none!important;padding:0!important;height:auto!important;font:inherit;font-size:15px;color:var(--mv-tinta)}
-.mv-ic{position:relative;flex:none;width:44px;height:44px;border-radius:12px;border:1px solid var(--mv-linea);background:#fff;display:grid;place-items:center;color:var(--mv-tinta);cursor:pointer;padding:0}
+.mv-ic{position:relative;flex:none;width:clamp(38px,11.5vw,46px);height:44px;border-radius:12px;border:1px solid var(--mv-linea);background:#fff;display:grid;place-items:center;color:var(--mv-tinta);cursor:pointer;padding:0}
 .mv-ic.on{border-color:var(--mv-tinta)}
 .mv-ic.pri{background:var(--mv-amarillo);border-color:var(--mv-amarillo)}
 .mv-ic.pri .mv-i{width:20px;height:20px;stroke-width:2.2}

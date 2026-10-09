@@ -330,8 +330,8 @@
   });
 
   document.head.insertAdjacentHTML('beforeend', `<style>
-.ctm{display:flex;flex-direction:column;gap:14px;padding-bottom:24px}
-.ctm-cab h2{margin:0;font-size:21px;font-weight:700;letter-spacing:-.01em}
+.ctm{display:flex;flex-direction:column;gap:clamp(10px,3vw,14px);width:100%;max-width:640px;margin:0 auto}
+.ctm-cab h2{margin:0;font-size:clamp(18px,5.4vw,22px);font-weight:700;letter-spacing:-.01em}
 .ctm-cab p{margin:2px 0 0;font-size:13px;color:var(--mv-t3)}
 .ctm-cab .cj-pgh + p{margin-left:36px}
 .ctm-hueco{height:64px}
