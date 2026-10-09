@@ -12,7 +12,6 @@ if (dsn) {
     dsn,
     environment: process.env.NODE_ENV || 'development',
     release: process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 12),
-    sendDefaultPii: false,
     tracesSampleRate: 0,
     beforeSend(event) {
       if (event.request) {
