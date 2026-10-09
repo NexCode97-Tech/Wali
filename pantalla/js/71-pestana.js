@@ -11,5 +11,7 @@ render = function(){
     const t = (h2 && h2.textContent.trim()) || (menu && menu.textContent.replace(/\d+\s*$/, '').trim()) || 'Mi bandeja';
     const titulo = `${t.slice(0, 60)} · Wali`;
     if (document.title !== titulo) document.title = titulo;
+    // El CRM corre dentro del marco (paginas/marco.html): la pestaña muestra el título de afuera.
+    if (window.parent !== window && window.parent.document.title !== titulo) window.parent.document.title = titulo;
   } catch (e) { /* el título nunca rompe la pantalla */ }
 };
