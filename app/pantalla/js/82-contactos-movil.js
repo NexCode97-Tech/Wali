@@ -7,7 +7,7 @@
    (st.ct, ctVisibles, ctCambiar, CT_EXTRA). En escritorio sigue la página de 76-contactos.js. */
 (() => {
   const ct = () => st.ct;
-  const ctm = st.ctm = {ficha: null, edit: null, filtroAbierto: null, hojaFiltros: null};
+  const ctm = st.cmv = {ficha: null, edit: null, filtroAbierto: null, hojaFiltros: null};
   const etapas = () => [...etapasActivas(), ...etapasPerdidas()];
   const FILTROS_MV = [['etapa', 'Etapa', 'Todas las etapas'], ['asig', 'Asesor', 'Todos los asesores'], ['tag', 'Etiqueta', 'Todas las etiquetas'], ['origen', 'Origen', 'Todos los orígenes']];
   const opsFiltro = k => ((CT_FILTROS.find(x => x[0] === k) || [0, 0, () => []])[2])();
@@ -49,8 +49,8 @@
       ? `<div class="mv-vacio"><span class="ic">${mvIc('gente')}</span><b>Todavía no hay contactos</b><span>Agrégalos uno por uno${puedeConfigurarCrm() ? ' o importa tu lista desde Excel' : ''}.</span>${puedeConfigurarCrm() ? `<button type="button" class="mv-btn" data-ct-acc="importar">${mvIc('subir')}Importar desde Excel</button>` : ''}</div>`
       : `<div class="mv-vacio"><span class="ic">${I('search')}</span><b>Nadie coincide</b><span>${nf || c0.q.trim() ? 'Prueba quitando algún filtro o cambiando la búsqueda.' : 'Todavía no hay personas en esta lista.'}</span>${nf ? '<button type="button" class="mv-btn" data-ct-quitar="todo">Quitar filtros</button>' : ''}</div>`;
     el.replaceChildren();
-    el.insertAdjacentHTML('beforeend', `<div class="ctm">
-      <div class="ctm-cab"><h2>${esc(titulo())}</h2><p>${L.length} ${L.length === 1 ? 'persona' : 'personas'}${sinAsesor ? ` · ${sinAsesor} sin asesor` : ''}</p></div>
+    el.insertAdjacentHTML('beforeend', `<div class="cmv">
+      <div class="cmv-cab"><h2>${esc(titulo())}</h2><p>${L.length} ${L.length === 1 ? 'persona' : 'personas'}${sinAsesor ? ` · ${sinAsesor} sin asesor` : ''}</p></div>
       <div class="mv-barra"><label class="mv-bus">${I('search')}<input id="ct-q" type="search" placeholder="Buscar…" value="${esc(c0.q)}" autocomplete="off" aria-label="Buscar por nombre, teléfono, correo o ciudad"></label>
         <button type="button" class="mv-ic${nf ? ' on' : ''}" data-ctm="filtros" aria-label="Filtros${nf ? ` (${nf} puestos)` : ''}">${mvIc('filtros')}${nf ? `<span class="mv-cnt">${nf}</span>` : ''}</button>
         ${puedeConfigurarCrm() ? `<button type="button" class="mv-ic" data-ct-acc="importar" aria-label="Importar desde Excel">${mvIc('subir')}</button>` : ''}
@@ -59,7 +59,7 @@
       <div class="mv-caja">
         ${L.length ? `<div class="mv-cbar">${eligiendo ? `<button type="button" data-ct-todos="1">${todosSel ? 'Quitar todos' : 'Elegir todos'}</button>` : `<span>${conteo(L.length)}</span>`}<button type="button" class="mv-ord" data-ctm="orden">${mvIc('orden')}${orden}</button></div>` : ''}
         ${filas || vacio}</div>
-      ${eligiendo ? '<div class="ctm-hueco"></div>' : ''}
+      ${eligiendo ? '<div class="cmv-hueco"></div>' : ''}
     </div>
     ${eligiendo ? `<div class="mv-flota" role="toolbar" aria-label="Acciones con la selección"><b>${nSel} ${nSel === 1 ? 'elegido' : 'elegidos'}</b>
       <button type="button" data-ctm-bulk="asig" aria-label="Asignar asesor">${I('user')}</button>
@@ -191,10 +191,10 @@
     const cuotas = c.cuotas ? (c.cuotas[0] < c.cuotas[1] ? `${c.cuotas[0]} de ${c.cuotas[1]} pagadas` : 'Al día') : '';
     mvPantalla(`<div class="mv-ptop"><button type="button" class="mv-pb" data-ctmf="volver" aria-label="Volver a contactos">${mvIc('atras')}</button><button type="button" class="mv-pb" data-ctma="editar" aria-label="Editar contacto">${mvIc('lapiz')}</button></div>
       <div class="mv-pcuerpo">
-        <div class="ctm-fcab"><span class="mv-av" style="background:${colorPersona(c.n)}">${esc(ini(c.n))}</span><h3>${esc(c.n)}</h3>
-          ${c.tel ? `<span class="ctm-tel">${esc(c.tel)}<button type="button" data-ctmf="copiar" aria-label="Copiar número">${mvIc('copiar')}</button></span>` : ''}
-          ${c.etapa ? etapaHtml(c.etapa) : ''}${c.guardado === false ? '<span class="ctm-nota">Todavía no está en contactos</span>' : ''}</div>
-        <div class="ctm-facc${c.conv ? '' : ' uno'}">${c.conv ? `<button type="button" class="pri" data-ctma="abrir">${I('chat')}Conversación</button>` : ''}<button type="button" data-ctma="escribir">${I('wa', 'i wa')}WhatsApp</button></div>
+        <div class="cmv-fcab"><span class="mv-av" style="background:${colorPersona(c.n)}">${esc(ini(c.n))}</span><h3>${esc(c.n)}</h3>
+          ${c.tel ? `<span class="cmv-tel">${esc(c.tel)}<button type="button" data-ctmf="copiar" aria-label="Copiar número">${mvIc('copiar')}</button></span>` : ''}
+          ${c.etapa ? etapaHtml(c.etapa) : ''}${c.guardado === false ? '<span class="cmv-nota">Todavía no está en contactos</span>' : ''}</div>
+        <div class="cmv-facc${c.conv ? '' : ' uno'}">${c.conv ? `<button type="button" class="pri" data-ctma="abrir">${I('chat')}Conversación</button>` : ''}<button type="button" data-ctma="escribir">${I('wa', 'i wa')}WhatsApp</button></div>
         <div class="mv-sec"><h4>Venta</h4><div class="mv-filas">
           ${fila('Etapa', c.etapa ? `<b>${etapaHtml(c.etapa)}</b>` : gris('Sin etapa'), 'etapa')}
           ${fila('Asesor', `<b>${asesorHtml(c.asig)}</b>`, 'asig')}
@@ -210,7 +210,7 @@
           ${fila('Último mensaje', `<b>${esc(ctFecha(c.ultimoDias))}</b>`)}
           ${fila('Agregado', `<b>${esc(ctFecha(c.agregadoDias))}</b>`)}
         </div></div>
-        <div class="mv-acc ctm-peligro">
+        <div class="mv-acc cmv-peligro">
           <button type="button" class="${c.noContactar ? '' : 'pel'}" data-ctma="nocont">${I('block')}${c.noContactar ? 'Quitar de no contactar' : 'Marcar no contactar'}</button>
           ${c.spam ? `<button type="button" data-ctma="nospam">${I('shield-x')}Sacar de spam</button>` : c.conv ? `<button type="button" class="pel" data-ctma="spam">${mvIc('x')}Mover a spam</button>` : ''}
         </div>
@@ -233,7 +233,7 @@
     const tags = d.tags.length ? `<span class="v">${d.tags.map(t => `<span class="mv-tag2"><i style="background:${esc(colorOk(ETIQ_COL[t] || '#9ca3af'))}"></i>${esc(t)}</span>`).join('')}</span>` : '<span class="v gris">Sin etiquetas</span>';
     mvPantalla(`<div class="mv-ptop linea"><button type="button" class="mv-pb rojo" data-ctme="cancelar" aria-label="Cancelar">${mvIc('x')}</button><b>${d.id != null ? 'Editar contacto' : 'Agregar contacto'}</b><button type="button" class="mv-pb si" data-ctme="guardar" aria-label="Guardar">${mvIc('ok')}</button></div>
       <div class="mv-pcuerpo" style="padding-top:16px">
-        ${d.id != null ? `<div class="ctm-efoto"><span class="mv-av" style="background:${colorPersona(d.n || '?')}">${esc(ini(d.n || '?'))}</span></div>` : ''}
+        ${d.id != null ? `<div class="cmv-efoto"><span class="mv-av" style="background:${colorPersona(d.n || '?')}">${esc(ini(d.n || '?'))}</span></div>` : ''}
         <div class="mv-form"><h4>Contacto</h4>
           ${inp('ctme-n', 'Nombre y apellido', d.n, 'placeholder="Ej. Valentina Ruiz" autocapitalize="words"')}
           <div class="mv-c"><label for="ctme-tel">Celular</label><div class="mv-in"><button type="button" class="mv-pais" data-ctme="pais" aria-label="País: ${esc(pais.nombre)}">${banderaTel(pais.iso)}<span>+${esc(pais.indicativo)}</span>${I('chev')}</button><input id="ctme-tel" inputmode="tel" value="${esc(d.num)}" placeholder="300 123 4567" autocomplete="off"></div></div>
@@ -330,26 +330,26 @@
   });
 
   document.head.insertAdjacentHTML('beforeend', `<style>
-.ctm{display:flex;flex-direction:column;gap:clamp(10px,3vw,14px);width:100%;max-width:640px;margin:0 auto}
-.ctm-cab h2{margin:0;font-size:clamp(18px,5.4vw,22px);font-weight:700;letter-spacing:-.01em}
-.ctm-cab p{margin:2px 0 0;font-size:13px;color:var(--mv-t3)}
-.ctm-cab .cj-pgh + p{margin-left:36px}
-.ctm-hueco{height:64px}
-.ctm-fcab{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding:4px 0 2px}
-.ctm-fcab .mv-av{width:72px;height:72px;font-size:24px;margin-bottom:8px}
-.ctm-fcab h3{margin:0;font-size:20px;font-weight:700;overflow-wrap:anywhere}
-.ctm-tel{display:inline-flex;align-items:center;gap:4px;margin-right:-34px;font-size:14px;color:var(--mv-t3);font-variant-numeric:tabular-nums}
-.ctm-tel button{width:34px;height:34px;border:0;background:none;border-radius:8px;display:grid;place-items:center;color:var(--mv-t3);cursor:pointer;padding:0}
-.ctm-tel button .mv-i{width:16px;height:16px}
-.ctm-fcab .mv-pill{margin-top:6px;font-size:12.5px;padding:4px 10px}
-.ctm-nota{margin-top:4px;font-size:12.5px;color:var(--mv-t3)}
-.ctm-facc{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.ctm-facc.uno{grid-template-columns:1fr}
-.ctm-facc button{height:62px;border-radius:13px;border:1px solid var(--mv-linea);background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font:inherit;font-size:12.5px;font-weight:500;color:var(--mv-tinta);cursor:pointer}
-.ctm-facc button svg{width:19px;height:19px}
-.ctm-facc button.pri{background:var(--mv-amarillo);border-color:var(--mv-amarillo);font-weight:600}
-.ctm-peligro{background:#fff;border:1px solid var(--mv-linea);border-radius:14px;padding:4px 6px}
-.ctm-efoto{display:flex;justify-content:center}
-.ctm-efoto .mv-av{width:64px;height:64px;font-size:21px}
+.cmv{display:flex;flex-direction:column;gap:clamp(10px,3vw,14px);width:100%;max-width:640px;margin:0 auto}
+.cmv-cab h2{margin:0;font-size:clamp(18px,5.4vw,22px);font-weight:700;letter-spacing:-.01em}
+.cmv-cab p{margin:2px 0 0;font-size:13px;color:var(--mv-t3)}
+.cmv-cab .cj-pgh + p{margin-left:36px}
+.cmv-hueco{height:64px}
+.cmv-fcab{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding:4px 0 2px}
+.cmv-fcab .mv-av{width:72px;height:72px;font-size:24px;margin-bottom:8px}
+.cmv-fcab h3{margin:0;font-size:20px;font-weight:700;overflow-wrap:anywhere}
+.cmv-tel{display:inline-flex;align-items:center;gap:4px;margin-right:-34px;font-size:14px;color:var(--mv-t3);font-variant-numeric:tabular-nums}
+.cmv-tel button{width:34px;height:34px;border:0;background:none;border-radius:8px;display:grid;place-items:center;color:var(--mv-t3);cursor:pointer;padding:0}
+.cmv-tel button .mv-i{width:16px;height:16px}
+.cmv-fcab .mv-pill{margin-top:6px;font-size:12.5px;padding:4px 10px}
+.cmv-nota{margin-top:4px;font-size:12.5px;color:var(--mv-t3)}
+.cmv-facc{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cmv-facc.uno{grid-template-columns:1fr}
+.cmv-facc button{height:62px;border-radius:13px;border:1px solid var(--mv-linea);background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font:inherit;font-size:12.5px;font-weight:500;color:var(--mv-tinta);cursor:pointer}
+.cmv-facc button svg{width:19px;height:19px}
+.cmv-facc button.pri{background:var(--mv-amarillo);border-color:var(--mv-amarillo);font-weight:600}
+.cmv-peligro{background:#fff;border:1px solid var(--mv-linea);border-radius:14px;padding:4px 6px}
+.cmv-efoto{display:flex;justify-content:center}
+.cmv-efoto .mv-av{width:64px;height:64px;font-size:21px}
 </style>`);
 })();
