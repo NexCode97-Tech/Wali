@@ -1,4 +1,5 @@
 import './setTz'
+import './instrument'
 import crypto from 'crypto'
 import express, { Request, Response, NextFunction } from 'express'
 import helmet from 'helmet'

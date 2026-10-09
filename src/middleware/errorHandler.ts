@@ -3,6 +3,7 @@ import { ZodError } from 'zod'
 import { AppError, ValidationError } from '../utils/errors'
 import { logger } from '../utils/logger'
 import { redactarUrl } from '../utils/redactar'
+import { Sentry, sentryActivo } from '../instrument'
 
 type ReqWithId = Request & { reqId?: string }
 
@@ -49,6 +50,7 @@ export function errorHandler(err: Error, req: ReqWithId, res: Response, _next: N
   // token por query string y no debe quedar en los registros.
   const urlSegura = redactarUrl(req.originalUrl || req.url)
   logger.error({ reqId, error: err.message, stack: err.stack, url: urlSegura, method: req.method })
+  if (sentryActivo) Sentry.captureException(err, { tags: { reqId: reqId ?? '', metodo: req.method }, extra: { url: urlSegura } })
 
   return res.status(500).json({
     success: false,
