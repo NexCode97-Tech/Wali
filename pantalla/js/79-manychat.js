@@ -15,13 +15,32 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .mc-cuerpo{margin:0;background:#17140F;color:#f5efe0;border-radius:10px;padding:12px 14px;font-size:12px;line-height:1.55;overflow:auto;font-family:ui-monospace,monospace;font-weight:400}
 .mc-cuerpo b{color:#FFD21F;font-weight:500}
 .mc-sel{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mc-campo{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#374151;min-width:0}
+.mc-dd .sel{width:100%;height:42px;display:flex;align-items:center;gap:8px;border:1px solid #e5e9f0;border-radius:10px;background:#fff;padding:0 12px;font:inherit;font-size:14px;font-weight:500;color:var(--ink);cursor:pointer}
+.mc-dd .sel svg{width:16px;height:16px;color:#6b7280}
+.mc-dd:has(.menu:not([hidden])) .sel{border-color:#0b0b10;box-shadow:0 0 0 3px #0b0b1014}
+.mc-dd .menu{left:0;right:0;width:100%;top:48px;max-height:260px;overflow-y:auto;padding:6px;border-radius:12px}
+.mc-dd .menu button{display:flex;align-items:center;gap:10px;font-size:13.5px}
+.mc-dd .menu button[aria-selected="true"]{background:#fffbe0;font-weight:600}
+.mc-dd .menu button svg{margin-left:auto;width:15px;height:15px}
+.mc-pt{width:8px;height:8px;border-radius:50%;flex:none}
 @media (max-width:560px){.mc-sel{grid-template-columns:1fr}}
 </style>`);
 const MC_CUERPO = '{\n  "nombre": "{{full_name}}",\n  "telefono": "{{phone}}",\n  "correo": "{{email}}",\n  "instagram": "{{ig_username}}",\n  "etiquetas": "{{tags}}"\n}';
+/* Los desplegables del CRM (8-oct, maqueta aprobada): el botón con el punto de color y la lista con el chulito. */
+const MC = {eq:'', et:''};
+const mcPunto = c => `<span class="mc-pt" style="background:${c}"></span>`;
+const mcColorEq = n => (typeof colorEquipo === 'function' ? colorEquipo(n) : '#3b82f6');
+function mcDd(id, ops, sel){
+  const act = ops.find(o => o[0] === sel) || ops[0] || ['', 'Sin opciones', '#cbd5e1'];
+  return `<div class="dd dsel mc-dd" style="position:relative"><button type="button" class="sel" data-dsel-open="1">${mcPunto(act[2])}<span style="flex:1;text-align:left">${esc(act[1])}</span>${I('chev')}</button><div class="menu" hidden>${ops.map(([v, l, c]) => `<button type="button" data-mc-${id}="${esc(v)}" aria-selected="${v === act[0]}">${mcPunto(c)}${esc(l)}${v === act[0] ? I('check') : ''}</button>`).join('')}</div></div>`;
+}
 function mcSelects(){
-  const eqs = EQUIPOS.map(q => q.n), eq0 = eqs[0] || '';
-  const ops = eq => etapasDe(eq).map(e => `<option>${esc(e[0])}</option>`).join('');
-  return `<div class="mc-sel ig-f"><label>Equipo que recibe los leads<select id="mc-eq">${eqs.map(n => `<option>${esc(n)}</option>`).join('')}</select></label><label>Etapa del embudo<select id="mc-et">${ops(eq0)}</select></label></div>`;
+  const eqs = EQUIPOS.map(q => q.n);
+  if (!eqs.includes(MC.eq)) MC.eq = eqs[0] || '';
+  const ets = etapasDe(MC.eq);
+  if (!ets.some(e => e[0] === MC.et)) MC.et = (ets[0] || [''])[0];
+  return `<div class="mc-sel ig-f" id="mc-sels"><div class="mc-campo"><span>Equipo que recibe los leads</span>${mcDd('eq', eqs.map(n => [n, n, mcColorEq(n)]), MC.eq)}</div><div class="mc-campo"><span>Etapa del embudo</span>${mcDd('et', ets.map(e => [e[0], e[0], e[1] || '#cbd5e1']), MC.et)}</div></div>`;
 }
 function mcDialogo(res){
   const s = (INTEG.lista || []).find(x => x.id === 'manychat') || {}, u = INTEG_UI.manychat;
@@ -42,17 +61,18 @@ document.getElementById('page').addEventListener('click', e => {
   e.stopImmediatePropagation();
   mcDialogo(null);
 }, true);
-document.getElementById('ov-x').addEventListener('change', e => {
-  if (e.target.id !== 'mc-eq') return;
-  const et = document.getElementById('mc-et'); et.replaceChildren(); et.insertAdjacentHTML('beforeend', etapasDe(e.target.value).map(x => `<option>${esc(x[0])}</option>`).join(''));
+document.getElementById('ov-x').addEventListener('click', e => {
+  const b = e.target.closest('[data-mc-eq], [data-mc-et]'); if (!b) return;
+  if (b.dataset.mcEq !== undefined) { MC.eq = b.dataset.mcEq; MC.et = ''; } else MC.et = b.dataset.mcEt;
+  const caja = document.getElementById('mc-sels'); if (!caja) return;
+  caja.insertAdjacentHTML('beforebegin', mcSelects()); caja.remove();
 });
 document.getElementById('ov-x').addEventListener('click', e => {
   const cp = e.target.closest('[data-mc-copiar]');
   if (cp) { const x = document.getElementById(cp.dataset.mcCopiar); if (x) navigator.clipboard.writeText(cp.dataset.mcCopiar === 'mc-cuerpo' ? MC_CUERPO : x.textContent).then(() => toast('Copiado'), () => toast('No se pudo copiar')); return; }
   const g = e.target.closest('[data-mc-guardar]'); if (!g) return;
-  const v = id => ((document.getElementById(id) || {}).value || '').trim();
   g.disabled = true; g.textContent = 'Conectando…';
-  crmApi('POST', '/crm/integraciones/manychat', {equipo: v('mc-eq'), etapa: v('mc-et')})
+  crmApi('POST', '/crm/integraciones/manychat', {equipo: MC.eq, etapa: MC.et})
     .then(r => { INTEG.lista = Array.isArray(r.integraciones) ? r.integraciones : INTEG.lista; mcDialogo(r); render(); toast('ManyChat quedó conectado'); })
     .catch(err => { g.disabled = false; g.textContent = 'Guardar y ver la dirección'; toast(err.message); });
 });

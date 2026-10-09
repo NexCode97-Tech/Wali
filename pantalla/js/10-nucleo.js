@@ -103,6 +103,32 @@ document.addEventListener('click', e => {
   document.querySelectorAll('.dsel .menu').forEach(m => { if (!b || m !== b.nextElementSibling) m.hidden = true; });
   if (b) { e.stopPropagation(); b.nextElementSibling.hidden = !b.nextElementSibling.hidden; }
 }, true);
+/* Origen del contacto (8-oct, maqueta aprobada): megáfono, el logo real de la plataforma y el nombre del anuncio;
+   sin anuncio, el logo y el nombre del canal por el que llegó. */
+const LOGOS_ORIGEN = {
+  meta:'<svg viewBox="0 0 24 24"><path fill="#0866FF" d="M6.9 5C4.2 5 2 8.6 2 12.4 2 15.3 3.4 17 5.6 17c1.7 0 3-1.1 4.9-4.3l1.3-2.2c.2.4.4.8.7 1.2l.8 1.4c1.7 2.9 3.2 3.9 5 3.9 2.3 0 3.7-1.9 3.7-4.9C22 8.4 19.8 5 17.1 5c-1.5 0-2.8 1-4.4 3.3C11 6 9.1 5 6.9 5zm.2 2.3c1.3 0 2.4.9 3.5 2.6-1.8 3-2.8 4.6-4.1 4.6-1.1 0-1.9-1-1.9-2.8 0-2.3 1-4.4 2.5-4.4zm9.9 0c1.6 0 2.7 2.2 2.7 4.7 0 1.6-.6 2.4-1.5 2.4-1 0-1.8-.8-3.4-3.4l-1-1.6c1.1-1.6 2-2.1 3.2-2.1z"/></svg>',
+  google:'<svg viewBox="0 0 24 24"><path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z"/><path fill="#FBBC05" d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1A10 10 0 0 0 2 12c0 1.6.4 3.1 1.1 4.6z"/><path fill="#EA4335" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.4L6.4 10C7.2 7.7 9.4 5.9 12 5.9z"/></svg>',
+  tiktok:'<svg viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="#000"/><path fill="#fff" d="M16.6 5.8A4.3 4.3 0 0 1 15.5 3h-3.1v12.4a2.6 2.6 0 1 1-1.8-2.5V9.7a5.7 5.7 0 1 0 4.9 5.7V9a7.3 7.3 0 0 0 4.3 1.4V7.3a4.3 4.3 0 0 1-3.2-1.5z"/></svg>',
+  whatsapp:'<svg viewBox="0 0 24 24"><path fill="#25D366" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2z"/><path fill="#fff" d="M8.5 7.5c.2-.4.4-.4.7-.4h.5c.2 0 .4 0 .6.5l.8 1.9c.1.2.1.4 0 .6l-.4.6-.3.4c.5 1 1.6 2.1 2.7 2.6l.5-.6c.2-.2.4-.3.6-.2l1.9.9c.3.1.4.2.4.4 0 .5-.2 1.1-.6 1.4-.5.4-1.4.6-2.5.2-2.2-.8-3.9-2.6-4.7-4.4-.5-1.3-.1-2.5.3-3z"/></svg>',
+  instagram:'<svg viewBox="0 0 24 24"><defs><linearGradient id="lo-ig" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FFD600"/><stop offset=".5" stop-color="#FF0169"/><stop offset="1" stop-color="#7638FA"/></linearGradient></defs><rect width="24" height="24" rx="6" fill="url(#lo-ig)"/><rect x="5.5" y="5.5" width="13" height="13" rx="4" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="3.2" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="16.3" cy="7.7" r="1" fill="#fff"/></svg>',
+  messenger:'<svg viewBox="0 0 24 24"><path fill="#0866FF" d="M12 2C6.4 2 2 6.1 2 11.7c0 2.9 1.2 5.5 3.2 7.3V22l3-1.6c.9.2 1.8.4 2.8.4 5.6 0 10-4.1 10-9.7S17.6 2 12 2z"/><path fill="#fff" d="m6 14.5 3-4.7 2.6 2 3.4-2-3 4.8-2.6-2.1z"/></svg>',
+  manychat:'<svg viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#0b0b10"/><path d="M8 21V11l4 5 4-5 4 5 4-5v10" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+};
+const logoOrigen = t => { const n = norm(String(t || ''));
+  return n.includes('meta') || n.includes('facebook') ? LOGOS_ORIGEN.meta : n.includes('google') ? LOGOS_ORIGEN.google : n.includes('tiktok') ? LOGOS_ORIGEN.tiktok
+    : n.includes('whatsapp') ? LOGOS_ORIGEN.whatsapp : n.includes('instagram') ? LOGOS_ORIGEN.instagram : n.includes('messenger') ? LOGOS_ORIGEN.messenger : n.includes('manychat') ? LOGOS_ORIGEN.manychat : ''; };
+function origenLinea(c, f){
+  const p = c.pauta, txt = p ? (p.anuncio || p.campana || p.plataforma || 'Anuncio') : f.origen;
+  if (!txt) return '';
+  const logo = logoOrigen(p ? p.plataforma : f.origen);
+  return `<span class="ln pc-origen">${I('megaphone')}<span class="pc-org">${logo ? `<span class="pc-org-l">${logo}</span>` : ''}<span title="${esc(txt)}">${esc(txt)}</span></span></span>`;
+}
+document.head.insertAdjacentHTML('beforeend', `<style>
+.pc-org{display:flex;align-items:center;gap:8px;min-width:0}
+.pc-org > span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-org-l{width:20px;height:20px;border-radius:5px;display:grid;place-items:center;flex:none;background:#fff;border:1px solid #eef1f5}
+.pc-org-l svg{width:14px;height:14px}
+</style>`);
 const CANALES = {wa:{n:'WhatsApp', ic:'wa'}, ig:{n:'Instagram', ic:'ig'}, fb:{n:'Messenger', ic:'fb'}, tg:{n:'Telegram', ic:'tg'}, tt:{n:'TikTok', ic:'tt'}, web:{n:'Chat de la web', ic:'web'}, mail:{n:'Correo', ic:'mail'}};
 // Canales que se conectan con una cuenta (Messenger, Instagram, Telegram y TikTok, 45-canales.js): GET /crm/inicio
 // `canales` y el evento `canales`, para todos, sin nada de la conexión.
@@ -661,7 +687,7 @@ function panel(c){
     c.tel && !esMail ? `<span class="ln">${I('phone')}<span class="pc-num">${esc(c.tel)}</span></span>` : '',
     correo ? `<span class="ln">${I('mail')}<span>${esc(correo)}</span></span>` : '',
     f.ciudad ? `<span class="ln">${I('compass')}<span>${esc(f.ciudad)}, Colombia</span></span>` : '',
-    f.origen ? `<span class="ln">${I('chat')}<span>Llegó por ${esc(f.origen)}</span></span>` : '',
+    origenLinea(c, f),
   ].join('');
   const h = historial(c), recs = (c.recs || []).filter(r => !r.hecho).length;
   const pautaNombre = c.pauta ? (({Google:'Google Ads', TikTok:'TikTok Ads', Meta:'Meta Ads'})[c.pauta.plataforma] || c.pauta.plataforma || 'Pauta') : '';

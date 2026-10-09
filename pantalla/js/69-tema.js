@@ -6,7 +6,7 @@
 (() => {
   const css = `
 #app{--nx-amarillo:#FFD21F;--nx-amarillo-2:#e6d900;--nx-negro:#0b0b10;--nx-negro-2:#15151c;--nx-negro-3:#22222c;--nx-gris:#f2f4f6;--nx-violeta:#7c3aed;--nx-txt:#c9c9d3;--nx-mut:#7d7d8a}
-:focus-visible{outline-color:#7c3aed}
+:focus-visible{outline-color:#0b0b10}
 
 /* ── Barra lateral negra (también como cajón en celular) ── */
 #app .nav{background:var(--nx-negro);border-right:0;color:var(--nx-txt);scrollbar-color:var(--nx-negro-3) transparent}

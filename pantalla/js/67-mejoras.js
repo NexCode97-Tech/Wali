@@ -19,6 +19,8 @@
 .chat-h .acts .btn.mj-estrella[aria-pressed="true"]{background:#fff8e1;border-color:#fcd34d;color:#b45309}
 .chat-h .acts .btn.mj-estrella[aria-pressed="true"] svg{fill:#f59e0b;stroke:#f59e0b}
 .chat-h .acts .btn.mj-fuego{font-size:16px;line-height:1}
+/* 8-oct, maqueta aprobada: sin el botón de «Caliente» en el encabezado (sigue en el menú ⋯). */
+.chat-h .acts .btn.mj-fuego{display:none!important}
 .chat-h.mj-angosto .acts .btn:is(.mj-estrella,.mj-fuego){display:none}
 .menu .mj-mfu{width:18px;flex:none;text-align:center;font-size:14px;line-height:1}
 .chat-h .acts .btn.mj-fuego.off span{filter:grayscale(1);opacity:.5}
