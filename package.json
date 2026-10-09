@@ -44,7 +44,7 @@
     "pino": "^9.0.0",
     "pino-pretty": "^11.0.0",
     "prisma": "^5.0.0",
-    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
+    "xlsx": "file:vendor/xlsx-0.20.3.tgz",
     "zod": "^3.22.0"
   },
   "devDependencies": {
