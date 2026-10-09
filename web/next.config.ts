@@ -32,8 +32,8 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   async rewrites() {
     return {
-      // El home es la maqueta aprobada (8-oct), tal cual: public/inicio.html.
-      beforeFiles: [{ source: "/", destination: "/inicio.html" }],
+      // El home y los precios son las maquetas aprobadas (8-oct), tal cual: public/inicio.html y public/precios.html.
+      beforeFiles: [{ source: "/", destination: "/inicio.html" }, { source: "/precios", destination: "/precios.html" }],
       afterFiles: [
         { source: "/crm", destination: `${CRM_ORIGEN}/` },
         { source: "/crm/:path*", destination: `${CRM_ORIGEN}/:path*` },
@@ -43,7 +43,7 @@ const nextConfig: NextConfig = {
   },
   // Las cabeceras de seguridad van en todo menos /crm: el CRM manda las suyas y con dos CSP se rompe.
   async headers() {
-    return [{ source: "/((?!crm$|crm/).*)", headers: seguridad }, { source: "/", headers: seguridad }];
+    return [{ source: "/((?!crm$|crm/).*)", headers: seguridad }, { source: "/", headers: seguridad }, { source: "/precios", headers: seguridad }];
   },
 };
 
