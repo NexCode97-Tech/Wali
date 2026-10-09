@@ -257,6 +257,7 @@ p{margin:0}
 .incluye-h li{display:flex;align-items:center;gap:10px;background:var(--tarjeta);border-radius:var(--r-s);box-shadow:var(--sombra);padding:14px 16px;font-size:14px;font-weight:600}
 .incluye-h svg{width:18px;height:18px;flex:none}
 /* ── Página de precios ── */
+.seccion > .cabeza .h1-p{font-size:clamp(32px,4vw,52px);font-weight:var(--peso-titulo);line-height:1.02;max-width:20ch}
 .enc-p{display:grid;gap:16px;justify-items:start;padding:clamp(12px,2vw,24px) 6px 0;max-width:820px}
 .enc-p h1{font-size:clamp(36px,5vw,64px);line-height:1;font-weight:var(--peso-titulo)}
 .enc-p h1 em{font-style:normal;color:var(--tinta);background:linear-gradient(transparent 58%,var(--amarillo) 58%,var(--amarillo) 92%,transparent 92%);box-decoration-break:clone;-webkit-box-decoration-break:clone}
@@ -396,16 +397,8 @@ if(document.readyState==="complete")cuandoListo();else window.addEventListener("
     </div>
   </header>
 
-  <div class="seccion">
-  <section class="enc-p">
-    <span class="eyebrow-m">Precios de Wali</span>
-    <h1>Un precio por persona. <span class="salto"><em>Lo demás, sin recargo.</em></span></h1>
-    <p>Pagas solo por las personas de tu equipo que usan Wali. WhatsApp se lo pagas a Meta y la IA a su proveedor, con tu propia cuenta y a su tarifa oficial.</p>
-  </section>
-  </div>
-
   <div class="seccion" id="precio">
-    <div class="cabeza"><div><span class="eyebrow">Calcula tu plan</span><h2>Mueve la barra y mira cuánto pagas.</h2></div><p>WhatsApp se lo pagas a Meta y la IA a su proveedor, a su tarifa oficial. Wali no les pone recargo.</p></div>
+    <div class="cabeza"><div><span class="eyebrow">Precios de Wali</span><h1 class="h1-p">Mueve la barra y mira cuánto pagas.</h1></div><p>WhatsApp se lo pagas a Meta y la IA a su proveedor, a su tarifa oficial. Wali no les pone recargo.</p></div>
     <div class="planes-h">
       <div class="calc-h">
         <div class="calc-top">
