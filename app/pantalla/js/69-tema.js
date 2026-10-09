@@ -22,6 +22,9 @@
 #app .nav li button[aria-current="true"]::before{content:"";position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:3px;background:var(--nx-amarillo)}
 #app .nav li button .n,#app .nav li button .tw{color:var(--nx-mut)}
 #app .nav li button[aria-current="true"] .n{color:#fff}
+/* En el cajón del celular, 57-celular-menu.js pinta la elegida de azul (era para la barra clara): aquí va blanca. */
+#app.cj-abierto .nav li button[aria-current="true"],#app.cj-abierto .nav li button[aria-current="true"] > :is(svg,.n),
+#app.cj-abierto > .nav #principal li button[aria-current="true"],#app.cj-abierto > .nav #principal li button[aria-current="true"] > :is(svg,.n){color:#fff}
 #app .nav .me{border-top-color:var(--nx-negro-3)}
 #app .nav .me .cu-nom,#app .nav .me b{color:#fff}
 #app .nav .me .cu-fila.mc-cuenta:hover,#app .nav .me .cu-fila.mc-cuenta[aria-expanded="true"]{background:var(--nx-negro-2)}
