@@ -304,8 +304,9 @@ p{margin:0}
 .faq-h details{padding:18px 20px}
 .faq-h summary{cursor:pointer;list-style:none;font-weight:600;font-size:15.5px;display:flex;justify-content:space-between;gap:16px}
 .faq-h summary::-webkit-details-marker{display:none}
-.faq-h summary::after{content:"+";font-family:var(--mono);color:var(--tinta-3)}
-.faq-h details[open] summary::after{content:"−"}
+.faq-h summary::after{content:"+";font:500 20px/1 var(--texto);color:var(--tinta-3);width:22px;height:22px;display:grid;place-items:center;flex:none;transition:transform .4s cubic-bezier(.22,1,.36,1),color .3s}
+.faq-h details.abierto summary::after{transform:rotate(45deg);color:var(--tinta)}
+.faq-h details p{overflow:hidden}
 .faq-h details p{margin-top:10px;color:var(--tinta-2);font-size:14.5px}
 .cierre-h{background:var(--tinta);color:#fff;border-radius:var(--r);padding:clamp(24px,4vw,40px);display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap;position:relative;overflow:hidden}
 .cierre-h::after{content:"";position:absolute;right:-80px;bottom:-120px;width:320px;height:320px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,210,31,.2),transparent);pointer-events:none}
@@ -505,6 +506,32 @@ if(document.readyState==="complete")cuandoListo();else window.addEventListener("
     document.querySelectorAll('.cm-lista').forEach(l => l.hidden = l.dataset.p !== b.dataset.p);
   }));
   ind.style.transform = 'translateX(100%)';
+})();
+</script>
+<script>
+// Preguntas: se abren y cierran deslizando (alto y opacidad), y el + gira a ×.
+(() => {
+  const suave = 'cubic-bezier(.22,1,.36,1)', quieto = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.querySelectorAll('.faq-h details').forEach(d => {
+    const s = d.querySelector('summary'), p = d.querySelector('p'); let anim = null;
+    s.addEventListener('click', e => {
+      e.preventDefault();
+      if (anim) anim.cancel();
+      if (!d.open) {
+        d.open = true; d.classList.add('abierto');
+        if (quieto) return;
+        const h = p.offsetHeight;
+        anim = p.animate([{ height: '0px', opacity: 0, marginTop: '0px' }, { height: h + 'px', opacity: 1, marginTop: '10px' }], { duration: 420, easing: suave });
+        anim.onfinish = () => { anim = null; };
+      } else {
+        d.classList.remove('abierto');
+        if (quieto) { d.open = false; return; }
+        const h = p.offsetHeight;
+        anim = p.animate([{ height: h + 'px', opacity: 1, marginTop: '10px' }, { height: '0px', opacity: 0, marginTop: '0px' }], { duration: 320, easing: suave });
+        anim.onfinish = () => { d.open = false; anim = null; };
+      }
+    });
+  });
 })();
 </script>
 
