@@ -337,6 +337,8 @@ const crmDatos = (() => {
     pintarMarca();
     if (Array.isArray(d.conexiones)) CONEXIONES.splice(0, CONEXIONES.length, ...d.conexiones);
     if (Array.isArray(d.canales)) CX_CANALES.splice(0, CX_CANALES.length, ...d.canales);
+    // WhatsApp caído (83-wa-caido.js): la franja roja.
+    if (d.waCaido && window.crmWaCaido) window.crmWaCaido(d.waCaido);
     // Qué ve y qué administra esta persona (api alcance.ts): lo decide su rol en cada equipo; sin equipo, solo el
     // administrador ve todo. ALCANCE.on = no ve todo (la pantalla le muestra solo lo de sus equipos).
     const eqsAj = d.ajustes && d.ajustes.equipos && d.ajustes.equipos.miembros && typeof d.ajustes.equipos.miembros === 'object' ? Object.keys(d.ajustes.equipos.miembros) : null;

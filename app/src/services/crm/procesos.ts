@@ -280,6 +280,8 @@ export async function cadaDiezMinutos() {
     await pasoPorEspacio('resumen diario de pendientes', procesarResumenDiario)
     // Los tokens de Instagram duran 60 días: los que tienen más de 30 se renuevan (renovarTokensInstagram mira la fecha de cada uno).
     await paso('tokens de Instagram', () => import('./instagram').then(m => m.renovarTokensInstagram()))
+    // WhatsApp (13-oct): cada conexión, una vez al día, se revisa en Meta; si se cayó, aviso y franja roja (caidas.ts).
+    await pasoPorEspacio('conexiones de WhatsApp', () => import('./caidas').then(m => m.revisarConexionesWhatsapp()))
   } finally { corriendoDiez = false }
 }
 

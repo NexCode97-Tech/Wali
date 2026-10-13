@@ -105,6 +105,8 @@ export async function inicio(req: Request, res: Response) {
     conexiones: config ? await listarConexiones() : [],
     // Messenger, Instagram, Telegram y TikTok conectados (sin claves): para todos.
     canales: await canalesConectados(),
+    // WhatsApp caído (13-oct): para la franja roja de todos (caidas.ts).
+    waCaido: await (await import('../../services/crm/caidas')).whatsappCaido(),
     // Qué ve y qué administra en el CRM (siempre un objeto desde el 29-sep).
     alcance: alcanceParaFront(alcance, eqs),
     ahora: new Date().toISOString(),

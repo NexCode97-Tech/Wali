@@ -635,7 +635,8 @@ async function marcarCuentaConError(msgId: string, error: string) {
   const m = await prisma.crmMensaje.findUnique({ where: { id: msgId }, select: { conversacion: { select: { linea: { select: { conexionId: true } } } } } })
   const id = m?.conversacion.linea?.conexionId
   if (!id) return
-  await prisma.crmConexion.update({ where: { id }, data: { estado: 'error', error: error.slice(0, 500) } })
+  // Primera vez: anota desde cuándo, avisa a los administradores y pone la franja roja (caidas.ts).
+  await (await import('./caidas')).marcarCaida(id, error)
   const { emitirConexiones } = await import('./conexiones')
   await emitirConexiones(null)
 }

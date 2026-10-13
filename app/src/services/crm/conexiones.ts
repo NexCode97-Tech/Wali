@@ -121,6 +121,7 @@ export async function canalesConectados() {
 export async function emitirConexiones(por: string | null) {
   emitirCrm({ tipo: 'conexiones', conexiones: await listarConexiones() }, por)
   emitirCrm({ tipo: 'canales', canales: await canalesConectados() }, por)
+  emitirCrm({ tipo: 'wa-caido', ...(await (await import('./caidas')).whatsappCaido()) }, null)
 }
 
 // ─── Errores de Meta, dichos para quien conecta ──────────────────────────────
@@ -134,6 +135,13 @@ export function porQueNoConecta(e: unknown, paso: string): AppError {
     return new AppError(`${paso === 'token' ? 'No se pudo revisar el token' : paso}: ${e.message}`, e.statusCode)
   }
   return e instanceof AppError ? e : new AppError(`${paso}: ${(e as Error)?.message ?? e}`, 502)
+}
+
+/** Por qué no sirve un token que vence, y cómo sacar el que no vence. */
+export function tokenQueVence(venceSeg: number): string {
+  const f = new Date(venceSeg * 1000).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', timeZone: 'America/Bogota' })
+  const cuando = venceSeg * 1000 - Date.now() < 2 * 864e5 ? 'es temporal (vence en menos de 2 días)' : `vence el ${f}`
+  return `Ese token ${cuando} y, cuando venza, los mensajes dejarán de llegar al CRM. Usa uno que nunca venza: en business.facebook.com, Configuración del negocio › Usuarios del sistema, crea uno de tipo Administrador (o usa el que ya tienes), asígnale la app y la cuenta de WhatsApp con control total, toca «Generar nuevo token», elige vencimiento «Nunca» y marca whatsapp_business_messaging y whatsapp_business_management`
 }
 
 // ─── Conexión manual ─────────────────────────────────────────────────────────
@@ -172,6 +180,9 @@ export async function conectarWhatsappManual(entrada: Json, baseApi: string, por
   try { info = await revisarToken(token, `${appId}|${appSecret}`) } catch (e) { throw porQueNoConecta(e, 'token') }
   if (!info.valido) throw new ValidationError('Ese token ya no es válido. Genera uno nuevo para el usuario del sistema y vuelve a pegarlo')
   if (info.appId && info.appId !== appId) throw new ValidationError(`Ese token es de otra app de Meta (App ID ${info.appId}). Genera el token con la misma app`)
+  // Solo tokens que nunca vencen (13-oct): el temporal de la app de Meta dura 24 horas y, al vencer, los mensajes dejan
+  // de llegar sin que nadie se entere (le pasó a las dos primeras conexiones el 6 y 7 de octubre).
+  if (info.vence) throw new ValidationError(tokenQueVence(info.vence))
   const faltan = PERMISOS_WA.filter(p => !info.permisos.includes(p))
   if (faltan.length) throw new ValidationError(`Al token le faltan estos permisos: ${faltan.join(', ')}. Vuelve a generarlo marcándolos`)
   // Con tokens de usuario del sistema Meta a veces no dice las cuentas (granular_scopes sin target_ids, aunque la cuenta
@@ -413,9 +424,11 @@ export async function revisarConexion(id: string, por: string | null): Promise<C
   } catch (e) {
     estado = 'error'; error = porQueNoConecta(e, 'No se pudo revisar la conexión').message
   }
-  const f = await prisma.crmConexion.update({
-    where: { id }, data: { estado, error, datos: datos as unknown as Prisma.InputJsonValue }, include: { _count: { select: { lineas: true } } },
-  })
+  await prisma.crmConexion.update({ where: { id }, data: { datos: datos as unknown as Prisma.InputJsonValue } })
+  const caidas = await import('./caidas')
+  if (estado === 'error') await caidas.marcarCaida(id, error ?? 'No se pudo revisar la conexión', datos.vence ? datos.vence * 1000 : undefined)
+  else await caidas.marcarViva(id)
+  const f = await prisma.crmConexion.findUniqueOrThrow({ where: { id }, include: { _count: { select: { lineas: true } } } })
   await emitirConexiones(por)
   return conexionAFront(f)
 }
