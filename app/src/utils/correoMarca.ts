@@ -9,6 +9,8 @@ export const escaparHtml = (t: string) => t.replace(/[&<>"']/g, c => ({ '&': '&a
 const LOGO = () => process.env.CRM_CORREO_LOGO || 'https://www.nexcode97.com/email/logo-nexcode97.png'
 const SITIO = () => process.env.CRM_CORREO_SITIO || 'https://www.nexcode97.com'
 const AYUDA = () => process.env.CRM_CORREO_AYUDA || 'nexcode97@gmail.com'
+/** El nombre de la marca en el logo y el pie (CRM_CORREO_MARCA, «Wali»). */
+const MARCA = () => (process.env.CRM_CORREO_MARCA ?? '').trim() || 'NexCode97'
 const FUENTE = "Inter,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"
 
 export interface CorreoMarca {
@@ -56,7 +58,7 @@ export function correoMarca(c: CorreoMarca): string {
     <tr><td align="center" style="padding:32px 12px">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px">
         <tr><td bgcolor="#0a0a0d" style="border-radius:16px 16px 0 0;padding:26px 32px">
-          <a href="${escaparHtml(sitio)}" target="_blank"><img src="${escaparHtml(LOGO())}" width="150" height="42" alt="NexCode97" style="display:block;border:0;outline:none;width:150px;height:auto"></a>
+          <a href="${escaparHtml(sitio)}" target="_blank"><img src="${escaparHtml(LOGO())}" width="150" height="42" alt="${escaparHtml(MARCA())}" style="display:block;border:0;outline:none;width:150px;height:auto"></a>
         </td></tr>
         <tr><td bgcolor="#FFD21F" height="4" style="font-size:0;line-height:0">&nbsp;</td></tr>
         <tr><td bgcolor="#ffffff" style="padding:36px 32px 28px">
@@ -67,7 +69,7 @@ export function correoMarca(c: CorreoMarca): string {
         <tr><td bgcolor="#ffffff" style="border-radius:0 0 16px 16px;padding:0 32px 28px">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="border-top:1px solid #e6e6ec;padding-top:18px;font-family:${FUENTE};font-size:12px;line-height:1.6;color:#8a8a96">
             ¿Dudas? Escríbenos a <a href="mailto:${escaparHtml(ayuda)}" style="color:#4b4b57">${escaparHtml(ayuda)}</a>.<br>
-            NexCode97 · Bucaramanga, Colombia · <a href="${escaparHtml(sitio)}/privacidad" target="_blank" style="color:#4b4b57">Política de privacidad</a>
+            ${MARCA() === 'NexCode97' ? 'NexCode97' : `${escaparHtml(MARCA())}, de NexCode97`} · Bucaramanga, Colombia · <a href="${escaparHtml(sitio)}/privacidad" target="_blank" style="color:#4b4b57">Política de privacidad</a>
           </td></tr></table>
         </td></tr>
       </table>

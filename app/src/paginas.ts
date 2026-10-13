@@ -139,6 +139,13 @@ router.get('/favicon.ico', (_req: Request, res: Response) => {
   res.sendFile(join(PANTALLA, 'img', 'wali.ico'))
 })
 
+/** El logo de la cabecera de los correos (CRM_CORREO_LOGO): lo cargan Gmail, Outlook y Apple Mail desde otro sitio. */
+router.get('/img/wali-correo.png', (_req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'public, max-age=604800')
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin')
+  res.sendFile(join(PANTALLA, 'img', 'wali-correo.png'))
+})
+
 /** El fondo del chat de prueba de Agentes IA (como el de WhatsApp). */
 router.get('/img/wa-fondo.jpg', (_req: Request, res: Response) => {
   res.setHeader('Cache-Control', 'public, max-age=604800')
