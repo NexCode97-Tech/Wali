@@ -1,0 +1,601 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Partners · Wali</title>
+<meta name="description" content="Programa de partners de Wali: recomienda el CRM de WhatsApp con IA y gana el 20 % de cada pago de tus referidos, cada mes, mientras sigan con Wali.">
+<link rel="canonical" href="https://walicrm.com/partners">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="theme-color" content="#FFD21F">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Wali">
+<meta property="og:locale" content="es_CO">
+<meta property="og:url" content="https://walicrm.com/partners">
+<meta property="og:title" content="Partners · Wali: gana el 20 % recurrente">
+<meta property="og:description" content="Recomienda Wali y gana el 20 % de cada pago de tus referidos, cada mes.">
+<meta property="og:image" content="https://walicrm.com/wali-512.png">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
+<meta property="og:image:alt" content="Logo de Wali">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Partners · Wali: gana el 20 % recurrente">
+<meta name="twitter:description" content="Recomienda Wali y gana el 20 % de cada pago de tus referidos, cada mes.">
+<meta name="twitter:image" content="https://walicrm.com/wali-512.png">
+<link rel="icon" href="/wali-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/wali-180.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&family=Bricolage+Grotesque:opsz,wght@12..96,800&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: tablero bento sobre un lienzo gris claro. Arriba, el producto en grande con su ficha flotante (como un panel de
+   control real); alrededor, tarjetas con cifras vivas. Abajo, el recorrido y el precio en el mismo lenguaje de tarjetas. */
+:root{
+  --lienzo:#E9E8E4; --marco:#F4F3F0; --tarjeta:#FFFFFF; --hundido:#F2F1EE; --linea:#E3E1DB;
+  --tinta:#17140F; --tinta-2:#4A463E; --tinta-3:#8B867B;
+  --amarillo:#FFD21F; --amarillo-suave:#FFF4C2; --brasa:#FF4D1A; --brasa-suave:#FFE6DD;
+  --verde:#1F9D55; --verde-suave:#DDF5E6; --rojo:#D93B3B; --rojo-suave:#FDE4E4;
+  --display:"Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --texto:"Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"DM Mono", ui-monospace, "Cascadia Mono", monospace;
+  --r:22px; --r-s:14px;
+  --peso-titulo:800; --peso-sub:700; --peso-texto:400; --tam-base:15px; --espaciado-titulo:-.035em;
+  --sombra:0 1px 0 rgba(23,20,15,.04), 0 10px 30px -18px rgba(23,20,15,.22);
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--lienzo);color:var(--tinta);font-family:var(--texto);font-size:var(--tam-base);font-weight:var(--peso-texto);line-height:1.55;-webkit-font-smoothing:antialiased;padding-inline:clamp(12px,2.4vw,28px);padding-block:20px 40px}
+a{color:inherit;text-decoration:none}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:var(--espaciado-titulo)}
+p{margin:0}
+:focus-visible{outline:2px solid var(--tinta);outline-offset:3px;border-radius:8px}
+.marco{max-width:1240px;margin:0 auto;background:var(--marco);border-radius:32px;padding:clamp(14px,2vw,22px) clamp(14px,2vw,22px) clamp(28px,4vw,48px);box-shadow:0 30px 80px -50px rgba(23,20,15,.45);display:grid;gap:clamp(56px,7vw,96px)}
+.marco > .barra{margin-bottom:calc(-1 * clamp(8px,2vw,24px))}
+/* El héroe respira: aire arriba del título y entre el título y el producto. */
+.marco > .seccion:first-of-type{gap:clamp(40px,5vw,64px)}
+.enc{padding-top:clamp(12px,2vw,24px)!important}
+.seccion{display:grid;gap:22px}
+.seccion > .cabeza{display:flex;justify-content:space-between;align-items:end;gap:20px;flex-wrap:wrap;padding-inline:6px}
+.seccion > .cabeza h2{font-size:clamp(28px,3.2vw,40px);font-weight:var(--peso-titulo);line-height:1.05;max-width:22ch}
+.seccion > .cabeza p{color:var(--tinta-2);max-width:42ch}
+.seccion > .cabeza .eyebrow{font-family:var(--texto);font-size:14px;font-weight:600;color:var(--tinta-3);display:block;margin-bottom:10px}
+.t{background:var(--tarjeta);border-radius:var(--r);box-shadow:var(--sombra);padding:20px;min-width:0}
+.lbl{font-size:12.5px;color:var(--tinta-3);font-weight:500}
+.mono{font-family:var(--mono)}
+.num{font-family:var(--display);font-weight:var(--peso-sub);letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1}
+.tend{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:600;border-radius:999px;padding:2px 7px}
+.tend.sube{background:var(--verde-suave);color:var(--verde)}
+.tend.baja{background:var(--rojo-suave);color:var(--rojo)}
+.ic{width:38px;height:38px;border-radius:12px;background:var(--hundido);display:grid;place-items:center;flex:none}
+.ic svg{width:18px;height:18px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:46px;padding:0 20px;border-radius:999px;font-weight:600;font-size:14.5px;border:1px solid transparent;transition:transform .2s cubic-bezier(.22,1,.36,1),background .2s}
+.btn:hover{transform:translateY(-1px)}
+.btn.pri{background:var(--tinta);color:#fff}
+.btn.am{background:var(--amarillo);color:var(--tinta)}
+.btn.sec{background:var(--tarjeta);border-color:var(--linea)}
+.btn svg{width:16px;height:16px}
+
+/* ── Barra superior ── */
+.barra{display:flex;align-items:center;gap:16px;padding:4px 6px}
+.logo{display:flex;align-items:center;gap:8px}
+.logo b{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-weight:800;font-size:25px;letter-spacing:-.02em;line-height:1}
+.pild{margin-inline:auto;display:flex;gap:4px;background:var(--tarjeta);border-radius:999px;padding:5px;box-shadow:var(--sombra)}
+.pild a{height:38px;display:inline-flex;align-items:center;gap:7px;padding:0 15px;border-radius:999px;font-size:13.5px;font-weight:600;color:var(--tinta-2)}
+.pild a.on{background:var(--tinta);color:#fff}
+.pild a svg{width:16px;height:16px}
+.pild a:not(.on):hover{background:var(--hundido)}
+.barra .der{display:flex;gap:8px;align-items:center}
+.barra .btn{height:42px;font-size:13.5px}
+
+/* ── Encabezado con cifras ── */
+.enc{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(0,1fr);gap:14px;align-items:end;padding:10px 6px 4px}
+/* El título en 3 renglones en escritorio; en celular corre libre. */
+.enc h1 .ln{display:block}
+@media (min-width:1101px){.enc h1 .ln{white-space:nowrap}}
+@media (max-width:760px){.enc h1 .ln{display:inline}}
+.enc h1{font-size:clamp(34px,4.4vw,56px);line-height:1;font-weight:var(--peso-titulo)}
+.enc h1 em{font-style:normal;background:linear-gradient(transparent 62%,var(--amarillo) 62%,var(--amarillo) 92%,transparent 92%)}
+.enc p{margin-top:12px;color:var(--tinta-2);max-width:44ch}
+.enc-acc{display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.enc-acc .lbl{flex-basis:100%;text-align:right}
+.cifra{display:flex;gap:11px;align-items:center;padding:14px}
+.cifra .num{font-size:28px}
+.cifra .fila{display:flex;align-items:center;gap:7px;margin-top:3px}
+
+/* ── Escenario: el producto en grande ── */
+.esc{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px}
+.escena{position:relative;border-radius:26px;overflow:hidden;min-height:700px;background:
+  radial-gradient(120% 90% at 70% 10%,#FFF6CF 0%,transparent 55%),
+  radial-gradient(80% 70% at 10% 100%,#FFE3D6 0%,transparent 60%),
+  linear-gradient(160deg,#FBFAF7,#EFEDE7);box-shadow:var(--sombra)}
+.escena .rejilla{position:absolute;inset:0;background-image:linear-gradient(rgba(23,20,15,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(23,20,15,.045) 1px,transparent 1px);background-size:34px 34px;mask-image:radial-gradient(80% 80% at 60% 40%,#000,transparent)}
+/* El teléfono con la bandeja */
+.tel{position:absolute;right:8%;top:26px;width:292px;aspect-ratio:9/19.5;border-radius:56px;padding:3.5px;
+  background:linear-gradient(145deg,#d9d4cb 0%,#8f8a82 18%,#f1ede6 34%,#7d7871 52%,#c9c4bb 70%,#6e6a64 86%,#d6d1c8 100%);
+  box-shadow:0 60px 90px -40px rgba(23,20,15,.6),0 22px 40px -22px rgba(23,20,15,.45),inset 0 0 0 1px rgba(255,255,255,.35)}
+.tel::before{content:"";position:absolute;inset:3.5px;border-radius:52.5px;background:#0b0b0c;box-shadow:inset 0 0 0 1.5px #1c1c1e}
+.tel .boton{position:absolute;width:3px;border-radius:2px;background:linear-gradient(90deg,#6e6a64,#cfcac1,#7d7871)}
+.tel .b-accion{left:-2.5px;top:118px;height:26px}
+.tel .b-vol1{left:-2.5px;top:160px;height:46px}
+.tel .b-vol2{left:-2.5px;top:214px;height:46px}
+.tel .b-power{right:-2.5px;left:auto;top:176px;height:74px}
+.tel .b-camara{right:-2.5px;left:auto;top:330px;height:44px;background:linear-gradient(90deg,#5f5b55,#b9b4ab)}
+.pant{position:absolute;inset:11px;border-radius:45px;overflow:hidden;background:#fff;display:flex;flex-direction:column}
+.pant::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,0) 28%,rgba(255,255,255,0) 72%,rgba(255,255,255,.08) 100%)}
+.isla{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:88px;height:26px;border-radius:20px;background:#000;z-index:2}
+.isla::after{content:"";position:absolute;right:11px;top:9px;width:10px;height:10px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#2b3a55 0,#0b1020 55%,#000 70%)}
+.estado{display:flex;justify-content:space-between;align-items:center;padding:12px 20px 0 28px;height:42px;font:600 13.5px -apple-system,"SF Pro Text",Manrope,system-ui,sans-serif;color:#000;letter-spacing:-.01em}
+.estado .der{display:flex;gap:4px;align-items:center}
+.estado .der svg{height:9px;width:auto}
+.estado .der svg:last-child{height:10.5px}
+.estado svg{display:block}
+.indicador{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);width:118px;height:4.5px;border-radius:3px;background:#111}
+.pant .sup{display:flex;align-items:center;gap:8px;padding:8px 16px 10px}
+.pant .sup b{font-family:var(--display);font-size:17px}
+.hamb{width:30px;height:30px;border-radius:10px;display:grid;align-content:center;gap:3.5px;padding:0 8px;background:var(--hundido);flex:none}
+.hamb i{display:block;height:2px;border-radius:2px;background:var(--tinta)}
+.hamb i:nth-child(2){width:70%}
+.pant .sup .en{margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--verde);font-weight:600}
+.pant .sup .en i{width:7px;height:7px;border-radius:50%;background:var(--verde);animation:latido 2s infinite}
+@keyframes latido{0%{box-shadow:0 0 0 0 rgba(31,157,85,.5)}70%{box-shadow:0 0 0 7px rgba(31,157,85,0)}100%{box-shadow:0 0 0 0 rgba(31,157,85,0)}}
+.pest{display:flex;gap:6px;padding:0 16px 10px}
+.pest span{font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:999px;background:var(--hundido);color:var(--tinta-2)}
+.pest span.on{background:var(--tinta);color:#fff}
+.lista{list-style:none;margin:0;padding:0 8px;display:grid;gap:2px;overflow:hidden}
+.ch{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 8px;border-radius:14px}
+.ch.nueva{background:var(--amarillo-suave)}
+.ch.entra{animation:entra .6s cubic-bezier(.22,1,.36,1)}
+@keyframes entra{from{transform:translateY(-10px);opacity:0}}
+.av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:12px;color:#fff;position:relative;flex:none}
+.av .cn{position:absolute;right:-3px;bottom:-3px;width:17px;height:17px;border-radius:50%;background:#fff;display:grid;place-items:center}
+.av .cn svg{width:13px;height:13px}
+.ch .q{min-width:0}
+.ch .q b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ch .q span{display:block;font-size:12px;color:var(--tinta-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ch .h{font-family:var(--mono);font-size:10.5px;color:var(--tinta-3);align-self:start;margin-top:3px}
+/* Ficha flotante del contacto (como la ficha del contenedor) */
+.ficha{position:absolute;left:22px;top:22px;width:290px;background:rgba(255,255,255,.82);backdrop-filter:blur(14px) saturate(1.3);border:1px solid rgba(255,255,255,.9);border-radius:22px;padding:16px;box-shadow:0 20px 50px -24px rgba(23,20,15,.35);display:grid;gap:12px}
+.ficha .cab{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
+.ficha .cab .ic{width:30px;height:30px;border-radius:10px}
+.ficha .cab .mas{margin-left:auto;color:var(--tinta-3);letter-spacing:2px}
+.ficha .id{font-family:var(--display);font-size:22px;font-weight:var(--peso-sub);letter-spacing:-.02em}
+.ficha dl{margin:0;display:grid;gap:6px}
+.ficha dl div{display:flex;justify-content:space-between;gap:10px;background:var(--hundido);border-radius:10px;padding:8px 10px;font-size:12.5px}
+.ficha dt{color:var(--tinta-3);display:flex;align-items:center;gap:6px}
+.ficha dd{margin:0;font-weight:600;display:flex;align-items:center;gap:6px;text-align:right}
+.punto{width:7px;height:7px;border-radius:50%;background:var(--verde);display:inline-block}
+.ficha .org svg{width:14px;height:14px}
+.escena .acc{position:absolute;left:22px;bottom:22px;display:flex;gap:8px;flex-wrap:wrap}
+.escena .acc .btn{height:44px}
+
+/* Columna derecha */
+.col{display:grid;gap:14px;align-content:start}
+.agente .top{display:flex;align-items:center;gap:10px}
+.agente .top b{font-size:14.5px}
+.agente .top small{display:block;font-size:12px;color:var(--tinta-3)}
+.agente .top .bts{margin-left:auto;display:flex;gap:6px}
+.agente .top .bts span{width:34px;height:34px;border-radius:50%;border:1px solid var(--linea);display:grid;place-items:center}
+.agente .top .bts svg{width:15px;height:15px}
+.trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:14px 0;padding-block:12px;border-block:1px solid var(--linea)}
+.trio div{display:grid;gap:2px;text-align:center}
+.trio b{font-size:13px}
+.ruta{display:flex;align-items:center;gap:8px;font-size:12px}
+.ruta .linea{flex:1;height:12px;background:repeating-linear-gradient(90deg,var(--linea) 0 2px,transparent 2px 5px);position:relative;border-radius:3px}
+.ruta .linea i{position:absolute;inset:0 38% 0 0;background:repeating-linear-gradient(90deg,var(--amarillo) 0 2px,transparent 2px 5px)}
+.ruta .linea u{position:absolute;left:62%;top:-3px;width:0;height:0;border-left:9px solid var(--brasa);border-block:9px solid transparent}
+.dos{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.dos .btn{height:40px;font-size:12.5px;white-space:nowrap;padding:0 10px;background:var(--hundido);border:0}
+/* De turno */
+.turno{display:grid;gap:12px}
+.turno ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.turno li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center}
+.turno li b{display:block;font-size:13.5px}
+.turno li small{display:block;font-size:12px;color:var(--tinta-3)}
+.est{font-size:11.5px;font-weight:600;border-radius:999px;padding:3px 9px;background:var(--hundido);color:var(--tinta-3)}
+.est.on{background:var(--verde-suave);color:var(--verde)}
+/* Medidor */
+.medidor{display:grid;grid-template-columns:150px minmax(0,1fr);gap:12px;align-items:center}
+.medidor svg{width:150px;height:90px;display:block}
+.medidor .datos{display:grid;gap:12px}
+.medidor .datos b{display:block;font-family:var(--display);font-size:18px}
+
+/* ── Bento inferior ── */
+.bento{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr) minmax(0,1fr) 330px;gap:14px}
+.mini{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mini .t{padding:16px;display:grid;gap:18px}
+.mini .arr{display:flex;justify-content:space-between;align-items:start;gap:8px}
+.mini .ic{width:30px;height:30px;border-radius:50%}
+.mini .ic svg{width:15px;height:15px}
+.mini .num{font-size:30px}
+.mini .num small{font-size:15px;color:var(--tinta-3);font-weight:600}
+.graf h3{font-size:16px;font-weight:var(--peso-sub)}
+.graf .num{font-size:30px;margin-top:14px}
+.graf .num small{font-size:14px;color:var(--tinta-3);font-weight:600}
+.graf svg{width:100%;height:84px;display:block;margin-top:10px}
+.graf .pie{display:flex;justify-content:space-between;font-size:12px;color:var(--tinta-3);margin-top:6px}
+.graf .pie b{color:var(--tinta)}
+.fun{font-family:var(--display);font-size:18px;font-weight:var(--peso-sub);line-height:1.15;letter-spacing:-.01em}
+.etapas{display:flex;flex-wrap:wrap;gap:6px;margin-top:16px}
+.etapas span{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:999px;background:var(--hundido);font-size:12.5px;font-weight:600}
+.etapas i{width:8px;height:8px;border-radius:50%}
+.origenes{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:8px}
+.origenes li{display:flex;align-items:center;gap:10px;background:var(--hundido);border-radius:12px;padding:10px 12px;font-size:13.5px;font-weight:600}
+.origenes svg{width:18px;height:18px;flex:none}
+.canales{display:grid;gap:10px}
+.canales h3{font-size:16px;font-weight:var(--peso-sub)}
+.logos{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.logos span{aspect-ratio:1;max-width:100%;border-radius:14px;background:var(--hundido);display:grid;place-items:center}
+.logos svg{width:24px;height:24px}
+.canales p{font-size:12.5px;color:var(--tinta-3)}
+
+/* ── Recorrido y precio ── */
+.recorr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:14px}
+.sec-tit{grid-column:1/-1;display:flex;justify-content:space-between;align-items:end;gap:20px;padding:0 6px 8px;flex-wrap:wrap}
+.eyebrow-m{font-family:var(--texto);font-size:14px;font-weight:600;color:var(--tinta-3);display:block;margin-bottom:10px}
+.sec-tit h2{font-size:clamp(28px,3.2vw,40px);font-weight:var(--peso-titulo);line-height:1.05;max-width:22ch}
+.sec-tit p{color:var(--tinta-2);max-width:42ch}
+.paso{display:grid;gap:10px;align-content:start}
+.paso .n{font-family:var(--texto);font-size:13.5px;font-weight:600;color:var(--tinta-3)}
+.paso h3{font-size:19px;font-weight:var(--peso-sub);line-height:1.15}
+.paso p{font-size:14px;color:var(--tinta-2)}
+.paso .dato{font-family:var(--mono);font-size:11.5px;background:var(--hundido);border-radius:8px;padding:6px 9px;width:max-content;max-width:100%}
+.precio{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto;gap:24px;align-items:center;background:var(--tinta);color:#fff;border-radius:var(--r);padding:28px}
+.precio h2{font-size:clamp(26px,2.8vw,36px);font-weight:var(--peso-titulo);line-height:1.05}
+.precio p{color:#BDB7AB;margin-top:10px;max-width:48ch}
+.precio .num{font-size:64px}
+.precio .num sup{font-family:var(--mono);font-size:16px;color:#BDB7AB;vertical-align:top;margin-right:6px;font-weight:500}
+.precio small{display:block;color:#BDB7AB;font-size:13px;margin-top:6px}
+.pie-pag{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center;padding:8px 6px 0;color:var(--tinta-3);font-size:13px}
+.pie-pag .der{margin-left:auto}
+
+/* ── Precios: calculadora + planes ── */
+.planes-h{display:grid;grid-template-columns:minmax(0,1.35fr) repeat(3,minmax(0,1fr));gap:14px}
+.calc-h{background:var(--tinta);color:#fff;border-radius:var(--r);padding:24px;display:grid;gap:22px;box-shadow:var(--sombra);position:relative;overflow:hidden}
+.calc-h::after{content:"";position:absolute;right:-60px;top:-60px;width:220px;height:220px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,210,31,.22),transparent);pointer-events:none}
+.lbl-o{font-size:12.5px;color:#BDB7AB}
+.calc-n{display:flex;align-items:baseline;gap:8px;margin:6px 0 14px}
+.calc-n .num{font-size:46px}
+.calc-n span{color:#BDB7AB}
+.calc-h input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:8px;border-radius:999px;background:linear-gradient(90deg,var(--amarillo) var(--p,12%),#3A342A var(--p,12%));outline:none;margin:0;cursor:pointer}
+.calc-h input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:#fff;border:4px solid var(--amarillo);box-shadow:0 4px 12px rgba(0,0,0,.5)}
+.calc-h input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:4px solid var(--amarillo)}
+.marcas-h{display:grid;grid-template-columns:3fr 5fr 5fr 5fr;margin-top:10px;font-family:var(--mono);font-size:11px;color:#8B867B}
+.marcas-h span{border-left:1px solid #3A342A;padding-left:6px;transition:color .2s}
+.marcas-h span.on{color:#fff}
+.calc-res{display:grid;gap:6px;justify-items:start;border-top:1px solid #3A342A;padding-top:18px}
+.plan-n{font-family:var(--display);font-weight:var(--peso-sub);font-size:20px;letter-spacing:-.02em}
+.calc-px{display:flex;align-items:flex-start;gap:6px}
+.calc-px sup{font-family:var(--mono);font-size:13px;color:#BDB7AB;margin-top:8px}
+.calc-px .num{font-size:58px}
+.calc-px span{align-self:flex-end;color:#BDB7AB;font-size:13px;padding-bottom:8px}
+.calc-res .btn{margin-top:10px}
+.plan-h{background:var(--tarjeta);border-radius:var(--r);box-shadow:var(--sombra);padding:22px;display:grid;gap:10px;align-content:start;border:1.5px solid transparent;transition:border-color .25s,transform .25s cubic-bezier(.22,1,.36,1),opacity .25s;opacity:.62}
+.plan-h.on{border-color:var(--amarillo);opacity:1;transform:translateY(-4px);box-shadow:0 0 0 4px var(--amarillo-suave),var(--sombra)}
+.plan-h .desde{font-size:13px;color:var(--tinta-3)}
+.plan-h .desde .num{font-size:26px;color:var(--tinta);display:block;margin-top:4px}
+.plan-h ul{list-style:none;margin:8px 0 0;padding:14px 0 0;border-top:1px solid var(--linea);display:grid;gap:8px}
+.plan-h li{font-size:13.5px;color:var(--tinta-2);display:grid;grid-template-columns:14px minmax(0,1fr);gap:8px}
+.plan-h li::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--amarillo);margin-top:7px;box-shadow:0 0 0 2px var(--amarillo-suave)}
+.incluye-h{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.incluye-h li{display:flex;align-items:center;gap:10px;background:var(--tarjeta);border-radius:var(--r-s);box-shadow:var(--sombra);padding:14px 16px;font-size:14px;font-weight:600}
+.incluye-h svg{width:18px;height:18px;flex:none}
+@media (max-width:1100px){.planes-h{grid-template-columns:repeat(3,minmax(0,1fr))}.calc-h{grid-column:1/-1}.incluye-h{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:760px){.planes-h,.incluye-h{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:1100px){
+  .esc,.bento{grid-template-columns:minmax(0,1fr)}
+  .col{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .bento{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .enc{grid-template-columns:minmax(0,1fr)}
+  .recorr{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .precio{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:760px){
+  .pild{display:none}
+  .barra .der{margin-left:auto}
+  .barra .der .pri{display:none}
+  .enc-acc{justify-content:center;flex-wrap:nowrap;gap:8px}
+  .enc-acc .btn{height:44px;padding:0 15px;font-size:13.5px;white-space:nowrap}
+  .cifras{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .escena{min-height:auto;display:grid;gap:14px;padding:16px}
+  .ficha,.tel,.escena .acc{position:static;width:100%}
+  .tel{position:relative;right:auto;top:auto;width:min(292px,100%);margin:0 auto}
+  .col,.bento,.recorr{grid-template-columns:minmax(0,1fr)}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* ── Carga de Wali (la misma del CRM) ── */
+.w-carga{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:#17140F;transition:opacity .45s cubic-bezier(.22,1,.36,1)}
+.w-carga.fuera{opacity:0;pointer-events:none}
+.w-carga .c-centro{display:flex;flex-direction:column;align-items:center;gap:22px}
+.w-carga .c-burbuja{width:64px;height:64px;animation:wc-entra .7s cubic-bezier(.22,1,.36,1) both,wc-respira 2.4s ease-in-out .7s infinite}
+.w-carga .c-burbuja svg{width:100%;height:100%;display:block;overflow:visible}
+.w-carga .c-esc circle{animation:wc-salta 1.2s cubic-bezier(.45,0,.55,1) infinite;transform-box:fill-box;transform-origin:center}
+.w-carga .c-esc circle:nth-child(2){animation-delay:.15s}.w-carga .c-esc circle:nth-child(3){animation-delay:.3s}
+.w-carga .c-punto{animation:wc-llega .5s cubic-bezier(.22,1,.36,1) .45s both;transform-box:fill-box;transform-origin:center}
+.w-carga .c-onda{fill:none;stroke:#FF4D1A;stroke-width:3;opacity:0;transform-box:fill-box;transform-origin:center;animation:wc-onda 2.4s cubic-bezier(.22,1,.36,1) 1s infinite}
+.w-carga .c-txt{font-size:14px;color:#b9b2a5;min-height:20px;animation:wc-aparece .6s cubic-bezier(.22,1,.36,1) .6s both}
+.w-carga .c-barra{width:140px;height:3px;border-radius:3px;background:#2b261d;overflow:hidden;animation:wc-aparece .6s cubic-bezier(.22,1,.36,1) .6s both}
+.w-carga .c-barra i{display:block;height:100%;width:40%;border-radius:3px;background:#FFD21F;animation:wc-corre 1.3s cubic-bezier(.65,0,.35,1) infinite}
+@keyframes wc-entra{from{opacity:0;transform:scale(.6) translateY(10px)}to{opacity:1;transform:none}}
+@keyframes wc-respira{0%,100%{transform:none}50%{transform:translateY(-3px)}}
+@keyframes wc-salta{0%,60%,100%{transform:translateY(0);opacity:.55}30%{transform:translateY(-5px);opacity:1}}
+@keyframes wc-llega{from{opacity:0;transform:scale(0)}to{opacity:1;transform:scale(1)}}
+@keyframes wc-onda{0%{opacity:.7;transform:scale(1)}70%,100%{opacity:0;transform:scale(2.4)}}
+@keyframes wc-aparece{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes wc-corre{from{transform:translateX(-110%)}to{transform:translateX(280%)}}
+html.cargando,html.cargando body{overflow:hidden}
+@media (prefers-reduced-motion:reduce){.w-carga *{animation:none!important}}
+</style>
+<style>
+/* ── Partners ── */
+.pt-num{font-variant-numeric:tabular-nums}
+.enc h1 em{font-style:normal;background:linear-gradient(transparent 62%,var(--amarillo) 62%,var(--amarillo) 92%,transparent 92%);padding:0 .04em}
+.pt-calc{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:14px}
+.pt-caja{background:var(--tarjeta);border-radius:var(--r);box-shadow:var(--sombra);padding:clamp(20px,3vw,32px);display:flex;flex-direction:column;gap:18px;min-width:0}
+.pt-caja .lbl{font-size:13px;font-weight:600;color:var(--tinta-3)}
+.pt-n{display:flex;align-items:baseline;gap:10px}
+.pt-n b{font-size:clamp(44px,6vw,64px);font-weight:800;letter-spacing:-.04em;line-height:1}
+.pt-n span{color:var(--tinta-2);font-weight:600}
+.pt-rango{-webkit-appearance:none;appearance:none;width:100%;height:8px;border-radius:999px;background:linear-gradient(90deg,var(--tinta) var(--p,10%),var(--hundido) var(--p,10%));outline:none}
+.pt-rango::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:var(--amarillo);border:3px solid var(--tinta);cursor:grab}
+.pt-rango::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--amarillo);border:3px solid var(--tinta);cursor:grab}
+.pt-rango:focus-visible{box-shadow:0 0 0 4px rgba(255,210,31,.5)}
+.pt-planes{display:flex;gap:6px;flex-wrap:wrap}
+.pt-planes button{height:40px;padding:0 16px;border-radius:999px;border:1px solid var(--linea);background:var(--tarjeta);font:600 13.5px var(--texto);color:var(--tinta-2);cursor:pointer;transition:background .2s,color .2s}
+.pt-planes button[aria-pressed="true"]{background:var(--tinta);color:#fff;border-color:var(--tinta)}
+.pt-planes button small{font-weight:500;opacity:.7;margin-left:4px}
+.pt-res{background:var(--tinta);color:#fff;border-radius:var(--r);padding:clamp(20px,3vw,32px);display:flex;flex-direction:column;gap:14px;justify-content:space-between;min-width:0}
+.pt-res .lbl{color:#a9a49a;font-size:13px;font-weight:600}
+.pt-gana{display:flex;align-items:baseline;gap:8px}
+.pt-gana sup{font-size:15px;font-weight:700;color:var(--amarillo);align-self:flex-start;margin-top:10px}
+.pt-gana b{font-size:clamp(52px,7vw,80px);font-weight:800;letter-spacing:-.045em;line-height:1;color:var(--amarillo)}
+.pt-gana span{color:#d6d1c6;font-weight:600}
+.pt-anio{display:flex;justify-content:space-between;gap:12px;padding-top:14px;border-top:1px solid rgba(255,255,255,.12);font-size:14px;color:#d6d1c6}
+.pt-anio b{color:#fff;font-weight:700}
+.pt-res .btn{align-self:flex-start}
+.pt-pasos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;counter-reset:paso}
+.pt-paso{background:var(--tarjeta);border-radius:var(--r);box-shadow:var(--sombra);padding:24px;display:flex;flex-direction:column;gap:10px}
+.pt-paso .n{font-family:var(--mono);font-size:13px;color:var(--tinta-3)}
+.pt-paso h3{margin:0;font-size:20px;font-weight:700;letter-spacing:-.02em}
+.pt-paso p{margin:0;color:var(--tinta-2)}
+.pt-quien{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;background:var(--tarjeta);border-radius:var(--r);box-shadow:var(--sombra);overflow:hidden}
+.pt-quien div{display:flex;gap:14px;padding:22px 24px;border-bottom:1px solid var(--linea)}
+.pt-quien div:nth-child(odd){border-right:1px solid var(--linea)}
+.pt-quien div:nth-last-child(-n+2){border-bottom:0}
+.pt-quien .ic{width:42px;height:42px;border-radius:12px;background:var(--amarillo-suave);display:grid;place-items:center;flex:none}
+.pt-quien .ic svg{width:20px;height:20px}
+.pt-quien b{display:block;font-size:16px;margin-bottom:3px}
+.pt-quien span{color:var(--tinta-2);font-size:14.5px}
+.pt-cond{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.pt-cond li{display:flex;gap:12px;align-items:flex-start;background:var(--tarjeta);border-radius:var(--r-s);padding:16px 18px;box-shadow:var(--sombra)}
+.pt-cond li .ok{width:24px;height:24px;border-radius:50%;background:var(--verde-suave);color:var(--verde);display:grid;place-items:center;flex:none}
+.pt-cond li .ok svg{width:13px;height:13px}
+.pt-cond li b{display:block}
+.pt-cond li span{color:var(--tinta-2);font-size:14px}
+.pt-form{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:14px;background:var(--tarjeta);border-radius:var(--r);box-shadow:var(--sombra);padding:clamp(20px,3.5vw,40px)}
+.pt-form h2{margin:0 0 10px;font-size:clamp(26px,3.2vw,38px);line-height:1.05;letter-spacing:-.035em;font-weight:800}
+.pt-form p{margin:0;color:var(--tinta-2)}
+.pt-campos{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pt-campos label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--tinta-2)}
+.pt-campos label.ancho{grid-column:1 / -1}
+.pt-campos input,.pt-campos select,.pt-campos textarea{height:46px;border-radius:12px;border:1px solid var(--linea);background:var(--marco);padding:0 14px;font:400 15px var(--texto);color:var(--tinta)}
+.pt-campos textarea{height:96px;padding:12px 14px;resize:vertical}
+.pt-campos input:focus,.pt-campos select:focus,.pt-campos textarea:focus{outline:none;border-color:var(--tinta);box-shadow:0 0 0 3px rgba(255,210,31,.45);background:#fff}
+.pt-campos .btn{grid-column:1 / -1;justify-self:start}
+.pt-legal{grid-column:1 / -1;font-size:12.5px;color:var(--tinta-3)}
+.pt-legal a{text-decoration:underline}
+.pt-trampa{position:absolute!important;left:-9999px;width:1px;height:1px;overflow:hidden}
+.pt-msg{grid-column:1 / -1;margin:0;font-size:14px;font-weight:600}
+.pt-msg.ok{color:var(--verde)}
+.pt-msg.mal{color:var(--rojo)}
+.pt-form.listo .pt-campos label,.pt-form.listo .pt-campos button{opacity:.55;pointer-events:none}
+.pt-faq{display:flex;flex-direction:column;gap:8px}
+.pt-faq details{background:var(--tarjeta);border-radius:var(--r-s);box-shadow:var(--sombra);padding:16px 20px}
+.pt-faq summary{cursor:pointer;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:12px}
+.pt-faq summary::-webkit-details-marker{display:none}
+.pt-faq summary::after{content:"+";font:500 20px/1 var(--texto);color:var(--tinta-3);transition:transform .3s}
+.pt-faq details[open] summary::after{transform:rotate(45deg)}
+.pt-faq p{margin:10px 0 0;color:var(--tinta-2)}
+.pt-pend{background:#FFF4C2;border:1px dashed #E4C44C;border-radius:var(--r-s);padding:14px 18px;font-size:14px;color:#6b5a14}
+@media (max-width:860px){.pt-calc,.pt-form{grid-template-columns:1fr}.pt-pasos{grid-template-columns:1fr}.pt-quien{grid-template-columns:1fr}.pt-quien div{border-right:0!important;border-bottom:1px solid var(--linea)!important}.pt-quien div:last-child{border-bottom:0!important}.pt-cond{grid-template-columns:1fr}.pt-campos{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<script>document.documentElement.classList.add("cargando")</script>
+<div class="w-carga" id="w-carga" role="status" aria-live="polite" aria-label="Cargando wali"><div class="c-centro"><div class="c-burbuja"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M22 10h56a18 18 0 0 1 18 18v36a18 18 0 0 1-18 18H40L20 98V82a18 18 0 0 1-16-18V28A18 18 0 0 1 22 10z" fill="#FFD21F"/><g class="c-esc" fill="#17140F"><circle cx="34" cy="46" r="6.5"/><circle cx="50" cy="46" r="6.5"/><circle cx="66" cy="46" r="6.5"/></g><circle class="c-onda" cx="92" cy="12" r="11"/><circle class="c-punto" cx="92" cy="12" r="11" fill="#FF4D1A" stroke="#17140F" stroke-width="5"/></svg></div><div class="c-barra" aria-hidden="true"><i></i></div><div class="c-txt" id="w-carga-t">Preparando Wali…</div></div></div>
+<script>(function(){var t=["Preparando Wali…","Conectando tus canales…","Ordenando la bandeja…"],i=0,iv=setInterval(function(){var e=document.getElementById("w-carga-t");if(!e)return clearInterval(iv);i=(i+1)%t.length;e.textContent=t[i];},1600);
+var inicio=Date.now(),listo=false;function fin(){if(listo)return;listo=true;clearInterval(iv);var c=document.getElementById("w-carga");if(!c)return;c.classList.add("fuera");document.documentElement.classList.remove("cargando");setTimeout(function(){c.remove();},500);}
+// Se quita cuando la página y sus letras terminaron de cargar (mínimo 0,9 s para que la animación se vea; máximo 8 s).
+function cuandoListo(){var espera=Math.max(0,900-(Date.now()-inicio));(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){setTimeout(fin,espera);});}
+if(document.readyState==="complete")cuandoListo();else window.addEventListener("load",cuandoListo);setTimeout(fin,8000);})();</script>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="wali" viewBox="0 0 100 100"><mask id="wm"><rect width="100" height="100" fill="#fff"/><circle cx="79" cy="17" r="9.2" fill="#000"/></mask><path mask="url(#wm)" d="M31 10h38a18 18 0 0 1 18 18v30a18 18 0 0 1-18 18H45L31.5 90.2Q26 96 26 88V75.1A18 18 0 0 1 13 58V28A18 18 0 0 1 31 10z" fill="#FFD21F"/><text x="50" y="60.5" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="57" letter-spacing="-2" fill="#17140F">w</text><circle cx="79" cy="17" r="6.5" fill="#FF4D1A"/></symbol>
+    <symbol id="i-bandeja" viewBox="0 0 24 24"><path d="M3 13h5l1.5 3h5L16 13h5M5 5h14l2 8v6H3v-6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-bot" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="11" rx="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 4v4M9 13h.01M15 13h.01" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-embudo" viewBox="0 0 24 24"><path d="M4 5h16l-6 7v6l-4 2v-8z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-precio" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="7.5" cy="8.5" r="1.4" fill="currentColor"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-reloj" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-gente" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 19c.8-3.3 3.2-5 6-5s5.2 1.7 6 5M16 5.5a3 3 0 0 1 0 5.6M18 14.5c1.6.6 2.6 2.1 3 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-pago" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 10h18" stroke="currentColor" stroke-width="1.8"/></symbol>
+    <symbol id="i-mega" viewBox="0 0 24 24"><path d="M4 10v4h3l7 4V6L7 10zM17 9.5a3.5 3.5 0 0 1 0 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></symbol>
+    <symbol id="i-tel" viewBox="0 0 24 24"><path d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11 11 0 0 0 3.6.6 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.6 3.6a1 1 0 0 1-.25 1z" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+    <symbol id="i-fl" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-ficha" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 9h8M8 13h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="wa" viewBox="0 0 24 24"><path fill="#25D366" d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.16-.17.2-.35.22-.64.07-.3-.15-1.26-.46-2.39-1.47-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.6.13-.14.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.6-.92-2.2-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.48 0 1.46 1.07 2.88 1.21 3.07.15.2 2.1 3.2 5.08 4.49.71.3 1.26.49 1.7.63.71.22 1.36.2 1.87.12.57-.09 1.76-.72 2-1.41.25-.7.25-1.29.18-1.41-.08-.13-.28-.2-.57-.35M12.05 21.79h-.01a9.87 9.87 0 0 1-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.86 9.86 0 0 1-1.51-5.26c0-5.45 4.44-9.88 9.89-9.88 2.64 0 5.12 1.03 6.99 2.9a9.83 9.83 0 0 1 2.89 6.99c0 5.45-4.44 9.88-9.88 9.88m8.41-18.3A11.82 11.82 0 0 0 12.05 0C5.5 0 .16 5.34.16 11.89c0 2.1.55 4.14 1.59 5.95L.06 24l6.3-1.65a11.88 11.88 0 0 0 5.68 1.45h.01c6.55 0 11.89-5.33 11.89-11.89 0-3.18-1.24-6.16-3.48-8.41Z"/></symbol>
+    <symbol id="ig" viewBox="0 0 24 24"><defs><linearGradient id="igg" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FFD600"/><stop offset=".5" stop-color="#FF0169"/><stop offset="1" stop-color="#7638FA"/></linearGradient></defs><rect width="24" height="24" rx="6" fill="url(#igg)"/><rect x="5.5" y="5.5" width="13" height="13" rx="4" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="3.2" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="16.3" cy="7.7" r="1" fill="#fff"/></symbol>
+    <symbol id="ms" viewBox="0 0 24 24"><path fill="#0866FF" d="M12 2C6.4 2 2 6.1 2 11.7c0 2.9 1.2 5.5 3.2 7.3V22l3-1.6c.9.2 1.8.4 2.8.4 5.6 0 10-4.1 10-9.7S17.6 2 12 2z"/><path fill="#fff" d="m6 14.5 3-4.7 2.6 2 3.4-2-3 4.8-2.6-2.1z"/></symbol>
+    <symbol id="tg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#27A6E5"/><path fill="#fff" d="M5.4 11.7 16.9 7.3c.5-.2 1 .1.8 1l-2 9.3c-.1.6-.5.8-1 .5l-2.8-2.1-1.4 1.3c-.2.2-.3.3-.6.3l.2-2.9 5.2-4.7c.2-.2 0-.3-.3-.1l-6.4 4-2.8-.9c-.6-.2-.6-.6.1-.9z"/></symbol>
+    <symbol id="tt" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#000"/><path fill="#fff" d="M16.6 5.8A4.3 4.3 0 0 1 15.5 3h-3.1v12.4a2.6 2.6 0 1 1-1.8-2.5V9.7a5.7 5.7 0 1 0 4.9 5.7V9a7.3 7.3 0 0 0 4.3 1.4V7.3a4.3 4.3 0 0 1-3.2-1.5z"/></symbol>
+    <symbol id="meta" viewBox="0 0 24 24"><path fill="#0866FF" d="M6.9 5C4.2 5 2 8.6 2 12.4 2 15.3 3.4 17 5.6 17c1.7 0 3-1.1 4.9-4.3l1.3-2.2c.2.4.4.8.7 1.2l.8 1.4c1.7 2.9 3.2 3.9 5 3.9 2.3 0 3.7-1.9 3.7-4.9C22 8.4 19.8 5 17.1 5c-1.5 0-2.8 1-4.4 3.3C11 6 9.1 5 6.9 5zm.2 2.3c1.3 0 2.4.9 3.5 2.6-1.8 3-2.8 4.6-4.1 4.6-1.1 0-1.9-1-1.9-2.8 0-2.3 1-4.4 2.5-4.4zm9.9 0c1.6 0 2.7 2.2 2.7 4.7 0 1.6-.6 2.4-1.5 2.4-1 0-1.8-.8-3.4-3.4l-1-1.6c1.1-1.6 2-2.1 3.2-2.1z"/></symbol>
+    <symbol id="ml" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="3" fill="none" stroke="#4A463E" stroke-width="1.8"/><path d="m3.5 7 8.5 6 8.5-6" fill="none" stroke="#4A463E" stroke-width="1.8"/></symbol>
+    <symbol id="wb" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#4A463E" stroke-width="1.8"/><path d="M3 12h18M12 3c2.6 3 2.6 15 0 18M12 3c-2.6 3-2.6 15 0 18" fill="none" stroke="#4A463E" stroke-width="1.6"/></symbol>
+  </defs>
+</svg>
+
+<template id="tpl-ch">
+  <li class="ch nueva entra"><span class="av"><span class="ini"></span><span class="cn"><svg><use/></svg></span></span><span class="q"><b></b><span></span></span><span class="h"></span></li>
+</template>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-pt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 11.5 4.5 15a2.1 2.1 0 0 0 3 3l2-2M16 12.5 19.5 9a2.1 2.1 0 0 0-3-3l-3.6 3.6a1.6 1.6 0 0 0 0 2.3 1.6 1.6 0 0 0 2.3 0L17 10"/><path d="m11 18 1.2 1.2a2.1 2.1 0 0 0 3-3L13 14"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-agencia" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V8l8-4 8 4v12M9 20v-6h6v6"/></symbol>
+  <symbol id="i-consul" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"/></symbol>
+  <symbol id="i-dev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"/></symbol>
+  <symbol id="i-crea" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3"/></symbol>
+</svg>
+<div class="marco">
+  <header class="barra">
+    <a class="logo" href="/" aria-label="Wali, inicio"><svg width="34" height="34"><use href="#wali"/></svg><b>wali</b></a>
+    <nav class="pild" aria-label="Principal">
+      <a href="/#inicio"><svg><use href="#i-bandeja"/></svg>Bandeja</a>
+      <a href="/#agente"><svg><use href="#i-bot"/></svg>Agente IA</a>
+      <a href="/#como"><svg><use href="#i-embudo"/></svg>Cómo funciona</a>
+      <a href="/precios"><svg><use href="#i-precio"/></svg>Precios</a>
+      <a class="on" href="/partners"><svg><use href="#i-pt"/></svg>Partners</a>
+    </nav>
+    <div class="der">
+      <a class="btn sec" href="/crm/">Ingresar</a>
+      <a class="btn pri" href="#aplicar">Quiero ser partner</a>
+    </div>
+  </header>
+
+  <div class="seccion">
+
+  <section class="enc" id="inicio">
+    <div>
+      <h1><span class="ln">Recomienda Wali y gana</span> <span class="ln">el <em>20 % de cada pago</em>,</span> <span class="ln">cada mes.</span></h1>
+      <p>Si trabajas con empresas que venden por WhatsApp, recomiéndales Wali. Por cada una que pague, te llevas el 20 % de su plan todos los meses, mientras siga con nosotros.</p>
+    </div>
+    <div class="enc-acc">
+      <a class="btn pri" href="#aplicar">Quiero ser partner<svg><use href="#i-fl"/></svg></a>
+      <a class="btn sec" href="#calcula">Calcular cuánto gano</a>
+    </div>
+  </section>
+
+  <div class="seccion" id="calcula">
+    <div class="cabeza"><div><span class="eyebrow">Cuánto ganas</span><h2>Tus ingresos crecen con cada empresa que traes.</h2></div><p>La comisión es recurrente: no cobras una vez, cobras cada mes que tu referido siga pagando.</p></div>
+    <div class="pt-calc">
+      <div class="pt-caja">
+        <span class="lbl">¿Cuántas empresas traerías?</span>
+        <div class="pt-n"><b class="pt-num" id="pt-n">10</b><span>empresas</span></div>
+        <input class="pt-rango" type="range" id="pt-r" min="1" max="50" value="10" aria-label="Empresas referidas" aria-valuetext="10 empresas">
+        <span class="lbl">Plan promedio de tus referidos</span>
+        <div class="pt-planes" role="group" aria-label="Plan promedio">
+          <button type="button" data-px="59" aria-pressed="true">Starter<small>USD 59</small></button>
+          <button type="button" data-px="139" aria-pressed="false">Growth<small>USD 139</small></button>
+          <button type="button" data-px="259" aria-pressed="false">Business<small>USD 259</small></button>
+        </div>
+      </div>
+      <div class="pt-res">
+        <div><span class="lbl">Ganarías cada mes</span>
+          <div class="pt-gana"><sup>USD</sup><b class="pt-num" id="pt-mes">118</b><span>al mes</span></div></div>
+        <div class="pt-anio"><span>En un año</span><b class="pt-num" id="pt-anio">USD 1.416</b></div>
+        <a class="btn am" href="#aplicar">Quiero ser partner<svg><use href="#i-fl"/></svg></a>
+      </div>
+    </div>
+  </div>
+
+  <div class="seccion" id="como">
+    <div class="cabeza"><div><span class="eyebrow">Cómo funciona</span><h2>Tres pasos y empiezas a ganar.</h2></div></div>
+    <div class="pt-pasos">
+      <div class="pt-paso"><span class="n">01</span><h3>Aplicas</h3><p>Llenas el formulario. Revisamos tu solicitud y te respondemos por correo.</p></div>
+      <div class="pt-paso"><span class="n">02</span><h3>Compartes tu enlace</h3><p>Te damos un enlace propio. Cada empresa que entre por ahí y pague queda a tu nombre.</p></div>
+      <div class="pt-paso"><span class="n">03</span><h3>Cobras cada mes</h3><p>Recibes el 20 % de lo que paga cada referido, mes a mes, mientras siga con Wali.</p></div>
+    </div>
+  </div>
+
+  <div class="seccion">
+    <div class="cabeza"><div><span class="eyebrow">Para quién es</span><h2>Para quien ya habla con empresas que venden por chat.</h2></div></div>
+    <div class="pt-quien">
+      <div><span class="ic"><svg><use href="#i-agencia"/></svg></span><span><b>Agencias de marketing</b><span>Tus clientes ya invierten en pauta y reciben los leads por WhatsApp. Wali les ayuda a no perderlos.</span></span></div>
+      <div><span class="ic"><svg><use href="#i-consul"/></svg></span><span><b>Consultores de ventas</b><span>Ordenas el proceso comercial de tus clientes. Wali es la herramienta para que ese proceso se cumpla.</span></span></div>
+      <div><span class="ic"><svg><use href="#i-dev"/></svg></span><span><b>Desarrolladores y freelancers</b><span>Montas sitios y automatizaciones. Suma un CRM listo, sin tener que construirlo tú.</span></span></div>
+      <div><span class="ic"><svg><use href="#i-crea"/></svg></span><span><b>Creadores de contenido de negocios</b><span>Hablas de ventas, emprendimiento o marketing. Recomienda una herramienta que tu audiencia sí puede usar.</span></span></div>
+    </div>
+  </div>
+
+  <div class="seccion">
+    <div class="cabeza"><div><span class="eyebrow">Condiciones</span><h2>Claras desde el primer día.</h2></div></div>
+    <ul class="pt-cond">
+      <li><span class="ok"><svg><use href="#i-ok"/></svg></span><span><b>20 % recurrente</b><span>De cada pago mensual o anual del referido, mientras siga con Wali.</span></span></li>
+      <li><span class="ok"><svg><use href="#i-ok"/></svg></span><span><b>Sin límite de referidos</b><span>Traes las empresas que quieras. Todas cuentan.</span></span></li>
+      <li><span class="ok"><svg><use href="#i-ok"/></svg></span><span><b>Sin costo para ser partner</b><span>No necesitas ser cliente de Wali ni pagar nada para empezar.</span></span></li>
+      <li><span class="ok"><svg><use href="#i-ok"/></svg></span><span><b>Tu cliente no paga más</b><span>Paga el mismo precio de la página. Tu comisión sale de lo nuestro.</span></span></li>
+    </ul>
+  </div>
+
+  <div class="seccion" id="aplicar">
+    <form class="pt-form" id="pt-form" novalidate>
+      <div><h2>Aplica al programa de partners.</h2><p>Cuéntanos quién eres y cómo recomendarías Wali. Te respondemos por correo.</p></div>
+      <div class="pt-campos">
+        <label>Nombre y apellido<input id="pt-nom" autocomplete="name" placeholder="Ej. Valentina Ruiz"></label>
+        <label>Correo<input id="pt-mail" type="email" autocomplete="email" placeholder="tu@correo.com"></label>
+        <label>WhatsApp<input id="pt-tel" type="tel" autocomplete="tel" placeholder="+57 300 123 4567"></label>
+        <label>¿Qué haces?<select id="pt-tipo"><option>Agencia de marketing</option><option>Consultor de ventas</option><option>Desarrollador o freelancer</option><option>Creador de contenido</option><option>Otro</option></select></label>
+        <label class="pt-trampa" aria-hidden="true">Sitio web<input id="pt-sitio" tabindex="-1" autocomplete="off"></label>
+        <label class="ancho">¿Cómo recomendarías Wali?<textarea id="pt-como" placeholder="Ej. Manejo la pauta de 12 restaurantes que reciben pedidos por WhatsApp."></textarea></label>
+        <button class="btn pri" type="submit" id="pt-env"><span id="pt-env-t">Enviar solicitud</span><svg><use href="#i-fl"/></svg></button>
+        <p class="pt-msg" id="pt-msg" role="status" aria-live="polite"></p>
+        <span class="pt-legal">Al enviar aceptas que te contactemos sobre el programa de partners. Lee la <a href="https://www.nexcode97.com/privacidad">política de privacidad</a>.</span>
+      </div>
+    </form>
+  </div>
+
+  <div class="seccion">
+    <div class="cabeza"><div><span class="eyebrow">Preguntas</span><h2>Lo que suelen preguntar.</h2></div></div>
+    <div class="pt-faq">
+      <details><summary>¿Tengo que ser cliente de Wali?</summary><p>No. Cualquier persona o empresa puede ser partner, use o no Wali.</p></details>
+      <details><summary>¿Hasta cuándo cobro por un referido?</summary><p>Mientras siga pagando Wali. Si cancela, la comisión de ese referido se detiene.</p></details>
+    </div>
+  </div>
+
+  <footer class="pie-pag">
+    <a class="logo" href="/" aria-label="Wali"><svg width="24" height="24"><use href="#wali"/></svg><b style="font-size:19px">wali</b></a>
+    <a href="/precios">Precios</a><a href="/partners">Partners</a><a href="https://www.nexcode97.com/privacidad">Privacidad</a><a href="https://www.nexcode97.com/terminos">Términos</a>
+    <span class="der">Un producto de NexCode97</span>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const r = document.getElementById('pt-r'); let px = 59;
+  const f = n => n.toLocaleString('es-CO', {maximumFractionDigits: 0});
+  const pintar = () => {
+    const n = +r.value, mes = n * px * 0.2;
+    r.style.setProperty('--p', ((n - 1) / 49 * 100) + '%'); r.setAttribute('aria-valuetext', n + (n === 1 ? ' empresa' : ' empresas'));
+    document.getElementById('pt-n').textContent = n;
+    document.getElementById('pt-mes').textContent = f(mes);
+    document.getElementById('pt-anio').textContent = 'USD ' + f(mes * 12);
+  };
+  r.addEventListener('input', pintar);
+  document.querySelectorAll('.pt-planes button').forEach(b => b.addEventListener('click', () => {
+    px = +b.dataset.px; document.querySelectorAll('.pt-planes button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); pintar();
+  }));
+  pintar();
+  const fo = document.getElementById('pt-form'), msg = document.getElementById('pt-msg'), bt = document.getElementById('pt-env'), btT = document.getElementById('pt-env-t');
+  const v = id => document.getElementById(id).value.trim();
+  const mal = (t, id) => { msg.className = 'pt-msg mal'; msg.textContent = t; if (id) document.getElementById(id).focus(); };
+  fo.addEventListener('submit', async e => {
+    e.preventDefault();
+    msg.className = 'pt-msg'; msg.textContent = '';
+    if (v('pt-nom').length < 3) return mal('Escribe tu nombre y apellido.', 'pt-nom');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v('pt-mail'))) return mal('Ese correo no se ve bien.', 'pt-mail');
+    if (v('pt-como').length < 10) return mal('Cuéntanos un poco más de cómo recomendarías Wali.', 'pt-como');
+    bt.disabled = true; btT.textContent = 'Enviando…';
+    try {
+      const r = await fetch('/crm/api/partners/solicitud', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre: v('pt-nom'), correo: v('pt-mail'), whatsapp: v('pt-tel'), tipo: document.getElementById('pt-tipo').value, como: v('pt-como'), sitio: v('pt-sitio') }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || j.success === false) throw new Error(j.error || 'No pudimos enviar tu solicitud. Intenta de nuevo.');
+      fo.classList.add('listo'); msg.className = 'pt-msg ok'; msg.textContent = '¡Listo! Recibimos tu solicitud y te escribimos pronto a ' + v('pt-mail') + '.';
+      btT.textContent = 'Solicitud enviada';
+    } catch (err) { mal(err.message); bt.disabled = false; btT.textContent = 'Enviar solicitud'; }
+  });
+
+})();
+</script>
+</body>
+</html>

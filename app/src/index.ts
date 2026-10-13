@@ -12,6 +12,7 @@ import { redactarUrl } from './utils/redactar'
 import { errorHandler } from './middleware/errorHandler'
 import authRoutes from './routes/auth'
 import accesoRoutes from './routes/acceso'
+import partnersRoutes from './routes/partners'
 import pagosRoutes from './routes/pagos'
 import usuariosRoutes from './routes/usuarios'
 import notificacionesRoutes from './routes/notificaciones'
@@ -142,6 +143,7 @@ app.get('/health', async (_req, res) => {
 app.use('/api/auth',           authRoutes)
 app.use('/api/auth',           accesoRoutes)
 app.use('/api/pagos/creem',     pagosRoutes) // avisos de Creem (firmados) // registro, recuperar la contraseña y Google (sin sesión)
+app.use('/api/partners',       partnersRoutes) // formulario de walicrm.com/partners (público)
 app.use('/api/usuarios',       usuariosRoutes)
 app.use('/api/notificaciones', notificacionesRoutes)
 app.use('/api/upload',         uploadRoutes)
