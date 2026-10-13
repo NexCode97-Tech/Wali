@@ -243,12 +243,13 @@ const rellenar = (texto: string, valores: Record<string, string>) =>
 
 // ─── Audiencia ───────────────────────────────────────────────────────────────
 
-const SEL_CONTACTO = { id: true, nombre: true, telefono: true, noContactar: true, rne: true, autorizacion: true, campos: true } as const
+const SEL_CONTACTO = { id: true, nombre: true, telefono: true, waUid: true, noContactar: true, rne: true, autorizacion: true, campos: true } as const
 type ContactoDif = Prisma.CrmContactoGetPayload<{ select: typeof SEL_CONTACTO }>
 
 function puedeRecibir(k: ContactoDif, rneOn: boolean): boolean {
+  // Por su número o, si usa @usuario y no lo compartió, por su BSUID (13-oct).
   const tel = telDigitos(k.telefono)
-  if (!tel || tel.length < 8) return false
+  if ((!tel || tel.length < 8) && !k.waUid) return false
   if (marcado(k.noContactar)) return false
   if (rneOn && marcado(k.rne) && !marcado(k.autorizacion)) return false
   return true

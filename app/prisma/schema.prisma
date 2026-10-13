@@ -98,6 +98,9 @@ model CrmContacto {
   /// Id de la persona en Telegram (from.id) y en TikTok (unique_identifier). Únicos dentro del espacio.
   tgId           String?           @map("tg_id")
   ttId           String?           @map("tt_id")
+  /// BSUID de WhatsApp (usuarios con @usuario, 13-oct): el id de la persona para ESTE portafolio de Meta cuando
+  /// Meta no manda su número. Único dentro del espacio. El @usuario va en ficha.usuario.
+  waUid          String?           @map("wa_uid")
   correo         String?
   /// Canal por el que llegó: wa, ig, fb, web, mail.
   canal          String            @default("wa")
@@ -130,6 +133,7 @@ model CrmContacto {
   @@unique([espacioId, igId])
   @@unique([espacioId, tgId])
   @@unique([espacioId, ttId])
+  @@unique([espacioId, waUid])
   @@index([asignadoId])
   @@index([correo])
   @@map("crm_contactos")

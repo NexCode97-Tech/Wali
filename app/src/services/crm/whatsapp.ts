@@ -477,7 +477,7 @@ export function opcionesLista(lista: Json): OpcionLista[] {
 
 type MsgConTodo = CrmMensaje & {
   conversacion: { id: number; canal: string; asignadoId: string | null; ultimoEntranteAt: Date | null; contactoId: number; lineaId: string | null
-    contacto: { nombre: string | null; telefono: string | null; campos: unknown }
+    contacto: { nombre: string | null; telefono: string | null; waUid: string | null; campos: unknown }
     linea: { phoneNumberId: string; wabaId: string; conexionId: string | null } | null }
 }
 
@@ -563,7 +563,7 @@ async function armarCuerpo(m: MsgConTodo, cred: CredMeta): Promise<Json> {
   const c = m.conversacion
   if (c.canal !== 'wa') throw new ErrorEnvio('Esta conversación no es de WhatsApp')
   if (!c.linea) throw new ErrorEnvio('La conversación no tiene una línea de WhatsApp conectada')
-  if (!c.contacto.telefono) throw new ErrorEnvio('El contacto no tiene número de WhatsApp')
+  if (!c.contacto.telefono && !c.contacto.waUid) throw new ErrorEnvio('El contacto no tiene número de WhatsApp')
 
   const plantilla = txt(datos.plantilla)
   if (plantilla) {
@@ -628,6 +628,16 @@ async function marcarLeidoEnWhatsapp(convId: number, phoneNumberId: string, cred
   } catch (e) { logger.info(`[CRM WA] no se pudo marcar como leído en ${convId}: ${(e as Error).message}`) }
 }
 
+/**
+ * A quién se le manda (13-oct): por su número si lo hay; si no, por su BSUID (`recipient`), el id que Meta da a
+ * quien usa @usuario y no comparte el número. Meta usa el número si van los dos, así que solo va uno.
+ */
+export function destinoWa(k: { telefono: string | null; waUid?: string | null }): { to: string } | { recipient: string } {
+  if (k.telefono) return { to: k.telefono }
+  if (k.waUid) return { recipient: k.waUid }
+  throw new ErrorEnvio('El contacto no tiene número de WhatsApp')
+}
+
 /** Códigos de Meta que dicen que el token de la cuenta ya no sirve para esa línea. */
 const TOKEN_MALO = new Set([10, 190, 200, 131005])
 
@@ -677,7 +687,7 @@ export async function enviarPorWhatsapp(msgId: string): Promise<void> {
     const r = await graph<{ messages?: { id?: string }[]; contacts?: { wa_id?: string }[] }>(`/${m.conversacion.linea.phoneNumberId}/messages`, {
       cred,
       method: 'POST',
-      body: { messaging_product: 'whatsapp', recipient_type: 'individual', to: m.conversacion.contacto.telefono, ...cuerpo },
+      body: { messaging_product: 'whatsapp', recipient_type: 'individual', ...destinoWa(m.conversacion.contacto), ...cuerpo },
     })
     const wamid = r.messages?.[0]?.id
     if (!wamid) throw new ErrorEnvio('Meta no devolvió el id del mensaje')

@@ -4,7 +4,7 @@ import { prisma, prismaGlobal } from './bd'
 import { enEspacio, espacioActual } from './espacio'
 import { guardarAjuste, leerAjuste } from './ajustes'
 import { credDeLinea, credDeWaba, type CredMeta } from './credenciales'
-import { ErrorMeta, VEINTICUATRO_H, graph } from './whatsapp'
+import { ErrorMeta, VEINTICUATRO_H, destinoWa, graph } from './whatsapp'
 import { emitirConv, emitirCrm, emitirMsg } from './tiempoReal'
 import { alcanceDePersona, equipoDeConv, genteQueLidera, veConv, type Alcance } from './alcance'
 import { leerEquipos, type EquiposNorm } from './equipos'
@@ -567,7 +567,7 @@ export async function puedeEnviar(c: ConvEncuesta, cfg: CfgEncuesta, ahora = Dat
   if (!cfg.on) return 'la encuesta está apagada en Ajustes del CRM'
   if (c.canal !== 'wa') return 'la encuesta sale solo por WhatsApp'
   if (!c.linea) return 'la conversación no tiene una línea de WhatsApp conectada'
-  if (!c.contacto.telefono) return 'el contacto no tiene número de WhatsApp'
+  if (!c.contacto.telefono && !c.contacto.waUid) return 'el contacto no tiene número de WhatsApp'
   if (motivoNoContactar(c.contacto.noContactar) !== null) return 'pidió no ser contactado'
   if (!c.asignadoId) return 'la conversación no tiene asesor asignado'
   if (!(await ventanaAbierta(c.contactoId, c.lineaId, ahora, c.ultimoEntranteAt))) return MOTIVO_VENTANA
@@ -630,7 +630,7 @@ async function soltarReserva(contactoId: number, token: string, previa: string |
   }
 }
 
-interface DatosEnvio { linea: CrmLinea; telefono: string; flowId: string; token: string; cuerpo: string; data: Json }
+interface DatosEnvio { linea: CrmLinea; destino: { to: string } | { recipient: string }; flowId: string; token: string; cuerpo: string; data: Json }
 
 /** El mensaje interactivo de tipo flow: solo cuerpo y el botón «Responder encuesta» (tablero 1, sin header ni footer). */
 async function mandarFormulario(d: DatosEnvio): Promise<{ wamid: string; waIdCliente: string | null }> {
@@ -638,7 +638,7 @@ async function mandarFormulario(d: DatosEnvio): Promise<{ wamid: string; waIdCli
   const r = await graph<{ messages?: { id?: string }[]; contacts?: { wa_id?: string }[] }>(`/${d.linea.phoneNumberId}/messages`, {
     cred, method: 'POST', timeoutMs: TIEMPO_META,
     body: {
-      messaging_product: 'whatsapp', recipient_type: 'individual', to: d.telefono,
+      messaging_product: 'whatsapp', recipient_type: 'individual', ...d.destino,
       type: 'interactive',
       interactive: {
         type: 'flow',
@@ -725,7 +725,7 @@ async function salir(ev: CrmMensaje, c: ConvEncuesta, cfg: CfgEncuesta, token: s
     if (reg.estado !== 'listo' || !reg.id) throw new ErrorEncuesta(`el formulario no está listo en WhatsApp (${reg.error ?? 'Meta no lo aceptó'})`)
     const vars = await variablesDe(c.contacto.nombre, asesor)
     const envio = (flowId: string): DatosEnvio => ({
-      linea, telefono: c.contacto.telefono!, flowId, token,
+      linea, destino: destinoWa(c.contacto), flowId, token,
       cuerpo: rellenar(cfg.msg, vars).slice(0, 1024),
       data: {
         pregunta_asesor: preguntaAsesor(cfg.p1, vars),
@@ -932,7 +932,7 @@ async function destinatarios(equipo: string, asesorId: string | null, conv: { eq
  * mensaje normal. Si es de la encuesta, true siempre: no abre ni reabre nada y no corre flujos, agente, reglas ni
  * reparto. Corre dentro de la fila del contacto (entrantes.ts enFila) y después del chequeo del wamid repetido.
  */
-export async function respuestaFormulario(linea: CrmLinea, m: MensajeFormulario, tel: string, cuando: Date): Promise<boolean> {
+export async function respuestaFormulario(linea: CrmLinea, m: MensajeFormulario, tel: string, cuando: Date, uid = ''): Promise<boolean> {
   let r: Json
   try { r = obj(JSON.parse(String(m.interactive?.nfm_reply?.response_json ?? ''))) } catch { return false }
   const token = txt(r.flow_token)
@@ -945,10 +945,11 @@ export async function respuestaFormulario(linea: CrmLinea, m: MensajeFormulario,
   let ev = await prisma.crmMensaje.findFirst({ where: { ...porToken, conversacionId: Number(mt[1]) }, include: incluir })
   if (!ev) {
     // La conversación se unió a otra: el evento viajó con sus mensajes.
-    const k = await prisma.crmContacto.findFirst({ where: { telefono: tel }, select: { id: true } })
+    const k = await prisma.crmContacto.findFirst({ where: { OR: [...(tel ? [{ telefono: tel }] : []), ...(uid ? [{ waUid: uid }] : [])] }, select: { id: true } })
     if (k) ev = await prisma.crmMensaje.findFirst({ where: { ...porToken, conversacion: { contactoId: k.id } }, include: incluir })
   }
-  if (!ev || ev.conversacion.contacto.telefono !== tel) {
+  const esDeQuien = (k: { telefono: string | null; waUid: string | null }) => (!!tel && k.telefono === tel) || (!!uid && k.waUid === uid)
+  if (!ev || !esDeQuien(ev.conversacion.contacto)) {
     logger.info(`[CRM encuesta] respuesta ${m.id} con el token ${token}: no hay una encuesta de ese número, se ignora`)
     return true
   }
@@ -1031,7 +1032,7 @@ export async function respuestaFormulario(linea: CrmLinea, m: MensajeFormulario,
     try {
       await graph(`/${linea.phoneNumberId}/messages`, {
         cred: await credDeLinea(linea), method: 'POST', timeoutMs: TIEMPO_META,
-        body: { messaging_product: 'whatsapp', recipient_type: 'individual', to: tel, type: 'text', text: { body: gracias, preview_url: false } },
+        body: { messaging_product: 'whatsapp', recipient_type: 'individual', ...(tel ? { to: tel } : { recipient: uid }), type: 'text', text: { body: gracias, preview_url: false } },
       })
     } catch (e) {
       logger.warn(`[CRM encuesta] el gracias de la conversación ${hecho.convId} no salió: ${(e as Error)?.message ?? e}`)

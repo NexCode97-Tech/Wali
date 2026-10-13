@@ -41,6 +41,8 @@ const json = (v: unknown) => v as Prisma.InputJsonValue
 interface WaMedia { id?: string; mime_type?: string; caption?: string; filename?: string; voice?: boolean }
 export interface WaMensaje {
   id: string; from: string; timestamp?: string; type: string
+  /** BSUID de quien escribe (usuarios con @usuario, 13-oct): `from` puede llegar vacío y este no. */
+  from_user_id?: string
   text?: { body?: string }
   image?: WaMedia; audio?: WaMedia; video?: WaMedia; document?: WaMedia; sticker?: WaMedia
   location?: { latitude?: number; longitude?: number; name?: string; address?: string }
@@ -55,7 +57,7 @@ export interface WaMensaje {
   contacts?: { name?: { formatted_name?: string; first_name?: string }; phones?: { phone?: string; wa_id?: string }[] }[]
   referral?: { source_url?: string; source_id?: string; source_type?: string; headline?: string; body?: string; media_type?: string; ctwa_clid?: string }
 }
-export interface WaContacto { wa_id?: string; profile?: { name?: string } }
+export interface WaContacto { wa_id?: string; user_id?: string; profile?: { name?: string; username?: string } }
 
 // ─── Fila por contacto ───────────────────────────────────────────────────────
 // Los mensajes de una misma persona se procesan en orden y de a uno: así no
@@ -182,33 +184,45 @@ function pautaDe(r: NonNullable<WaMensaje['referral']>) {
   }
 }
 
-async function contactoDe(tel: string, nombre: string, referral: WaMensaje['referral']): Promise<CrmContacto> {
+/**
+ * El contacto de quien escribe por WhatsApp: por su número o, si Meta no lo mandó, por su BSUID (13-oct). Cuando
+ * se conocen los dos, quedan los dos en el mismo contacto; el @usuario va en ficha.usuario (la pantalla lo muestra
+ * cuando no hay número).
+ */
+async function contactoDe(quien: { tel: string; uid: string; usuario: string }, nombre: string, referral: WaMensaje['referral']): Promise<CrmContacto> {
+  const { tel, uid } = quien
+  const usuario = quien.usuario ? (quien.usuario.startsWith('@') ? quien.usuario : `@${quien.usuario}`) : ''
   const pauta = referral ? pautaDe(referral) : null
-  let k = await prisma.crmContacto.findFirst({ where: { telefono: tel } })
+  const buscar = () => prisma.crmContacto.findFirst({ where: { OR: [...(tel ? [{ telefono: tel }] : []), ...(uid ? [{ waUid: uid }] : [])] }, orderBy: { id: 'asc' } })
+  let k = await buscar()
   if (!k) {
     try {
       return await prisma.crmContacto.create({
         data: {
-          nombre: nombre || null, telefono: tel, canal: 'wa',
-          ficha: json({ origen: pauta ? 'Anuncio de Meta' : 'WhatsApp' }),
+          nombre: nombre || null, telefono: tel || null, waUid: uid || null, canal: 'wa',
+          ficha: json({ origen: pauta ? 'Anuncio de Meta' : 'WhatsApp', ...(usuario ? { usuario } : {}) }),
           ...(pauta ? { pauta: json(pauta) } : {}),
         },
       })
     } catch (e) {
       if (!(e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002')) throw e
-      k = await prisma.crmContacto.findFirst({ where: { telefono: tel } })
+      k = await buscar()
       if (!k) throw e
     }
   }
   const cambios: Prisma.CrmContactoUpdateInput = {}
   if (!k.nombre && nombre) cambios.nombre = nombre
+  // Lo que Meta dice ahora y el contacto no tenía: el número, el BSUID (cambia si la persona cambia de número) y el @usuario.
+  if (tel && !k.telefono && !(await prisma.crmContacto.findFirst({ where: { telefono: tel }, select: { id: true } }))) cambios.telefono = tel
+  if (uid && k.waUid !== uid && !(await prisma.crmContacto.findFirst({ where: { waUid: uid, NOT: { id: k.id } }, select: { id: true } }))) cambios.waUid = uid
+  if (usuario && obj(k.ficha).usuario !== usuario) cambios.ficha = json({ ...obj(k.ficha), usuario })
   if (pauta) {
     // Volvió por un anuncio: queda la pauta nueva y el origen anterior pasa a «previas».
     const ficha = obj(k.ficha)
     const previas = Array.isArray(ficha.previas) ? [...ficha.previas] : []
     if (ficha.origen && ficha.origen !== 'Anuncio de Meta') previas.push([ficha.origen, fechaCorta(k.createdAt)])
     cambios.pauta = json(pauta)
-    cambios.ficha = json({ ...ficha, origen: 'Anuncio de Meta', previas })
+    cambios.ficha = json({ ...ficha, ...(usuario ? { usuario } : {}), origen: 'Anuncio de Meta', previas })
   }
   if (Object.keys(cambios).length) k = await prisma.crmContacto.update({ where: { id: k.id }, data: cambios })
   return k
@@ -396,17 +410,21 @@ async function respuestaEncuesta(contactoId: number, donde: Prisma.CrmConversaci
 // ─── Mensaje entrante ────────────────────────────────────────────────────────
 
 export async function procesarEntrante(linea: CrmLinea, m: WaMensaje, perfiles: WaContacto[] = []): Promise<void> {
-  if (!m?.id || !m.from || m.type === 'reaction') return
-  const tel = telDigitos(m.from)
-  if (!tel) return
-  await enFila(`${linea.id}:${tel}`, async () => {
+  if (!m?.id || m.type === 'reaction') return
+  // Quien adoptó un @usuario de WhatsApp puede escribir sin que Meta mande su número (13-oct): llega su BSUID
+  // (`from_user_id`, o el `user_id` de su contacto) y el número vacío. Antes ese mensaje se perdía.
+  const tel = telDigitos(m.from) || ''
+  const perfil = perfiles.find(p => (tel && telDigitos(p.wa_id) === tel) || (m.from_user_id && p.user_id === m.from_user_id)) ?? (perfiles.length === 1 ? perfiles[0] : undefined)
+  const uid = txt(m.from_user_id) || txt(perfil?.user_id)
+  if (!tel && !uid) return
+  await enFila(`${linea.id}:${tel || uid}`, async () => {
     if (await prisma.crmMensaje.findUnique({ where: { waId: m.id }, select: { id: true } })) return // repetido: Meta reintenta
     const cuando = m.timestamp && Number(m.timestamp) > 0 ? new Date(Number(m.timestamp) * 1000) : new Date()
     // La respuesta del formulario de la encuesta al finalizar (lote 6): tarjeta en su conversación, sin reabrirla.
-    if (m.type === 'interactive' && m.interactive?.type === 'nfm_reply' && await respuestaFormulario(linea, m, tel, cuando)) return
-    const nombre = txt(perfiles.find(p => telDigitos(p.wa_id) === tel)?.profile?.name) || txt(perfiles[0]?.profile?.name)
+    if (m.type === 'interactive' && m.interactive?.type === 'nfm_reply' && await respuestaFormulario(linea, m, tel, cuando, uid)) return
+    const nombre = txt(perfil?.profile?.name) || txt(perfiles[0]?.profile?.name)
     const datos = await armarDatos(m, linea)
-    const k = await contactoDe(tel, nombre, m.referral)
+    const k = await contactoDe({ tel, uid, usuario: txt(perfil?.profile?.username) }, nombre, m.referral)
     await entrar(k, { linea }, [datos], m.id, cuando, `WA ${linea.nombre}`)
   })
 }
@@ -1128,10 +1146,12 @@ async function espacioDeEntrada(entrada: Json, conexionId: string | null): Promi
  * conversaciones que ya existen en el CRM con esa persona y esa línea.
  */
 async function procesarEcoWhatsapp(linea: { id: string }, e: Json): Promise<void> {
-  const mid = txt(e?.id), para = txt(e?.to).replace(/\D/g, '')
-  if (!mid || para.length < 7) return
+  const mid = txt(e?.id), para = txt(e?.to).replace(/\D/g, ''), paraUid = txt(e?.to_user_id)
+  if (!mid || (para.length < 7 && !paraUid)) return
   if (await prisma.crmMensaje.findUnique({ where: { waId: mid }, select: { id: true } })) return
-  const k = await prisma.crmContacto.findFirst({ where: { telefono: { endsWith: para.slice(-10) } }, select: { id: true } })
+  const k = para.length >= 7
+    ? await prisma.crmContacto.findFirst({ where: { telefono: { endsWith: para.slice(-10) } }, select: { id: true } })
+    : await prisma.crmContacto.findFirst({ where: { waUid: paraUid }, select: { id: true } })
   const conv = k ? await prisma.crmConversacion.findFirst({ where: { contactoId: k.id, lineaId: linea.id }, orderBy: { createdAt: 'desc' } }) : null
   if (!conv) return
   const tipo = txt(e.type)
