@@ -578,13 +578,13 @@ button.pill svg{width:12px;height:12px}
 .adj button:hover{background:#d3e8ff}
 /* Nota de voz en el compositor (maqueta aprobada «chat con archivos», 14-oct): ocupa el lugar del texto. */
 .box.vz-on textarea{display:none}
-.adj.vzr{margin:0;padding:12px 14px 12px 8px;min-height:72px;border-radius:0;background:#fff;color:var(--ink);gap:10px;font-size:13px}
-.adj.vzr .vz-onda{flex:1;min-width:0;margin:0;height:30px;cursor:default;display:flex;align-items:center;justify-content:space-between}
+.adj.vzr{margin:0;padding:14px 14px 14px 10px;min-height:72px;border-radius:0;background:#fff;color:var(--ink);gap:10px;font-size:13px}
+.adj.vzr .vz-onda{flex:1;min-width:0;margin:0;height:30px;cursor:default;display:flex;align-items:center;gap:2px;justify-content:flex-start;overflow:hidden}
 .adj.vzr .vz-onda i{display:block;width:3px;border-radius:3px;background:#d3d7de;flex:none;transition:height .1s linear}
 .adj.vzr .vz-onda i.ya{background:#17140F}
 .adj.vzr .vz-onda.viva i{background:#dc2626;opacity:.8}
-.adj.vzr button.vzr-borrar{width:34px;height:34px;border-radius:8px;color:#dc2626;flex:none}
-.adj.vzr button.vzr-borrar:hover{background:#fef2f2}
+.adj.vzr button.vzr-borrar{width:34px;height:34px;border-radius:8px;color:var(--ink);flex:none}
+.adj.vzr button.vzr-borrar:hover{background:#fef2f2;color:#dc2626}
 .vzr-punto{width:10px;height:10px;border-radius:50%;background:#dc2626;flex:none;box-shadow:0 0 0 4px rgba(220,38,38,.15);animation:vzr-late 1.2s ease-in-out infinite}
 @keyframes vzr-late{50%{opacity:.35}}
 @media (prefers-reduced-motion:reduce){.vzr-punto{animation:none}}
