@@ -65,6 +65,8 @@ export async function abrirSesion(req: Request, res: Response, user: User) {
   if (user.suspendido) throw new ForbiddenError('Esta cuenta está suspendida. Habla con el administrador.')
   if (!(await espacioDeUsuario(user.id))) throw new ForbiddenError('Tu cuenta no pertenece a ningún espacio de trabajo. Habla con el administrador.')
   await prisma.user.update({ where: { id: user.id }, data: { ultimoIngreso: new Date() } })
+  // Primer ingreso de alguien invitado (14-oct): aceptó la invitación, y los administradores se enteran.
+  if (!user.ultimoIngreso) void import('../services/crm/invitaciones').then(m => m.avisarQueEntro(user.id)).catch(e => logger.warn({ evento: 'AVISO_INGRESO_FALLO', userId: user.id, err: (e as Error).message }))
   res.cookie(COOKIE_SESION, firmar({ sub: user.id, email: user.email, role: user.role }, `${DIAS_SESION}d`), cookieOpts())
   req.userId = user.id; req.userRole = user.role
   auditLog(req, 'LOGIN', 'sesion', user.id)

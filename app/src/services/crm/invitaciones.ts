@@ -4,6 +4,7 @@ import { espacioActual } from './espacio'
 import type { EquiposNorm } from './equipos'
 import { correoMarca, escaparHtml } from '../../utils/correoMarca'
 import { logger } from '../../utils/logger'
+import { avisar } from '../notificaciones'
 
 /**
  * Invitaciones (6-oct): a quien agregan a un equipo o subequipo le llega un correo con el nombre de la empresa, los
@@ -99,4 +100,41 @@ export async function invitarNuevos(antes: EquiposNorm, despues: EquiposNorm, po
   for (const [id, equipos] of nuevos) {
     await invitar(id, equipos, empresa, quien).catch(err => logger.error({ evento: 'INVITACION_FALLO', userId: id, err: (err as Error).message }))
   }
+}
+
+/**
+ * Aceptó la invitación (14-oct): la primera vez que entra, cada administrador de los espacios donde la agregaron
+ * recibe un aviso en la campana y un correo. Quien se registró sola (la dueña de una empresa nueva) no le avisa a nadie.
+ */
+export async function avisarQueEntro(userId: string): Promise<void> {
+  const u = await prismaGlobal.user.findUnique({ where: { id: userId }, select: { nombre: true, email: true } })
+  if (!u) return
+  const quien = (u.nombre || u.email).trim()
+  const espacios = await prismaGlobal.crmMiembro.findMany({ where: { userId }, select: { espacioId: true, espacio: { select: { nombre: true } } } })
+  for (const { espacioId, espacio } of espacios) {
+    const miembros = await prismaGlobal.crmMiembro.findMany({ where: { espacioId, userId: { not: userId } }, select: { userId: true } })
+    const admins = await prismaGlobal.user.findMany({ where: { id: { in: miembros.map(m => m.userId) }, role: 'ADMIN', suspendido: false }, select: { id: true, nombre: true, email: true } })
+    for (const a of admins) {
+      await avisar({ userId: a.id, autorId: userId, tipo: 'CRM_INVITACION_ACEPTADA', titulo: `${quien} ya entró al CRM`, texto: `Aceptó la invitación y ya puede atender conversaciones en ${espacio.nombre}.`, url: '/' })
+      if (!process.env.RESEND_API_KEY || !urlCrm() || !a.email) continue
+      const hola = a.nombre ? `Hola, ${a.nombre.split(' ')[0]}` : 'Hola'
+      await enviarCorreo(a.email, `${quien} aceptó la invitación al CRM`,
+        correoMarca({
+          preencabezado: `${quien} ya entró al CRM de ${espacio.nombre}.`,
+          titulo: hola,
+          parrafos: [
+            `<strong style="color:#0a0a0d">${escaparHtml(quien)}</strong> aceptó la invitación y ya entró al CRM de <strong style="color:#0a0a0d">${escaparHtml(espacio.nombre)}</strong>.`,
+            'Desde ahora le pueden llegar conversaciones según las reglas de reparto de su equipo.',
+          ],
+          boton: { texto: 'Ver el equipo', url: `${urlCrm()}/` },
+        }),
+        `${hola}.
+
+${quien} aceptó la invitación y ya entró al CRM de ${espacio.nombre}.
+
+Entra al CRM: ${urlCrm()}/`,
+      ).catch(e => logger.warn({ evento: 'AVISO_INGRESO_CORREO_FALLO', para: a.id, err: (e as Error).message }))
+    }
+  }
+  logger.info({ evento: 'INVITACION_ACEPTADA', userId, espacios: espacios.length })
 }
