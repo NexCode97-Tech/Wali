@@ -993,7 +993,7 @@ document.getElementById('panel').addEventListener('click', e => {
     setTimeout(() => document.getElementById('ed-n').focus(), 30); return;
   }
   // Transferir va en la tarjeta (6-oct); Silenciar pasó al menú «⋯» de la conversación.
-  if (ic && ic.id === 'b-transferir') { st.tr = {a:'', nota:''}; dlgTransferir(); return; }
+  if (ic && ic.id === 'b-transferir') { st.tr = {a:'', nota:'', modo:'equipo', q:''}; dlgTransferir(); return; }
   if (ic && ic.id === 'b-silenciar') { const k = c.contactoId || c.id, ya = silenciado(c); AJ.silenciados = ya ? (AJ.silenciados || []).filter(x => x !== k) : [...(AJ.silenciados || []), k]; panel(c); toast(ya ? `Vuelven a sonar los mensajes de ${c.n}` : `Silenciaste a ${c.n}: sus mensajes no suenan ni avisan`); return; }
   if (ic) { if (ic.getAttribute('aria-label') === 'Ver contacto') irA('contactos'); return; }
 });
@@ -1524,7 +1524,7 @@ document.addEventListener('click', e => { if (!e.target.closest('#b-mas')) docum
 const chipsSel = (lista, attr, sel) => ddSel(attr, lista, sel);
 document.getElementById('m-mas').addEventListener('click', e => {
   const b = e.target.closest('[data-mas]'); if (!b) return; const c = conv(); document.getElementById('m-mas').hidden = true;
-  if (b.dataset.mas === 'transferir') { st.tr = {a:'', nota:''}; dlgTransferir(); }
+  if (b.dataset.mas === 'transferir') { st.tr = {a:'', nota:'', modo:'equipo', q:''}; dlgTransferir(); }
   if (b.dataset.mas === 'silenciar') { const k = c.contactoId || c.id, ya = silenciado(c); AJ.silenciados = ya ? (AJ.silenciados || []).filter(x => x !== k) : [...(AJ.silenciados || []), k]; panel(c); toast(ya ? `Vuelven a sonar los mensajes de ${c.n}` : `Silenciaste a ${c.n}: sus mensajes no suenan ni avisan`); }
   if (b.dataset.mas === 'unir') dlgUnir(c);
   if (b.dataset.mas === 'exportar') mjDlgExportar(c);
@@ -1532,12 +1532,73 @@ document.getElementById('m-mas').addEventListener('click', e => {
   if (b.dataset.mas === 'nocontactar') { if (c.noContactar) { c.noContactar = null; render(); toast('Ya se le puede escribir'); return; } st.nc = 'Lo pidió el cliente'; dlgNoContactar(); }
   if (b.dataset.mas === 'borrar') abrirDialogo(`<h3>Borrar los datos de ${esc(c.n)}</h3><p>Se borran su contacto, sus conversaciones y su ficha. Queda solo el registro de que pidió el borrado y la fecha, como exige la ley de protección de datos. No se puede deshacer.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626" id="borrar-ok">${I('x')}Borrar sus datos</button></div>`);
 });
+/* Transferir (maqueta aprobada «transferir la conversación», 14-oct): a un equipo o a una persona, con quién está
+   disponible, nota opcional y un resumen de lo que va a pasar. st.tr = {modo, a, nota, q}; `a` es «Equipo X» o el nombre. */
+const trNombreConv = c => (/[\p{L}\p{N}]/u.test(c.n || '') ? c.n : (c.tel || c.n || 'Sin nombre'));
 function dlgTransferir(){
-  const c = conv(); const t = st.tr;
-  abrirDialogo(`<h3>Transferir la conversación con ${esc(c.n)}</h3><div class="fld">A quién${chipsSel([...ASESORES.filter(a => a !== c.asig), ...EQUIPOS.filter(q => typeof EQ_CFG === 'undefined' || EQ_CFG.transferibles[q.n] !== false).map(q => 'Equipo ' + q.n)], 'data-tr-a', t.a)}</div>
-    <div class="frm"><label>Nota para quien la recibe<input id="tr-nota" value="${esc(t.nota)}" placeholder="Ej. Ya le mandé el enlace de pago, falta confirmar"></label></div>
-    <div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" id="tr-ok">${I('share')}Transferir</button></div>`);
+  const c = conv(), t = st.tr; t.modo = t.modo || 'equipo';
+  const eqActual = equipoConv(c), disp = id => typeof qDisponible === 'function' ? qDisponible(id) : false;
+  const sq = (n, i) => `<span class="tr-sq" style="background:${colorEquipo(n)}">${I('users')}</span>`;
+  const equipos = EQUIPOS.filter(q => q.n !== eqActual && (typeof EQ_CFG === 'undefined' || EQ_CFG.transferibles[q.n] !== false)).map((q, i) => {
+    const ps = personasDeEquipo(q.n), con = ps.filter(u => disp(u.id)).length, met = typeof eqrMetodo === 'function' ? eqrMetodo(eqrMetodoDe(q.n))[1].toLowerCase() : '';
+    const det = ps.length ? (con ? `${con} de ${ps.length} disponibles` : 'Nadie disponible · espera en fila') + (met ? ` · se reparte ${met}` : '') : 'Sin personas todavía';
+    const v = 'Equipo ' + q.n;
+    return `<button type="button" class="tr-op" data-tr-a="${esc(v)}" aria-pressed="${t.a === v}">${sq(q.n, i)}<span class="tr-tx"><b>${esc(q.n)}</b><small>${esc(det)}</small></span><span class="tr-rd"></span></button>`;
+  }).join('') || '<p class="muted" style="margin:0">No hay otros equipos a los que se pueda transferir.</p>';
+  const qn = norm(t.q || ''), abiertas = id => CONV.filter(x => x.asigId === id && x.est === 'abiertas').length;
+  const gente = USUARIOS.filter(u => u.nombre !== c.asig && (!qn || norm(u.nombre).includes(qn)))
+    .sort((a, b) => (a.pendiente - b.pendiente) || (disp(b.id) - disp(a.id)) || a.nombre.localeCompare(b.nombre, 'es'))
+    .map(u => {
+      const eqs = EQUIPOS.filter(q => idsDe(q.n).includes(u.id)).map(q => q.n), adm = u.rol === 'ADMIN';
+      const det = u.pendiente ? 'Invitación pendiente: todavía no entra' : [eqs.join(' · '), disp(u.id) ? 'en línea' : estadoDe(u).toLowerCase(), `${abiertas(u.id)} abiertas`].filter(Boolean).join(' · ');
+      return `<button type="button" class="tr-op" data-tr-a="${esc(u.nombre)}" aria-pressed="${t.a === u.nombre}"${u.pendiente ? ' disabled' : ''}><span class="tr-av">${avPer({id:u.id, nombre:u.nombre, foto:u.foto})}${u.pendiente ? '' : `<i class="${disp(u.id) ? 'on' : ''}"></i>`}</span><span class="tr-tx"><b>${esc(u.nombre)}${adm ? '<span class="tr-tag">Administrador</span>' : ''}</b><small>${esc(det.charAt(0).toUpperCase() + det.slice(1))}</small></span><span class="tr-rd"></span></button>`;
+    }).join('') || '<p class="muted" style="margin:0">Nadie coincide.</p>';
+  const esEq = t.a.startsWith('Equipo '), dest = esEq ? t.a.slice(7) : t.a;
+  const met = esEq && typeof eqrMetodo === 'function' ? eqrMetodo(eqrMetodoDe(dest))[1].toLowerCase() : '';
+  const resumen = !t.a ? 'Elige a quién se la pasas.' : esEq ? `Pasa a <b>${esc(dest)}</b> y el reparto se la entrega${met ? ` ${esc(met)}` : ''}. La nota queda en el chat, visible solo para el equipo.` : `Le llega directo a <b>${esc(dest)}</b>, sin pasar por el reparto, con un aviso y tu nota.`;
+  abrirDialogo(`<div class="tr-h"><h3>Transferir la conversación</h3><span class="tr-quien">${esc(trNombreConv(c))} · ${esc(eqActual)}</span></div>
+    <div class="tr-seg" role="tablist"><button type="button" role="tab" aria-selected="${t.modo === 'equipo'}" data-tr-modo="equipo">${I('users')}A un equipo</button><button type="button" role="tab" aria-selected="${t.modo === 'persona'}" data-tr-modo="persona">${I('user')}A una persona</button></div>
+    ${t.modo === 'persona' ? `<label class="tr-bus">${I('search')}<input id="tr-q" value="${esc(t.q || '')}" placeholder="Buscar persona" autocomplete="off" aria-label="Buscar persona"></label><div class="tr-lista" id="tr-l">${gente}</div>` : `<div class="tr-lista">${equipos}</div>`}
+    <label class="tr-lbl" for="tr-nota">Nota para quien la recibe <span>(opcional)</span></label><textarea id="tr-nota" rows="3" placeholder="Ej. Ya le mandé el enlace de pago, falta confirmar">${esc(t.nota)}</textarea>
+    <div class="tr-res">${I('share')}<span>${resumen}</span></div>
+    <div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" id="tr-ok"${t.a ? '' : ' disabled'}>${I('share')}Transferir</button></div>`, 'dlg-tr');
 }
+document.head.insertAdjacentHTML('beforeend', `<style>
+.dlg.dlg-tr{max-width:520px}
+.tr-h h3{margin:0}
+.tr-quien{display:block;margin-top:6px;font-size:13px;color:var(--ink3)}
+.tr-seg{display:flex;padding:4px;border-radius:12px;background:#f2f4f6;gap:4px;margin:14px 0 12px}
+.tr-seg button{flex:1;height:36px;border:0;border-radius:9px;background:none;font:inherit;font-size:13.5px;font-weight:600;color:#4b5563;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer}
+.tr-seg button svg{width:16px;height:16px}
+.tr-seg button[aria-selected="true"]{background:#fff;color:#0b0b10;box-shadow:0 1px 2px rgba(11,11,16,.08),0 4px 10px -6px rgba(11,11,16,.3)}
+.tr-bus{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px}
+.tr-bus svg{width:16px;height:16px;color:#9ca3af}
+.tr-bus input{border:0;outline:none;flex:1;font:inherit;font-size:13.5px;background:none}
+.tr-lista{display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto;margin-bottom:14px}
+.tr-op{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;text-align:left;background:#fff;font:inherit;width:100%;cursor:pointer}
+.tr-op:hover:not(:disabled){border-color:#cfd5de}
+.tr-op[aria-pressed="true"]{border-color:#0b0b10;box-shadow:inset 0 0 0 1px #0b0b10}
+.tr-op:disabled{opacity:.55;cursor:not-allowed}
+.tr-sq{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:#fff;flex:none}
+.tr-sq svg{width:17px;height:17px}
+.tr-av{position:relative;display:inline-flex;flex:none}
+.tr-av .av{width:34px;height:34px}
+.tr-av i{position:absolute;right:-1px;bottom:-1px;width:10px;height:10px;border-radius:50%;border:2px solid #fff;background:#9ca3af}
+.tr-av i.on{background:#16a34a}
+.tr-tx{flex:1;min-width:0}
+.tr-tx b{display:block;font-size:14px;font-weight:600;color:var(--ink)}
+.tr-tx small{display:block;font-size:12.5px;color:var(--ink3);margin-top:1px}
+.tr-tag{font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;background:#eef1f5;color:#374151;margin-left:6px}
+.tr-rd{width:18px;height:18px;border-radius:50%;border:2px solid #cfd5de;flex:none;display:grid;place-items:center;box-sizing:border-box}
+.tr-op[aria-pressed="true"] .tr-rd{border-color:#0b0b10;background:#0b0b10}
+.tr-op[aria-pressed="true"] .tr-rd::after{content:"";width:6px;height:6px;border-radius:50%;background:#fff}
+.tr-lbl{display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px}
+.tr-lbl span{font-weight:400;color:#9ca3af}
+#tr-nota{width:100%;box-sizing:border-box;resize:none;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;font-size:13.5px;line-height:1.45;color:var(--ink)}
+#tr-nota:focus{outline:none;border-color:#0b0b10;box-shadow:0 0 0 3px rgba(11,11,16,.08)}
+.tr-res{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:#f6f7f9;font-size:12.5px;line-height:1.5;color:#374151;margin:12px 0 4px}
+.tr-res svg{width:16px;height:16px;flex:none;margin-top:1px;color:#4b5563}
+</style>`);
 function dlgNoContactar(){
   const c = conv();
   abrirDialogo(`<h3>No contactar a ${esc(c.n)}</h3><p>No recibe difusiones, plantillas ni mensajes programados. Si escribe, la conversación llega y se le responde normal.</p><div class="fld">Motivo${chipsSel(['Lo pidió el cliente','Número equivocado','Ya compró en otro lado','Otro'], 'data-nc-m', st.nc)}</div>
@@ -1545,10 +1606,11 @@ function dlgNoContactar(){
 }
 document.getElementById('ov-x').addEventListener('click', e => {
   const c = conv();
-  const ta2 = e.target.closest('[data-tr-a]'); if (ta2) { st.tr.nota = document.getElementById('tr-nota').value; st.tr.a = ta2.dataset.trA; dlgTransferir(); return; }
-  if (e.target.closest('#tr-ok')) { const nota = document.getElementById('tr-nota').value.trim(); if (!st.tr.a) { toast('Elige a quién se la pasas'); return; } if (!nota) { toast('Deja una nota para quien la recibe'); document.getElementById('tr-nota').focus(); return; }
+  const ta2 = e.target.closest('[data-tr-a]'); if (ta2 && !ta2.disabled) { st.tr.nota = document.getElementById('tr-nota').value; st.tr.a = ta2.dataset.trA; dlgTransferir(); return; }
+  const tm = e.target.closest('[data-tr-modo]'); if (tm) { st.tr.nota = document.getElementById('tr-nota').value; st.tr.modo = tm.dataset.trModo; dlgTransferir(); if (st.tr.modo === 'persona') setTimeout(() => { const q = document.getElementById('tr-q'); if (q) q.focus(); }, 30); return; }
+  if (e.target.closest('#tr-ok')) { const nota = document.getElementById('tr-nota').value.trim(); if (!st.tr.a) { toast('Elige a quién se la pasas'); return; }
     // A una persona, la nota la menciona para que le llegue el aviso; a un equipo, queda en la conversación.
-    const eq = st.tr.a.startsWith('Equipo'); c.msgs.push({note: eq ? nota : `@${st.tr.a} ${nota}`, by: yo, h:'ahora'}, {ev:'swap', t:`${yo} la transfirió a ${st.tr.a} · ahora`}); if (eq) { c.equipo = st.tr.a.replace(/^Equipo /, ''); c.asig = null; } else c.asig = st.tr.a; cerrarDialogo(); render(); toast(eq ? `Transferida al ${st.tr.a.replace(/^E/, 'e')}. Tu nota quedó en la conversación.` : `Transferida a ${st.tr.a}. Le llega un aviso con tu nota.`); return; }
+    const eq = st.tr.a.startsWith('Equipo'); if (nota) c.msgs.push({note: eq ? nota : `@${st.tr.a} ${nota}`, by: yo, h:'ahora'}); c.msgs.push({ev:'swap', t:`${yo} la transfirió a ${st.tr.a} · ahora`}); if (eq) { c.equipo = st.tr.a.replace(/^Equipo /, ''); c.asig = null; } else c.asig = st.tr.a; cerrarDialogo(); render(); toast(eq ? `Transferida al ${st.tr.a.replace(/^E/, 'e')}.${nota ? ' Tu nota quedó en la conversación.' : ''}` : `Transferida a ${st.tr.a}.${nota ? ' Le llega un aviso con tu nota.' : ''}`); return; }
   const un = e.target.closest('[data-unir-con]'); if (un) { cerrarDialogo(); unir(c.id, +un.dataset.unirCon); return; }
   const nm2 = e.target.closest('[data-nc-m]'); if (nm2) { st.nc = nm2.dataset.ncM; dlgNoContactar(); return; }
   if (e.target.closest('#nc-guardar')) { c.noContactar = `${st.nc.toLowerCase()} · ${(p => `${p.d} ${HC_MES[p.m]}`)(hcPartes(Date.now()))}`; c.msgs.push({ev:'block', t:`${yo} la marcó como no contactar: ${st.nc.toLowerCase()}`}); cerrarDialogo(); render(); toast('Marcada como no contactar'); return; }
@@ -2587,3 +2649,11 @@ new MutationObserver(() => {
   document.addEventListener('keydown', e => { if (e.key === 'Escape') ocultar(); });
   document.addEventListener('scroll', ocultar, true);
 })();
+
+// Buscar persona en Transferir: la lista se repinta sin perder lo escrito.
+document.getElementById('ov-x').addEventListener('input', e => {
+  if (e.target.id !== 'tr-q' || !st.tr) return;
+  st.tr.q = e.target.value; st.tr.nota = (document.getElementById('tr-nota') || {}).value || st.tr.nota;
+  const pos = e.target.selectionStart; dlgTransferir();
+  const q = document.getElementById('tr-q'); if (q) { q.focus(); q.selectionStart = q.selectionEnd = pos; }
+});
