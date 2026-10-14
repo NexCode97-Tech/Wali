@@ -6,10 +6,10 @@ st.resp = 'por';
 const respEsPor = c => !!c.esperaMin;
 const respActivo = () => !st.menciones && (st.est || 'abiertas') === 'abiertas';
 const visiblesSinResp = visibles;
-visibles = function(){
-  const L = visiblesSinResp.apply(this, arguments);
-  return respActivo() ? L.filter(c => (st.resp === 'por') === respEsPor(c)) : L;
-};
+// La conversación abierta se queda en la lista aunque cambie de grupo (14-oct): al responder no salta a otra mientras
+// se sigue escribiendo; sale cuando se abre otra o se cambia de pestaña.
+const respFiltrar = (L, fija) => respActivo() ? L.filter(c => (fija && c.id === st.sel) || (st.resp === 'por') === respEsPor(c)) : L;
+visibles = function(){ return respFiltrar(visiblesSinResp.apply(this, arguments), true); };
 document.head.insertAdjacentHTML('beforeend', `<style>
 .rp-seg{display:flex;gap:6px;margin-top:10px}
 .rp-seg[hidden]{display:none}
@@ -31,7 +31,7 @@ const navSinResp = nav;
 nav = function(){ const r = navSinResp.apply(this, arguments); respPintar(); return r; };
 document.addEventListener('click', e => {
   const b = e.target.closest('.rp-seg [data-rp]'); if (!b) return;
-  st.resp = b.dataset.rp; const p = visibles()[0]; if (p) st.sel = p.id; render();
+  st.resp = b.dataset.rp; const p = respFiltrar(visiblesSinResp(), false)[0]; if (p) st.sel = p.id; render();
 }, true);
 // Al responder deja de esperar aquí mismo (el API lo confirma con la conversación actualizada).
 document.getElementById('enviar').addEventListener('click', () => {
