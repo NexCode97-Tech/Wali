@@ -163,6 +163,7 @@ export async function enviarMensaje(req: Request, res: Response) {
   if (vozUrl && !datos.plantilla) throw new ValidationError('La nota de voz para cuando responda va con una plantilla.')
   const m = await guardarMensaje(id, validarDesdePantalla(datos), { autorId: req.userId! })
   if (m.tipo === 'out') await tomarAlResponder(id, req.userId!)
+  if (m.tipo === 'out') await pasarAContactado(id, req.userId!).catch(e => logger.warn(`[CRM] etapa Contactado en ${id}: ${(e as Error).message}`))
   if (vozUrl && m.tipo === 'out') {
     const pendiente = { _vozAlResponder: { url: vozUrl, mime: txt(voz.mime) || null, n: txt(voz.n).slice(0, 200) || null, por: req.userId!, by: (await nombreDe(req.userId!)) || null, tras: m.id } }
     await prisma.$executeRaw`UPDATE crm_conversaciones SET extra = COALESCE(extra, '{}'::jsonb) || ${JSON.stringify(pendiente)}::jsonb WHERE id = ${id}`
@@ -170,6 +171,21 @@ export async function enviarMensaje(req: Request, res: Response) {
     emitirMsg(id, ev, null)
   }
   return ApiResponse.created(res, msgAFront(m))
+}
+
+/**
+ * Embudo automático (14-oct): cuando alguien del equipo le escribe a un lead que sigue en la primera etapa («Nuevo
+ * lead»), pasa a «Contactado». Solo avanza desde la primera etapa: nunca devuelve a quien ya va más adelante.
+ */
+async function pasarAContactado(convId: number, por: string) {
+  const c = await prisma.crmConversacion.findUnique({ where: { id: convId }, select: { equipo: true, contacto: { select: { id: true, etapa: true } } } })
+  if (!c) return
+  const etapas = await (await import('../../services/crm/iaEmbudo')).etapasDelEquipo(c.equipo || 'Ventas')
+  const primera = etapas.find(e => /^nuevo lead$/i.test(e.trim())) ?? etapas[0]
+  const contactado = etapas.find(e => /^contactad[oa]$/i.test(e.trim()))
+  if (!contactado || (c.contacto.etapa && c.contacto.etapa !== primera)) return
+  await prisma.crmContacto.update({ where: { id: c.contacto.id }, data: { etapa: contactado } })
+  await emitirContacto(c.contacto.id, por)
 }
 
 export async function borrarMensaje(req: Request, res: Response) {
