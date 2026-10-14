@@ -6,10 +6,35 @@ st.resp = 'por';
 const respEsPor = c => !!c.esperaMin;
 const respActivo = () => !st.menciones && (st.est || 'abiertas') === 'abiertas';
 const visiblesSinResp = visibles;
-// La conversación abierta se queda en la lista aunque cambie de grupo (14-oct): al responder no salta a otra mientras
-// se sigue escribiendo; sale cuando se abre otra o se cambia de pestaña.
-const respFiltrar = (L, fija) => respActivo() ? L.filter(c => (fija && c.id === st.sel) || (st.resp === 'por') === respEsPor(c)) : L;
-visibles = function(){ return respFiltrar(visiblesSinResp.apply(this, arguments), true); };
+// Al responder, la conversación espera 10 segundos antes de pasar a Respondidas (14-oct): así se alcanza a escribir y
+// mandar otro mensaje. Escribir o enviar de nuevo reinicia la espera. Luego pasa a la siguiente por responder o, si no
+// hay ninguna, el chat queda vacío.
+const RESP_ESPERA = 10000;
+let respFija = null, respReloj = null;
+const respFiltrar = (L, fija) => respActivo() ? L.filter(c => (fija && respFija === c.id && c.id === st.sel) || (st.resp === 'por') === respEsPor(c)) : L;
+function respSoltar(){
+  clearTimeout(respReloj); respReloj = null;
+  const id = respFija; if (!id) return;
+  // Si quedó algo escrito sin enviar, no se le quita el chat: espera otro rato.
+  if (st.sel === id && ta.value.trim()) { respEsperar(id); return; }
+  respFija = null;
+  if (st.sel === id && !visibles().some(c => c.id === id)) { const p = visibles()[0]; st.sel = p ? p.id : 0; }
+  render();
+}
+function respEsperar(id){ respFija = id; clearTimeout(respReloj); respReloj = setTimeout(respSoltar, RESP_ESPERA); }
+// Mientras se escribe en esa conversación, la espera vuelve a empezar.
+ta.addEventListener('input', () => { if (respFija && respFija === st.sel) respEsperar(respFija); });
+// Cubre todo lo que responde (texto, archivo, nota de voz, plantilla) y la confirmación del API: si la conversación abierta
+// estaba por responder y deja de estarlo, empieza la espera en vez de desaparecer de una.
+let respSelEraPor = null;
+visibles = function(){
+  const sel = CONV.find(x => x.id === st.sel);
+  if (respActivo() && st.resp === 'por' && sel) {
+    if (respEsPor(sel)) respSelEraPor = sel.id;
+    else if (respSelEraPor === sel.id && respFija !== sel.id) { respSelEraPor = null; respEsperar(sel.id); }
+  }
+  return respFiltrar(visiblesSinResp.apply(this, arguments), true);
+};
 document.head.insertAdjacentHTML('beforeend', `<style>
 .rp-seg{display:flex;gap:6px;margin-top:10px}
 .rp-seg[hidden]{display:none}
@@ -36,5 +61,5 @@ document.addEventListener('click', e => {
 // Al responder deja de esperar aquí mismo (el API lo confirma con la conversación actualizada).
 document.getElementById('enviar').addEventListener('click', () => {
   if (st.modo === 'n') return; const c = CONV.find(x => x.id === st.sel); if (!c || !ta.value.trim()) return;
-  setTimeout(() => { if (c.msgs.some(m => m.out != null && m.h === 'ahora')) { c.esperaMin = 0; c.espera = null; render(); } }, 0);
+  setTimeout(() => { if (c.msgs.some(m => m.out != null && m.h === 'ahora')) { if (respActivo() && st.resp === 'por') respEsperar(c.id); c.esperaMin = 0; c.espera = null; render(); } }, 0);
 }, true);
