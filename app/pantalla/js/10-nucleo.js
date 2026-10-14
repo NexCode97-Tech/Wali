@@ -2462,8 +2462,9 @@ function abrirEmojis(boton, campo){
     // El selector completo (14-oct): buscador, recientes, categorías con banderas y tono de piel. Mientras carga, los de siempre.
     p._completo = true; p.classList.add('emop-full');
     p.innerHTML = EMOJIS.map(x => `<button type="button" data-emo="${x}" aria-label="${x}">${x}</button>`).join('');
-    import('__BASE__/vendor/emoji/picker.js').then(() => {
+    Promise.all([import('__BASE__/vendor/emoji/picker.js'), import('__BASE__/vendor/emoji/es.js')]).then(([, es]) => {
       const ep = document.createElement('emoji-picker');
+      ep.i18n = {...es.default, searchLabel: 'Buscar emoji'};
       ep.setAttribute('locale', 'es'); ep.setAttribute('data-source', '__BASE__/vendor/emoji/es.json'); ep.className = 'emop-ep';
       ep.addEventListener('emoji-click', ev => { const c = p._campo, v = ev.detail.unicode, i = c.selectionStart ?? c.value.length, j = c.selectionEnd ?? i; c.value = c.value.slice(0, i) + v + c.value.slice(j); c.focus(); c.selectionStart = c.selectionEnd = i + v.length; c.dispatchEvent(new Event('input', {bubbles: true})); });
       p.replaceChildren(ep);

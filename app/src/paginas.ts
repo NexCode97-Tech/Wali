@@ -162,6 +162,7 @@ router.get('/img/fondo-chat.png', (_req: Request, res: Response) => {
 const EMOJI_JS: Record<string, string> = {
   'picker.js': require.resolve('emoji-picker-element/picker.js'),
   'database.js': require.resolve('emoji-picker-element/database.js'),
+  'es.js': require.resolve('emoji-picker-element/i18n/es.js'),
 }
 router.get('/vendor/emoji/:archivo', (req: Request, res: Response) => {
   const archivo = String(req.params.archivo)
