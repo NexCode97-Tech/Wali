@@ -409,13 +409,14 @@ function plantillaNueva(){
       <div class="fld">Botón, opcional${ddSel('data-btn', [['','Sin botón'],['Respuesta rápida','Respuesta rápida'],['Enlace','Enlace'],['Llamar','Llamar']], t.btn)}</div>
       ${t.btn ? `<label>Texto del botón<input id="t-bt" value="${esc(t.btnTxt)}" placeholder="${t.btn === 'Enlace' ? 'Ver más' : t.btn === 'Llamar' ? 'Llamar a mi asesor' : 'Sí, quiero información'}"></label>` : ''}
       ${t.btn === 'Enlace' ? `<label>Enlace del botón<input id="t-bu" value="${esc(t.btnUrl || '')}" placeholder="https://www.tuempresa.com"></label>` : ''}
-      ${t.btn === 'Llamar' ? `<label>Número a llamar<input id="t-bl" value="${esc(t.btnTel || '')}" placeholder="+57 300 123 4567" inputmode="tel"></label>` : ''}
+      ${t.btn === 'Llamar' ? `<div class="fld">Número a llamar${campoTel('t-bl', t.btnTel || '')}</div>` : ''}
       <p class="muted">Meta rechaza plantillas con promesas sin condiciones, mayúsculas sostenidas o variables sin ejemplo. Antes de enviarla se revisan esas reglas aquí.</p>
       <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn" id="t-guardar">Guardar borrador</button><button type="button" class="btn pri" id="t-meta">${I('send')}Enviar a Meta</button></div>
     </div>
     <div class="phone"><div class="hd">Así lo ve el cliente</div><div class="bub">${t.headTipo === 'video' ? `<div class="mj-vid"><span>${I('play')}</span></div>` : ''}${t.head && t.headTipo !== 'video' ? `<div class="h">${esc(t.head)}</div>` : ''}${esc(cuerpo)}${t.foot ? `<div class="ft">${esc(t.foot)}</div>` : ''}<div class="tm">${hcHora(Date.now())}</div>${t.btn ? `<span class="btn2">${esc(t.btnTxt || (t.btn === 'Enlace' ? 'Ver más' : t.btn === 'Llamar' ? 'Llamar a mi asesor' : 'Sí, quiero información'))}</span>` : ''}</div></div></div>`;
   const bind = (id, k) => { const x = el.querySelector(id); if (x) x.addEventListener('input', () => { t[k] = x.value; if (k !== 'body' && k !== 'nombre' && k !== 'btnTxt') return; const pv = el.querySelector('.bub'); if (k === 'body') pv.childNodes[t.headTipo === 'video' || t.head ? 1 : 0].textContent = x.value; }); };
-  bind('#t-n', 'nombre'); bind('#t-b', 'body'); bind('#t-bt', 'btnTxt'); bind('#t-bu', 'btnUrl'); bind('#t-bl', 'btnTel');
+  bind('#t-n', 'nombre'); bind('#t-b', 'body'); bind('#t-bt', 'btnTxt'); bind('#t-bu', 'btnUrl');
+  const tbl = el.querySelector('#t-bl'); if (tbl) tbl.addEventListener('input', () => { t.btnTel = valorTel('t-bl'); });
   const btx = el.querySelector('#t-bt'); if (btx) btx.addEventListener('input', () => { const b2 = el.querySelector('.bub .btn2'); if (b2) b2.textContent = btx.value || b2.textContent; });
   ['#t-h', '#t-f'].forEach((id, i) => { const x = el.querySelector(id); if (!x) return; x.addEventListener('input', () => { t[i ? 'foot' : 'head'] = x.value; const pv = el.querySelector('.bub'); const n = pv.querySelector(i ? '.ft' : '.h'); if (n) n.textContent = x.value; }); x.addEventListener('change', () => { t[i ? 'foot' : 'head'] = x.value; render(); }); });
   el.querySelectorAll('[data-cat]').forEach(b => b.addEventListener('click', () => { t.cat = b.dataset.cat; render(); }));
@@ -2027,7 +2028,7 @@ function ctEscribir(id){ const c = CONV.find(x => x.id === id) || CT_EXTRA.find(
 function ctNuevo(){
   abrirDialogo(`<h3>Agregar contacto</h3><div class="frm">
     <label>Nombre y apellido<input id="ctn-n" placeholder="Ej. Valentina Ruiz"></label>
-    <div class="two3" style="grid-template-columns:1fr 1fr"><label>Celular<input id="ctn-tel" inputmode="tel" placeholder="+57 300 123 4567"></label><label>Correo<input id="ctn-mail" type="email" placeholder="correo@ejemplo.com"></label></div>
+    <div class="two3" style="grid-template-columns:1fr 1fr"><div class="fld">Celular${campoTel('ctn-tel', '')}</div><label>Correo<input id="ctn-mail" type="email" placeholder="correo@ejemplo.com"></label></div>
     <div class="two3" style="grid-template-columns:1fr 1fr"><div class="fld">Etapa${ddSel('data-ctn-etapa', [...etapasActivas(), ...etapasPerdidas()].map(e => [e, e]), st.ctNuevo.etapa)}</div><div class="fld">Asesor${ddSel('data-ctn-asig', ASESORES.map(a => [a, a]), st.ctNuevo.asig, 'Sin asignar')}</div></div>
     <div class="two3" style="grid-template-columns:1fr 1fr"><div class="fld">Producto de interés${ddSel('data-ctn-prod', [...CATALOGO.map(x => x.p), ...FALTANTES].map(p => [p, p]), st.ctNuevo.producto, 'Elige un producto')}</div><label>Ciudad<input id="ctn-ciudad" placeholder="Ej. Bucaramanga"></label></div>
     </div><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" data-ct-guardar-nuevo="1">${I('check')}Agregar</button></div>`);
@@ -2098,9 +2099,9 @@ document.getElementById('ov-x').addEventListener('click', e => {
   const na = t.closest('[data-ctn-asig]'); if (na) { st.ctNuevo.asig = na.dataset.ctnAsig; guardarCamposNuevo(); ctNuevo(); restaurarCamposNuevo(); return; }
   const np = t.closest('[data-ctn-prod]'); if (np) { st.ctNuevo.producto = np.dataset.ctnProd; guardarCamposNuevo(); ctNuevo(); restaurarCamposNuevo(); return; }
   if (t.closest('[data-ct-guardar-nuevo]')) {
-    const n = document.getElementById('ctn-n').value.trim(), tel = document.getElementById('ctn-tel').value.trim();
+    const n = document.getElementById('ctn-n').value.trim(), tel = valorTel('ctn-tel');
     if (n.split(/\s+/).length < 2) { toast('Escribe nombre y apellido'); document.getElementById('ctn-n').focus(); return; }
-    if (tel.replace(/\D/g, '').length < 10) { toast('Escribe un celular de 10 dígitos'); document.getElementById('ctn-tel').focus(); return; }
+    if (document.getElementById('ctn-tel').value.replace(/\D/g, '').length < 7) { toast('Escribe el número de celular completo'); document.getElementById('ctn-tel').focus(); return; }
     const d10 = tel.replace(/\D/g, '').slice(-10), ya = ctTodos().find(x => String(x.tel || '').replace(/\D/g, '').slice(-10) === d10);
     if (ya) { toast(`Ese celular ya está en contactos: ${ya.n}`); document.getElementById('ctn-tel').focus(); return; }
     CT_EXTRA.unshift({id:-Date.now(), n, tel, correo:document.getElementById('ctn-mail').value.trim(), canal:'wa', etapa:st.ctNuevo.etapa, asig:st.ctNuevo.asig || null, producto:st.ctNuevo.producto, empresa:'', ciudad:document.getElementById('ctn-ciudad').value.trim(), origen:'Agregado a mano', tags:[], cuotas:null, ultimoDias:0, agregadoDias:0, recien:Date.now()});

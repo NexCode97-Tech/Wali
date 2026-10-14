@@ -155,7 +155,7 @@ document.addEventListener('click', e => {
     const necesitaRep = pideRepresentante(c) && c.aut, tel = c.campos && c.campos.telRepresentante;
     if (necesitaRep && !tel) {
       abrirDialogo(`<h3>Autorización del representante legal</h3><p>${esc(c.n)} es menor de edad. Para grabar sus llamadas, la autorización la tiene que dar su papá, su mamá o su representante legal.</p>
-        <label class="fld">WhatsApp del representante legal<input id="aut-tel" inputmode="tel" placeholder="Ej. +57 310 555 0199"></label>
+        <div class="fld">WhatsApp del representante legal${campoTel('aut-tel', '', {placeholder: '310 555 0199'})}</div>
         <p class="muted">Le llega por WhatsApp la plantilla «${TPL_REP}» para que responda; donde diga {{menor}} va el nombre del menor. El número queda guardado en «Datos del cliente».</p>
         <div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" data-aut-enviar="1">${I('send')}Enviar</button></div>`);
       return;
@@ -165,7 +165,7 @@ document.addEventListener('click', e => {
   const env = e.target.closest('[data-aut-enviar]');
   if (env) {
     e.stopPropagation();
-    const c = CONV.find(x => x.id === st.sel), tel = document.getElementById('aut-tel').value.trim(); if (!c) return;
+    const c = CONV.find(x => x.id === st.sel), tel = document.getElementById('aut-tel').value.trim() ? valorTel('aut-tel') : ''; if (!c) return;
     if (tel.replace(/\D/g, '').length < 10) { toast('Escribe el WhatsApp completo del representante legal'); return; }
     c.campos = c.campos || {}; c.campos.telRepresentante = tel; cerrarDialogo(); pedirAutorizacion(c, tel); return;
   }

@@ -320,6 +320,7 @@ document.addEventListener('click', e => {
   if (ab) { const m = document.querySelector(`[data-tel-menu="${CSS.escape(ab.dataset.telAbrir)}"]`); const abrir = m && m.hidden; abiertos.forEach(x => { x.hidden = true; }); if (m && abrir) { m.hidden = false; const q = m.querySelector('[data-tel-q]'); if (q) { q.value = ''; m.querySelectorAll('[data-tel-pais]').forEach(b => { b.hidden = false; }); q.focus(); } const s2 = m.querySelector('[aria-selected="true"]'); if (s2) s2.scrollIntoView({block:'nearest'}); } return; }
   const op = e.target.closest('[data-tel-pais]');
   if (op) { const [id, iso] = op.dataset.telPais.split('|'); const p = PAISES_TEL.find(x => x.iso === iso); if (!p) return; TEL_PAIS[id] = iso;
+    const campo = document.getElementById(id); if (campo) setTimeout(() => campo.dispatchEvent(new Event('input', {bubbles: true})));
     const b = document.querySelector(`[data-tel-abrir="${CSS.escape(id)}"]`); if (b) { b.innerHTML = `${banderaTel(p.iso)}<span>+${esc(p.indicativo)}</span>${I('chev')}`; b.setAttribute('aria-label', `País del teléfono: ${p.nombre}`); }
     const m = op.closest('.tel-m'); if (m) { m.hidden = true; m.querySelectorAll('[data-tel-pais]').forEach(x => { const sel = x === op; x.setAttribute('aria-selected', String(sel)); const c = x.querySelector('svg'); if (c && !sel) c.remove(); if (sel && !c) x.insertAdjacentHTML('beforeend', I('check')); }); }
     const inp = document.getElementById(id); if (inp) inp.focus(); return; }

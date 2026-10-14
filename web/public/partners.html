@@ -374,12 +374,27 @@ html.cargando,html.cargando body{overflow:hidden}
 .pt-form{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:14px;background:var(--tarjeta);border-radius:var(--r);box-shadow:var(--sombra);padding:clamp(20px,3.5vw,40px)}
 .pt-form h2{margin:0 0 10px;font-size:clamp(26px,3.2vw,38px);line-height:1.05;letter-spacing:-.035em;font-weight:800}
 .pt-form p{margin:0;color:var(--tinta-2)}
-.pt-campos{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pt-campos{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
 .pt-campos label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--tinta-2)}
 .pt-campos label.ancho{grid-column:1 / -1}
 .pt-campos input,.pt-campos select,.pt-campos textarea{height:46px;border-radius:12px;border:1px solid var(--linea);background:var(--marco);padding:0 14px;font:400 15px var(--texto);color:var(--tinta)}
 .pt-campos textarea{height:96px;padding:12px 14px;resize:vertical}
-.pt-campos input:focus,.pt-campos select:focus,.pt-campos textarea:focus{outline:none;border-color:var(--tinta);box-shadow:0 0 0 3px rgba(255,210,31,.45);background:#fff}
+.pt-campos input:focus,.pt-campos select:focus,.pt-campos textarea:focus{outline:none;border-color:var(--tinta);box-shadow:0 0 0 3px rgba(23,20,15,.08);background:#fff}
+/* Teléfono con país e indicativo (regla del 14-oct: todo teléfono lleva su selector de país). */
+.pt-tel{position:relative;display:flex;height:46px;border-radius:12px;border:1px solid var(--linea);background:var(--marco)}
+.pt-tel:focus-within{border-color:var(--tinta);box-shadow:0 0 0 3px rgba(23,20,15,.08);background:#fff}
+.pt-campos .pt-tel input{flex:1;min-width:0;height:auto;border:0;background:transparent;box-shadow:none!important}
+.tel-b{display:flex;align-items:center;gap:7px;padding:0 10px 0 14px;border:0;border-right:1px solid var(--linea);background:none;font:600 15px var(--texto);color:var(--tinta);cursor:pointer;border-radius:12px 0 0 12px}
+.tel-b img{width:22px;height:16px;border-radius:3px;object-fit:cover;box-shadow:0 0 0 1px rgba(23,20,15,.08)}
+.tel-b svg{width:14px;height:14px;opacity:.6}
+.tel-m{position:absolute;left:0;top:calc(100% + 6px);z-index:20;width:300px;background:#fff;border:1px solid var(--linea);border-radius:14px;box-shadow:0 20px 40px -18px rgba(23,20,15,.35);padding:8px;font-weight:400}
+.tel-m input{width:100%;height:38px;border-radius:10px;border:1px solid var(--linea);background:var(--marco);padding:0 12px;font:400 14px var(--texto)}
+.tel-l{max-height:240px;overflow-y:auto;margin-top:6px;display:flex;flex-direction:column}
+.tel-l button{display:flex;align-items:center;gap:10px;padding:8px 10px;border:0;background:none;border-radius:8px;font:400 14px var(--texto);color:var(--tinta);text-align:left;cursor:pointer}
+.tel-l button:hover,.tel-l button[aria-selected="true"]{background:var(--hundido)}
+.tel-l button img{width:22px;height:16px;border-radius:3px;object-fit:cover}
+.tel-l button span{flex:1}
+.tel-l button small{color:var(--tinta-3,#7a7569)}
 .pt-campos .btn{grid-column:1 / -1;justify-self:start}
 .pt-legal{grid-column:1 / -1;font-size:12.5px;color:var(--tinta-3)}
 .pt-legal a{text-decoration:underline}
@@ -533,7 +548,7 @@ if(document.readyState==="complete")cuandoListo();else window.addEventListener("
       <div class="pt-campos">
         <label>Nombre y apellido<input id="pt-nom" autocomplete="name" placeholder="Ej. Valentina Ruiz"></label>
         <label>Correo<input id="pt-mail" type="email" autocomplete="email" placeholder="tu@correo.com"></label>
-        <label>WhatsApp<input id="pt-tel" type="tel" autocomplete="tel" placeholder="+57 300 123 4567"></label>
+        <label>WhatsApp<span class="pt-tel"><button type="button" class="tel-b" id="pt-pais" aria-haspopup="listbox" aria-label="País del teléfono: Colombia"><img src="https://flagcdn.com/w40/co.png" alt="">+57<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><input id="pt-tel" type="tel" autocomplete="tel-national" placeholder="300 123 4567"><span class="tel-m" id="pt-paises" hidden><input id="pt-pais-q" placeholder="Buscar país o indicativo" autocomplete="off" aria-label="Buscar país o indicativo"><span class="tel-l" id="pt-pais-l" role="listbox"></span></span></span></label>
         <label>¿Qué haces?<select id="pt-tipo"><option>Agencia de marketing</option><option>Consultor de ventas</option><option>Desarrollador o freelancer</option><option>Creador de contenido</option><option>Otro</option></select></label>
         <label class="pt-trampa" aria-hidden="true">Sitio web<input id="pt-sitio" tabindex="-1" autocomplete="off"></label>
         <label class="ancho">¿Cómo recomendarías Wali?<textarea id="pt-como" placeholder="Ej. Manejo la pauta de 12 restaurantes que reciben pedidos por WhatsApp."></textarea></label>
@@ -587,7 +602,7 @@ if(document.readyState==="complete")cuandoListo();else window.addEventListener("
     bt.disabled = true; btT.textContent = 'Enviando…';
     try {
       const r = await fetch('/crm/api/partners/solicitud', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre: v('pt-nom'), correo: v('pt-mail'), whatsapp: v('pt-tel'), tipo: document.getElementById('pt-tipo').value, como: v('pt-como'), sitio: v('pt-sitio') }) });
+        body: JSON.stringify({ nombre: v('pt-nom'), correo: v('pt-mail'), whatsapp: v('pt-tel') ? `+${ptPais.c} ${v('pt-tel')}` : '', tipo: document.getElementById('pt-tipo').value, como: v('pt-como'), sitio: v('pt-sitio') }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok || j.success === false) throw new Error(j.error || 'No pudimos enviar tu solicitud. Intenta de nuevo.');
       fo.classList.add('listo'); msg.className = 'pt-msg ok'; msg.textContent = '¡Listo! Recibimos tu solicitud y te escribimos pronto a ' + v('pt-mail') + '.';
@@ -595,6 +610,34 @@ if(document.readyState==="complete")cuandoListo();else window.addEventListener("
     } catch (err) { mal(err.message); bt.disabled = false; btT.textContent = 'Enviar solicitud'; }
   });
 
+})();
+</script>
+
+<script>
+/* Selector de país del WhatsApp: bandera (imagen, Windows no pinta banderas en emoji), indicativo y buscador. */
+const PT_PAISES = 'CO|Colombia|57;AF|Afganistán|93;AL|Albania|355;DE|Alemania|49;AD|Andorra|376;AO|Angola|244;AI|Anguila|1264;AG|Antigua y Barbuda|1268;SA|Arabia Saudita|966;DZ|Argelia|213;AR|Argentina|54;AM|Armenia|374;AW|Aruba|297;AU|Australia|61;AT|Austria|43;AZ|Azerbaiyán|994;BS|Bahamas|1242;BD|Bangladés|880;BB|Barbados|1246;BH|Baréin|973;BE|Bélgica|32;BZ|Belice|501;BJ|Benín|229;BM|Bermudas|1441;BY|Bielorrusia|375;BO|Bolivia|591;BA|Bosnia y Herzegovina|387;BW|Botsuana|267;BR|Brasil|55;BN|Brunéi|673;BG|Bulgaria|359;BF|Burkina Faso|226;BI|Burundi|257;BT|Bután|975;CV|Cabo Verde|238;KH|Camboya|855;CM|Camerún|237;CA|Canadá|1;QA|Catar|974;TD|Chad|235;CL|Chile|56;CN|China|86;CY|Chipre|357;VA|Ciudad del Vaticano|39;KM|Comoras|269;KP|Corea del Norte|850;KR|Corea del Sur|82;CI|Costa de Marfil|225;CR|Costa Rica|506;HR|Croacia|385;CU|Cuba|53;CW|Curazao|599;DK|Dinamarca|45;DM|Dominica|1767;EC|Ecuador|593;EG|Egipto|20;SV|El Salvador|503;AE|Emiratos Árabes Unidos|971;ER|Eritrea|291;SK|Eslovaquia|421;SI|Eslovenia|386;ES|España|34;US|Estados Unidos|1;EE|Estonia|372;ET|Etiopía|251;PH|Filipinas|63;FI|Finlandia|358;FJ|Fiyi|679;FR|Francia|33;GA|Gabón|241;GM|Gambia|220;GE|Georgia|995;GH|Ghana|233;GI|Gibraltar|350;GD|Granada|1473;GR|Grecia|30;GL|Groenlandia|299;GP|Guadalupe|590;GU|Guam|1671;GT|Guatemala|502;GF|Guayana Francesa|594;GN|Guinea|224;GQ|Guinea Ecuatorial|240;GW|Guinea-Bisáu|245;GY|Guyana|592;HT|Haití|509;HN|Honduras|504;HK|Hong Kong|852;HU|Hungría|36;IN|India|91;ID|Indonesia|62;IQ|Irak|964;IR|Irán|98;IE|Irlanda|353;IS|Islandia|354;KY|Islas Caimán|1345;VG|Islas Vírgenes Británicas|1284;VI|Islas Vírgenes de EE. UU.|1340;IL|Israel|972;IT|Italia|39;JM|Jamaica|1876;JP|Japón|81;JO|Jordania|962;KZ|Kazajistán|7;KE|Kenia|254;KG|Kirguistán|996;KW|Kuwait|965;LA|Laos|856;LS|Lesoto|266;LV|Letonia|371;LB|Líbano|961;LR|Liberia|231;LY|Libia|218;LI|Liechtenstein|423;LT|Lituania|370;LU|Luxemburgo|352;MO|Macao|853;MK|Macedonia del Norte|389;MG|Madagascar|261;MY|Malasia|60;MW|Malaui|265;MV|Maldivas|960;ML|Malí|223;MT|Malta|356;MA|Marruecos|212;MQ|Martinica|596;MU|Mauricio|230;MR|Mauritania|222;MX|México|52;MD|Moldavia|373;MC|Mónaco|377;MN|Mongolia|976;ME|Montenegro|382;MZ|Mozambique|258;MM|Myanmar|95;NA|Namibia|264;NP|Nepal|977;NI|Nicaragua|505;NE|Níger|227;NG|Nigeria|234;NO|Noruega|47;NC|Nueva Caledonia|687;NZ|Nueva Zelanda|64;OM|Omán|968;NL|Países Bajos|31;PK|Pakistán|92;PA|Panamá|507;PG|Papúa Nueva Guinea|675;PY|Paraguay|595;PE|Perú|51;PF|Polinesia Francesa|689;PL|Polonia|48;PT|Portugal|351;PR|Puerto Rico|1787;GB|Reino Unido|44;CF|República Centroafricana|236;CZ|República Checa|420;CD|República del Congo|243;DO|República Dominicana|1809;RE|Reunión|262;RW|Ruanda|250;RO|Rumania|40;RU|Rusia|7;EH|Sáhara Occidental|212;WS|Samoa|685;BL|San Bartolomé|590;KN|San Cristóbal y Nieves|1869;SM|San Marino|378;MF|San Martín|590;PM|San Pedro y Miquelón|508;VC|San Vicente y las Granadinas|1784;SH|Santa Elena|290;LC|Santa Lucía|1758;ST|Santo Tomé y Príncipe|239;SN|Senegal|221;RS|Serbia|381;SC|Seychelles|248;SL|Sierra Leona|232;SG|Singapur|65;SX|Sint Maarten|1721;SY|Siria|963;SO|Somalia|252;LK|Sri Lanka|94;SZ|Suazilandia|268;ZA|Sudáfrica|27;SD|Sudán|249;SS|Sudán del Sur|211;SE|Suecia|46;CH|Suiza|41;SR|Surinam|597;TH|Tailandia|66;TW|Taiwán|886;TZ|Tanzania|255;TJ|Tayikistán|992;TL|Timor Oriental|670;TG|Togo|228;TO|Tonga|676;TT|Trinidad y Tobago|1868;TN|Túnez|216;TM|Turkmenistán|993;TR|Turquía|90;UA|Ucrania|380;UG|Uganda|256;UY|Uruguay|598;UZ|Uzbekistán|998;VU|Vanuatu|678;VE|Venezuela|58;VN|Vietnam|84;YE|Yemen|967;DJ|Yibuti|253;ZM|Zambia|260;ZW|Zimbabue|263'.split(';').map(x => { const [i, n, c] = x.split('|'); return {i, n, c}; });
+let ptPais = PT_PAISES[0];
+(() => {
+  const b = document.getElementById('pt-pais'), m = document.getElementById('pt-paises'), q = document.getElementById('pt-pais-q'), l = document.getElementById('pt-pais-l');
+  const bandera = i => { const im = document.createElement('img'); im.src = 'https://flagcdn.com/w40/' + i.toLowerCase() + '.png'; im.alt = ''; im.loading = 'lazy'; return im; };
+  const norm = t => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  function pintar(){
+    const t = norm(q.value.trim().replace(/^\+/, ''));
+    l.replaceChildren(...PT_PAISES.filter(p => !t || norm(p.n).includes(t) || p.c.startsWith(t)).map(p => {
+      const o = document.createElement('button'); o.type = 'button'; o.setAttribute('role', 'option'); o.setAttribute('aria-selected', String(p === ptPais));
+      const n = document.createElement('span'); n.textContent = p.n; const c = document.createElement('small'); c.textContent = '+' + p.c;
+      o.append(bandera(p.i), n, c); o.addEventListener('click', () => elegir(p)); return o;
+    }));
+  }
+  function elegir(p){
+    ptPais = p; m.hidden = true; b.setAttribute('aria-label', 'País del teléfono: ' + p.n);
+    b.replaceChildren(bandera(p.i), document.createTextNode('+' + p.c), b.querySelector('svg'));
+    document.getElementById('pt-tel').focus();
+  }
+  b.addEventListener('click', e => { e.preventDefault(); m.hidden = !m.hidden; if (!m.hidden) { q.value = ''; pintar(); q.focus(); } });
+  q.addEventListener('input', pintar);
+  document.addEventListener('click', e => { if (!m.hidden && !e.target.closest('.pt-tel')) m.hidden = true; });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') m.hidden = true; });
 })();
 </script>
 </body>
