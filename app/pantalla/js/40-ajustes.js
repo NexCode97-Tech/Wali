@@ -99,7 +99,7 @@ function paginaCanales(){
     ${secs.length ? secs.map(([n, xs]) => `<section class="cn-sec"><h3>${n}</h3><div class="cn-grid">${xs.map(tarjetaCanal).join('')}</div></section>`).join('') : `<p class="muted">Ningún canal coincide con «${esc(st.cnQ.trim())}».</p>`}</div>`;
 }
 function conectarCanal(k){
-  if (k === 'wa') { abrirConexion('Ventas'); return; }
+  if (k === 'wa') { st.volverCanales = true; st.pagina = 'cfg-lineas'; render(); return; }
   if (['ig', 'fb', 'tg', 'tt'].includes(k)) { abrirConexionCanal(k); return; }
   if (k === 'llamadas') { st.volverCanales = true; st.pagina = 'cfg-lineas'; render(); return; }
   if (k === 'web') { st.volverCanales = true; st.pagina = 'cfg-web'; render(); return; }

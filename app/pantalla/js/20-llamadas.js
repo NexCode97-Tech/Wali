@@ -24,7 +24,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .cx-op .rd{width:16px;height:16px;border-radius:50%;border:2px solid var(--ink4);flex:none}
 .cx-op[aria-checked="true"] .rd{border-color:#0b0b10;box-shadow:inset 0 0 0 3px #fff;background:#0b0b10}
 .cx-op b{display:block;font-size:14px;font-weight:400;color:var(--ink)}
-.cx-lnk{align-self:flex-start;justify-self:start;text-align:left;border:0;background:none;padding:0;color:var(--blue-ink);font:inherit;font-size:13px;font-weight:500;cursor:pointer}
+.cx-lnk{margin-top:12px;align-self:flex-start;justify-self:start;text-align:left;border:0;background:none;padding:0;color:var(--blue-ink);font:inherit;font-size:13px;font-weight:500;cursor:pointer}
 .cx-otra{display:grid;gap:10px;padding:14px;border:1px solid var(--line2);border-radius:12px;background:var(--bg2)}
 .cx-op small{font-size:12px;color:var(--ink3)}
 .cx-f{display:grid;gap:10px;margin:6px 0 12px}
@@ -442,7 +442,7 @@ function pasoCuenta(x){
       <button type="button" class="opc" data-cx-fb="1" ${fbListo && !x.fbCargando ? '' : 'disabled'}><span class="marca fb">${LOGO.fb}</span><span class="tx"><b>${x.fbCargando ? 'Abriendo Facebook…' : 'Continuar con Facebook'}${fbListo ? '<span class="etq-rec">Recomendado</span>' : prov == null ? '' : '<span class="etq-pronto">No disponible todavía</span>'}</b><small>${prov == null ? 'Revisando…' : fbListo ? 'Inicias sesión con Facebook, eliges o creas el número y listo.' : 'Se activa cuando Meta apruebe este CRM. Mientras tanto, usa los datos de tu app.'}</small></span>${fbListo ? I('chev', 'i ch') : ''}</button>
       <button type="button" class="opc" data-cx-coex="1" ${fbListo && !x.fbCargando ? '' : 'disabled'}><span class="marca wa">${I('wa')}</span><span class="tx"><b>${x.fbCargando && x.coex ? 'Abriendo Meta…' : 'Con tu app de WhatsApp Business'}${fbListo ? '<span class="etq-rec">Escaneas un QR</span>' : prov == null ? '' : '<span class="etq-pronto">No disponible todavía</span>'}</b><small>${prov == null ? 'Revisando…' : fbListo ? 'El número sigue funcionando en tu celular y también en el CRM. Escaneas un QR desde la app.' : 'Se activa cuando Meta apruebe este CRM.'}</small></span>${fbListo ? I('chev', 'i ch') : ''}</button>
       <button type="button" class="opc" data-cx-manual="1"><span class="marca neutra">${LOGO.llave}</span><span class="tx"><b>Con los datos de tu app de Meta</b><small>Si ya tienes una app en developers.facebook.com: pegas su identificador, su clave secreta y un token.</small></span>${I('chev', 'i ch')}</button>
-    </div>${x.errorCx ? `<div class="ll-nota">${esc(x.errorCx)}</div>` : ''}`;
+    </div>${CRM_YO.operador && prov && !fbListo ? `<button type="button" class="cx-lnk" data-cx-irprov="1">Activa «Continuar con Facebook»: configura la app de Meta de la plataforma</button>` : ''}${x.errorCx ? `<div class="ll-nota">${esc(x.errorCx)}</div>` : ''}`;
   const a = x.app;
   return `<div class="cx-f">
       <label>Identificador de la app (App ID)<input id="cx-app" value="${esc(a.appId)}" inputmode="numeric" autocomplete="off" placeholder="Ej. 1234567890123456"></label>
@@ -719,6 +719,13 @@ document.getElementById('ov-x').addEventListener('click', e => {
   crmApi('DELETE', `/crm/lineas/${id}`)
     .then(() => { const i = LINEAS.findIndex(l => l.id === id); if (i >= 0) LINEAS.splice(i, 1); waCaidoSin(c => { c.lineas = (c.lineas || []).filter(n => n !== nombre); return c.lineas.length > 0; }); cerrarDialogo(); render(); toast('Línea quitada del CRM'); })
     .catch(err => { b.disabled = false; toast(err.message || 'No se pudo quitar la línea'); });
+});
+// Del primer paso de la ventana de conexión al recuadro del botón de Facebook de la plataforma (solo el operador).
+document.getElementById('ov-x').addEventListener('click', e => {
+  if (!e.target.closest('[data-cx-irprov]')) return;
+  cerrarDialogo(); st.pagina = 'cfg-lineas'; render();
+  // El recuadro sale cuando llega la configuración de la plataforma: se busca hasta 2 s.
+  let n = 0; const ir = () => { const b = document.querySelector('.ln-plat'); if (b) b.scrollIntoView({behavior: 'smooth', block: 'start'}); else if (++n < 20) setTimeout(ir, 100); }; setTimeout(ir, 80);
 });
 /** La franja roja sin lo que se acaba de quitar (83-wa-caido.js), sin esperar el aviso del servidor. */
 function waCaidoSin(queda){
