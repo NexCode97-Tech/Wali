@@ -1646,7 +1646,8 @@ document.getElementById('matp').addEventListener('click', e => {
   if (/cerrada/i.test(c.ventana)) { toast(cerradaTxt(c)); return; }
   if (b.dataset.mat === 'pc') { enviarArchivoPc(c); return; }
   const m = MATERIAL[+b.dataset.mat]; if (!m) return;
-  c.msgs.push({out: ta.value.trim() || `Te comparto ${m.n.replace(/\.(pdf|mp4)$/, '')}`, file:{n:m.n, t:m.t, ic:m.ic, url:m.url, mime:m.mime}, by:yo, h:'ahora'}); ta.value = ''; chat(); lista(); toast(`Enviado: ${m.n}`);
+  // Como un adjunto (14-oct): queda listo y sale al tocar «Enviar».
+  archivoListo = {c, n: m.n, t: m.t, url: m.url, mime: m.mime}; pintarArchivoListo(); ta.focus();
 });
 // Programar un mensaje
 function progOpciones(){
@@ -2558,13 +2559,36 @@ document.querySelector('.nm .ft [data-emo-abrir]').addEventListener('click', e =
 // Elegir un archivo del computador.
 function elegirArchivo(accept, cb){ const i = document.createElement('input'); i.type = 'file'; i.accept = accept; i.hidden = true; document.body.appendChild(i); i.addEventListener('change', () => { const f = i.files && i.files[0]; i.remove(); if (f) cb(f); }); i.click(); }
 const ACEPTA = 'image/*,video/*,audio/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx';
+/* Adjuntar del computador (14-oct): el archivo se sube y queda listo arriba del texto, con una X para quitarlo; sale
+   solo al tocar «Enviar», con lo que se haya escrito como mensaje. */
+let archivoListo = null;
+function pintarArchivoListo(){
+  const adj = document.getElementById('adj'), a = archivoListo; adj.classList.remove('arch');
+  if (!a) { if (!st.adj && !grabacion && !notaLista) { adj.replaceChildren(); adj.hidden = true; } return; }
+  const ic = a.subiendo ? `<span class="arch-ic">${I('clock')}</span>` : /^image\//.test(a.mime || '') && a.url ? `<img class="arch-img" src="${esc(a.url)}" alt="">`
+    : /\.(pdf|xlsx?|csv|docx?|pptx?|zip|rar|txt)$/i.test(a.n) && typeof chIcDoc === 'function' ? chIcDoc(a.n) : `<span class="arch-ic">${I(/^video/.test(a.mime || '') ? 'play' : 'file')}</span>`;
+  adj.replaceChildren(); adj.classList.add('arch');
+  adj.insertAdjacentHTML('beforeend', `${ic}<span><b>${esc(a.n)}</b><small>${a.subiendo ? 'Subiendo…' : `${a.t ? esc(a.t) + ' · ' : ''}Listo. Escribe un mensaje si quieres y toca Enviar.`}</small></span><button type="button" id="arch-x" aria-label="Quitar el archivo" data-tip="Quitar">${I('x')}</button>`);
+  adj.hidden = false;
+}
 function enviarArchivoPc(c){
   elegirArchivo(ACEPTA, async f => {
-    toast(`Subiendo ${f.name}…`);
-    try { const r = await crmSubir(f); c.msgs.push({out: ta.value.trim(), file:{n:r.n || f.name, t:r.t, url:r.url, mime:r.mime, ic:/^video/.test(r.mime || '') ? 'play' : 'file'}, by:yo, h:'ahora'}); ta.value = ''; if (st.sel === c.id) { chat(); lista(); } toast(`Enviado: ${r.n || f.name}`); }
-    catch (err) { toast(err.message); }
+    const a = archivoListo = {c, n: f.name, subiendo: true}; pintarArchivoListo();
+    try { const r = await crmSubir(f); if (archivoListo !== a) return; Object.assign(a, {n: r.n || f.name, t: r.t, url: r.url, mime: r.mime}); delete a.subiendo; pintarArchivoListo(); ta.focus(); }
+    catch (err) { if (archivoListo === a) { archivoListo = null; pintarArchivoListo(); } toast(err.message); }
   });
 }
+document.getElementById('adj').addEventListener('click', e => { if (e.target.closest('#arch-x')) { archivoListo = null; pintarArchivoListo(); } });
+// «Enviar» con un archivo listo: sale el archivo con el texto escrito como mensaje.
+document.querySelector('.box .bar').addEventListener('click', e => {
+  if (!e.target.closest('#enviar') || !archivoListo) return;
+  if (archivoListo.c.id !== st.sel) { archivoListo = null; pintarArchivoListo(); return; }
+  e.stopPropagation(); e.preventDefault();
+  const a = archivoListo;
+  if (a.subiendo) { toast('Espera a que termine de subir el archivo'); return; }
+  const c = a.c; c.msgs.push({out: ta.value.trim(), file:{n:a.n, t:a.t, url:a.url, mime:a.mime, ic:/^video/.test(a.mime || '') ? 'play' : 'file'}, by:yo, h:'ahora'}); c.unread = 0;
+  ta.value = ''; archivoListo = null; pintarArchivoListo(); if (st.sel === c.id) { chat(); lista(); }
+}, true);
 // Adjuntar en Conversación nueva.
 document.querySelector('.nm .ft [aria-label="Adjuntar"]').addEventListener('click', () => elegirArchivo(ACEPTA, async f => {
   toast(`Subiendo ${f.name}…`);

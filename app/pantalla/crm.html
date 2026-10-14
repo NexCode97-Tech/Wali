@@ -577,6 +577,17 @@ button.pill svg{width:12px;height:12px}
 .adj button{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;color:var(--blue-ink)}
 .adj button:hover{background:#d3e8ff}
 /* Nota de voz en el compositor (maqueta aprobada «chat con archivos», 14-oct): ocupa el lugar del texto. */
+/* Archivo listo para enviar (14-oct): sale solo al tocar «Enviar». */
+.adj.arch{margin:10px 12px 0;padding:8px 8px 8px 10px;background:#f6f7f9;border:1px solid var(--line2);border-radius:10px;gap:12px;color:var(--ink)}
+.adj.arch .arch-img{width:40px;height:40px;border-radius:8px;object-fit:cover;flex:none}
+.adj.arch .arch-ic{width:40px;height:40px;border-radius:8px;background:#fff;border:1px solid var(--line);display:grid;place-items:center;color:var(--ink2);flex:none}
+.adj.arch .ic.doc{position:relative;width:30px;height:37px;flex:none;color:#fff}
+.adj.arch .ic.doc svg{width:30px;height:37px;stroke:none}
+.adj.arch .ic.doc b{position:absolute;left:0;right:0;bottom:6px;text-align:center;font-size:8.5px;font-weight:800;color:#fff;margin:0}
+.adj.arch > span:not(.arch-ic):not(.ic){flex:1;min-width:0}
+.adj.arch > span b{display:block;font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.adj.arch button#arch-x{width:28px;height:28px;border-radius:7px;color:#dc2626;flex:none}
+.adj.arch button#arch-x:hover{background:#fef2f2}
 .box.vz-on textarea{display:none}
 .adj.vzr span{flex:none}
 .adj.vzr{margin:0;padding:14px 14px 14px 10px;min-height:72px;border-radius:0;background:#fff;color:var(--ink);gap:10px;font-size:13px}
