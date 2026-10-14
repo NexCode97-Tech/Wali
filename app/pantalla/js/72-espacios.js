@@ -6,7 +6,7 @@ const ESP = {lista:null, limite:null, puedeCrear:false, cargando:false, error:''
 const ESP_EST = {interno:['Interno', 'mt-int'], activo:['Activo', 'on'], prueba:['Prueba', 'mt-pru'], 'pago-pendiente':['Pago pendiente', 'mt-mal'], cancelado:['Cancelado', 'mt-mal'], vencido:['Vencido', 'mt-mal']};
 const espIni = n => String(n || '').trim().split(/\s+/).slice(0, 2).map(p => p[0] || '').join('').toUpperCase() || 'E';
 // Logo del espacio (maqueta aprobada «foto del espacio de trabajo», 14-oct): la imagen si la tiene; si no, la inicial.
-const espLogo = (e, cls) => `<span class="${cls}">${e && e.logo ? `<img src="${esc(e.logo)}" alt="">` : esc(espIni(e && e.n))}</span>`;
+const espLogo = (e, cls) => `<span class="${cls}${e && e.logo ? ' con-img' : ''}">${e && e.logo ? `<img src="${esc(e.logo)}" alt="">` : esc(espIni(e && e.n))}</span>`;
 const espFecha = iso => { try { return 'Creado el ' + fechaCorta(iso); } catch { return ''; } };
 document.head.insertAdjacentHTML('beforeend', `<style>
 .ig-est.mt-int{color:#3730a3;background:#eef2ff}
@@ -14,7 +14,9 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ig-est.mt-mal{color:#991b1b;background:#fee2e2}
 .me-logo{width:48px;height:48px;border-radius:12px;display:grid;place-items:center;font-weight:700;font-size:14px;flex:none;background:#FFD21F;color:#0b0b10}
 .me-logo,.me-mini{overflow:hidden}
-.me-logo img,.me-mini img{width:100%;height:100%;object-fit:cover;display:block}
+/* El logo se ve completo (14-oct): cabe entero en el cuadro, sobre blanco, en vez de recortarse al centro. */
+.me-logo img,.me-mini img{width:100%;height:100%;object-fit:contain;display:block}
+.me-logo.con-img,.me-mini.con-img{background:#fff;box-shadow:inset 0 0 0 1px #e5e9f0}
 .me-foto{display:flex;align-items:center;gap:16px;margin-bottom:14px}
 .me-foto .me-logo{width:72px;height:72px;border-radius:18px;font-size:22px}
 .me-foto b{display:block;font-size:14px;font-weight:600}
@@ -152,7 +154,7 @@ const meCerrarMenu = () => document.querySelectorAll('.me-flmenu').forEach(m => 
 let meLogoNuevo; // undefined: sin cambios; null: quitar el logo; texto: el logo nuevo (data URL)
 function meFotoHtml(e){
   const vista = {n: e.n, logo: meLogoNuevo === undefined ? e.logo : meLogoNuevo};
-  return `${espLogo(vista, 'me-logo')}<div><b>Logo</b><small>PNG, JPG o WebP. Se recorta en cuadrado.</small>
+  return `${espLogo(vista, 'me-logo')}<div><b>Logo</b><small>PNG, JPG o WebP. Se ve completo, centrado en el cuadro.</small>
     <div class="me-foto-bts"><button type="button" class="btn" data-me-logo-cambiar="1">${I('upload')}${vista.logo ? 'Cambiar' : 'Subir logo'}</button>${vista.logo ? `<button type="button" class="btn rojo" data-me-logo-quitar="1">${I('x')}Quitar</button>` : ''}</div></div>`;
 }
 function meDlgEditar(e){
@@ -230,9 +232,10 @@ function meReducirLogo(archivo){
     if (!/^image\/(png|jpeg|webp)$/.test(archivo.type)) { mal(new Error('Elige una imagen PNG, JPG o WebP')); return; }
     const url = URL.createObjectURL(archivo), img = new Image();
     img.onload = () => {
-      const lado = Math.min(img.naturalWidth, img.naturalHeight), t = Math.min(256, lado), c = document.createElement('canvas');
+      // Entero dentro de un cuadrado de 256 px, centrado y con el resto transparente: no se recorta nada del logo.
+      const t = 256, k = Math.min(t / img.naturalWidth, t / img.naturalHeight, 1), w = Math.round(img.naturalWidth * k), h = Math.round(img.naturalHeight * k), c = document.createElement('canvas');
       c.width = t; c.height = t;
-      c.getContext('2d').drawImage(img, (img.naturalWidth - lado) / 2, (img.naturalHeight - lado) / 2, lado, lado, 0, 0, t, t);
+      c.getContext('2d').drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, Math.round((t - w) / 2), Math.round((t - h) / 2), w, h);
       URL.revokeObjectURL(url);
       let d = c.toDataURL('image/webp', .9);
       if (!/^data:image\/webp/.test(d)) d = c.toDataURL('image/png');
