@@ -93,6 +93,8 @@ export function convAFront(c: ConvFila, nombres: Map<string, string>) {
     numero: k.numero,
     n: k.nombre || contactoVisible(k) || 'Sin nombre',
     tel: contactoVisible(k),
+    // Llegó con @usuario y sin número (14-oct): se le puede escribir por su BSUID, encuesta incluida.
+    porUsuario: !k.telefono && !!k.waUid,
     canal: c.canal,
     linea: c.lineaId,
     conexion: c.conexionId ?? null,

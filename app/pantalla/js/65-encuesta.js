@@ -178,7 +178,8 @@
     if (!e.on) return no('La encuesta está apagada en Ajustes del CRM.');
     if ((c.canal || 'wa') !== 'wa') return no('La encuesta sale solo por WhatsApp.');
     if (!c.linea || !LINEAS.some(l => l.id === c.linea)) return no('La conversación no tiene una línea de WhatsApp conectada.');
-    if (String(c.tel || '').replace(/\D/g, '').length < 7) return no('El contacto no tiene número de WhatsApp.');
+    // Meta deja escribirle por su @usuario (BSUID) a quien no comparte el número: la encuesta también le llega.
+    if (String(c.tel || '').replace(/\D/g, '').length < 7 && !c.porUsuario) return no('El contacto no tiene número de WhatsApp.');
     if (marcado(c.noContactar)) return no('Pidió no ser contactado: no se le manda la encuesta.');
     if (!c.asig && !c.asigId) return no('La conversación no tiene asesor asignado: no hay a quién calificar.');
     if (/cerrada/i.test(c.ventana || '')) return no('No se puede enviar: pasaron más de 24 horas desde su último mensaje. La encuesta sale solo con la conversación abierta, así no cuesta nada.');
