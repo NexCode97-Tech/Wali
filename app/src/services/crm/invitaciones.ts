@@ -2,7 +2,7 @@ import crypto from 'node:crypto'
 import { prismaGlobal } from './bd'
 import { espacioActual } from './espacio'
 import type { EquiposNorm } from './equipos'
-import { correoMarca, escaparHtml } from '../../utils/correoMarca'
+import { correoMarca, escaparHtml, marcaCorreo } from '../../utils/correoMarca'
 import { logger } from '../../utils/logger'
 import { avisar } from '../notificaciones'
 
@@ -68,20 +68,22 @@ export async function invitar(userId: string, equipos: string[], empresa: string
   }
   const nombre = (u.nombre ?? '').trim().split(/\s+/)[0]
   const hola = nombre ? `Hola, ${nombre}` : 'Hola'
-  const donde = !equipos.length ? 'su equipo de trabajo' : `${equipos.length === 1 ? 'el equipo' : 'los equipos'} ${lista(equipos)}`
-  await enviarCorreo(u.email, `Te agregaron al CRM de ${empresa}`,
+  // «al equipo Ventas», «a los equipos Ventas y Soporte» o «a su equipo de trabajo» (14-oct: antes decía «a el equipo»).
+  const donde = !equipos.length ? 'a su equipo de trabajo' : `${equipos.length === 1 ? 'al equipo' : 'a los equipos'} ${lista(equipos)}`
+  const marca = marcaCorreo()
+  await enviarCorreo(u.email, `Te agregaron al CRM de ${marca}`,
     correoMarca({
-      preencabezado: `${quien} te agregó a ${donde} en el CRM de ${empresa}.`,
+      preencabezado: `${quien} te agregó ${donde} de ${empresa} en ${marca}.`,
       titulo: hola,
       parrafos: [
-        `${escaparHtml(quien)} te agregó a <strong style="color:#0a0a0d">${escaparHtml(donde)}</strong> en el CRM de <strong style="color:#0a0a0d">${escaparHtml(empresa)}</strong>.`,
+        `${escaparHtml(quien)} te agregó <strong style="color:#0a0a0d">${escaparHtml(donde)}</strong> de <strong style="color:#0a0a0d">${escaparHtml(empresa)}</strong> en el CRM de ${escaparHtml(marca)}.`,
         'Desde ahí atiendes las conversaciones de los clientes por WhatsApp y los demás canales, junto con tu equipo.',
       ],
       boton,
       aviso,
       nota: 'Si no esperabas esta invitación, ignora este correo.',
     }),
-    `${hola}.\n\n${quien} te agregó a ${donde} en el CRM de ${empresa}.\n\n${textoAcceso}\n\nNexCode97 · ${process.env.CRM_CORREO_AYUDA || 'nexcode97@gmail.com'}`)
+    `${hola}.\n\n${quien} te agregó ${donde} de ${empresa} en el CRM de ${marca}.\n\n${textoAcceso}\n\n${marca} · ${process.env.CRM_CORREO_AYUDA || 'nexcode97@gmail.com'}`)
   logger.info({ evento: 'INVITACION_ENVIADA', userId: u.id, equipos, conClave: !u.ultimoIngreso })
 }
 
@@ -118,7 +120,7 @@ export async function avisarQueEntro(userId: string): Promise<void> {
       await avisar({ userId: a.id, autorId: userId, tipo: 'CRM_INVITACION_ACEPTADA', titulo: `${quien} ya entró al CRM`, texto: `Aceptó la invitación y ya puede atender conversaciones en ${espacio.nombre}.`, url: '/' })
       if (!process.env.RESEND_API_KEY || !urlCrm() || !a.email) continue
       const hola = a.nombre ? `Hola, ${a.nombre.split(' ')[0]}` : 'Hola'
-      await enviarCorreo(a.email, `${quien} aceptó la invitación al CRM`,
+      await enviarCorreo(a.email, `${quien} aceptó la invitación a ${marcaCorreo()}`,
         correoMarca({
           preencabezado: `${quien} ya entró al CRM de ${espacio.nombre}.`,
           titulo: hola,

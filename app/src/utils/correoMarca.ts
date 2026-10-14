@@ -11,6 +11,8 @@ const SITIO = () => process.env.CRM_CORREO_SITIO || 'https://www.nexcode97.com'
 const AYUDA = () => process.env.CRM_CORREO_AYUDA || 'nexcode97@gmail.com'
 /** El nombre de la marca en el logo y el pie (CRM_CORREO_MARCA, «Wali»). */
 const MARCA = () => (process.env.CRM_CORREO_MARCA ?? '').trim() || 'NexCode97'
+/** El nombre del producto en los correos (CRM_CORREO_MARCA, «Wali»). */
+export const marcaCorreo = MARCA
 const FUENTE = "Inter,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"
 
 export interface CorreoMarca {
