@@ -341,7 +341,7 @@ const EQ_CFG = {ids:{}, colores:{}, metodos:{}, transferibles:{}, topes:{}};
 const ALCANCE = {on:false, equipos:[]};
 const PERSONAS_EXTRA = {};
 // Ningún rol en mayúsculas sostenidas (14-oct): los de la plataforma con su nombre y cualquier otro en tipo oración.
-const ROL_NOMBRE = new Proxy({LIDER:'Líder', AGENTE:'Asesor', LECTOR:'Solo lectura', ...{ADMIN:'Administrador', LIDER_VENTAS:'Líder de ventas', VENDEDOR:'Asesor de ventas', MARKETING:'Marketing', EDITOR:'Editor de video', COMMUNITY:'Community manager', LIDER_EDICION:'Líder de edición', LIDER_CREADORES:'Líder de creadores', SOCIAL_MEDIA:'Social media', LIDER_DISENO:'Líder de diseño', DISENADOR:'Diseñador', AUDITOR:'Auditor', VISITANTE:'Visitante', COLABORADOR:'Colaborador'}}, {get: (m, k) => typeof k !== 'string' || !k ? m[k] : m[k] || (k.charAt(0) + k.slice(1).toLowerCase()).replace(/_/g, ' ')});
+const ROL_NOMBRE = new Proxy({LIDER:'Líder de equipo', AGENTE:'Miembro', LECTOR:'Solo lectura', ...{ADMIN:'Administrador', LIDER_VENTAS:'Líder de ventas', VENDEDOR:'Asesor de ventas', MARKETING:'Marketing', EDITOR:'Editor de video', COMMUNITY:'Community manager', LIDER_EDICION:'Líder de edición', LIDER_CREADORES:'Líder de creadores', SOCIAL_MEDIA:'Social media', LIDER_DISENO:'Líder de diseño', DISENADOR:'Diseñador', AUDITOR:'Auditor', VISITANTE:'Visitante', COLABORADOR:'Colaborador'}}, {get: (m, k) => typeof k !== 'string' || !k ? m[k] : m[k] || (k.charAt(0) + k.slice(1).toLowerCase()).replace(/_/g, ' ')});
 const METODOS_EQ = [['turnos', 'Por turnos', 'Una conversación para cada persona conectada del equipo, en orden.'], ['menos', 'A quien tenga menos conversaciones', 'Le llega a la persona conectada con menos conversaciones abiertas.'], ['todos', 'Todos ven y cualquiera la toma', 'La conversación les aparece a todas las personas del equipo. La primera que responde se la queda.'], ['lider', 'Solo un líder la asigna', 'Nadie la recibe sola: queda sin asignar hasta que un líder o administrador la entrega.']];
 // Sin color elegido, cada equipo toma uno por su posición: Ventas azul, Soporte morado, Soporte de ventas cian, Recuperación naranja.
 const COLORES_EQ = [['#1f93ff', 'Azul'], ['#7c3aed', 'Morado'], ['#0891b2', 'Cian'], ['#ea580c', 'Naranja'], ['#db2777', 'Rosado'], ['#0d9488', 'Verde azulado']];
@@ -441,7 +441,6 @@ function recibeHTML(eq){
   const ls = lineasDe(eq);
   const partes = ls.map(l => `${esc(l.n)} · ${esc(l.tel)}`);
   if (eq === 'Ventas' && !partes.length) partes.push('Las que llegan sin un equipo propio');
-  if (EQ_CFG.transferibles[eq] !== false) partes.push('Las que le transfieren otros equipos');
   return partes.length ? partes.join('<br>') : '<span class="rq-sub">Ninguna todavía</span>';
 }
 const tabsRep = () => `<div class="cn-bar"><div class="cn-tabs" role="tablist" aria-label="Equipos y reparto">${[['equipos', 'Equipos', EQUIPOS.length], ['personas', 'Personas', personasCrm().length], ['reglas', 'Reglas del reparto', null]].map(([k, n, c]) => `<button type="button" role="tab" aria-selected="${st.repTab === k}" data-rep-tab="${k}">${n}${c != null ? `<span class="kb-n">${c}</span>` : ''}</button>`).join('')}</div></div>`;

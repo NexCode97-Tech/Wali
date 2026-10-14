@@ -355,7 +355,6 @@ editorEquipo = function(){
     // Como las maquetas: con una línea, «nombre · teléfono» (Moderación); con varias, sus nombres juntos (Ventas).
     const ls = lineasDe(x.orig), partes = ls.length === 1 ? [`${ls[0].n} · ${ls[0].tel}`] : ls.length ? [ls.map(l => l.n).join(' · ')] : [];
     if (x.orig === 'Ventas' && !partes.length) partes.push('Las que llegan sin un equipo propio');
-    if (x.transferible) partes.push('Las que le transfieren otros equipos');
     recibe = partes.length ? partes.map(t => `<span class="eqr-txt">${esc(t)}</span>`).join('') : '<span class="eqr-txt rq-sub">Ninguna todavía</span>';
   }
   const cardRecibe = `<section class="eqr-card" aria-label="Qué conversaciones recibe"><h4>Qué conversaciones recibe</h4>${recibe}</section>`;
