@@ -252,8 +252,24 @@ export function canalEncendido(cfg: Json, canal: string): boolean {
 const dondeDe = (l: Lugar): Prisma.CrmConversacionWhereInput =>
   'linea' in l ? { lineaId: l.linea.id } : 'pagina' in l ? { conexionId: l.pagina.id, canal: l.canal } : deVisitante(l.visitante)
 
-/** La conversación del contacto en esa línea, en ese navegador del chat de la web o en esa página. */
+/**
+ * La conversación del contacto, y todo lead que llega sin etapa entra a la primera del embudo de su equipo
+ * («Nuevo lead» si existe con ese nombre), 14-oct. Si la empresa no tiene etapas, queda sin etapa.
+ */
 async function conversacionPara(k: CrmContacto, lugar: Lugar, cuando: Date) {
+  const r = await conversacionEnLugar(k, lugar, cuando)
+  if (!k.etapa) {
+    try {
+      const etapas = await (await import('./iaEmbudo')).etapasDelEquipo(r.conv.equipo || 'Ventas')
+      const etapa = etapas.find(e => /^nuevo lead$/i.test(e.trim())) ?? etapas[0]
+      if (etapa) { await prisma.crmContacto.update({ where: { id: k.id }, data: { etapa } }); k.etapa = etapa }
+    } catch (e) { logger.warn(`[CRM] no se pudo poner la etapa inicial a ${k.id}: ${(e as Error).message}`) }
+  }
+  return r
+}
+
+/** La conversación del contacto en esa línea, en ese navegador del chat de la web o en esa página. */
+async function conversacionEnLugar(k: CrmContacto, lugar: Lugar, cuando: Date) {
   const donde = dondeDe(lugar)
   const ultima = await prisma.crmConversacion.findFirst({ where: { contactoId: k.id, ...donde }, orderBy: { createdAt: 'desc' } })
   if (ultima && ultima.estado !== 'finalizadas') return { conv: ultima, nueva: false, reabierta: null, vuelveDe: null as number | null }
