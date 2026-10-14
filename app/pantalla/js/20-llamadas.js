@@ -285,19 +285,21 @@ const lnCopiable = (etq, v) => `<div class="ln-copiable"><small>${etq}</small><d
 
 /* El botón «Conectar con Facebook» usa la app de Meta de la plataforma: la configura su administrador, una sola vez. */
 st.provCfg = null;
+st.pvBorrador = null;
 function cajaProveedor(){
   if (!CRM_YO.operador) return '';
-  const p = st.provCfg;
+  const p = st.provCfg, bo = st.pvBorrador || {};
+  const val = (k, guardado) => esc(bo[k] != null ? bo[k] : guardado || '');
   if (!p) { crmApi('GET', '/crm/conexiones/proveedor').then(d => { st.provCfg = d; if (st.pagina === 'cfg-lineas') render(); }).catch(() => {}); return ''; }
   const estado = p.listo && p.listoPaginas ? ['ok', 'Activo para WhatsApp, Instagram y Messenger'] : p.listo ? ['ok', 'Activo para WhatsApp'] : p.listoPaginas ? ['', 'Falta la configuración de WhatsApp'] : ['', 'Sin configurar'];
   return `<section class="ln-plat" aria-label="Botón Conectar con Facebook de la plataforma">
     <div class="ln-plat-cab"><span class="fic">${logoMeta()}</span><div><h4>Botón «Conectar con Facebook» de la plataforma <span class="ln-solo">Solo tú lo ves</span></h4>
       <p>La app de Meta que usan todas las empresas del CRM para conectar WhatsApp, Instagram y Messenger con un clic. Se configura una sola vez.</p></div></div>
     <div class="ln-form">
-      <div class="ln-campo"><label for="pv-app">Identificador de la app <small>(App ID)</small></label><input id="pv-app" value="${esc(p.appId || '')}" inputmode="numeric" autocomplete="off" placeholder="Ej. 1234567890123456"><span class="ayuda">Configuración de la app → Básica</span></div>
-      <div class="ln-campo"><label for="pv-sec">Clave secreta de la app</label><input id="pv-sec" type="password" value="" autocomplete="new-password" placeholder="${p.conClave ? 'Guardada: déjala vacía para no cambiarla' : '32 letras y números'}"><span class="ayuda">Se guarda cifrada y no se vuelve a mostrar</span></div>
-      <div class="ln-campo"><label for="pv-cfg">Configuración de WhatsApp <small>(config_id)</small></label><input id="pv-cfg" value="${esc(p.configId || '')}" inputmode="numeric" autocomplete="off" placeholder="Ej. 1234567890123456"><span class="ayuda">Facebook Login for Business → Configuraciones → registro integrado</span></div>
-      <div class="ln-campo"><label for="pv-cfgp">Configuración de Instagram y Messenger <small>(config_id)</small></label><input id="pv-cfgp" value="${esc(p.configPaginas || '')}" inputmode="numeric" autocomplete="off" placeholder="Ej. 1234567890123456"><span class="ayuda">Otra configuración, para páginas</span></div>
+      <div class="ln-campo"><label for="pv-app">Identificador de la app <small>(App ID)</small></label><input id="pv-app" value="${val('pv-app', p.appId)}" inputmode="numeric" autocomplete="off" placeholder="Ej. 1234567890123456"><span class="ayuda">Configuración de la app → Básica</span></div>
+      <div class="ln-campo"><label for="pv-sec">Clave secreta de la app</label><input id="pv-sec" type="password" value="${val('pv-sec', '')}" autocomplete="new-password" placeholder="${p.conClave ? 'Guardada: déjala vacía para no cambiarla' : '32 letras y números'}"><span class="ayuda">Se guarda cifrada y no se vuelve a mostrar</span></div>
+      <div class="ln-campo"><label for="pv-cfg">Configuración de WhatsApp <small>(config_id)</small></label><input id="pv-cfg" value="${val('pv-cfg', p.configId)}" inputmode="numeric" autocomplete="off" placeholder="Ej. 1234567890123456"><span class="ayuda">Facebook Login for Business → Configuraciones → registro integrado</span></div>
+      <div class="ln-campo"><label for="pv-cfgp">Configuración de Instagram y Messenger <small>(config_id)</small></label><input id="pv-cfgp" value="${val('pv-cfgp', p.configPaginas)}" inputmode="numeric" autocomplete="off" placeholder="Ej. 1234567890123456"><span class="ayuda">Otra configuración, para páginas</span></div>
     </div>
     ${p.verifyToken ? `<div class="ln-copiables"><p>En la app de Meta, WhatsApp → Configuración → Webhook: pega esta dirección y este código y suscríbete a «messages», «message_template_status_update» y «phone_number_quality_update». Para Instagram y Messenger, la dirección de páginas con el mismo código.</p>
       ${lnCopiable('Dirección de avisos', p.webhookUrl)}${lnCopiable('Código de verificación', p.verifyToken)}${p.webhookPaginas ? lnCopiable('Dirección de páginas', p.webhookPaginas) : ''}</div>` : ''}
@@ -384,13 +386,18 @@ document.getElementById('page').addEventListener('click', e => {
     abrirDialogo(`<h3>Quitar ${esc(l.n)} del CRM</h3><p>El CRM deja de recibir y enviar mensajes por ${esc(l.tel)}. Las conversaciones que ya hay se quedan. En Meta no se toca nada: la puedes volver a conectar cuando quieras.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626" data-ln-quitarok="${l.id}">${I('x')}Quitar</button></div>`); return; }
   const qt = t.closest('[data-cxm-quitar]'); if (qt) { const c = CONEXIONES.find(x => x.id === qt.dataset.cxmQuitar); if (!c) return;
     abrirDialogo(`<h3>Desconectar ${esc(cxNombre(c))}</h3><p>Sus ${c.lineas} ${c.lineas === 1 ? 'línea sale' : 'líneas salen'} del CRM y dejan de llegar sus mensajes. Las conversaciones que ya hay se quedan.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626" data-cxm-quitarok="${c.id}">${I('x')}Desconectar</button></div>`); return; }
-  if (t.closest('[data-pv-guardar]')) { const v = id => (document.getElementById(id) || {}).value || '';
-    crmApi('PUT', '/crm/conexiones/proveedor', {appId:v('pv-app').trim(), configId:v('pv-cfg').trim(), configPaginas:v('pv-cfgp').trim(), appSecret:v('pv-sec').trim()})
-      .then(p => { st.provCfg = p; render(); toast('Botón de Meta guardado'); }).catch(err => toast(err.message || 'No se pudo guardar')); return; }
+  const pg = t.closest('[data-pv-guardar]'); if (pg) { if (pg.disabled) return;
+    const p = st.provCfg || {}, bo = st.pvBorrador || {};
+    const v = (id, guardado) => String((document.getElementById(id) || {}).value || bo[id] || guardado || '').trim();
+    pg.disabled = true;
+    crmApi('PUT', '/crm/conexiones/proveedor', {appId:v('pv-app', p.appId), configId:v('pv-cfg', p.configId), configPaginas:v('pv-cfgp', p.configPaginas), appSecret:v('pv-sec')})
+      .then(r => { st.provCfg = r; st.pvBorrador = null; render(); toast('Botón de Meta guardado'); })
+      .catch(err => { pg.disabled = false; toast(err.message || 'No se pudo guardar'); }); return; }
   const on = t.closest('[data-ll-on]'); if (on && !on.disabled) { const id = on.dataset.llOn, c = LLAM.lineas[id]; c.on = !c.on; c.desde = c.on ? new Date().toISOString() : null; st.lnAbierto[id] = c.on ? 'aj' : ''; render(); toast(c.on ? 'Llamadas activadas en ' + lineaDe(id).n : 'Llamadas apagadas en ' + lineaDe(id).n); return; }
   const tg = t.closest('[data-ll-tg]'); if (tg) { const [id, k] = tg.dataset.llTg.split('|'); LLAM.lineas[id][k] = !LLAM.lineas[id][k]; render(); toast(LLAM.lineas[id][k] ? 'Activado' : 'Apagado'); return; }
   const eq = t.closest('[data-ll-eq]'); if (eq) { const [id, n] = eq.dataset.llEq.split('|'); LLAM.lineas[id].eq = n; render(); toast(`Las llamadas de ${lineaDe(id).n} suenan a ${n}`); return; }
 });
+document.getElementById('page').addEventListener('input', e => { if (st.pagina === 'cfg-lineas' && /^pv-/.test(e.target.id || '')) st.pvBorrador = {...(st.pvBorrador || {}), [e.target.id]: e.target.value}; });
 document.getElementById('page').addEventListener('input', e => { if (['cfg-lineas', 'cfg-llamadas'].includes(st.pagina) && e.target.dataset.llIn === 'proposito') { const c = document.getElementById('ll-prop-c'); if (c) c.textContent = `${e.target.value.length}/250`; } });
 document.getElementById('page').addEventListener('change', e => {
   if (!['cfg-lineas', 'cfg-llamadas'].includes(st.pagina) || !e.target.dataset.llIn) return;
