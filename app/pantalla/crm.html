@@ -665,6 +665,12 @@ svg.i:has(use[href="#i-check2"]){width:18px;height:12px;stroke-width:1.5}
 .pc-pr .menu button > svg.ck{margin-left:auto;width:16px;height:16px;color:var(--blue);stroke-width:2;flex:none}
 /* El chulo de la opción elegida en todas las listas del panel (equipo, asesor, prioridad): sin tamaño se estiraba (14-oct). */
 .menu button > svg.ck,.pc-ml button > svg.ck,#panel .menu svg.ck{width:16px;height:16px;flex:none;margin-left:auto;color:#0b0b10}
+/* El chulo usa la clase .ck, que Contactos también usa para su página (padding de 70 px y márgenes): aquí no le cae. */
+svg.i.ck{padding:0;margin:0 0 0 auto;max-width:none;display:inline-block;gap:0}
+/* Menú de Asesor: el nombre se corta con «…» y la etiqueta (Administrador, Líder) no empuja la fila fuera del menú. */
+.pc-op{min-width:0;overflow:hidden}
+.pc-op .pc-tx > span{display:flex;align-items:center;gap:6px;min-width:0}
+.pc-op .pc-tx > span .pc-lid{flex:none;margin-left:0}
 .pc-ml{display:grid;gap:2px}
 .pc-mh{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:600;color:var(--ink3);padding:6px 10px}
 .pc-mq{display:flex;align-items:center;gap:8px;height:36px;padding:0 10px;border:1px solid var(--line);border-radius:8px;margin:0 0 4px;min-width:0}
