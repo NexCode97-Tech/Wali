@@ -596,9 +596,10 @@ tabPersonas = function(){
   const filas = lista.map(p => {
     const eqs = EQUIPOS.map(e => e.n).filter(eq => idsDe(eq).includes(p.id)), v = queVeEnCrm(p);
     const tags = eqs.length ? eqs.map(eq => { const l = rolEnEquipo(p.id, eq) === 'lider'; return `<span class="eqr-par"><span class="eqr-tag"><i style="background:${colorEquipo(eq)}"></i>${esc(eq)}</span><span class="eqr-tag${l ? ' lid' : ''}">${esc(l ? nombreLiderDe(eq) : rolIntegrantesDe(eq))}</span></span>`; }).join('') : '<span class="eqr-sin">Sin equipo</span>';
-    return `<tr><td><span class="eqr-pers">${avPer(p)}${esc(p.nombre)}</span></td><td>${esc(ROL_NOMBRE[p.rol] || p.rol || '')}</td><td><span class="eqr-tags">${tags}</span></td><td>${esc(v.t)}${v.s ? `<small>${esc(v.s)}</small>` : ''}</td>
+    const pend = !!(USUARIOS.find(u => u.id === p.id) || {}).pendiente;
+    return `<tr class="${pend ? 'eqr-pend' : ''}"><td><span class="eqr-pers">${avPer(p)}<span>${esc(p.nombre)}${pend ? '<span class="eqr-inv">Invitación pendiente</span>' : ''}</span></span></td><td>${esc(ROL_NOMBRE[p.rol] || p.rol || '')}</td><td><span class="eqr-tags">${tags}</span></td><td>${esc(v.t)}${v.s ? `<small>${esc(v.s)}</small>` : ''}</td>
       <td><input class="rq-num" data-per-tope="${esc(p.id)}" value="${esc(EQ_CFG.topes[p.id] || '')}" placeholder="${tope}" inputmode="numeric" aria-label="Máximo de conversaciones abiertas de ${esc(p.nombre)}"></td>
-      <td class="eqr-lap"><button type="button" class="btn ic" data-per-eq="${esc(p.id)}" aria-label="Editar a ${esc(p.nombre)}" title="Editar">${I('pen')}</button></td></tr>`;
+      <td class="eqr-lap">${pend ? `<button type="button" class="btn ic" data-per-reenviar="${esc(p.id)}" aria-label="Reenviar la invitación a ${esc(p.nombre)}" title="Reenviar la invitación">${I('send')}</button><button type="button" class="btn ic eqr-xr" data-per-cancelar="${esc(p.id)}" aria-label="Cancelar la invitación de ${esc(p.nombre)}" title="Cancelar la invitación">${I('x')}</button>` : ''}<button type="button" class="btn ic" data-per-eq="${esc(p.id)}" aria-label="Editar a ${esc(p.nombre)}" title="Editar">${I('pen')}</button></td></tr>`;
   }).join('');
   return `<div class="eqr-pt"><p class="eqr-pdesc">Quién entra al CRM y qué ve. Los administradores que no están en ningún equipo ven todo; los demás ven lo que les da su rol en el equipo.</p>
     <div class="rq-bar"><label class="cn-q">${I('search')}<input id="per-q" value="${esc(st.perQ || '')}" placeholder="Buscar una persona" autocomplete="off" aria-label="Buscar una persona"></label>
@@ -774,4 +775,29 @@ document.getElementById('ov-x').addEventListener('click', e => {
   crmApi('POST', '/crm/personas/invitar', {nombre, email, telefono: telefono.replace(/[^\d+]/g, '')})
     .then(p => { if (st.pa !== A) return; PERSONAS_EXTRA[p.id] = {...(PERSONAS_EXTRA[p.id] || {}), nombre: p.nombre, rol: p.rol, foto: p.foto || null}; eqrMembresias(p.id, eqs); st.pa = null; cerrarDialogo(); render(); toast(`Le enviamos la invitación a ${p.nombre} (${email})`); })
     .catch(err => { if (st.pa !== A) return; A.inv.enviando = false; pintarPa(); toast(err.message || 'No se pudo invitar'); });
+});
+
+/* Invitación pendiente (maqueta aprobada «invitaciones y sus correos», 14-oct): reenviar el correo o cancelarla. */
+document.head.insertAdjacentHTML('beforeend', `<style>
+.eqr-pend .eqr-pers .av{opacity:.45}
+.eqr-inv{display:inline-block;margin-left:8px;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;background:#fff7e0;color:#92400e;vertical-align:1px}
+.eqr-lap{white-space:nowrap}
+.eqr-lap .btn.ic + .btn.ic{margin-left:6px}
+.eqr-xr,.eqr-xr svg{color:#dc2626}
+</style>`);
+document.addEventListener('click', e => {
+  const r = e.target.closest('[data-per-reenviar]');
+  if (r && !r.disabled) { r.disabled = true;
+    crmApi('POST', `/crm/personas/${encodeURIComponent(r.dataset.perReenviar)}/reenviar`).then(() => toast('Invitación reenviada')).catch(err => toast(err.message || 'No se pudo reenviar')).finally(() => { r.disabled = false; });
+    return; }
+  const x = e.target.closest('[data-per-cancelar]'); if (!x) return;
+  const p = USUARIOS.find(u => u.id === x.dataset.perCancelar); if (!p) return;
+  abrirDialogo(`<h3>Cancelar la invitación de ${esc(p.nombre)}</h3><p>Sale del CRM y el enlace que le llegó deja de servir. La puedes volver a invitar cuando quieras.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Volver</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626" data-per-cancelarok="${esc(p.id)}">${I('x')}Cancelar la invitación</button></div>`);
+});
+document.getElementById('ov-x').addEventListener('click', e => {
+  const b = e.target.closest('[data-per-cancelarok]'); if (!b || b.disabled) return; b.disabled = true;
+  const id = b.dataset.perCancelarok;
+  crmApi('DELETE', `/crm/personas/${encodeURIComponent(id)}/invitacion`)
+    .then(() => { const i = USUARIOS.findIndex(u => u.id === id); if (i >= 0) USUARIOS.splice(i, 1); cerrarDialogo(); render(); toast('Invitación cancelada'); })
+    .catch(err => { b.disabled = false; toast(err.message || 'No se pudo cancelar'); });
 });

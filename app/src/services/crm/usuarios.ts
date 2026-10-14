@@ -14,7 +14,8 @@ import { enEspacio, espacioActual, usuariosDeEspacio } from './espacio'
  * asignar, con un evento que lo dice, para que el reparto automático las tome
  * (`liberarDeInactivos`). Se revisa al arrancar y cada vez que la lista cambia.
  */
-export interface UsuarioCrm { id: string; nombre: string; foto: string | null; rol: string }
+/** `pendiente`: la invitaron y todavía no entra por primera vez (14-oct): no la toma el reparto. */
+export interface UsuarioCrm { id: string; nombre: string; foto: string | null; rol: string; pendiente: boolean }
 
 const caches = new Map<string, { en: number; lista: UsuarioCrm[] }>()
 
@@ -24,7 +25,7 @@ export async function usuariosCrm(fresco = false): Promise<UsuarioCrm[]> {
   if (!fresco && cache && Date.now() - cache.en < 60_000) return cache.lista
   const filas = await prisma.user.findMany({
     where: { id: { in: await usuariosDeEspacio(espacio) }, suspendido: false },
-    select: { id: true, nombre: true, email: true, image: true, role: true },
+    select: { id: true, nombre: true, email: true, image: true, role: true, ultimoIngreso: true },
     orderBy: { createdAt: 'asc' },
   })
   const vistos = new Set<string>()
@@ -32,7 +33,7 @@ export async function usuariosCrm(fresco = false): Promise<UsuarioCrm[]> {
     let nombre = nombreVisible(u)
     if (vistos.has(nombre.toLowerCase())) nombre = `${nombre} (${u.email})`
     vistos.add(nombre.toLowerCase())
-    return { id: u.id, nombre, foto: u.image, rol: u.role }
+    return { id: u.id, nombre, foto: u.image, rol: u.role, pendiente: !u.ultimoIngreso }
   })
   const antes = cache?.lista
   caches.set(espacio, { en: Date.now(), lista })

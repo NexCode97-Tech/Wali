@@ -343,7 +343,7 @@ const crmDatos = (() => {
     // administrador ve todo. ALCANCE.on = no ve todo (la pantalla le muestra solo lo de sus equipos).
     const eqsAj = d.ajustes && d.ajustes.equipos && d.ajustes.equipos.miembros && typeof d.ajustes.equipos.miembros === 'object' ? Object.keys(d.ajustes.equipos.miembros) : null;
     aplicarAlcance(d.alcance, eqsAj);
-    USUARIOS.splice(0, USUARIOS.length, ...(d.usuarios || []).map(u => ({id: u.id, nombre: u.nombre, foto: u.foto || null, rol: u.rol, estado: u.estado || 'En línea', reparto: u.reparto !== false, conectado: !!u.conectado})));
+    USUARIOS.splice(0, USUARIOS.length, ...(d.usuarios || []).map(u => ({id: u.id, nombre: u.nombre, foto: u.foto || null, rol: u.rol, pendiente: !!u.pendiente, estado: u.estado || 'En línea', reparto: u.reparto !== false, conectado: !!u.conectado})));
     ASESORES.splice(0, ASESORES.length, ...USUARIOS.map(u => u.nombre));
     const mio = USUARIOS.find(u => u.id === YO_ID);
     if (mio && mio.nombre && mio.nombre !== yo) renombrarLocal(mio.nombre);

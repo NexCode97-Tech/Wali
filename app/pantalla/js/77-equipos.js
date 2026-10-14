@@ -21,6 +21,12 @@ const qDisponible = id => { const u = USUARIOS.find(x => x.id === id); return !!
 const qEsperando = eq => CONV.filter(c => !c.asig && c.est === 'abiertas' && (c.equipo || 'Ventas') === eq).length;
 const qSw = (on, attr, label, off) => `<button type="button" class="q-sw" role="switch" aria-checked="${on}" ${attr} aria-label="${esc(label)}"${off ? ' disabled' : ''}></button>`;
 
+/* Canales del equipo: cada línea con el ícono de WhatsApp, su nombre y su número. */
+function qCanalesHTML(eq){
+  const ls = lineasDe(eq);
+  if (ls.length) return ls.map(l => `<span class="q-can">${I('wa')}${esc(l.n)} <small>${esc(l.tel)}</small></span>`).join('');
+  return eq === 'Ventas' ? 'Las que llegan sin un equipo propio' : '<span class="rq-sub">Ninguno todavía</span>';
+}
 paginaEquipos = function(){
   const volver = `<button type="button" class="volver" data-ir="ajustes-crm">${I('back')}Ajustes del CRM</button>`;
   if (st.eqVer !== null && st.eqDraft) return editorEquipo();
@@ -34,15 +40,17 @@ paginaEquipos = function(){
   const tarjetas = lista.map(({e, i}) => {
     const n = e.n, ps = idsDe(n).map(personaDe).filter(Boolean), con = ps.filter(p => qDisponible(p.id)).length;
     const cola = EQ_CFG.cola[n] !== false, esp = qEsperando(n), puede = puedeAdministrarEquipo(n);
-    const estado = !ps.length ? `<span class="q-est mal">${svgAviso}Sin personas</span>` : con ? `<span class="q-est ok"><i></i>${con} de ${ps.length} disponibles</span>` : '<span class="q-est off"><i></i>Nadie disponible ahora</span>';
+    const pend = ps.filter(p => p.pendiente), nadiePend = ps.length && pend.length === ps.length;
+    const estado = !ps.length ? `<span class="q-est mal">${svgAviso}Sin personas</span>` : con ? `<span class="q-est ok"><i></i>${con} de ${ps.length} disponibles</span>`
+      : nadiePend ? `<span class="q-est off"><i></i>Nadie disponible: ${pend.length === 1 ? `${esc(pend[0].nombre.split(' ')[0])} todavía no acepta la invitación` : 'todavía no aceptan la invitación'}</span>` : '<span class="q-est off"><i></i>Nadie disponible ahora</span>';
     const orden = [...ps].sort((a, b) => qDisponible(b.id) - qDisponible(a.id));
-    const gente = ps.length ? `<div class="q-av">${orden.slice(0, 5).map(p => `<span class="q-p" title="${esc(p.nombre)}">${avPer(p)}<i class="${qDisponible(p.id) ? 'on' : ''}"></i></span>`).join('')}${ps.length > 5 ? `<span class="q-mas" title="${esc(orden.slice(5).map(p => p.nombre).join(', '))}">+${ps.length - 5}</span>` : ''}</div>`
+    const gente = ps.length ? `<div class="q-av">${orden.slice(0, 5).map(p => `<span class="q-p${p.pendiente ? ' pend' : ''}" title="${esc(p.nombre)}${p.pendiente ? ' · invitación pendiente' : ''}">${avPer(p)}${p.pendiente ? '' : `<i class="${qDisponible(p.id) ? 'on' : ''}"></i>`}</span>`).join('')}${ps.length > 5 ? `<span class="q-mas" title="${esc(orden.slice(5).map(p => p.nombre).join(', '))}">+${ps.length - 5}</span>` : ''}</div>`
       : `<button type="button" class="q-add" data-eq-abrir="${esc(n)}">${I('plus')}Agregar personas</button>`;
     const nota = cola ? (esp ? `<span class="q-cnt">${esp} esperando</span>` : '') : (esp && !con ? `<span class="q-cnt mal">${esp} sin asignar</span>` : '');
     return `<article class="q-card">
       <header><span class="q-sq" style="background:${colorOk(colorDe(n, i))}">${qIconoHTML(qIconoDe(n), 22)}</span><div class="q-t"><h3>${esc(n)}</h3>${estado}</div><button type="button" class="btn" data-eq-abrir="${esc(n)}">Editar</button></header>
-      <div class="q-cols"><div><small>Personas</small>${gente}</div><div><small>Recibe</small><p>${recibeHTML(n)}</p></div><div><small>Se reparte</small><p><span class="q-met">${esc(eqrMetodo(eqrMetodoDe(n))[1])}</span></p></div></div>
-      <footer class="${cola ? 'act' : ''}"><span class="q-ic">${I('clock')}</span><span class="q-tx"><b>Guardar los leads cuando no haya nadie disponible</b><small>${cola ? 'Esperan en fila y se reparten en orden apenas alguien del equipo vuelva a estar disponible.' : 'Apagado: lo que llegue sin nadie disponible queda sin asignar hasta que alguien lo tome.'}</small></span>${nota}${qSw(cola, `data-q-cola="${esc(n)}"`, `Guardar los leads de ${n} cuando no haya nadie disponible`, !puede)}</footer>
+      <div class="q-cols"><div><small>Personas</small>${gente}</div><div><small>Canales</small><p>${qCanalesHTML(n)}</p></div><div><small>Se reparte</small><p><span class="q-met">${esc(eqrMetodo(eqrMetodoDe(n))[1])}</span></p></div></div>
+      <footer class="${cola ? 'act' : ''}"><span class="q-ic">${I('clock')}</span><span class="q-tx"><b>Repartir cuando alguien vuelva a estar disponible</b><small>${cola ? 'Los leads que llegan sin nadie disponible se entregan en orden de llegada a la primera persona que se conecte.' : 'Apagado: lo que llegue sin nadie disponible queda sin asignar hasta que alguien lo tome.'}</small></span>${nota}${qSw(cola, `data-q-cola="${esc(n)}"`, `Guardar los leads de ${n} cuando no haya nadie disponible`, !puede)}</footer>
     </article>`;
   }).join('');
   return `<div class="ajw ancho">${cab}${eqrTabs(adm)}
@@ -166,24 +174,33 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .q-est{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:#4b5563;margin-top:2px}
 .q-est i{width:8px;height:8px;border-radius:50%;background:#16a34a}.q-est.off i{background:#9ca3af}
 .q-est.mal{color:#b45309}.q-est svg{width:14px;height:14px}
-.q-cols{display:grid;grid-template-columns:1.1fr 1.4fr .8fr;gap:24px;padding:12px 18px 16px 70px}
-.q-cols small{display:block;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#6b7280;margin-bottom:8px}
+.q-cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:10px 18px 18px}
+.q-cols > div{background:#f6f7f9;border-radius:12px;padding:12px 14px;min-width:0}
+.q-p.pend .av{opacity:.45}
+.q-can{display:flex;align-items:center;gap:8px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.q-can + .q-can{margin-top:6px}
+.q-can svg{width:16px;height:16px;color:#16a34a;flex:none}
+.q-can small{font-weight:400;color:#6b7280;font-size:12.5px;margin:0;display:inline;letter-spacing:0;text-transform:none}
+.q-cols > div > small{display:block;font-size:12px;font-weight:600;color:#6b7280;margin-bottom:8px}
 .q-cols p{margin:0;font-size:13.5px;line-height:1.5;color:#1f2937}
-.q-met{display:inline-block;padding:3px 10px;border-radius:999px;background:#f3f4f6;font-weight:550}
+.q-met{display:inline-block;padding:4px 11px;border-radius:999px;background:#fff;border:1px solid #e5e9f0;font-weight:600}
 .q-av{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.q-p{position:relative;display:inline-flex}.q-p .av{width:32px;height:32px}
 .q-p i{position:absolute;right:-1px;bottom:-1px;width:10px;height:10px;border-radius:50%;background:#cbd5e1;border:2px solid #fff}.q-p i.on{background:#16a34a}
 .q-mas{height:32px;min-width:32px;padding:0 8px;border-radius:999px;background:#FFD21F;color:#0b0b10;font-size:12.5px;font-weight:650;display:grid;place-items:center}
 .q-add{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1.5px dashed #d1d5db;border-radius:999px;background:none;font:inherit;font-size:13px;cursor:pointer}
 .q-add svg{width:14px;height:14px}
 .q-card footer{display:flex;align-items:center;gap:12px;padding:12px 18px;border-top:1px solid #eef0f4;background:#fafafa}
-.q-card footer.act{background:#fffde6}
+.q-card footer.act{background:#fff}
 .q-ic{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#fff;border:1px solid #e5e9f0;flex:none}.q-ic svg{width:15px;height:15px}
-.q-card footer.act .q-ic,.qe-cola.act .q-ic{background:#FFD21F;border-color:#FFD21F}
+.q-card footer .q-ic{background:#f2f4f6;border-color:#f2f4f6;border-radius:10px}
+.q-card footer .q-sw{margin-left:auto}
+.q-card footer .q-cnt + .q-sw{margin-left:0}
+.qe-cola.act .q-ic{background:#FFD21F;border-color:#FFD21F}
 .q-tx{flex:1;min-width:0}.q-tx b{display:block;font-size:13.5px;font-weight:600}.q-tx small{font-size:12.5px;color:#6b7280}
 .q-cnt{font-size:12px;font-weight:650;padding:3px 10px;border-radius:999px;background:#FFD21F;color:#0b0b10;white-space:nowrap}.q-cnt.mal{background:#fee2e2;color:#b91c1c}
 .q-sw{display:block;flex:none;width:44px;height:24px;border:0;padding:0;border-radius:999px;background:#cbd5e1;position:relative;cursor:pointer}
 .q-sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:left .2s cubic-bezier(.22,1,.36,1)}
-.q-sw[aria-checked="true"]{background:#FFD21F}.q-sw[aria-checked="true"]::after{left:23px;background:#0b0b10}
+.q-sw[aria-checked="true"]{background:#0b0b10}.q-sw[aria-checked="true"]::after{left:23px;background:#fff}
 .q-sw:disabled{opacity:.5;cursor:not-allowed}
 .q-sw:focus-visible{outline:2px solid #0b0b10;outline-offset:2px}
 .qe{padding-bottom:20px}

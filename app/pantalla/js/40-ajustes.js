@@ -426,7 +426,7 @@ st.repTab = 'equipos'; st.eqVer = null; st.eqDraft = null; st.eqBusca = null; st
 const svgAviso = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>';
 const hashN = t => [...String(t || '')].reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 0);
 // La persona por id: de las del CRM o de las que se agregaron desde la plataforma en esta sesión.
-function personaDe(id){ const u = USUARIOS.find(x => x.id === id); if (u) return {id, nombre:u.nombre, rol:u.rol, foto:u.foto || null}; const x = PERSONAS_EXTRA[id]; return x ? {id, nombre:x.nombre, rol:x.rol, foto:x.foto || null} : null; }
+function personaDe(id){ const u = USUARIOS.find(x => x.id === id); if (u) return {id, nombre:u.nombre, rol:u.rol, foto:u.foto || null, pendiente:!!u.pendiente}; const x = PERSONAS_EXTRA[id]; return x ? {id, nombre:x.nombre, rol:x.rol, foto:x.foto || null} : null; }
 // Avatar con la foto de perfil de la plataforma o, si no tiene, sus iniciales.
 const avPer = p => `<span class="av" style="background:${colorDeUsuario(p.id, p.nombre)}">${fotoAv(p.foto, p.nombre)}</span>`;
 // Los ids de un equipo: los guardados o, en ajustes viejos, los de sus nombres.

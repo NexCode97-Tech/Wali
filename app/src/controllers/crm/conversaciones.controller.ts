@@ -88,7 +88,7 @@ export async function inicio(req: Request, res: Response) {
     usuarios: usuarios.map(u => {
       const p = prefDe.get(u.id) ?? {}
       return {
-        id: u.id, nombre: u.nombre, foto: u.foto, rol: u.rol,
+        id: u.id, nombre: u.nombre, foto: u.foto, rol: u.rol, pendiente: u.pendiente,
         estado: typeof p.estado === 'string' ? p.estado : 'En línea',
         reparto: p.reparto !== false,
         conectado: conectados.has(u.id),

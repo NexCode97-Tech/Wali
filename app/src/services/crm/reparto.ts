@@ -67,7 +67,7 @@ const automatico = (metodo: string) => !/manual/i.test(metodo)
 async function genteDeSubequipo(eqs: EquiposNorm, equipo: string, sub: Subequipo): Promise<UsuarioCrm[]> {
   const usuarios = await usuariosCrm()
   const delEquipo = new Set(eqs.ids[equipo] ?? [])
-  return sub.ids.filter(id => delEquipo.has(id)).map(id => usuarios.find(u => u.id === id)).filter((u): u is UsuarioCrm => Boolean(u))
+  return sub.ids.filter(id => delEquipo.has(id)).map(id => usuarios.find(u => u.id === id)).filter((u): u is UsuarioCrm => Boolean(u) && !u!.pendiente)
 }
 
 /** Integrantes de un equipo según el ajuste `equipos` ({miembros: {equipo: [nombres]}}). */
@@ -78,7 +78,8 @@ export async function miembrosDe(equipo: string): Promise<UsuarioCrm[]> {
   const ids = obj(aj.ids)[equipo]
   if (Array.isArray(ids)) {
     const orden = ids.map(String)
-    return orden.map(id => usuarios.find(u => u.id === id)).filter((u): u is UsuarioCrm => Boolean(u))
+    // Quien no ha aceptado la invitación no recibe conversaciones hasta que entre (14-oct).
+    return orden.map(id => usuarios.find(u => u.id === id)).filter((u): u is UsuarioCrm => Boolean(u) && !u!.pendiente)
   }
   const miembros = obj(aj.miembros)
   const nombres = miembros[equipo]

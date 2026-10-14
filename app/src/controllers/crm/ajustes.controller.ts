@@ -17,7 +17,7 @@ import { probarAgente } from '../../services/crm/agentes'
 import { alcanceDe, alcanceDePersona, alcanceParaFront, entraPorRol, sincronizarMiembros, type Alcance } from '../../services/crm/alcance'
 import { normalizarEquipos, type EquiposNorm } from '../../services/crm/equipos'
 import { conectarShopify, conectarCalendario, conectarHotmart, desconectar, estadoIntegraciones } from '../../services/crm/integraciones'
-import { invitarNuevos } from '../../services/crm/invitaciones'
+import { invitar, invitarNuevos } from '../../services/crm/invitaciones'
 import { limiteUsuarios } from '../../services/crm/plan'
 import { cuentaDe, usuariosDeCuenta } from '../../services/crm/espacio'
 import { cifrarClave } from '../../routes/auth'
@@ -423,6 +423,44 @@ export async function invitarPersona(req: Request, res: Response) {
   olvidarGenteCrm()
   await usuariosCrm(true)
   return ApiResponse.created(res, { id: u.id, nombre: (u.nombre || u.email).trim(), email: u.email, foto: u.image, rol: u.role, rolNombre: NOMBRE_ROL[u.role] ?? u.role, cargo: null, enCrm: true, porRol: entraPorRol(u.role), nueva: !existe })
+}
+
+/** La persona invitada de este espacio que todavía no entra: la única a la que se le reenvía o se le cancela (14-oct). */
+async function invitadaPendiente(req: Request, id: string) {
+  const espacio = espacioActual()
+  if (!(await prismaGlobal.crmMiembro.findUnique({ where: { espacioId_userId: { espacioId: espacio, userId: id } } }))) throw new NotFoundError('Esa persona no está en el CRM')
+  const u = await prismaGlobal.user.findUnique({ where: { id }, select: { id: true, nombre: true, email: true, ultimoIngreso: true } })
+  if (!u) throw new NotFoundError('Esa persona no está en el CRM')
+  if (u.ultimoIngreso) throw new ValidationError('Esa persona ya aceptó la invitación.')
+  return { u, espacio }
+}
+
+/** Le vuelve a llegar el correo de invitación, con un enlace nuevo para crear su contraseña. */
+export async function reenviarInvitacion(req: Request, res: Response) {
+  exigirEscritura(req)
+  await exigirAdminEquipos(req, 'reenviar invitaciones')
+  const { u, espacio } = await invitadaPendiente(req, String(req.params.id))
+  const eqs = normalizarEquipos(await prisma.crmAjuste.findFirst({ where: { clave: 'equipos' } }).then(a => a?.valor), await usuariosCrm())
+  const equipos = Object.entries(eqs.ids).filter(([, ids]) => ids.includes(u.id)).map(([n]) => n)
+  const [e, yo] = await Promise.all([
+    prismaGlobal.crmEspacio.findUnique({ where: { id: espacio }, select: { nombre: true } }),
+    prismaGlobal.user.findUnique({ where: { id: req.userId! }, select: { nombre: true, email: true } }),
+  ])
+  await invitar(u.id, equipos, e?.nombre || 'tu empresa', (yo?.nombre || yo?.email || 'Tu administrador').trim())
+  return ApiResponse.success(res, { ok: true })
+}
+
+/** Cancela la invitación: la persona sale de este CRM (su cuenta queda, por si está en otros espacios). */
+export async function cancelarInvitacion(req: Request, res: Response) {
+  exigirEscritura(req)
+  await exigirAdminEquipos(req, 'cancelar invitaciones')
+  const { u, espacio } = await invitadaPendiente(req, String(req.params.id))
+  await prismaGlobal.crmMiembro.delete({ where: { espacioId_userId: { espacioId: espacio, userId: u.id } } })
+  await prismaGlobal.recuperacionClave.updateMany({ where: { userId: u.id, usado: null }, data: { usado: new Date() } })
+  olvidarGenteCrm()
+  await usuariosCrm(true)
+  logger.info({ evento: 'INVITACION_CANCELADA', userId: u.id, espacio, por: req.userId })
+  return ApiResponse.success(res, { ok: true })
 }
 
 // ─── Guardar un ajuste (con control de versión opcional) ─────────────────────
