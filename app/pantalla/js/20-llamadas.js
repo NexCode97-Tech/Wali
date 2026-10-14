@@ -113,6 +113,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ln-conectar:hover{background:#e6d900}
 .ln-conectar svg{width:16px;height:16px;transition:transform .35s cubic-bezier(.22,1,.36,1)}
 .ln-conectar:hover svg{transform:rotate(90deg)}
+.vacio .ln-conectar svg{width:16px;height:16px;color:inherit}
 .ln-res{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
 .ln-r{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:#fff;min-width:0}
 .ln-r .ic{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;flex:none}
@@ -150,6 +151,10 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ln-menu button{display:flex;align-items:center;gap:9px;width:100%;padding:8px 10px;border:0;background:none;border-radius:7px;font:inherit;font-size:13px;color:var(--ink);text-align:left;cursor:pointer}
 .ln-menu button:hover{background:var(--hover)}
 .ln-menu svg{width:15px;height:15px;color:var(--ink3)}
+.ln-menu .ln-peligro{color:#dc2626;margin-top:4px;position:relative}
+.ln-menu .ln-peligro::before{content:'';position:absolute;left:6px;right:6px;top:-3px;border-top:1px solid var(--line)}
+.ln-menu .ln-peligro svg{color:#dc2626}
+.ln-menu .ln-peligro:hover{background:#fef2f2}
 .ln-f{display:flex;align-items:center;gap:12px;padding:11px 16px;border-top:1px solid var(--line)}
 .ln-f .fic{width:30px;height:30px;border-radius:8px;background:var(--bg3);color:var(--ink2);display:grid;place-items:center;flex:none}
 .ln-f .fic svg{width:15px;height:15px;display:block}
@@ -305,7 +310,7 @@ function tarjetaLinea(l, lim){
   const i = CFG.lineas.findIndex(x => x.id === l.id), x = CFG.lineas[i] || {id:l.id, eq:'Ventas'};
   const c = LLAM.lineas[l.id] || {on:false, icono:true, eq:'Ventas', buzon:true, grabar:true}, cx = lnCuentaDe(l);
   const meta = metaLlamadas(l), puede = meta && lim != null && lim >= 2000, on = meta && !!c.on;
-  const est = l.estado !== 'conectada' ? ['mal', l.estado === 'desconectada' ? 'Desconectada' : 'Sin conexión'] : cx && !cx.ultimoAviso ? ['espera', 'Esperando mensajes'] : ['ok', 'Conectada'];
+  const est = l.estado !== 'conectada' ? ['mal', l.estado === 'desconectada' ? 'Desconectada' : 'Sin conexión'] : cx && cx.estado === 'error' ? ['mal', 'Desconectada'] : cx && !cx.ultimoAviso ? ['espera', 'Esperando mensajes'] : ['ok', 'Conectada'];
   const cal = lnCalidad(l.calidad), ln = limiteNum(l.limite), niv = lnNivel(ln);
   const ab = st.lnAbierto[l.id] || '';
   const nueva = on && c.desde && Date.now() - Date.parse(c.desde) < 7 * 864e5;
@@ -313,7 +318,7 @@ function tarjetaLinea(l, lim){
     <div class="ln-card-cab"><span class="ln-wa">${LOGO.wa}</span><div class="ln-nom"><b>${esc(l.n)}</b><span>${esc(l.tel)}${cx ? ` · ${esc(cxNombre(cx))}` : ''}</span></div>
       <span class="ln-est ${est[0]}"><i></i>${est[1]}</span>
       <button type="button" class="ln-mas" data-ln-menu="${l.id}" aria-haspopup="menu" aria-expanded="${st.lnMenu === l.id}" aria-label="Más acciones de ${esc(l.n)}">${I('more')}</button>
-      <div class="ln-menu" role="menu" ${st.lnMenu === l.id ? '' : 'hidden'}><button type="button" role="menuitem" data-ln-ver="${l.id}">${I('inbox')}Ver sus conversaciones</button><button type="button" role="menuitem" data-cx-copiar="${esc(l.tel)}">${LN_IC.copiar}Copiar el número</button></div></div>
+      <div class="ln-menu" role="menu" ${st.lnMenu === l.id ? '' : 'hidden'}><button type="button" role="menuitem" data-ln-ver="${l.id}">${I('inbox')}Ver sus conversaciones</button><button type="button" role="menuitem" data-cx-copiar="${esc(l.tel)}">${LN_IC.copiar}Copiar el número</button>${puedeConfigurarCrm() ? `<button type="button" role="menuitem" class="ln-peligro" data-ln-quitar="${l.id}">${I('x')}Quitar del CRM</button>` : ''}</div></div>
     <div class="ln-f"><span class="fic">${LN_IC.equipo}</span><div class="ftx"><b>Equipo que la atiende</b><small>Le llegan sus conversaciones nuevas</small></div><div class="ctl">${ddSel('data-cfg-lineq', EQUIPOS.map(e => [`${i}|${e.n}`, e.n]), `${i}|${x.eq}`)}</div></div>
     <div class="ln-f"><span class="fic">${LN_IC.senal}</span><div class="ftx"><b>Calidad según Meta</b><small>Si baja, Meta limita cuántos mensajes envías</small></div><div class="ctl"><span class="ln-senal ${cal[0]}" aria-hidden="true"><i></i><i></i><i></i></span>${cal[1]}</div></div>
     <div class="ln-f"><span class="fic">${LN_IC.escalera}</span><div class="ftx"><b>Límite de Meta</b><small>${niv < 0 ? 'Meta todavía no lo ha informado' : `Nivel ${niv + 1} de 5${niv < 4 ? `, el siguiente es ${fmtLimite(LN_NIVELES[niv + 1])}` : ''}`}</small></div>
@@ -375,6 +380,8 @@ document.getElementById('page').addEventListener('click', e => {
   const rv = t.closest('[data-cxm-revisar]'); if (rv && !rv.disabled) { rv.disabled = true;
     crmApi('POST', `/crm/conexiones/${rv.dataset.cxmRevisar}/revisar`).then(c => { mezclarConexion(c); toast(c.estado === 'conectada' ? 'La cuenta de Meta está bien' : 'La cuenta de Meta tiene un problema'); render(); })
       .catch(err => { toast(err.message || 'No se pudo revisar'); rv.disabled = false; }); return; }
+  const lq = t.closest('[data-ln-quitar]'); if (lq) { const l = LINEAS.find(x => x.id === lq.dataset.lnQuitar); st.lnMenu = null; render(); if (!l) return;
+    abrirDialogo(`<h3>Quitar ${esc(l.n)} del CRM</h3><p>El CRM deja de recibir y enviar mensajes por ${esc(l.tel)}. Las conversaciones que ya hay se quedan. En Meta no se toca nada: la puedes volver a conectar cuando quieras.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626" data-ln-quitarok="${l.id}">${I('x')}Quitar</button></div>`); return; }
   const qt = t.closest('[data-cxm-quitar]'); if (qt) { const c = CONEXIONES.find(x => x.id === qt.dataset.cxmQuitar); if (!c) return;
     abrirDialogo(`<h3>Desconectar ${esc(cxNombre(c))}</h3><p>Sus ${c.lineas} ${c.lineas === 1 ? 'línea sale' : 'líneas salen'} del CRM y dejan de llegar sus mensajes. Las conversaciones que ya hay se quedan.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626" data-cxm-quitarok="${c.id}">${I('x')}Desconectar</button></div>`); return; }
   if (t.closest('[data-pv-guardar]')) { const v = id => (document.getElementById(id) || {}).value || '';
@@ -702,9 +709,22 @@ document.getElementById('ov-x').addEventListener('click', e => {
 document.getElementById('ov-x').addEventListener('click', e => {
   const b = e.target.closest('[data-cxm-quitarok]'); if (!b || b.disabled) return; b.disabled = true;
   crmApi('DELETE', `/crm/conexiones/${b.dataset.cxmQuitarok}`)
-    .then(() => { const i = CONEXIONES.findIndex(c => c.id === b.dataset.cxmQuitarok); if (i >= 0) CONEXIONES.splice(i, 1); cerrarDialogo(); render(); toast('Cuenta de Meta desconectada'); })
+    .then(() => { const id = b.dataset.cxmQuitarok, i = CONEXIONES.findIndex(c => c.id === id); if (i >= 0) CONEXIONES.splice(i, 1); waCaidoSin(c => c.id !== id); cerrarDialogo(); render(); toast('Cuenta de Meta desconectada'); })
     .catch(err => { b.disabled = false; toast(err.message || 'No se pudo desconectar'); });
 });
+// Quitar una línea del CRM (confirmado en el diálogo): en Meta no se toca nada; las conversaciones se quedan.
+document.getElementById('ov-x').addEventListener('click', e => {
+  const b = e.target.closest('[data-ln-quitarok]'); if (!b || b.disabled) return; b.disabled = true;
+  const id = b.dataset.lnQuitarok, nombre = (LINEAS.find(l => l.id === id) || {}).n;
+  crmApi('DELETE', `/crm/lineas/${id}`)
+    .then(() => { const i = LINEAS.findIndex(l => l.id === id); if (i >= 0) LINEAS.splice(i, 1); waCaidoSin(c => { c.lineas = (c.lineas || []).filter(n => n !== nombre); return c.lineas.length > 0; }); cerrarDialogo(); render(); toast('Línea quitada del CRM'); })
+    .catch(err => { b.disabled = false; toast(err.message || 'No se pudo quitar la línea'); });
+});
+/** La franja roja sin lo que se acaba de quitar (83-wa-caido.js), sin esperar el aviso del servidor. */
+function waCaidoSin(queda){
+  const caidas = WA_CAIDO.caidas.map(c => ({...c})).filter(queda);
+  document.dispatchEvent(new CustomEvent('crm:evento', {detail: {tipo: 'wa-caido', caidas, admins: WA_CAIDO.admins}}));
+}
 document.getElementById('ov-x').addEventListener('input', e => {
   const x = st.cx; if (!x) return;
   if (e.target.id === 'cx-n') { x.nombre = e.target.value; }

@@ -344,6 +344,8 @@ rutasWaCrm.delete('/lineas/:id', soloLideres, asyncHandler(async (req: Request, 
   await prisma.crmLinea.delete({ where: { id: actual.id } })
   logger.info(`[CRM WA] línea quitada del CRM: ${actual.nombre} ${actual.telefono} por ${req.userId}`)
   emitirCrm({ tipo: 'linea-borrada', id: actual.id }, req.userId ?? null)
+  // Si era la línea de una conexión caída, la franja roja se va para todos.
+  await emitirConexionesDe(req.userId ?? null)
   // La bandeja las ve sin línea al instante (y ya no deja responderlas por esa línea).
   for (const c of vigentes) await emitirConv(c.id, req.userId ?? null)
   return ApiResponse.success(res, { id: actual.id })
