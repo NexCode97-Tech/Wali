@@ -1098,7 +1098,7 @@ document.getElementById('msgs').addEventListener('click', e => {
 });
 document.head.insertAdjacentHTML('beforeend', `<style>
 /* Maqueta aprobada «chat con archivos, notas de voz y emojis» (14-oct): fondo de trazos dorados y lo enviado en amarillo. */
-#msgs.msgs{gap:16px;padding:22px 28px;background-color:#f5f4ef;background-image:url('__BASE__/img/fondo-chat.png');background-size:288px auto}
+#msgs.msgs{gap:16px;padding:22px 28px;background-color:#f3f4f6;background-image:url('__BASE__/img/fondo-chat.png?v=gris');background-size:288px auto}
 .ch-fila{display:flex;align-items:flex-end;gap:10px;max-width:100%}
 .ch-fila.yo{justify-content:flex-end}
 .ch-av{width:32px;height:32px;font-size:11px;flex:none;align-self:flex-end;margin-bottom:21px}
