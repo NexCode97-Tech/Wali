@@ -571,7 +571,7 @@ function chat(){
   const l = LINEAS.find(x => x.id === c.linea);
   // Encabezado de la maqueta aprobada (29-sep): la espera junto al nombre y la segunda fila en una sola línea.
   document.getElementById('c-sub').innerHTML = [`#${c.id}`, icCanal(c.canal, c.canal === 'wa' ? 'i wa' : 'i') + esc(c.canal === 'wa' && st.rol === 'l' && l ? l.n : CANALES[c.canal].n), esc(c.tel)].filter(Boolean).join(' · ');
-  const sla = document.getElementById('sla'); sla.className = 'sla' + (c.espera ? '' : ' ok'); sla.innerHTML = ICONOS_MAQ.llama + (c.espera ? `Espera ${esc(c.espera)}` : 'Al día');
+  const sla = document.getElementById('sla'); sla.className = 'sla' + (c.espera ? '' : ' ok'); sla.innerHTML = I('clock') + (c.espera ? `Espera ${esc(c.espera)}` : 'Al día');
   // Chat con la forma de la maqueta aprobada «CRM · chat rediseñado» (28-sep): pintarChat, al final de 50-agentes.js.
   document.getElementById('msgs').innerHTML = pintarChat(c);
   const cerr = /cerrada/i.test(c.ventana);
