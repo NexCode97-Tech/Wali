@@ -713,6 +713,11 @@ svg.i.ck{padding:0;margin:0 0 0 auto;max-width:none;display:inline-block;gap:0}
 .pc-mq input{border:0;outline:none;font:inherit;font-size:13px;flex-grow:1;min-width:0;background:transparent;color:var(--ink);padding:0}
 .pc-pr .menu .pc-op{min-height:44px;padding:6px 10px}
 .pc-op .av{width:28px;height:28px;font-size:10.5px;overflow:hidden}
+/* Las iniciales de todo avatar van centradas (14-oct): los menús alinean a la izquierda y se las llevaban. */
+.av{text-align:center;justify-content:center;align-items:center;justify-items:center;line-height:1}
+.menu button .av,.pc-op .av{display:grid;place-items:center;text-align:center}
+.pc-op .pc-tx > span .pc-nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc-op .pc-tx > span{text-overflow:clip}
 .pc-op .pc-tx{display:flex;flex-direction:column;flex:1;min-width:0;line-height:1.35}
 .pc-op .pc-tx small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pc-op .pc-tx > span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
