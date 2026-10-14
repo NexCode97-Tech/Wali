@@ -2572,7 +2572,19 @@ document.querySelector('.nm .ft [aria-label="Adjuntar"]').addEventListener('clic
 }));
 document.getElementById('ov').addEventListener('click', e => { if (e.target.closest('#nm-adj-x')) { nm.adj = null; pintarNmAdj(); } });
 // Nota de voz: se graba en el navegador, se sube y sale como audio.
-let grabacion = null;
+/* Nota de voz en el compositor (maqueta aprobada «chat con archivos», 14-oct): mientras se graba, la nota ocupa el lugar
+   del texto: papelera roja para cancelar, punto rojo, el tiempo, la onda en vivo de la voz y el botón para detener. Ya
+   grabada, se escucha con la burbuja de Wali, se borra con la papelera o se envía con el mismo «Enviar» del compositor.
+   «Enviar» mientras se graba la detiene y la envía de una vez. */
+const VZR_N = 30;
+let grabacion = null, notaLista = null;
+const vzrBox = () => document.getElementById('box');
+const vzrBarras = (niveles, cls = '') => `<span class="vz-onda${cls}">${niveles.map(v => `<i style="height:${Math.round(4 + Math.min(1, v) * 24)}px"></i>`).join('')}</span>`;
+function vzrPintar(html){
+  const adj = document.getElementById('adj'); adj.replaceChildren();
+  if (!html) { adj.hidden = true; adj.classList.remove('vzr'); vzrBox().classList.remove('vz-on'); return; }
+  adj.insertAdjacentHTML('beforeend', html); adj.classList.add('vzr'); adj.hidden = false; vzrBox().classList.add('vz-on');
+}
 async function notaDeVoz(boton){
   if (grabacion) { grabacion.rec.stop(); return; }
   if (notaLista) { URL.revokeObjectURL(notaLista.url); notaLista = null; }
@@ -2581,45 +2593,83 @@ async function notaDeVoz(boton){
   if (!navigator.mediaDevices || !window.MediaRecorder) { toast('Este navegador no deja grabar audio'); return; }
   let flujo; try { flujo = await navigator.mediaDevices.getUserMedia({audio:true}); } catch { toast('Permite el micrófono para grabar la nota de voz'); return; }
   const tipo = ['audio/ogg;codecs=opus', 'audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'].find(t => MediaRecorder.isTypeSupported(t)) || '';
-  const rec = new MediaRecorder(flujo, tipo ? {mimeType: tipo} : undefined), partes = [], inicio = Date.now(), adj = document.getElementById('adj');
-  const pintar = () => { const s = Math.floor((Date.now() - inicio) / 1000); adj.innerHTML = `${I('mic')}<span>Grabando nota de voz · ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}<small>Toca el micrófono otra vez para detenerla</small></span><button type="button" id="voz-x" aria-label="Cancelar la nota de voz">${I('x')}</button>`; adj.hidden = false; };
-  grabacion = {rec, c, cancelada:false, t:setInterval(pintar, 500)};
+  const rec = new MediaRecorder(flujo, tipo ? {mimeType: tipo} : undefined), partes = [], inicio = Date.now();
+  // La onda en vivo: el nivel de la voz cada décima de segundo (también queda guardada para dibujar la nota lista).
+  let analizador = null, ctx = null, datos = null; const historia = [];
+  try { const Ctx = window.AudioContext || window.webkitAudioContext; ctx = new Ctx(); analizador = ctx.createAnalyser(); analizador.fftSize = 512; ctx.createMediaStreamSource(flujo).connect(analizador); datos = new Uint8Array(analizador.fftSize); } catch { analizador = null; }
+  const nivel = () => { if (!analizador) return .25 + Math.random() * .5; analizador.getByteTimeDomainData(datos); let s2 = 0; for (const v of datos) { const x = (v - 128) / 128; s2 += x * x; } return Math.min(1, Math.sqrt(s2 / datos.length) * 4.5); };
+  const pintar = () => {
+    historia.push(nivel());
+    const s = Math.floor((Date.now() - inicio) / 1000), ult = historia.slice(-VZR_N), relleno = Array(Math.max(0, VZR_N - ult.length)).fill(.06);
+    const adj = document.getElementById('adj'), tt = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`, barras = [...relleno, ...ult];
+    if (!adj.querySelector('#voz-det')) vzrPintar(`<button type="button" class="vzr-borrar" id="voz-x" aria-label="Cancelar la nota de voz" data-tip="Cancelar">${I('trash')}</button><span class="vzr-punto" aria-hidden="true"></span><span class="vzr-t">${tt}</span>${vzrBarras(barras, ' viva')}<button type="button" class="vzr-det" id="voz-det" aria-label="Detener la grabación" data-tip="Detener">${I('stop')}</button>`);
+    else { const t = adj.querySelector('.vzr-t'); if (t.textContent !== tt) t.textContent = tt; adj.querySelectorAll('.vz-onda i').forEach((i, k) => { i.style.height = `${Math.round(4 + Math.min(1, barras[k]) * 24)}px`; }); }
+  };
+  grabacion = {rec, c, cancelada:false, enviar:false, t:setInterval(pintar, 100)};
   rec.ondataavailable = e => { if (e.data.size) partes.push(e.data); };
   rec.onstop = async () => {
-    const g = grabacion; grabacion = null; clearInterval(g.t); flujo.getTracks().forEach(t => t.stop()); boton.classList.remove('rec'); boton.setAttribute('aria-pressed', 'false'); adj.hidden = true; adj.innerHTML = '';
+    const g = grabacion; grabacion = null; clearInterval(g.t); flujo.getTracks().forEach(t => t.stop()); if (ctx) ctx.close().catch(() => {});
+    boton.classList.remove('rec'); boton.setAttribute('aria-pressed', 'false'); vzrPintar('');
     if (g.cancelada) { toast('Nota de voz cancelada'); return; }
     const dur = Math.round((Date.now() - inicio) / 1000); if (dur < 1 || !partes.length) { toast('La nota de voz quedó vacía'); return; }
     const mime = (rec.mimeType || tipo || 'audio/webm').split(';')[0], ext = mime.includes('ogg') ? 'ogg' : mime.includes('mp4') ? 'm4a' : 'webm';
+    // La onda de la nota lista: lo grabado, resumido en barras.
+    const paso = Math.max(1, historia.length / VZR_N), onda = Array.from({length: VZR_N}, (_, k) => { const tramo = historia.slice(Math.floor(k * paso), Math.max(Math.floor(k * paso) + 1, Math.floor((k + 1) * paso))); return tramo.length ? Math.max(...tramo) : .1; });
+    const max = Math.max(...onda) || 1;
     // Como en WhatsApp (6-oct): al detenerla no sale sola; se puede escuchar, borrar o enviar.
     const blob = new Blob(partes, {type: mime});
-    notaLista = {c: g.c, blob, mime, ext, dur, url: URL.createObjectURL(blob)};
-    pintarNotaLista();
+    notaLista = {c: g.c, blob, mime, ext, dur, url: URL.createObjectURL(blob), onda: onda.map(v => Math.max(.12, v / max)), audio: null};
+    if (g.enviar) enviarNotaLista(); else pintarNotaLista();
   };
   rec.start(); boton.classList.add('rec'); boton.setAttribute('aria-pressed', 'true'); pintar();
 }
 document.querySelector('.box .bar [aria-label="Nota de voz"]').addEventListener('click', e => notaDeVoz(e.currentTarget));
-document.getElementById('adj').addEventListener('click', e => { if (e.target.closest('#voz-x') && grabacion) { grabacion.cancelada = true; grabacion.rec.stop(); } });
 // La nota grabada, lista para escuchar, borrar o enviar.
-let notaLista = null;
 function pintarNotaLista(){
-  const adj = document.getElementById('adj'), n = notaLista; adj.replaceChildren();
-  if (!n) { adj.hidden = true; return; }
-  const m = Math.floor(n.dur / 60), s = String(n.dur % 60).padStart(2, '0');
-  adj.insertAdjacentHTML('beforeend', `${I('mic')}<span style="display:flex;align-items:center;gap:10px;flex:1;min-width:0"><audio controls preload="metadata" src="${n.url}" style="height:34px;flex:1;min-width:0;max-width:340px"></audio><small style="white-space:nowrap">${m}:${s}</small></span><button type="button" class="btn" id="voz-borrar" aria-label="Borrar la nota de voz">${I('x')}Borrar</button><button type="button" class="btn pri" id="voz-enviar">${I('send')}Enviar</button>`);
-  adj.hidden = false;
+  const n = notaLista; if (!n) { vzrPintar(''); return; }
+  const a = n.audio, p = a && a.duration && isFinite(a.duration) ? a.currentTime / a.duration : 0, sonando = !!(a && !a.paused);
+  const corte = Math.floor(p * VZR_N), seg = Math.floor(sonando || p ? a.currentTime : n.dur), tt = `${Math.floor(seg / 60)}:${String(seg % 60).padStart(2, '0')}`;
+  const adj = document.getElementById('adj'), oir = adj.querySelector('#voz-oir');
+  if (oir) {
+    oir.setAttribute('aria-label', `${sonando ? 'Pausar' : 'Escuchar'} la nota de voz`); oir.classList.toggle('sonando', sonando);
+    adj.querySelectorAll('.vz-onda i').forEach((i, k) => i.classList.toggle('ya', k < corte));
+    const t = adj.querySelector('.vzr-t'); if (t.textContent !== tt) t.textContent = tt; return;
+  }
+  vzrPintar(`<button type="button" class="vzr-borrar" id="voz-borrar" aria-label="Borrar la nota de voz" data-tip="Borrar">${I('trash')}</button>`
+    + `<button type="button" class="vzr-play" id="voz-oir" aria-label="${sonando ? 'Pausar' : 'Escuchar'} la nota de voz"><svg viewBox="0 0 24 24" aria-hidden="true"><g class="vz-pl">${VZ_PLAY}</g><g class="vz-pa">${VZ_PAUSA}</g></svg></button>`
+    + `<span class="vz-onda">${n.onda.map((v, k) => `<i style="height:${Math.round(4 + v * 24)}px"${k < corte ? ' class="ya"' : ''}></i>`).join('')}</span>`
+    + `<span class="vzr-t">${tt}</span>`);
 }
-document.getElementById('adj').addEventListener('click', async e => {
-  if (!notaLista) return;
-  if (e.target.closest('#voz-borrar')) { URL.revokeObjectURL(notaLista.url); notaLista = null; pintarNotaLista(); toast('Nota de voz borrada'); return; }
-  const b = e.target.closest('#voz-enviar'); if (!b) return;
-  const n = notaLista; b.disabled = true; toast('Enviando la nota de voz…');
+async function enviarNotaLista(){
+  const n = notaLista; if (!n || n.enviando) return;
+  n.enviando = true; if (n.audio) n.audio.pause(); toast('Enviando la nota de voz…');
   try {
     const r = await crmSubir(new File([n.blob], `nota-de-voz.${n.ext}`, {type: n.mime}));
     n.c.msgs.push({out:'', audio:{url:r.url, dur:n.dur, mime:r.mime || n.mime}, by:yo, h:'ahora'}); n.c.unread = 0;
     URL.revokeObjectURL(n.url); notaLista = null; pintarNotaLista();
     if (st.sel === n.c.id) { chat(); lista(); } toast('Nota de voz enviada');
-  } catch (err) { b.disabled = false; toast(err.message); }
+  } catch (err) { n.enviando = false; toast(err.message); }
+}
+document.getElementById('adj').addEventListener('click', e => {
+  if (grabacion) {
+    if (e.target.closest('#voz-x')) { grabacion.cancelada = true; grabacion.rec.stop(); }
+    else if (e.target.closest('#voz-det')) grabacion.rec.stop();
+    return;
+  }
+  if (!notaLista) return;
+  if (e.target.closest('#voz-borrar')) { if (notaLista.audio) notaLista.audio.pause(); URL.revokeObjectURL(notaLista.url); notaLista = null; pintarNotaLista(); toast('Nota de voz borrada'); return; }
+  if (e.target.closest('#voz-oir')) {
+    const n = notaLista;
+    if (!n.audio) { n.audio = new Audio(n.url); ['timeupdate', 'play', 'pause'].forEach(ev => n.audio.addEventListener(ev, () => { if (notaLista === n) pintarNotaLista(); })); n.audio.addEventListener('ended', () => { n.audio.currentTime = 0; if (notaLista === n) pintarNotaLista(); }); }
+    if (n.audio.paused) n.audio.play().catch(() => toast('No se pudo reproducir la nota de voz')); else n.audio.pause();
+  }
 });
+// «Enviar» del compositor: con una nota lista la envía; mientras se graba, la detiene y la envía.
+document.querySelector('.box .bar').addEventListener('click', e => {
+  if (!e.target.closest('#enviar') || (!notaLista && !grabacion)) return;
+  e.stopPropagation(); e.preventDefault();
+  if (grabacion) { grabacion.enviar = true; grabacion.rec.stop(); } else enviarNotaLista();
+}, true);
 
 // Los interruptores sin nombre toman el de su fila (Lunes, Flujo activo…), para que los lectores de pantalla digan qué prenden.
 new MutationObserver(() => {

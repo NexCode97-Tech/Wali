@@ -576,6 +576,27 @@ button.pill svg{width:12px;height:12px}
 .adj small{display:block;color:var(--ink3);font-size:11.5px}
 .adj button{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;color:var(--blue-ink)}
 .adj button:hover{background:#d3e8ff}
+/* Nota de voz en el compositor (maqueta aprobada «chat con archivos», 14-oct): ocupa el lugar del texto. */
+.box.vz-on textarea{display:none}
+.adj.vzr{margin:0;padding:12px 14px 12px 8px;min-height:72px;border-radius:0;background:#fff;color:var(--ink);gap:10px;font-size:13px}
+.adj.vzr .vz-onda{flex:1;min-width:0;margin:0;height:30px;cursor:default;display:flex;align-items:center;justify-content:space-between}
+.adj.vzr .vz-onda i{display:block;width:3px;border-radius:3px;background:#d3d7de;flex:none;transition:height .1s linear}
+.adj.vzr .vz-onda i.ya{background:#17140F}
+.adj.vzr .vz-onda.viva i{background:#dc2626;opacity:.8}
+.adj.vzr button.vzr-borrar{width:34px;height:34px;border-radius:8px;color:#dc2626;flex:none}
+.adj.vzr button.vzr-borrar:hover{background:#fef2f2}
+.vzr-punto{width:10px;height:10px;border-radius:50%;background:#dc2626;flex:none;box-shadow:0 0 0 4px rgba(220,38,38,.15);animation:vzr-late 1.2s ease-in-out infinite}
+@keyframes vzr-late{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.vzr-punto{animation:none}}
+.vzr-t{font-size:13px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;flex:none;min-width:32px}
+.adj.vzr button.vzr-det{width:34px;height:34px;border-radius:50%;border:1.5px solid #dc2626;color:#dc2626;flex:none}
+.adj.vzr button.vzr-det:hover{background:#fef2f2}
+.adj.vzr button.vzr-det svg{width:14px;height:14px}
+.adj.vzr button.vzr-play{width:34px;height:34px;border-radius:50%;background:#17140F;color:#FFD21F;flex:none}
+.adj.vzr button.vzr-play:hover{background:#17140F}
+.vzr-play svg{width:13px;height:13px;fill:currentColor;stroke:none}
+.vzr-play .vz-pa,.vzr-play.sonando .vz-pl{display:none}
+.vzr-play.sonando .vz-pa{display:inline}
 .pay .ps{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:9px;padding:0 10px;height:34px;margin-bottom:8px}
 .pay .ps input{border:0;outline:0;flex:1;min-width:0;font:inherit;font-size:12.5px}
 .pay .ps svg{width:14px;height:14px;color:var(--ink4)}
@@ -1000,8 +1021,8 @@ button.pc-hi:hover > span{color:var(--blue-ink)}
 /* Todos los emojis de WhatsApp (maqueta aprobada «chat con archivos, notas de voz y emojis», 14-oct). */
 /* Emojis a color iguales en todos los equipos (Windows no pinta banderas): la fuente de emojis después de Inter. */
 .ch-b,.ch-trans,#ta,.box textarea{font-family:Inter,"Noto Color Emoji",system-ui,sans-serif}
-.emop.emop-full{width:360px;padding:0;display:block;overflow:hidden;border-radius:16px;box-shadow:0 24px 48px -20px rgba(11,11,16,.35)}
-.emop-ep{display:block;width:100%;height:380px;--border-size:0;--border-color:#eef1f5;--background:#fff;--emoji-size:1.5rem;--emoji-padding:.4rem;--num-columns:9;--emoji-font-family:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif;--indicator-color:#0b0b10;--input-border-color:#e5e9f0;--input-border-radius:10px;--input-font-color:#0b0b10;--input-placeholder-color:#9ca3af;--input-padding:.5rem .75rem;--outline-color:#0b0b10;--button-hover-background:#f2f4f6;--button-active-background:#e5e9f0;--category-font-color:#6b7280;--category-font-size:.75rem;--skintone-border-radius:8px}
+.emop.emop-full{width:318px;padding:0;display:block;overflow:hidden;border-radius:16px;box-shadow:0 24px 48px -20px rgba(11,11,16,.35)}
+.emop-ep{display:block;width:100%;height:336px;--border-size:0;--border-color:#eef1f5;--background:#fff;--emoji-size:1.2rem;--emoji-padding:.38rem;--num-columns:9;--emoji-font-family:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif;--indicator-color:#0b0b10;--input-border-color:#e5e9f0;--input-border-radius:10px;--input-font-color:#0b0b10;--input-placeholder-color:#9ca3af;--input-padding:.45rem .7rem;--input-font-size:.85rem;--outline-color:#0b0b10;--button-hover-background:#f2f4f6;--button-active-background:#e5e9f0;--category-font-color:#6b7280;--category-font-size:.75rem;--skintone-border-radius:8px}
 .nm .adj{margin:8px 20px 0}
 .lk .pm button:disabled{opacity:.5;cursor:not-allowed}
 /* ── Modales ──
@@ -1187,6 +1208,8 @@ h4 .marca.mini{margin-right:2px}
   <symbol id="i-share" viewBox="0 0 24 24"><path d="M14 5l6 6-6 6"/><path d="M20 11H9a5 5 0 0 0-5 5v3"/></symbol>
   <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3h8l5 5v13H6Z"/><path d="M14 3v5h5"/></symbol>
   <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9Z"/><circle cx="7.5" cy="7.5" r="1.5"/></symbol>
 </svg>
 

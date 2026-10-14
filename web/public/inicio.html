@@ -14,14 +14,14 @@
 <meta property="og:url" content="https://walicrm.com/">
 <meta property="og:title" content="Wali · La operación comercial de tu empresa, en una sola bandeja">
 <meta property="og:description" content="WhatsApp, Instagram, Messenger y tu web en una sola bandeja, con reparto por turnos y un agente de IA que responde las 24 horas.">
-<meta property="og:image" content="https://walicrm.com/wali-512.png">
-<meta property="og:image:width" content="512">
-<meta property="og:image:height" content="512">
-<meta property="og:image:alt" content="Logo de Wali">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="https://walicrm.com/wali-compartir.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Wali: vende por WhatsApp con un agente de IA que responde 24/7">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Wali · La operación comercial de tu empresa, en una sola bandeja">
 <meta name="twitter:description" content="WhatsApp, Instagram, Messenger y tu web en una sola bandeja, con reparto por turnos y un agente de IA que responde las 24 horas.">
-<meta name="twitter:image" content="https://walicrm.com/wali-512.png">
+<meta name="twitter:image" content="https://walicrm.com/wali-compartir.png">
 <link rel="icon" href="/wali-32.png" sizes="32x32" type="image/png">
 <link rel="icon" href="/wali-512.png" sizes="512x512" type="image/png">
 <link rel="apple-touch-icon" href="/wali-180.png">
@@ -33,7 +33,7 @@
    control real); alrededor, tarjetas con cifras vivas. Abajo, el recorrido y el precio en el mismo lenguaje de tarjetas. */
 :root{
   --lienzo:#E9E8E4; --marco:#F4F3F0; --tarjeta:#FFFFFF; --hundido:#F2F1EE; --linea:#E3E1DB;
-  --tinta:#17140F; --tinta-2:#4A463E; --tinta-3:#8B867B;
+  --tinta:#17140F; --tinta-2:#4A463E; --tinta-3:#69645A;
   --amarillo:#FFD21F; --amarillo-suave:#FFF4C2; --brasa:#FF4D1A; --brasa-suave:#FFE6DD;
   --verde:#1F9D55; --verde-suave:#DDF5E6; --rojo:#D93B3B; --rojo-suave:#FDE4E4;
   --display:"Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -193,7 +193,7 @@ p{margin:0}
 .turno li b{display:block;font-size:13.5px}
 .turno li small{display:block;font-size:12px;color:var(--tinta-3)}
 .est{font-size:11.5px;font-weight:600;border-radius:999px;padding:3px 9px;background:var(--hundido);color:var(--tinta-3)}
-.est.on{background:var(--verde-suave);color:var(--verde)}
+.est.on{background:var(--verde-suave);color:#167A43}
 /* Medidor */
 .medidor{display:grid;grid-template-columns:150px minmax(0,1fr);gap:12px;align-items:center}
 .medidor svg{width:150px;height:90px;display:block}
@@ -263,7 +263,7 @@ p{margin:0}
 .calc-h input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:8px;border-radius:999px;background:linear-gradient(90deg,var(--amarillo) var(--p,12%),#3A342A var(--p,12%));outline:none;margin:0;cursor:pointer}
 .calc-h input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:#fff;border:4px solid var(--amarillo);box-shadow:0 4px 12px rgba(0,0,0,.5)}
 .calc-h input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:4px solid var(--amarillo)}
-.marcas-h{display:grid;grid-template-columns:3fr 5fr 5fr 5fr;margin-top:10px;font-family:var(--mono);font-size:11px;color:#8B867B}
+.marcas-h{display:grid;grid-template-columns:3fr 5fr 5fr 5fr;margin-top:10px;font-family:var(--mono);font-size:11px;color:#69645A}
 .marcas-h span{border-left:1px solid #3A342A;padding-left:6px;transition:color .2s}
 .marcas-h span.on{color:#fff}
 .calc-res{display:grid;gap:6px;justify-items:start;border-top:1px solid #3A342A;padding-top:18px}
@@ -427,11 +427,11 @@ if(document.readyState==="complete")cuandoListo();else window.addEventListener("
           <div class="sup"><span class="hamb" aria-hidden="true"><i></i><i></i><i></i></span><svg width="22" height="22"><use href="#wali"/></svg><b>Mi bandeja</b></div>
           <div class="pest"><span class="on">Mías 4</span><span>Sin asignar 1</span><span>Todas</span></div>
           <ul class="lista" id="lista">
-            <li class="ch nueva"><span class="av" style="background:#E0795B">LG<span class="cn"><svg><use href="#wa"/></svg></span></span><span class="q"><b>Laura Gómez</b><span>¿El plan anual incluye las clases grupales?</span></span><span class="h">10:42</span></li>
-            <li class="ch"><span class="av" style="background:#5B8DEF">CT<span class="cn"><svg><use href="#ig"/></svg></span></span><span class="q"><b>Camilo Torres</b><span>Vi el anuncio, ¿tienen envío a Pereira?</span></span><span class="h">10:39</span></li>
-            <li class="ch"><span class="av" style="background:#3FB68B">DH<span class="cn"><svg><use href="#ms"/></svg></span></span><span class="q"><b>Daniela Herrera</b><span>Ya hice la transferencia</span></span><span class="h">10:31</span></li>
-            <li class="ch"><span class="av" style="background:#B07DE8">SV<span class="cn"><svg><use href="#wa"/></svg></span></span><span class="q"><b>Santiago Vargas</b><span>Agente IA: te dejo los horarios…</span></span><span class="h">02:14</span></li>
-            <li class="ch"><span class="av" style="background:#E8B04A">MR<span class="cn"><svg><use href="#tg"/></svg></span></span><span class="q"><b>Mateo Ríos</b><span>¿Tienen factura electrónica?</span></span><span class="h">ayer</span></li>
+            <li class="ch nueva"><span class="av" style="background:#C2552F">LG<span class="cn"><svg><use href="#wa"/></svg></span></span><span class="q"><b>Laura Gómez</b><span>¿El plan anual incluye las clases grupales?</span></span><span class="h">10:42</span></li>
+            <li class="ch"><span class="av" style="background:#3B6FD6">CT<span class="cn"><svg><use href="#ig"/></svg></span></span><span class="q"><b>Camilo Torres</b><span>Vi el anuncio, ¿tienen envío a Pereira?</span></span><span class="h">10:39</span></li>
+            <li class="ch"><span class="av" style="background:#1A7F5A">DH<span class="cn"><svg><use href="#ms"/></svg></span></span><span class="q"><b>Daniela Herrera</b><span>Ya hice la transferencia</span></span><span class="h">10:31</span></li>
+            <li class="ch"><span class="av" style="background:#8A55CF">SV<span class="cn"><svg><use href="#wa"/></svg></span></span><span class="q"><b>Santiago Vargas</b><span>Agente IA: te dejo los horarios…</span></span><span class="h">02:14</span></li>
+            <li class="ch"><span class="av" style="background:#9A6508">MR<span class="cn"><svg><use href="#tg"/></svg></span></span><span class="q"><b>Mateo Ríos</b><span>¿Tienen factura electrónica?</span></span><span class="h">ayer</span></li>
           </ul>
           <div class="indicador"></div>
         </div>
@@ -449,9 +449,9 @@ if(document.readyState==="complete")cuandoListo();else window.addEventListener("
       <div class="t turno">
         <p style="font-family:var(--display);letter-spacing:var(--espaciado-titulo);text-wrap:balance;font-size:16px;font-weight:var(--peso-sub)">Quién está de turno</p>
         <ul>
-          <li><span class="av" style="background:#E0795B">AR</span><span><b>Ana Ruiz</b><small>Ventas · hasta 6:00 p. m.</small></span><span class="est on">Disponible</span></li>
-          <li><span class="av" style="background:#5B8DEF">JP</span><span><b>Juan Pérez</b><small>Ventas · hasta 6:00 p. m.</small></span><span class="est on">Disponible</span></li>
-          <li><span class="av" style="background:#3FB68B">LM</span><span><b>Laura Mejía</b><small>Soporte · almuerzo</small></span><span class="est">Ausente</span></li>
+          <li><span class="av" style="background:#C2552F">AR</span><span><b>Ana Ruiz</b><small>Ventas · hasta 6:00 p. m.</small></span><span class="est on">Disponible</span></li>
+          <li><span class="av" style="background:#3B6FD6">JP</span><span><b>Juan Pérez</b><small>Ventas · hasta 6:00 p. m.</small></span><span class="est on">Disponible</span></li>
+          <li><span class="av" style="background:#1A7F5A">LM</span><span><b>Laura Mejía</b><small>Soporte · almuerzo</small></span><span class="est">Ausente</span></li>
         </ul>
         <p class="lbl">Las conversaciones nuevas solo le llegan a quien está disponible.</p>
       </div>
@@ -562,7 +562,7 @@ if(document.readyState==="complete")cuandoListo();else window.addEventListener("
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   // La bandeja recibe una conversación nueva cada pocos segundos.
   const lista = document.getElementById('lista'), tpl = document.getElementById('tpl-ch');
-  const nuevas = [['PR', '#4AB3C9', 'wa', 'Paula Restrepo', 'Quiero el plan mensual, ¿cómo pago?'], ['FM', '#E0795B', 'tt', 'Felipe Martínez', 'Vi su video, ¿hacen domicilios?'], ['IC', '#3FB68B', 'ig', 'Isabela Cardona', '¿Cuál es el horario del sábado?'], ['NS', '#5B8DEF', 'ms', 'Natalia Salazar', 'Me interesa la clase de prueba'], ['RG', '#E8B04A', 'wa', 'Ricardo Gil', '¿Aceptan pago con Nequi?'], ['VR', '#B07DE8', 'ig', 'Valentina Ríos', '¿Cuánto cuesta el envío a Cali?'], ['AC', '#E0795B', 'tg', 'Andrés Castaño', 'Necesito la factura de mi compra'], ['SM', '#3FB68B', 'wa', 'Sebastián Mejía', '¿Abren el festivo?']];
+  const nuevas = [['PR', '#1F7A8C', 'wa', 'Paula Restrepo', 'Quiero el plan mensual, ¿cómo pago?'], ['FM', '#C2552F', 'tt', 'Felipe Martínez', 'Vi su video, ¿hacen domicilios?'], ['IC', '#1A7F5A', 'ig', 'Isabela Cardona', '¿Cuál es el horario del sábado?'], ['NS', '#3B6FD6', 'ms', 'Natalia Salazar', 'Me interesa la clase de prueba'], ['RG', '#9A6508', 'wa', 'Ricardo Gil', '¿Aceptan pago con Nequi?'], ['VR', '#8A55CF', 'ig', 'Valentina Ríos', '¿Cuánto cuesta el envío a Cali?'], ['AC', '#C2552F', 'tg', 'Andrés Castaño', 'Necesito la factura de mi compra'], ['SM', '#1A7F5A', 'wa', 'Sebastián Mejía', '¿Abren el festivo?']];
   let i = 0;
   setInterval(() => {
     let [ini, col, canal, n, txt] = nuevas[i++ % nuevas.length];

@@ -37,6 +37,7 @@
 #ec-slot{flex:none;position:relative}
 #ec-slot > .comp{position:relative;display:block!important;border-top:1px solid #eef1f5;padding:10px 12px 8px;margin:0;background:#fff}
 #ec-slot .tplp,#ec-slot .qr,#ec-slot .lk{bottom:calc(100% + 6px)}
+#ec-slot .mode{margin-top:0}
 .ec-abrir{display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;font:inherit;font-size:12.5px;font-weight:600;color:#374151;border:0;border-top:1px solid #eef1f5;background:none;cursor:pointer;flex:none}
 .ec-abrir:hover{background:#f9fafb}
 .ec-abrir svg{width:14px;height:14px}

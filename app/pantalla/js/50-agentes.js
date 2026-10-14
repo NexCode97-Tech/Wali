@@ -956,29 +956,87 @@ function chAvatarPersona(nombre){
   const u = USUARIOS.find(x => x.nombre === nombre);
   return `<span class="av ch-av" style="background:${colorPersona(nombre)}">${fotoAv(u && u.foto, nombre || '?')}</span>`;
 }
+/* Nota de voz con estilo Wali (maqueta aprobada «notas de voz», opción A, 14-oct): el botón es la burbuja del logo, con
+   un borde que se llena mientras suena; la onda es la del audio real (se calcula una vez y queda guardada), el punto
+   naranja del logo marca por dónde va y tocar la onda salta a ese punto. La velocidad cambia 1× → 1,5× → 2×. */
+const VZ_N = 36;
+const VZ_FORMA = 'M22 4h10a8 8 0 0 1 8 8v14a8 8 0 0 1-8 8H19l-7 7v-7a8 8 0 0 1-8-8V12a8 8 0 0 1 8-8Z';
+const VZ_PLAY = '<path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z"/>';
+const VZ_PAUSA = '<rect x="6.5" y="5" width="4" height="14" rx="1.2"/><rect x="13.5" y="5" width="4" height="14" rx="1.2"/>';
+const chOndas = new Map(), chVel = new Map();
+let chCtx = null;
+// Mientras se calcula la onda real, una de relleno que depende del enlace (cada nota se ve distinta).
+function chOndaRelleno(url){
+  let h = 2166136261; for (const ch of String(url)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+  return Array.from({length: VZ_N}, (_, k) => { h = Math.imul(h ^ (h >>> 13), 2654435761) >>> 0; const base = 0.35 + 0.65 * Math.abs(Math.sin((k + 1) * 0.55)); return Math.max(.18, Math.min(1, base * (0.55 + (h % 1000) / 1800))); });
+}
+function chOnda(url){
+  if (chOndas.has(url)) return chOndas.get(url);
+  const relleno = chOndaRelleno(url); chOndas.set(url, relleno);
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if (Ctx) fetch(url).then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(b => { chCtx = chCtx || new Ctx(); return chCtx.decodeAudioData(b); }).then(buf => {
+    const d = buf.getChannelData(0), paso = Math.max(1, Math.floor(d.length / VZ_N)), picos = [];
+    for (let k = 0; k < VZ_N; k++) { let suma = 0; for (let j = k * paso, f = Math.min(d.length, j + paso); j < f; j++) suma += d[j] * d[j]; picos.push(Math.sqrt(suma / paso)); }
+    const max = Math.max(...picos) || 1, onda = picos.map(v => Math.max(.12, v / max));
+    chOndas.set(url, onda); if (!chDur.get(url) && isFinite(buf.duration)) chDur.set(url, buf.duration);
+    document.querySelectorAll(`.vz[data-audio="${CSS.escape(url)}"]`).forEach(x => { x.querySelectorAll('.vz-onda i').forEach((i, k) => { i.style.height = `${Math.round(5 + onda[k] * 23)}px`; }); const t = x.querySelector('.dur'); if (t && !(chSonando && chSonando.url === url)) t.textContent = chFmt(buf.duration); });
+  }).catch(() => {});
+  return relleno;
+}
 function chAudio(url){
   if (!url) return `<span class="ch-sinaudio">${I('mic')}Nota de voz</span>`;
   const d = chDur.get(url);
   if (d == null && !chDur.has(url)) { chDur.set(url, null); const a = new Audio(); a.preload = 'metadata'; a.src = url;
-    a.addEventListener('loadedmetadata', () => { if (isFinite(a.duration)) { chDur.set(url, a.duration); document.querySelectorAll(`.ch-audio[data-audio="${CSS.escape(url)}"] .dur`).forEach(e => { e.textContent = chFmt(a.duration); }); } }); }
-  return `<div class="ch-audio" data-audio="${esc(url)}"><button type="button" class="pl" data-ch-play="1" aria-label="Reproducir nota de voz">${I('play')}</button><span class="wave"><i></i></span><span class="dur">${d ? chFmt(d) : '0:00'}</span></div>`;
+    a.addEventListener('loadedmetadata', () => { if (isFinite(a.duration)) { chDur.set(url, a.duration); document.querySelectorAll(`.vz[data-audio="${CSS.escape(url)}"] .dur`).forEach(e => { if (!(chSonando && chSonando.url === url)) e.textContent = chFmt(a.duration); }); } }); }
+  const onda = chOnda(url), vel = chVel.get(url) || 1;
+  return `<div class="vz" data-audio="${esc(url)}"><button type="button" class="vz-btn" data-ch-play="1" aria-label="Reproducir nota de voz"><svg viewBox="-1.5 -1 47 47" aria-hidden="true">`
+    + `<g transform="translate(22 22.5) scale(1.14) translate(-22 -22.5)"><path class="vz-pista" d="${VZ_FORMA}" pathLength="100"/><path class="vz-lleno" d="${VZ_FORMA}" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"/></g>`
+    + `<path class="vz-cuerpo" d="${VZ_FORMA}"/><g class="vz-ic" transform="translate(22 19) scale(.68) translate(-12 -12)"><g class="vz-pl">${VZ_PLAY}</g><g class="vz-pa">${VZ_PAUSA}</g></g></svg></button>`
+    + `<span class="vz-onda" data-ch-seek="1" title="Toca para saltar a ese punto">${onda.map(v => `<i style="height:${Math.round(5 + v * 23)}px"></i>`).join('')}<span class="vz-punto"></span></span>`
+    + `<span class="vz-pie"><span class="dur">${d ? chFmt(d) : '0:00'}</span><button type="button" class="vz-vel" data-ch-vel="1" aria-label="Velocidad de reproducción">${String(vel).replace('.', ',')}×</button></span></div>`;
 }
 let chSonando = null;
-document.getElementById('msgs').addEventListener('click', e => {
-  const b = e.target.closest('[data-ch-play]'); if (!b) return;
-  const box = b.closest('.ch-audio'), url = box.dataset.audio;
-  if (chSonando && chSonando.url === url) { if (chSonando.a.paused) chSonando.a.play(); else chSonando.a.pause(); return; }
-  if (chSonando) chSonando.a.pause();
-  const a = new Audio(url); chSonando = {url, a};
-  const pintar = () => document.querySelectorAll(`.ch-audio[data-audio="${CSS.escape(url)}"]`).forEach(x => {
-    const w = x.querySelector('.wave i'); if (w) w.style.width = a.duration ? `${Math.min(100, a.currentTime / a.duration * 100)}%` : '0';
-    const t = x.querySelector('.dur'); if (t) t.textContent = chFmt(a.paused && !a.currentTime ? (a.duration || 0) : a.currentTime);
-    const p = x.querySelector('[data-ch-play]'); if (p) { p.innerHTML = I(a.paused ? 'play' : 'pause'); p.setAttribute('aria-label', a.paused ? 'Reproducir nota de voz' : 'Pausar nota de voz'); }
+function chPintarAudio(url){
+  const s0 = chSonando && chSonando.url === url ? chSonando.a : null;
+  const p = s0 && s0.duration ? Math.min(1, s0.currentTime / s0.duration) : 0, sonando = !!(s0 && !s0.paused);
+  document.querySelectorAll(`.vz[data-audio="${CSS.escape(url)}"]`).forEach(x => {
+    x.classList.toggle('sonando', sonando);
+    const corte = Math.floor(p * VZ_N); x.querySelectorAll('.vz-onda i').forEach((i, k) => i.classList.toggle('ya', k < corte));
+    const punto = x.querySelector('.vz-punto'); if (punto) punto.style.left = `${Math.max(0, Math.min(100, (p * VZ_N - 0.5) / (VZ_N - 1) * 100))}%`;
+    const ll = x.querySelector('.vz-lleno'); if (ll) ll.setAttribute('stroke-dashoffset', String(100 * (1 - p)));
+    const t = x.querySelector('.dur'), tv = s0 && (sonando || s0.currentTime) ? chFmt(s0.currentTime) : chFmt(chDur.get(url) || 0); if (t && t.textContent !== tv) t.textContent = tv;
+    const b = x.querySelector('[data-ch-play]'); if (b) b.setAttribute('aria-label', sonando ? 'Pausar nota de voz' : 'Reproducir nota de voz');
   });
-  ['timeupdate', 'play', 'pause', 'ended', 'loadedmetadata'].forEach(ev => a.addEventListener(ev, pintar));
+}
+function chTocar(url, frac){
+  if (chSonando && chSonando.url === url) {
+    const a = chSonando.a;
+    if (frac != null) { if (a.duration) a.currentTime = frac * a.duration; if (a.paused) a.play().catch(() => {}); chPintarAudio(url); return; }
+    if (a.paused) a.play().catch(() => toast('No se pudo reproducir la nota de voz')); else a.pause(); return;
+  }
+  if (chSonando) { const antes = chSonando; antes.a.pause(); antes.a.currentTime = 0; chSonando = null; chPintarAudio(antes.url); }
+  const a = new Audio(url); a.playbackRate = chVel.get(url) || 1; chSonando = {url, a};
+  const pintar = () => chPintarAudio(url);
+  ['timeupdate', 'play', 'pause', 'loadedmetadata'].forEach(ev => a.addEventListener(ev, pintar));
   a.addEventListener('ended', () => { a.currentTime = 0; pintar(); });
+  if (frac != null) a.addEventListener('loadedmetadata', () => { a.currentTime = frac * a.duration; }, {once: true});
   a.play().catch(() => toast('No se pudo reproducir la nota de voz'));
+}
+// En el documento (no solo en #msgs): así suena igual en la bandeja y en el chat del embudo.
+document.addEventListener('click', e => {
+  const x = e.target.closest('.vz[data-audio]'); if (!x) return;
+  const url = x.dataset.audio;
+  if (e.target.closest('[data-ch-vel]')) {
+    const v = {1: 1.5, 1.5: 2, 2: 1}[chVel.get(url) || 1]; chVel.set(url, v);
+    document.querySelectorAll(`.vz[data-audio="${CSS.escape(url)}"] [data-ch-vel]`).forEach(b => { b.textContent = `${String(v).replace('.', ',')}×`; });
+    if (chSonando && chSonando.url === url) chSonando.a.playbackRate = v; return;
+  }
+  const onda = e.target.closest('[data-ch-seek]');
+  if (onda) { const r = onda.getBoundingClientRect(); chTocar(url, Math.max(0, Math.min(1, (e.clientX - r.left) / r.width))); return; }
+  if (e.target.closest('[data-ch-play]')) chTocar(url);
 });
+// El chat se repinta seguido (llega un mensaje, se envía otro): la nota que suena vuelve a mostrar su avance.
+new MutationObserver(() => { if (chSonando) chPintarAudio(chSonando.url); }).observe(document.body, {childList: true, subtree: true});
 /* Tipo de documento por su extensión: color y sigla del ícono (PDF rojo, Excel verde, Word azul…). */
 function chTipoDoc(n){
   const ext = (String(n || '').match(/\.([a-z0-9]{1,5})$/i) || [])[1] || '';
@@ -987,7 +1045,8 @@ function chTipoDoc(n){
     zip:['ZIP', '#4b5563', 'Archivo comprimido'], rar:['RAR', '#4b5563', 'Archivo comprimido'], txt:['TXT', '#4b5563', 'Texto'], mp3:['MP3', '#7c3aed', 'Audio'], m4a:['M4A', '#7c3aed', 'Audio'], ogg:['OGG', '#7c3aed', 'Audio']}[e];
   return t ? {s:t[0], c:t[1], d:t[2]} : {s:(e || 'doc').toUpperCase().slice(0, 4), c:'#4b5563', d:'Abrir el archivo'};
 }
-const chIcDoc = n => { const t = chTipoDoc(n); return `<span class="ic tipo" style="background:${t.c}">${esc(t.s)}</span>`; };
+const chIcDoc = n => { const t = chTipoDoc(n); return `<span class="ic doc" aria-hidden="true"><svg viewBox="0 0 34 42"><path d="M4 0h18l12 12v26a4 4 0 0 1-4 4H4a4 4 0 0 1-4-4V4a4 4 0 0 1 4-4Z" fill="${t.c}"/><path d="M22 0v8a4 4 0 0 0 4 4h8Z" fill="#fff" fill-opacity=".45"/></svg><b>${esc(t.s)}</b></span>`; };
+const CH_DOC_EXT = /\.(pdf|xlsx?|csv|docx?|pptx?|zip|rar|txt)$/i;
 /** Ubicación («📍 nombre dirección https://maps.google.com/?q=lat,lng») o contacto («Contacto: nombre número»), como tarjeta. */
 function chTarjetaTexto(x){
   const loc = x.match(/^📍\s*(.*?)\s*(https:\/\/maps\.google\.com\/\?q=-?[\d.]+,-?[\d.]+)\s*$/s);
@@ -1025,7 +1084,7 @@ function chBloqueOut(m, ult){
   const fallo = m._estado === 'fallido', u = ult ? ' ult' : '';
   let texto = String(m.out || ''); if (m.link && m.link.url && texto.endsWith(m.link.url)) texto = texto.slice(0, -m.link.url.length).trim();
   const plantilla = m.plantilla ? `<span class="ch-pl">Plantilla «${esc(m.plantilla)}»</span>` : '';
-  if (m.file && !fallo) return `${texto || plantilla ? `<div class="ch-b out">${plantilla}${esc(texto)}</div>` : ''}<a class="ch-file out${u}"${m.file.url ? ` href="${esc(m.file.url)}" target="_blank" rel="noopener"` : ''}><span class="ic">${I(m.file.ic || 'file')}</span><span class="tx"><b>${esc(m.file.n)}</b><small>${esc(m.file.t || 'Abrir el archivo')}</small></span></a>`;
+  if (m.file && !fallo) return `${texto || plantilla ? `<div class="ch-b out">${plantilla}${esc(texto)}</div>` : ''}<a class="ch-file out${u}"${m.file.url ? ` href="${esc(m.file.url)}" target="_blank" rel="noopener"` : ''}>${CH_DOC_EXT.test(m.file.n || '') ? chIcDoc(m.file.n) : `<span class="ic">${I(m.file.ic || 'file')}</span>`}<span class="tx"><b>${esc(m.file.n)}</b><small>${esc(m.file.t || 'Abrir el archivo')}</small></span></a>`;
   const extra = m.audio ? chAudio(m.audio.url)
     : m.link ? `<div class="linkcard"${m.link.url ? ` data-url="${esc(m.link.url)}" title="Copiar el enlace"` : ''}><span class="lc">${I('link')}</span><span><b>${esc(m.link.p)}</b><span>${esc(m.link.m)} · ${esc(m.link.pr)} · enlace de ${esc(m.by || yo)}</span></span></div>`
     : m.file ? `<div class="ch-fnombre">${I(m.file.ic || 'file')}${esc(m.file.n)}</div>` : '';
@@ -1148,6 +1207,9 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ch-ct button{display:block;width:100%;border:0;border-top:1px solid #eef1f5;background:none;padding:9px;font:inherit;font-size:13px;font-weight:600;color:#0b0b10;cursor:pointer}
 .ch-ct button:hover{background:#f6f7f9}
 .ch-file.in .ic{background:#f1f5f9;color:#4b5563}
+.ch-file .ic.doc,.ch-file.in .ic.doc,.ch-file.out .ic.doc{width:34px;height:42px;border-radius:0;background:none;position:relative;color:#fff}
+.ch-file .ic.doc svg{width:34px;height:42px;stroke:none}
+.ch-file .ic.doc b{position:absolute;left:0;right:0;bottom:7px;text-align:center;font-size:9.5px;font-weight:800;letter-spacing:.03em;color:#fff;white-space:nowrap}
 .ch-file .ic svg{width:18px;height:18px}
 .ch-file .tx{display:flex;flex-direction:column;gap:1px;min-width:0}
 .ch-file b{font-size:13.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1155,6 +1217,30 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ch-fnombre{display:flex;align-items:center;gap:6px;font-size:12.5px;margin-top:4px}
 .ch-fnombre svg{width:14px;height:14px}
 .ch-voz{display:flex;flex-direction:column;gap:8px;min-width:300px}
+.ch-b.ch-voz{padding:8px 14px 8px 8px}
+.vz{display:grid;grid-template-columns:49px minmax(0,1fr);column-gap:10px;align-items:center;min-width:270px}
+.vz-btn{grid-column:1;grid-row:1;position:relative;width:49px;height:49px;border:0;background:none;padding:0;cursor:pointer;display:block}
+.vz-btn svg{display:block;width:49px;height:49px}
+.vz-cuerpo{fill:#17140F}
+.vz-pista,.vz-lleno{fill:none;stroke-width:2.1;stroke-linejoin:round;stroke-linecap:round}
+.vz-pista{stroke:#e5e7eb}
+.vz-lleno{stroke:#FFD21F;transition:stroke-dashoffset .25s linear}
+.ch-b.out .vz-pista{stroke:rgba(23,20,15,.15)}
+.ch-b.out .vz-lleno{stroke:#17140F}
+.vz-ic{fill:#FFD21F}
+.vz .vz-pa,.vz.sonando .vz-pl{display:none}
+.vz.sonando .vz-pa{display:inline}
+.vz-onda{grid-column:2;grid-row:1;position:relative;display:flex;align-items:center;justify-content:space-between;height:30px;margin-top:-4px;cursor:pointer}
+.vz-onda i{display:block;width:3px;border-radius:3px;background:#d3d7de;flex:none}
+.vz-onda i.ya{background:#FFC400}
+.ch-b.out .vz-onda i{background:rgba(23,20,15,.25)}
+.ch-b.out .vz-onda i.ya{background:#17140F}
+.vz-punto{position:absolute;top:50%;left:0;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:#FF4D1A;box-shadow:0 0 0 2.5px #fff;pointer-events:none;transition:left .25s linear}
+.ch-b.out .vz-punto{box-shadow:0 0 0 2.5px #FFEC9E}
+.vz-pie{grid-column:2;grid-row:2;display:flex;align-items:center;justify-content:space-between;font-size:11.5px;color:#6b7280;font-variant-numeric:tabular-nums}
+.ch-b.out .vz-pie{color:#5b5130}
+.vz-vel{display:inline-flex;align-items:center;justify-content:center;line-height:1;height:22px;min-width:38px;padding:0 8px;border:0;border-radius:999px;background:#f1f2f4;color:#1f2937;font:inherit;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;cursor:pointer}
+.ch-b.out .vz-vel{background:rgba(11,11,16,.1);color:#0b0b10}
 .ch-audio{display:flex;align-items:center;gap:10px}
 .ch-audio .pl{width:34px;height:34px;border:0;border-radius:50%;background:#0b0b10;color:#fff;display:grid;place-items:center;cursor:pointer;flex:none}
 .ch-b.out .ch-audio .pl{background:#0b0b10;color:#fff}
