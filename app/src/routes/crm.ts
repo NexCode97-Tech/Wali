@@ -58,8 +58,8 @@ router.post('/espacios', asyncHandler(async (req: Request, res: Response) => {
 }))
 router.patch('/espacios/:id', asyncHandler(async (req: Request, res: Response) => {
   if (req.soloLectura) throw new ForbiddenError('Modo de solo lectura: puedes ver todo, pero no hacer cambios.')
-  const d = z.object({ nombre: z.string().max(80) }).parse(req.body)
-  await renombrarEspacio(req.userId!, req.espacioId!, String(req.params.id), d.nombre)
+  const d = z.object({ nombre: z.string().max(80), logo: z.string().max(200_000).nullable().optional() }).parse(req.body)
+  await renombrarEspacio(req.userId!, req.espacioId!, String(req.params.id), d.nombre, d.logo)
   return ApiResponse.success(res, { ok: true })
 }))
 router.delete('/espacios/:id', asyncHandler(async (req: Request, res: Response) => {

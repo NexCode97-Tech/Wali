@@ -19,7 +19,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ll-nota{font-size:12px;color:var(--amber-ink);background:var(--amber-soft);border:1px solid var(--amber-line);border-radius:9px;padding:8px 10px}
 .cx-list{display:grid;gap:8px;margin:4px 0 10px}
 .cx-op{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff}
-.cx-op[aria-checked="true"]{border-color:#0b0b10;background:#fffde6}
+.cx-op[aria-checked="true"]{border-color:#0b0b10;background:#fff;box-shadow:inset 0 0 0 1px #0b0b10}
 .cx-op:disabled{opacity:.55;cursor:default}
 .cx-op .rd{width:16px;height:16px;border-radius:50%;border:2px solid var(--ink4);flex:none}
 .cx-op[aria-checked="true"] .rd{border-color:#0b0b10;box-shadow:inset 0 0 0 3px #fff;background:#0b0b10}

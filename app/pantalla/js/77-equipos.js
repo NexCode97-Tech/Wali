@@ -223,7 +223,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .qe-chk b{display:block;font-size:13.5px;font-weight:600}.qe-chk small{font-size:12.5px;color:#6b7280}
 .qe-met{display:flex;flex-direction:column;gap:8px}
 .qe-met button{display:flex;gap:12px;align-items:center;text-align:left;padding:11px 12px;border:1.5px solid #e5e9f0;border-radius:12px;background:#fff;font:inherit;cursor:pointer;color:inherit}
-.qe-met button:hover{border-color:#cbd5e1}.qe-met button[aria-checked="true"]{border-color:#0b0b10;background:#fffde6}
+.qe-met button:hover{border-color:#cbd5e1}.qe-met button[aria-checked="true"]{border-color:#0b0b10;background:#fff;box-shadow:inset 0 0 0 1px #0b0b10}
 .qe-met b{display:block;font-size:13.5px;font-weight:600}.qe-met small{font-size:12.5px;color:#6b7280}
 .qe-ic{width:32px;height:32px;border-radius:50%;background:#f3f4f6;display:grid;place-items:center;flex:none}.qe-ic svg{width:16px;height:16px}
 .qe-met button[aria-checked="true"] .qe-ic{background:#FFD21F}

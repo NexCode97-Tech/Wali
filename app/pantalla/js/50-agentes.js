@@ -654,7 +654,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ig-f{display:flex;flex-direction:column;gap:12px}
 .ig-f label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#374151}
 .ig-f input{height:42px;border:1px solid #e5e9f0;border-radius:10px;padding:0 12px;font:inherit;font-size:14px;font-weight:400;color:var(--ink);box-sizing:border-box;width:100%}
-.ig-f input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-soft)}
+.ig-f input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(11,11,16,.08)}
 .dlg.dlg-ig p.ig-nota{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;line-height:1.5;color:#6b7280}
 .ig-nota svg{width:15px;height:15px;flex:none;margin-top:2px}
 .dlg.dlg-ig .ft2 .btn{height:40px}

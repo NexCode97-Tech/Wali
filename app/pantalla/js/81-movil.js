@@ -140,7 +140,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 /* Fila de herramientas: buscador y botones de solo ícono. */
 .mv-barra{display:flex;gap:clamp(4px,1.5vw,8px);align-items:center}
 .mv-bus{display:flex;align-items:center;gap:8px;flex:1;min-width:96px;height:44px;padding:0 10px 0 12px;margin:0;border-radius:12px;border:1px solid var(--mv-linea);background:#fff;color:var(--mv-t4)}
-.mv-bus:focus-within{border-color:var(--mv-tinta);box-shadow:0 0 0 3px rgba(255,210,31,.45)}
+.mv-bus:focus-within{border-color:var(--mv-tinta);box-shadow:0 0 0 3px rgba(11,11,16,.08)}
 .mv-bus svg{width:16px;height:16px;flex:none}
 .mv-bus input{flex:1;min-width:0;border:0!important;outline:none;background:none!important;box-shadow:none!important;padding:0!important;height:auto!important;font:inherit;font-size:15px;color:var(--mv-tinta)}
 .mv-ic{position:relative;flex:none;width:clamp(38px,11.5vw,46px);height:44px;border-radius:12px;border:1px solid var(--mv-linea);background:#fff;display:grid;place-items:center;color:var(--mv-tinta);cursor:pointer;padding:0}
@@ -279,7 +279,7 @@ button.mv-f{cursor:pointer}
 .mv-form h4{margin:0 0 -4px 2px;font-size:12px;font-weight:600;color:var(--mv-t3)}
 .mv-c label,.mv-c .mv-lab2{display:block;font-size:12.5px;font-weight:500;color:var(--mv-t2);margin-bottom:6px}
 .mv-in{display:flex;align-items:center;gap:8px;min-height:46px;border-radius:11px;border:1px solid var(--mv-linea);background:#fff;overflow:hidden}
-.mv-in:focus-within{border-color:var(--mv-tinta);box-shadow:0 0 0 3px rgba(255,210,31,.45)}
+.mv-in:focus-within{border-color:var(--mv-tinta);box-shadow:0 0 0 3px rgba(11,11,16,.08)}
 .mv-in input{flex:1;min-width:0;height:44px!important;border:0!important;outline:none;background:none!important;box-shadow:none!important;padding:0 14px!important;font:inherit;font-size:15px!important;color:var(--mv-tinta)}
 .mv-in .mv-campo-b{min-height:44px}
 .mv-pais{flex:none;display:flex;align-items:center;gap:6px;align-self:stretch;padding:0 10px 0 12px;border:0;border-right:1px solid var(--mv-linea);background:none;font:inherit;font-size:15px;font-weight:500;color:var(--mv-tinta);cursor:pointer}

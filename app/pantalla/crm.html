@@ -10,7 +10,7 @@
   --bg:#ffffff; --bg2:#f8fafc; --bg3:#f1f5f9; --hover:#f3f6fa;
   --line:#e5e9f0; --line2:#eef1f5;
   --ink:#1f2937; --ink2:#4b5563; --ink3:#6b7280; --ink4:#9ca3af;
-  --blue:#0b0b10; --blue-ink:#0b0b10; --blue-soft:#fffde6;
+  --blue:#0b0b10; --blue-ink:#0b0b10; --blue-soft:#f2f4f6;
   --green:#22c55e; --green-ink:#15803d; --green-soft:#e8f8ee;
   --amber-soft:#fff8e1; --amber-line:#f4e3a1; --amber-ink:#7a5a00;
   --red-ink:#b91c1c; --red-soft:#fee2e2;
@@ -294,7 +294,11 @@ button.pill svg{width:12px;height:12px}
 .ajg h4{margin:0 0 10px;font-size:11.5px;font-weight:600;color:var(--ink4);}
 .ajg .grid3{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
 .ajg .grid3 button{display:flex;align-items:flex-start;gap:12px;border:1px solid var(--line);border-radius:12px;padding:14px;text-align:left;background:#fff;min-height:84px}
-.ajg .grid3 button:hover{border-color:var(--blue);background:var(--blue-soft)}
+.ajg .grid3 button{transition:border-color .15s,box-shadow .2s,transform .2s cubic-bezier(.22,1,.36,1)}
+.ajg .grid3 button svg.i{width:34px;height:34px;padding:8px;box-sizing:border-box;border-radius:10px;background:#f2f4f6;margin-top:0;flex:none;transition:background .15s}
+/* Estados (maqueta aprobada «hover, seleccionado y foco», 14-oct): hover en gris, sube con sombra; solo el ícono se pinta amarillo. */
+.ajg .grid3 button:hover{border-color:#cfd5de;background:#fff;box-shadow:0 8px 20px -14px rgba(11,11,16,.35);transform:translateY(-1px)}
+.ajg .grid3 button:hover svg.i{background:#FFD21F}
 .ajg .grid3 button svg.i{margin-top:2px;color:var(--ink)}
 .ajg .grid3 b{display:block;font-weight:500;font-size:14px}
 .ajg .grid3 small{font-size:12.5px;color:var(--ink3)}
@@ -842,7 +846,7 @@ button.pc-hi:hover > span{color:var(--blue-ink)}
 .split .btn.ic{border-radius:0 8px 8px 0;border-left:1px solid rgba(255,255,255,.35);width:32px}
 .ctbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
 .ctq{flex:1 1 280px;max-width:420px;height:34px}
-.ctbar .btn.on{border-color:#0b0b10;color:#0b0b10;background:#fffde6}
+.ctbar .btn.on{border-color:#0b0b10;color:#0b0b10;background:#fff;box-shadow:inset 0 0 0 1px #0b0b10}
 .ctbar .cnt{background:var(--blue);color:#fff;border-radius:999px;font-size:11px;padding:0 6px;line-height:17px}
 .ctbar .menu{min-width:220px}
 .chk{width:17px;height:17px;border-radius:5px;border:1.5px solid #b6c0d0;display:inline-grid;place-items:center;background:#fff;flex:none;padding:0}
@@ -1000,12 +1004,13 @@ h4 .marca.mini{margin-right:2px}
 .pasos2 i,.steps button i,.paso .ph .num{line-height:1}
 @supports (text-box:trim-both cap alphabetic){.pasos2 i,.steps button i,.paso .ph .num{text-box:trim-both cap alphabetic}}
 .pasos2 > div.on{color:var(--blue-ink)}
-.pasos2 > div.on i{border-color:var(--blue);color:var(--blue-ink);box-shadow:0 0 0 4px var(--blue-soft)}
+.pasos2 > div.on{font-weight:600}
+.pasos2 > div.on i{background:#FFD21F;border-color:#FFD21F;color:#0b0b10}
 .pasos2 > div.hecho{color:var(--ink2)}
 .pasos2 > div.hecho i{background:var(--blue);border-color:var(--blue);color:#fff}
 /* Opciones grandes (elegir cómo conectar) */
 .opc{display:flex;align-items:center;gap:14px;width:100%;text-align:left;border:1.5px solid var(--line);border-radius:14px;padding:16px;background:#fff;transition:border-color .15s,box-shadow .15s,background .15s}
-.opc:hover:not(:disabled){border-color:#9ccbff;box-shadow:0 6px 18px -10px rgba(31,147,255,.45)}
+.opc:hover:not(:disabled){border-color:#cfd5de;box-shadow:0 8px 20px -14px rgba(11,11,16,.35)}
 .opc:disabled{cursor:default;background:var(--bg2)}
 .opc:disabled .marca,.opc:disabled b{opacity:.55}
 .opc > span.tx{flex:1;min-width:0;display:grid;gap:3px}
@@ -1017,7 +1022,7 @@ h4 .marca.mini{margin-right:2px}
 /* Formularios dentro de un diálogo */
 .dlg .cx-f input,.dlg .cx-f textarea{height:40px;border-radius:10px;padding:0 12px;font-size:13.5px;transition:border-color .15s,box-shadow .15s}
 .dlg .cx-f textarea{height:auto;padding:10px 12px}
-.dlg .cx-f input:focus,.dlg .cx-f textarea:focus{outline:0;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-soft)}
+.dlg .cx-f input:focus,.dlg .cx-f textarea:focus{outline:0;border-color:var(--blue);box-shadow:0 0 0 3px rgba(11,11,16,.08)}
 .dlg .cx-f label{font-size:12.5px}
 .dlg > :last-child:not(.ft2){margin-bottom:24px}
 .nm-cab{position:relative;display:flex;align-items:center;gap:14px;padding:20px 64px 16px 22px;border-bottom:1px solid var(--line)}
@@ -1105,7 +1110,7 @@ h4 .marca.mini{margin-right:2px}
   <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></symbol>
   <symbol id="i-estrella" viewBox="0 0 24 24"><path d="M12 3.2l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.5l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></symbol>
   <symbol id="i-card" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19"/><path d="M6.5 15h4"/></symbol>
-  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></symbol><symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V5"/><path d="M7 10l5-5 5 5"/><path d="M5 20h14"/></symbol>
   <symbol id="i-shield-x" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.5 8-8 9-4.5-1-8-4.5-8-9V6l8-3z"/><path d="M9 9l6 6M15 9l-6 6"/></symbol>
   <symbol id="i-video" viewBox="0 0 24 24"><rect x="2.5" y="6.5" width="13" height="11" rx="2.5"/><path d="M15.5 10.5l6-3.5v10l-6-3.5"/></symbol>
   <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15Z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></symbol>

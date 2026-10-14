@@ -287,6 +287,8 @@ model CrmWebhookEvento {
 model CrmEspacio {
   id             String            @id
   nombre         String
+  /// Logo de la empresa (14-oct): imagen cuadrada de hasta 256 px como data URL (png, jpeg o webp). null = la inicial.
+  logo           String?
   /// Plan del CRM: starter, growth o business. Lo cambia el webhook de Creem al pagar.
   plan           String            @default("starter")
   /// prueba (14 días de Starter), activo, pago-pendiente (cobro fallido, Creem reintenta), cancelado, vencido,

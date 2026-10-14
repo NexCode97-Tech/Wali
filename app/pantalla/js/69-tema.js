@@ -74,7 +74,7 @@
 #app .pc-act.on{background:none;color:var(--ink2)}
 #app .pc-act.on svg{background:var(--nx-negro);color:var(--nx-amarillo)}
 #app .pc-info{background:#f6f7f9;border-radius:14px;padding:4px 12px}
-#app .pc-ps[aria-expanded="true"]{border-color:var(--nx-negro);box-shadow:0 0 0 3px rgba(255,210,31,.45)}
+#app .pc-ps[aria-expanded="true"]{border-color:var(--nx-negro);box-shadow:0 0 0 3px rgba(11,11,16,.08)}
 
 /* ── Escritorio: barra negra a todo lo alto y las columnas como tarjetas sobre un fondo claro redondeado ── */
 @media (min-width:1001px){

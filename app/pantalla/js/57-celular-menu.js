@@ -104,7 +104,7 @@
 .nav .me .cu-ctl{display:flex;align-items:center;gap:8px}
 .nav .me .cu-est{flex-grow:1;min-width:0;display:flex;align-items:center;gap:8px;height:34px;padding:0 10px;border:1px solid #e5e9f0;border-radius:9px;background:#fff;font-size:13px;color:#1f2937;text-align:left}
 .nav .me .cu-est:hover{border-color:#cbd5e1}
-.nav .me .cu-est[aria-expanded="true"]{border-color:#0b0b10;box-shadow:0 0 0 3px #fffde6}
+.nav .me .cu-est[aria-expanded="true"]{border-color:#0b0b10;box-shadow:0 0 0 3px rgba(11,11,16,.08)}
 .nav .me #me-e{flex-grow:1;min-width:0;display:flex;align-items:center;gap:8px;font-size:13px;color:#1f2937;white-space:nowrap;overflow:hidden}
 .nav .me #me-e .est-dot{flex:none;width:8px;height:8px;margin:0;vertical-align:0}
 .nav .me .cu-est > svg{width:14px;height:14px;color:#9ca3af;stroke-width:1.8}

@@ -35,7 +35,7 @@ export async function listarEspacios(userId: string, actual: string): Promise<{ 
   ])
   const ids = todos.filter(id => mios.some(m => m.espacioId === id))
   const [filas, personas, lineas, chats] = await Promise.all([
-    base.crmEspacio.findMany({ where: { id: { in: ids } }, select: { id: true, nombre: true, createdAt: true } }),
+    base.crmEspacio.findMany({ where: { id: { in: ids } }, select: { id: true, nombre: true, logo: true, createdAt: true } }),
     base.crmMiembro.groupBy({ by: ['espacioId'], where: { espacioId: { in: ids } }, _count: true }),
     base.crmLinea.groupBy({ by: ['espacioId'], where: { espacioId: { in: ids } }, _count: true }),
     base.crmConversacion.groupBy({ by: ['espacioId'], where: { espacioId: { in: ids }, estado: 'abiertas' }, _count: true }),
@@ -47,7 +47,7 @@ export async function listarEspacios(userId: string, actual: string): Promise<{ 
   const espacios = ids.map(id => {
     const f = filas.find(x => x.id === id)!
     return {
-      id, n: f.nombre, actual: id === actual, principal: id === cuenta,
+      id, n: f.nombre, logo: f.logo ?? null, actual: id === actual, principal: id === cuenta,
       estado: plan.estado, plan: plan.plan, dias: plan.estado === 'prueba' ? plan.diasPrueba : null,
       personas: n(personas, id), lineas: n(lineas, id), chats: n(chats, id), desde: f.createdAt.toISOString(),
       admin: adminDe(id)?.nombre ?? null, correo: adminDe(id)?.email ?? null,
@@ -115,11 +115,16 @@ async function exigirAdminCuenta(userId: string, actual: string, espacioId: stri
 }
 
 /** Cambia el nombre de un espacio de trabajo (7-oct). */
-export async function renombrarEspacio(userId: string, actual: string, espacioId: string, nombre: string): Promise<void> {
+/** Logo válido: data URL de una imagen png, jpeg o webp, de hasta ~150 KB (la pantalla lo reduce a 256 px). */
+const LOGO_OK = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+=*$/
+
+/** Nombre y, si viene, logo del espacio (`logo`: data URL nueva, null para quitarlo, undefined para no tocarlo). */
+export async function renombrarEspacio(userId: string, actual: string, espacioId: string, nombre: string, logo?: string | null): Promise<void> {
   await exigirAdminCuenta(userId, actual, espacioId)
   const n = nombre.trim().replace(/\s+/g, ' ')
   if (n.length < 2 || n.length > 80) throw new ValidationError('Escribe el nombre de la empresa (de 2 a 80 caracteres).')
-  await base.crmEspacio.update({ where: { id: espacioId }, data: { nombre: n } })
+  if (typeof logo === 'string' && (logo.length > 200_000 || !LOGO_OK.test(logo))) throw new ValidationError('El logo tiene que ser una imagen PNG, JPG o WebP de menos de 150 KB.')
+  await base.crmEspacio.update({ where: { id: espacioId }, data: { nombre: n, ...(logo !== undefined ? { logo } : {}) } })
   logger.info({ evento: 'ESPACIO_RENOMBRADO', espacio: espacioId, por: userId })
 }
 

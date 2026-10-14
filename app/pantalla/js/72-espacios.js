@@ -5,12 +5,23 @@
 const ESP = {lista:null, limite:null, puedeCrear:false, cargando:false, error:'', filtro:'todos', q:'', plan:'prueba', yo:true};
 const ESP_EST = {interno:['Interno', 'mt-int'], activo:['Activo', 'on'], prueba:['Prueba', 'mt-pru'], 'pago-pendiente':['Pago pendiente', 'mt-mal'], cancelado:['Cancelado', 'mt-mal'], vencido:['Vencido', 'mt-mal']};
 const espIni = n => String(n || '').trim().split(/\s+/).slice(0, 2).map(p => p[0] || '').join('').toUpperCase() || 'E';
+// Logo del espacio (maqueta aprobada «foto del espacio de trabajo», 14-oct): la imagen si la tiene; si no, la inicial.
+const espLogo = (e, cls) => `<span class="${cls}">${e && e.logo ? `<img src="${esc(e.logo)}" alt="">` : esc(espIni(e && e.n))}</span>`;
 const espFecha = iso => { try { return 'Creado el ' + fechaCorta(iso); } catch { return ''; } };
 document.head.insertAdjacentHTML('beforeend', `<style>
 .ig-est.mt-int{color:#3730a3;background:#eef2ff}
 .ig-est.mt-pru{color:#92400e;background:#fef3c7}
 .ig-est.mt-mal{color:#991b1b;background:#fee2e2}
 .me-logo{width:48px;height:48px;border-radius:12px;display:grid;place-items:center;font-weight:700;font-size:14px;flex:none;background:#FFD21F;color:#0b0b10}
+.me-logo,.me-mini{overflow:hidden}
+.me-logo img,.me-mini img{width:100%;height:100%;object-fit:cover;display:block}
+.me-foto{display:flex;align-items:center;gap:16px;margin-bottom:14px}
+.me-foto .me-logo{width:72px;height:72px;border-radius:18px;font-size:22px}
+.me-foto b{display:block;font-size:14px;font-weight:600}
+.me-foto small{display:block;font-size:12.5px;line-height:1.45;color:var(--ink3);margin-top:3px}
+.me-foto-bts{display:flex;gap:8px;margin-top:10px}
+.me-foto-bts .btn svg{width:15px;height:15px}
+.me-foto-bts .rojo,.me-foto-bts .rojo svg{color:#dc2626}
 .me-num{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0}
 .me-num div{display:flex;flex-direction:column;gap:2px}
 .me-num dt{font-size:12px;color:#6b7280}
@@ -57,7 +68,7 @@ function espAviso(e){
 }
 function espTarjeta(e){
   const [t, c] = ESP_EST[e.estado] || [e.estado, 'off'], aviso = espAviso(e);
-  return `<article class="ig-c"><div class="ig-cab"><span class="me-logo">${esc(espIni(e.n))}</span><span class="ig-nom"><b>${esc(e.n)}</b><small>${esc([e.admin, e.correo].filter(Boolean).join(' · ') || 'Sin administrador')}</small></span><span class="ig-est ${c}">${esc(t)}${e.dias ? ' · ' + e.dias + ' días' : ''}</span>${ESP.puedeCrear ? `<button type="button" class="me-mas" data-me-mas="${esc(e.id)}" aria-label="Más opciones de ${esc(e.n)}" aria-haspopup="menu">${I('more')}</button>` : ''}</div>
+  return `<article class="ig-c"><div class="ig-cab">${espLogo(e, 'me-logo')}<span class="ig-nom"><b>${esc(e.n)}</b><small>${esc([e.admin, e.correo].filter(Boolean).join(' · ') || 'Sin administrador')}</small></span><span class="ig-est ${c}">${esc(t)}${e.dias ? ' · ' + e.dias + ' días' : ''}</span>${ESP.puedeCrear ? `<button type="button" class="me-mas" data-me-mas="${esc(e.id)}" aria-label="Más opciones de ${esc(e.n)}" aria-haspopup="menu">${I('more')}</button>` : ''}</div>
     <dl class="me-num"><div><dt>Plan</dt><dd>${esc(PL_NOMBRE[e.plan] || e.plan)}</dd></div><div><dt>Personas</dt><dd>${e.personas}</dd></div><div><dt>Líneas</dt><dd>${e.lineas}</dd></div><div><dt>Chats</dt><dd>${e.chats}</dd></div></dl>
     ${aviso ? `<p class="me-aviso">${esc(aviso)}</p>` : ''}
     <div class="ig-pie"><span class="sp">${esc(e.principal ? 'Espacio principal' : espFecha(e.desde))}</span>${e.actual ? '<span class="ig-est on">Estás aquí</span>' : `<button type="button" class="btn" data-me-ajustes="${esc(e.id)}">${I('cog')}Ajustes</button><button type="button" class="btn pri" data-me-entrar="${esc(e.id)}">Entrar</button>`}</div></article>`;
@@ -94,8 +105,8 @@ function dlgCrearEspacio(){
 function espSelector(){
   const top = document.querySelector('#app .nav .topbar'); if (!top) return;
   const e0 = espActual(), viejo = document.querySelector('.me-wrap'), abierto = viejo && !viejo.querySelector('.me-menu').hidden;
-  const menu = `${(ESP.lista || []).map(e => `<button type="button" data-me-entrar="${esc(e.id)}"><span class="me-mini">${esc(espIni(e.n))}</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis">${esc(e.n)}</span>${e.actual ? I('check', 'i') : ''}</button>`).join('')}<hr><button type="button" data-me-todos="1">${I('cog')}Todos los espacios</button>${ESP.puedeCrear ? `<button type="button" data-me-crear="1">${I('plus')}Crear espacio</button>` : ''}`;
-  const html = `<div class="me-wrap"><button type="button" class="me-sw" aria-haspopup="menu" aria-expanded="${!!abierto}" aria-label="Cambiar de espacio de trabajo"><span class="me-mini">${esc(espIni(e0.n))}</span><span class="me-tx"><small>Espacio de trabajo</small><b>${esc(e0.n)}</b></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></button><div class="menu me-menu"${abierto ? '' : ' hidden'}>${menu}</div></div>`;
+  const menu = `${(ESP.lista || []).map(e => `<button type="button" data-me-entrar="${esc(e.id)}">${espLogo(e, 'me-mini')}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis">${esc(e.n)}</span>${e.actual ? I('check', 'i') : ''}</button>`).join('')}<hr><button type="button" data-me-todos="1">${I('cog')}Todos los espacios</button>${ESP.puedeCrear ? `<button type="button" data-me-crear="1">${I('plus')}Crear espacio</button>` : ''}`;
+  const html = `<div class="me-wrap"><button type="button" class="me-sw" aria-haspopup="menu" aria-expanded="${!!abierto}" aria-label="Cambiar de espacio de trabajo">${espLogo(e0, 'me-mini')}<span class="me-tx"><small>Espacio de trabajo</small><b>${esc(e0.n)}</b></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></button><div class="menu me-menu"${abierto ? '' : ' hidden'}>${menu}</div></div>`;
   if (viejo) viejo.remove();
   top.insertAdjacentHTML('afterend', html);
 }
@@ -138,8 +149,15 @@ document.addEventListener('input', e => { if (e.target.id === 'me-q') { ESP.q = 
 /* Editar y eliminar espacios (7-oct): el «⋯» de cada tarjeta (solo el administrador de la cuenta). El principal no se
    elimina (tiene el plan) ni el espacio en que se está; eliminar pide escribir su nombre. */
 const meCerrarMenu = () => document.querySelectorAll('.me-flmenu').forEach(m => m.remove());
+let meLogoNuevo; // undefined: sin cambios; null: quitar el logo; texto: el logo nuevo (data URL)
+function meFotoHtml(e){
+  const vista = {n: e.n, logo: meLogoNuevo === undefined ? e.logo : meLogoNuevo};
+  return `${espLogo(vista, 'me-logo')}<div><b>Logo</b><small>PNG, JPG o WebP. Se recorta en cuadrado.</small>
+    <div class="me-foto-bts"><button type="button" class="btn" data-me-logo-cambiar="1">${I('upload')}${vista.logo ? 'Cambiar' : 'Subir logo'}</button>${vista.logo ? `<button type="button" class="btn rojo" data-me-logo-quitar="1">${I('x')}Quitar</button>` : ''}</div></div>`;
+}
 function meDlgEditar(e){
-  abrirDialogo(`<h3>Editar espacio de trabajo</h3><div class="frm"><label>Nombre de la empresa<input id="me-ren" value="${esc(e.n)}" maxlength="80" autocomplete="off"></label></div>
+  meLogoNuevo = undefined;
+  abrirDialogo(`<h3>Editar espacio de trabajo</h3><div class="me-foto" id="me-foto" data-esp="${esc(e.id)}">${meFotoHtml(e)}</div><input type="file" id="me-logo-in" accept="image/png,image/jpeg,image/webp" hidden><div class="frm"><label>Nombre de la empresa<input id="me-ren" value="${esc(e.n)}" maxlength="80" autocomplete="off"></label></div>
     <div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" data-me-ren-ok="${esc(e.id)}">${I('check')}Guardar</button></div>`, 'dlg-per');
   setTimeout(() => { const x = document.getElementById('me-ren'); if (x) { x.focus(); x.select(); } }, 30);
 }
@@ -159,7 +177,7 @@ document.addEventListener('click', ev => {
     const e = (ESP.lista || []).find(x => x.id === b.dataset.meMas); if (!e) return;
     const motivo = e.principal ? 'Tiene el plan de la cuenta' : e.actual ? 'Estás trabajando aquí' : '';
     const r = b.getBoundingClientRect();
-    document.body.insertAdjacentHTML('beforeend', `<div class="me-flmenu" role="menu"><button type="button" role="menuitem" data-me-ed="${esc(e.id)}">${I('pen')}Editar nombre</button><button type="button" role="menuitem" class="peligro" data-me-el="${esc(e.id)}" ${motivo ? 'disabled' : ''}>${I('x')}<span>Eliminar espacio${motivo ? `<small>${motivo}</small>` : ''}</span></button></div>`);
+    document.body.insertAdjacentHTML('beforeend', `<div class="me-flmenu" role="menu"><button type="button" role="menuitem" data-me-ed="${esc(e.id)}">${I('pen')}Editar espacio</button><button type="button" role="menuitem" class="peligro" data-me-el="${esc(e.id)}" ${motivo ? 'disabled' : ''}>${I('x')}<span>Eliminar espacio${motivo ? `<small>${motivo}</small>` : ''}</span></button></div>`);
     const m = document.querySelector('.me-flmenu'); m.style.top = (r.bottom + 6) + 'px'; m.style.left = Math.max(8, r.right - m.offsetWidth) + 'px';
     return;
   }
@@ -169,8 +187,9 @@ document.addEventListener('click', ev => {
   if (ok && !ok.disabled) {
     const n = (document.getElementById('me-ren') || {}).value || ''; if (n.trim().length < 2) { toast('Escribe el nombre de la empresa'); return; }
     ok.disabled = true;
-    crmApi('PATCH', '/crm/espacios/' + encodeURIComponent(ok.dataset.meRenOk), {nombre: n.trim()})
-      .then(() => { cerrarDialogo(); toast('Nombre guardado'); const e = ESP.lista.find(x => x.id === ok.dataset.meRenOk); if (e) e.n = n.trim(); if (e && e.actual && typeof ESPACIO !== 'undefined') { ESPACIO.nombre = n.trim(); if (typeof pintarMarca === 'function') pintarMarca(); } espSelector(); render(); espCargar(); })
+    const logo = meLogoNuevo;
+    crmApi('PATCH', '/crm/espacios/' + encodeURIComponent(ok.dataset.meRenOk), {nombre: n.trim(), ...(logo !== undefined ? {logo} : {})})
+      .then(() => { cerrarDialogo(); toast('Espacio guardado'); const e = ESP.lista.find(x => x.id === ok.dataset.meRenOk); if (e) e.n = n.trim(); if (e && logo !== undefined) e.logo = logo; if (e && e.actual && typeof ESPACIO !== 'undefined') { ESPACIO.nombre = n.trim(); if (typeof pintarMarca === 'function') pintarMarca(); } espSelector(); render(); espCargar(); })
       .catch(err => { ok.disabled = false; toast(err.message || 'No se pudo guardar'); });
     return;
   }
@@ -199,3 +218,35 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .me-borra{margin:0 0 4px;padding-left:18px;font-size:13.5px;line-height:1.6;color:#374151}
 .me-del-b{background:#dc2626;border-color:#dc2626;color:#fff}.me-del-b:disabled{opacity:.45}
 </style>`);
+
+/* Logo del espacio: elegir, reducir a 256 px (cuadrado, recortado al centro) y mostrarlo en el diálogo antes de guardar. */
+function meRepintarFoto(){
+  const caja = document.getElementById('me-foto'); if (!caja) return;
+  const e = (ESP.lista || []).find(x => x.id === caja.dataset.esp); if (!e) return;
+  caja.replaceChildren(document.createRange().createContextualFragment(meFotoHtml(e)));
+}
+function meReducirLogo(archivo){
+  return new Promise((ok, mal) => {
+    if (!/^image\/(png|jpeg|webp)$/.test(archivo.type)) { mal(new Error('Elige una imagen PNG, JPG o WebP')); return; }
+    const url = URL.createObjectURL(archivo), img = new Image();
+    img.onload = () => {
+      const lado = Math.min(img.naturalWidth, img.naturalHeight), t = Math.min(256, lado), c = document.createElement('canvas');
+      c.width = t; c.height = t;
+      c.getContext('2d').drawImage(img, (img.naturalWidth - lado) / 2, (img.naturalHeight - lado) / 2, lado, lado, 0, 0, t, t);
+      URL.revokeObjectURL(url);
+      let d = c.toDataURL('image/webp', .9);
+      if (!/^data:image\/webp/.test(d)) d = c.toDataURL('image/png');
+      ok(d);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); mal(new Error('No se pudo leer esa imagen')); };
+    img.src = url;
+  });
+}
+document.getElementById('ov-x').addEventListener('click', ev => {
+  if (ev.target.closest('[data-me-logo-cambiar]')) { const i = document.getElementById('me-logo-in'); if (i) { i.value = ''; i.click(); } return; }
+  if (ev.target.closest('[data-me-logo-quitar]')) { meLogoNuevo = null; meRepintarFoto(); }
+});
+document.getElementById('ov-x').addEventListener('change', ev => {
+  if (ev.target.id !== 'me-logo-in' || !ev.target.files || !ev.target.files[0]) return;
+  meReducirLogo(ev.target.files[0]).then(d => { meLogoNuevo = d; meRepintarFoto(); }).catch(err => toast(err.message));
+});

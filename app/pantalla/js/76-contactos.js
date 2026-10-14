@@ -344,7 +344,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .sg2-lab{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#6b7280;margin-bottom:8px;display:block}
 .sg2-nom{display:flex;gap:10px;align-items:center}
 .sg2-nom input{flex:1;height:44px;border:1px solid #e5e9f0;border-radius:11px;padding:0 14px;font:inherit;font-size:15px}
-.sg2-nom input:focus{outline:none;border-color:#0b0b10;box-shadow:0 0 0 3px rgba(255,210,31,.45)}
+.sg2-nom input:focus{outline:none;border-color:#0b0b10;box-shadow:0 0 0 3px rgba(11,11,16,.08)}
 .sg2-look{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
 .sg2-icos,.sg2-cols{display:flex;gap:6px;flex-wrap:wrap}
 .sg2-icos button{width:34px;height:34px;border-radius:9px;border:1px solid #e5e9f0;background:#fff;display:grid;place-items:center;cursor:pointer}

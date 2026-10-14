@@ -294,7 +294,7 @@ const valorTel = id => { const el = document.getElementById(id); return el ? uni
 const normalTel = v => { const x = partirTel(v); return unirTel(x.pais, x.numero); };
 document.head.insertAdjacentHTML('beforeend', `<style>
 .tel-c{display:flex;align-items:stretch;border:1px solid var(--line);border-radius:9px;background:#fff;height:40px}
-.tel-c:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-soft)}
+.tel-c:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(11,11,16,.08)}
 .tel-c.off{background:var(--bg2)}
 .tel-c > input{border:0!important;outline:none;flex:1;min-width:0;height:auto!important;align-self:stretch;padding:0 12px;font:inherit;font-size:13.5px;font-weight:400;color:var(--ink);background:transparent;box-shadow:none!important}
 .tel-p{position:relative;display:flex}
@@ -869,7 +869,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .dlg.dlg-et h3{font-size:20px}
 .et-lab{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#374151}
 .et-lab input{height:42px;border:1px solid #e5e9f0;border-radius:10px;padding:0 12px;font:inherit;font-size:14px;font-weight:400;color:var(--ink);box-sizing:border-box;width:100%}
-.et-lab input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-soft)}
+.et-lab input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(11,11,16,.08)}
 .et-lab small{font-size:12px;font-weight:400;color:#6b7280}
 .et-sel-w{position:relative}
 .et-sel{display:flex;align-items:center;gap:10px;height:42px;width:100%;border:1px solid #e5e9f0;border-radius:10px;padding:0 12px;background:#fff;font:inherit;font-size:14px;font-weight:400;color:var(--ink);cursor:pointer;text-align:left;box-sizing:border-box}
@@ -896,7 +896,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .tg-add{display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 10px;border:1px dashed #cbd5e1;border-radius:999px;background:#fff;font:inherit;font-size:12.5px;color:#0b0b10;cursor:pointer}
 .tg-add svg{width:13px;height:13px}
 .menu.tg-menu{right:0;left:auto;min-width:300px;padding:6px;border-radius:12px}
-.tg-q{display:flex;align-items:center;gap:8px;height:38px;padding:0 10px;border:1px solid var(--blue);border-radius:9px;box-shadow:0 0 0 3px var(--blue-soft);color:#6b7280;margin-bottom:4px}
+.tg-q{display:flex;align-items:center;gap:8px;height:38px;padding:0 10px;border:1px solid var(--blue);border-radius:9px;box-shadow:0 0 0 3px rgba(11,11,16,.08);color:#6b7280;margin-bottom:4px}
 .tg-q svg{width:15px;height:15px;flex:none}
 .tg-q input{border:0;outline:none;flex:1;min-width:0;font:inherit;font-size:13px;color:var(--ink);background:transparent;padding:0}
 .tg-grp{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:#6b7280;padding:8px 12px 4px}
@@ -985,7 +985,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .e2-lista{display:flex;flex-direction:column;gap:8px;max-width:760px}
 .e2-r{display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:#fff}
 .e2-r.arrastrando{opacity:.5}
-.e2-r.sobre{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-soft)}
+.e2-r.sobre{border-color:var(--blue);box-shadow:0 0 0 3px rgba(11,11,16,.08)}
 .e2-asa{color:var(--ink4);cursor:grab;display:grid;place-items:center;width:24px;height:24px;border-radius:6px;flex:none}
 .e2-asa:hover,.e2-asa:focus-visible{background:var(--hover);color:var(--ink2)}
 .e2-dot{width:12px;height:12px;border-radius:50%;flex:none}
