@@ -9,7 +9,7 @@
 // Campos de las condiciones de un segmento: clave, nombre, ícono y sus valores [valor, texto].
 const CK_CAMPOS = [
   ['etapa', 'Etapa', 'flow', () => [...etapasActivas(), ...etapasPerdidas()].map(e => [e, e])],
-  ['asig', 'Asesor', 'user', () => [['Sin asignar', 'Sin asignar'], ...ASESORES.map(a => [a, a])]],
+  ['asig', 'Miembro', 'user', () => [['Sin asignar', 'Sin asignar'], ...ASESORES.map(a => [a, a])]],
   ['canal', 'Canal', 'chat', () => Object.keys(CANALES).map(k => [k, CANALES[k].n])],
   ['tag', 'Etiqueta', 'tag', () => ETIQS.map(([n]) => [n, n])],
   ['origen', 'Origen', 'ad', () => ['Anuncio', 'Enlace de venta de un asesor', 'Chat de la web', 'Correo', 'Otro'].map(v => [v, v])],
@@ -21,7 +21,7 @@ const ckTexto = (k, v) => ((ckCampo(k)[3]().find(o => o[0] === v) || [])[1]) || 
 const CK_PILLS = ['etapa', 'asig', 'canal', 'tag', 'origen'];
 const CK_ICONOS = ['star', 'flame', 'users', 'tag', 'cart', 'ad', 'bolt', 'clock'];
 const CK_COLORES = ['#FFD21F', '#0b0b10', '#3b82f6', '#22c55e', '#f97316', '#a855f7'];
-const CK_COLS = [['etapa', 'Etapa'], ['asig', 'Asesor'], ['canal', 'Canal'], ['tags', 'Etiquetas'], ['ultimo', 'Último mensaje'], ['producto', 'Producto'], ['empresa', 'Empresa'], ['ciudad', 'Ciudad'], ['origen', 'Origen'], ['agregado', 'Agregado']];
+const CK_COLS = [['etapa', 'Etapa'], ['asig', 'Miembro'], ['canal', 'Canal'], ['tags', 'Etiquetas'], ['ultimo', 'Último mensaje'], ['producto', 'Producto'], ['empresa', 'Empresa'], ['ciudad', 'Ciudad'], ['origen', 'Origen'], ['agregado', 'Agregado']];
 st.ct.cols = new Set(['etapa', 'asig', 'canal', 'tags', 'ultimo']);
 st.ckPill = null; st.ckBulk = null; st.ckSeg = null;
 
@@ -99,7 +99,7 @@ paginaContactos = function(){
       <div class="dd" style="position:relative"><button type="button" class="btn" id="ct-cols-b" aria-haspopup="menu">${I('kanban')}Columnas</button>
         <div class="menu" id="ct-cols" hidden><div class="hd">Columnas que se ven</div>${CK_COLS.map(([k, n]) => `<button type="button" data-ct-col="${k}" role="menuitemcheckbox" aria-checked="${col(k)}"><span class="chk ${col(k) ? 'on' : ''}">${col(k) ? I('check') : ''}</span>${n}</button>`).join('')}</div></div></div>
       <div class="ck-tw"><table class="ck-tb"><thead><tr><th class="cb"><input type="checkbox" class="ck-chk" data-ct-todos="1" ${todosSel ? 'checked' : ''} aria-label="Elegir todos"></th>
-        <th><button type="button" data-ct-ord="n">Contacto ${flecha('n')}</button></th>${col('etapa') ? '<th>Etapa</th>' : ''}${col('asig') ? '<th>Asesor</th>' : ''}${col('canal') ? '<th>Canal</th>' : ''}${col('tags') ? '<th>Etiquetas</th>' : ''}${col('ultimo') ? `<th><button type="button" data-ct-ord="ultimo">Último mensaje ${flecha('ultimo')}</button></th>` : ''}${col('producto') ? '<th>Producto</th>' : ''}${col('empresa') ? '<th>Empresa</th>' : ''}${col('ciudad') ? '<th>Ciudad</th>' : ''}${col('origen') ? '<th>Origen</th>' : ''}${col('agregado') ? `<th><button type="button" data-ct-ord="agregado">Agregado ${flecha('agregado')}</button></th>` : ''}<th class="ac"></th></tr></thead>
+        <th><button type="button" data-ct-ord="n">Contacto ${flecha('n')}</button></th>${col('etapa') ? '<th>Etapa</th>' : ''}${col('asig') ? '<th>Miembro</th>' : ''}${col('canal') ? '<th>Canal</th>' : ''}${col('tags') ? '<th>Etiquetas</th>' : ''}${col('ultimo') ? `<th><button type="button" data-ct-ord="ultimo">Último mensaje ${flecha('ultimo')}</button></th>` : ''}${col('producto') ? '<th>Producto</th>' : ''}${col('empresa') ? '<th>Empresa</th>' : ''}${col('ciudad') ? '<th>Ciudad</th>' : ''}${col('origen') ? '<th>Origen</th>' : ''}${col('agregado') ? `<th><button type="button" data-ct-ord="agregado">Agregado ${flecha('agregado')}</button></th>` : ''}<th class="ac"></th></tr></thead>
         <tbody>${filas || vacio}</tbody></table></div>
       <div class="ck-pie"><span>${L.length} ${L.length === 1 ? 'contacto' : 'contactos'}</span><span>Ordenado por ${orden}</span></div></div>
   </div></div>

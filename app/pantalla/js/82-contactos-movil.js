@@ -9,7 +9,7 @@
   const ct = () => st.ct;
   const ctm = st.cmv = {ficha: null, edit: null, filtroAbierto: null, hojaFiltros: null};
   const etapas = () => [...etapasActivas(), ...etapasPerdidas()];
-  const FILTROS_MV = [['etapa', 'Etapa', 'Todas las etapas'], ['asig', 'Asesor', 'Todos los asesores'], ['tag', 'Etiqueta', 'Todas las etiquetas'], ['origen', 'Origen', 'Todos los orígenes']];
+  const FILTROS_MV = [['etapa', 'Etapa', 'Todas las etapas'], ['asig', 'Miembro', 'Todos los miembros'], ['tag', 'Etiqueta', 'Todas las etiquetas'], ['origen', 'Origen', 'Todos los orígenes']];
   const opsFiltro = k => ((CT_FILTROS.find(x => x[0] === k) || [0, 0, () => []])[2])();
   const dot = col => `<i class="dot" style="background:${esc(colorOk(col || '#9ca3af'))}"></i>`;
   const preFiltro = (k, v) => k === 'etapa' ? dot(COL[v]) : k === 'tag' ? dot(ETIQ_COL[v]) : '';
@@ -108,7 +108,7 @@
   const opsProducto = () => [{v: '', t: 'Sin producto'}, ...[...CATALOGO.map(x => x.p), ...FALTANTES].map(p => ({v: p, t: p}))];
   function elegir(campo, actual, alElegir){
     if (campo === 'etapa') mvOpciones({titulo: 'Etapa', opciones: opsEtapa(), actual, alElegir});
-    else if (campo === 'asig') mvOpciones({titulo: 'Asesor', opciones: opsAsesor(), actual: actual || '', alElegir: v => alElegir(v || null)});
+    else if (campo === 'asig') mvOpciones({titulo: 'Miembro', opciones: opsAsesor(), actual: actual || '', alElegir: v => alElegir(v || null)});
     else if (campo === 'tags') mvOpciones({titulo: 'Etiquetas', opciones: opsTag(), actual: actual || [], multiple: true, alElegir, vacio: 'Crea etiquetas en Ajustes › Etiquetas.'});
     else if (campo === 'producto') mvOpciones({titulo: 'Producto de interés', opciones: opsProducto(), actual: actual || '', alElegir});
   }
@@ -197,7 +197,7 @@
         <div class="cmv-facc${c.conv ? '' : ' uno'}">${c.conv ? `<button type="button" class="pri" data-ctma="abrir">${I('chat')}Conversación</button>` : ''}<button type="button" data-ctma="escribir">${I('wa', 'i wa')}WhatsApp</button></div>
         <div class="mv-sec"><h4>Venta</h4><div class="mv-filas">
           ${fila('Etapa', c.etapa ? `<b>${etapaHtml(c.etapa)}</b>` : gris('Sin etapa'), 'etapa')}
-          ${fila('Asesor', `<b>${asesorHtml(c.asig)}</b>`, 'asig')}
+          ${fila('Miembro', `<b>${asesorHtml(c.asig)}</b>`, 'asig')}
           ${fila('Etiquetas', tags, 'tags')}
           ${fila('Producto', c.producto ? `<b>${esc(c.producto)}</b>` : gris('Sin producto'), 'producto')}
           ${fila('Cuotas', cuotas ? `<b>${esc(cuotas)}</b>` : gris('Sin compras'))}
@@ -242,7 +242,7 @@
         </div>
         <div class="mv-form"><h4>Venta</h4>
           ${sel('etapa', 'Etapa', d.etapa ? `<span class="v">${dot(COL[d.etapa])}${esc(d.etapa)}</span>` : '<span class="v gris">Elige una etapa</span>')}
-          ${sel('asig', 'Asesor', d.asig ? `<span class="v">${asesorHtml(d.asig)}</span>` : '<span class="v gris">Sin asignar</span>')}
+          ${sel('asig', 'Miembro', d.asig ? `<span class="v">${asesorHtml(d.asig)}</span>` : '<span class="v gris">Sin asignar</span>')}
           ${sel('tags', 'Etiquetas', tags)}
           ${sel('producto', 'Producto de interés', d.producto ? `<span class="v">${esc(d.producto)}</span>` : '<span class="v gris">Elige un producto</span>')}
         </div>

@@ -718,7 +718,7 @@ function panel(c){
     </div>
     ${sec('acc','sliders','Conversación', `
       <div class="pc-pr"><span>Equipo</span><div class="dd" id="dd-eq"><button type="button" class="pc-ps" id="eq-b" aria-haspopup="listbox" aria-expanded="false"><i class="pc-sq" style="background:${colorEquipo(eq)}"></i><span class="t">${esc(eq)}</span>${cv}</button><div class="menu" id="eq-m" role="listbox" aria-label="Equipos" hidden></div></div></div>
-      <div class="pc-pr"><span>Asesor</span><div class="dd" id="dd-asig"><button type="button" class="pc-ps" id="asig-b" aria-haspopup="listbox" aria-expanded="false">${c.asig ? `<span class="av mini" style="background:${colorPersona(c.asig)}">${fotoAv(fotoDe(c.asig), c.asig)}</span>` : '<span class="mini">–</span>'}<span class="t">${esc(c.asig || 'Sin asignar')}</span>${cv}</button><div class="menu" id="asig-m" role="listbox" aria-label="Personas del equipo" hidden></div></div></div>
+      <div class="pc-pr"><span>Miembro</span><div class="dd" id="dd-asig"><button type="button" class="pc-ps" id="asig-b" aria-haspopup="listbox" aria-expanded="false">${c.asig ? `<span class="av mini" style="background:${colorPersona(c.asig)}">${fotoAv(fotoDe(c.asig), c.asig)}</span>` : '<span class="mini">–</span>'}<span class="t">${esc(c.asig || 'Sin asignar')}</span>${cv}</button><div class="menu" id="asig-m" role="listbox" aria-label="Personas del equipo" hidden></div></div></div>
       <div class="pc-pr"><span>Prioridad</span><div class="dd" id="dd-pri"><button type="button" class="pc-ps" id="pri-b" aria-haspopup="listbox" aria-expanded="false">${senal(prioridadDe(c))}<span class="t">${prioridadDe(c)}</span>${cv}</button><div class="menu" id="pri-m" role="listbox" hidden>${PRIORIDADES.map(([p]) => `<button type="button" role="option" data-pri="${p}" aria-selected="${prioridadDe(c) === p}">${senal(p)}${p}${prioridadDe(c) === p ? I('check','i ck') : ''}</button>`).join('')}</div></div></div>
       <div class="pc-pr"><span>Etapa</span><div class="dd" id="dd-etq"><button type="button" class="pc-ps" id="etq-b" aria-haspopup="listbox" aria-expanded="false"><i class="pc-dot" style="background:${COL[c.etq[0]] || '#cbd5e1'}"></i><span class="t">${esc(c.etq[0] || 'Sin etapa')}</span>${cv}</button><div class="menu" id="etq-m" role="listbox" hidden></div></div></div>
       <div class="pc-pr top"><span>Etiquetas</span><div class="tagsel">${c.tags.map(t => `<span class="tagx"><i style="background:${ETIQ_COL[t]}"></i>${esc(t)}<button type="button" data-tag-del="${esc(t)}" aria-label="Quitar ${esc(t)}">${I('x')}</button></span>`).join('')}<div class="dd" id="dd-tag"><button type="button" class="tg-add" id="tag-b">${I('plus')}Agregar</button><div class="menu tg-menu" id="tag-m" hidden><label class="tg-q">${I('search')}<input id="tag-q" placeholder="Buscar o crear etiqueta" autocomplete="off" aria-label="Buscar o crear etiqueta"></label><div id="tag-l">${listaTags(c, '')}</div></div></div></div></div>`)}
@@ -789,7 +789,7 @@ function pagina(){
     const masLarga = filas.filter(f => f.largaMin).sort((p, q) => q.largaMin - p.largaMin)[0];
     el.innerHTML = `<div class="pg-h"><div><h2>Equipo en vivo</h2><p class="sub">Cómo va cada asesor ahora mismo. Se actualiza solo. Desde aquí se pasan conversaciones de un asesor a otro.</p></div></div>
       <div class="kpis"><div class="kpi"><span>Conectados</span><b>${filas.filter(f => f.est !== 'Desconectado').length} de ${filas.length}</b><small>${filas.filter(f => f.est === 'Ausente').length} ausente${filas.filter(f => f.est === 'Ausente').length === 1 ? '' : 's'}</small></div><div class="kpi"><span>Conversaciones abiertas</span><b>${filas.reduce((s, f) => s + f.abiertas, 0)}</b><small>${sinAsig} sin asignar</small></div><div class="kpi"><span>Esperando respuesta</span><b>${filas.reduce((s, f) => s + f.sin, 0)}</b><small>la más larga: ${esc(masLarga ? masLarga.larga : '—')}</small></div><div class="kpi"><span>Finalizadas hoy</span><b>${filas.reduce((s, f) => s + f.res, 0)}</b><small>todo el equipo</small></div></div>
-      <table class="tb3 vivo"><thead><tr><th>Asesor</th><th>Estado</th><th>Abiertas</th><th>Sin responder</th><th>Espera más larga</th><th>Finalizadas hoy</th><th>Atención</th><th></th></tr></thead><tbody>
+      <table class="tb3 vivo"><thead><tr><th>Miembro</th><th>Estado</th><th>Abiertas</th><th>Sin responder</th><th>Espera más larga</th><th>Finalizadas hoy</th><th>Atención</th><th></th></tr></thead><tbody>
       ${filas.length ? '' : '<tr><td colspan="8" class="muted">Todavía no hay personas de Ventas en el CRM.</td></tr>'}${filas.map(f => `<tr><td>${esc(f.a)}</td><td><span class="est"><i class="est-dot" style="background:${EST_COL[f.est] || EST_COL['En línea']}"></i>${esc(f.est)}</span></td><td>${f.abiertas}</td><td style="${f.sin >= 4 ? 'color:var(--red-ink);font-weight:600' : ''}">${f.sin}</td><td>${esc(f.larga)}</td><td>${f.res}</td><td>${f.sat != null ? String(Math.round(f.sat * 10) / 10).replace('.', ',') + ' de 5' : '—'}</td><td style="text-align:right"><button type="button" class="btn" data-reasignar="${esc(f.a)}" ${f.abiertas ? '' : 'disabled'}>${I('share')}Pasar sus conversaciones</button></td></tr>`).join('')}
       </tbody></table>`;
   } else if (st.pagina === 'reglas') {
@@ -1298,7 +1298,7 @@ function pintarFicha(){
   const productos = d && d.productos && d.productos.length ? `<div class="hist" style="margin-top:8px">${d.productos.map(x => `<div><span>${esc(x.p)}${x.historico ? ' · anterior' : ''}</span><span>${esc(hcDia(x.fecha))}</span></div>`).join('')}</div>` : '';
   const plataforma = !est || est.cargando ? '<p class="muted" style="margin:0">Buscando en la plataforma…</p>'
     : est.error ? `<p class="muted" style="margin:0">${esc(est.error)}</p>`
-    : d.externoId ? `<dl class="kv">${kv('Cliente', d.nombre)}${kv('Asesor', d.asesor)}${kv('Lo encontró por', {telefono:'su teléfono', correo:'su correo', representante:'el representante legal'}[d.via] || '')}</dl>${productos}`
+    : d.externoId ? `<dl class="kv">${kv('Cliente', d.nombre)}${kv('Miembro', d.asesor)}${kv('Lo encontró por', {telefono:'su teléfono', correo:'su correo', representante:'el representante legal'}[d.via] || '')}</dl>${productos}`
     : '<p class="muted" style="margin:0">No aparece como cliente en la plataforma.</p>';
   const recup = d && d.recuperacion && d.recuperacion.length ? `<div class="fcard"><h4>${I('cart')}Recuperación de ventas</h4><div class="hist">${d.recuperacion.map(x => `<div><span>${esc(x.tipo)} · ${esc(x.producto)}</span><span>${esc(x.estado)}</span></div>`).join('')}</div></div>` : '';
   document.getElementById('ficha').innerHTML = `
@@ -1960,7 +1960,7 @@ const SEGMENTOS = [
 ];
 const CT_FILTROS = [
   ['etapa','Etapa', () => [...etapasActivas(), ...etapasPerdidas()]],
-  ['asig','Asesor', () => ['Sin asignar', ...ASESORES]],
+  ['asig','Miembro', () => ['Sin asignar', ...ASESORES]],
   ['producto','Producto', () => [...CATALOGO.map(x => x.p), ...FALTANTES]],
   ['origen','Origen', () => ['Anuncio', 'Enlace de venta de un asesor', 'Chat de la web', 'Correo', 'Otro']],
   ['canal','Canal', () => Object.keys(CANALES)],
@@ -1981,7 +1981,7 @@ function pasaFiltros(c, f){
   if (f.cuotas === 'Sin compras' && c.cuotas) return false;
   return true;
 }
-const CT_COLS = [['etapa','Etapa'],['asig','Asesor'],['producto','Producto'],['empresa','Empresa'],['ciudad','Ciudad'],['origen','Origen'],['tags','Etiquetas'],['cuotas','Cuotas'],['ultimo','Último mensaje'],['agregado','Agregado']];
+const CT_COLS = [['etapa','Etapa'],['asig','Miembro'],['producto','Producto'],['empresa','Empresa'],['ciudad','Ciudad'],['origen','Origen'],['tags','Etiquetas'],['cuotas','Cuotas'],['ultimo','Último mensaje'],['agregado','Agregado']];
 st.ct = {vista:'todos', q:'', f:{}, orden:{k:'ultimo', dir:1}, sel:new Set(), cols:new Set(CT_COLS.map(c => c[0])), filtrosAbiertos:false, propios:[]};
 const segDe = id => SEGMENTOS.find(s => s.id === id) || st.ct.propios.find(s => s.id === id);
 function ctVisibles(){
@@ -2057,7 +2057,7 @@ function paginaContactos(){
       <div class="ctt-w"><table class="ctt"><thead><tr>
         <th class="cb"><button type="button" class="chk ${todosSel ? 'on' : ''}" data-ct-todos="1" aria-label="Seleccionar todos">${todosSel ? I('check') : ''}</button></th>
         <th class="nm"><button type="button" data-ct-ord="n">Nombre ${flecha('n')}</button></th>
-        ${col('etapa') ? '<th>Etapa</th>' : ''}${col('asig') ? '<th>Asesor</th>' : ''}${col('producto') ? '<th>Producto</th>' : ''}${col('empresa') ? '<th>Empresa</th>' : ''}${col('ciudad') ? '<th>Ciudad</th>' : ''}${col('origen') ? '<th>Origen</th>' : ''}${col('tags') ? '<th>Etiquetas</th>' : ''}${col('cuotas') ? '<th>Cuotas</th>' : ''}
+        ${col('etapa') ? '<th>Etapa</th>' : ''}${col('asig') ? '<th>Miembro</th>' : ''}${col('producto') ? '<th>Producto</th>' : ''}${col('empresa') ? '<th>Empresa</th>' : ''}${col('ciudad') ? '<th>Ciudad</th>' : ''}${col('origen') ? '<th>Origen</th>' : ''}${col('tags') ? '<th>Etiquetas</th>' : ''}${col('cuotas') ? '<th>Cuotas</th>' : ''}
         ${col('ultimo') ? `<th><button type="button" data-ct-ord="ultimo">Último mensaje ${flecha('ultimo')}</button></th>` : ''}${col('agregado') ? `<th><button type="button" data-ct-ord="agregado">Agregado ${flecha('agregado')}</button></th>` : ''}
         <th class="ac"></th></tr></thead><tbody>
         ${L.length ? L.map(c => `<tr data-ct-fila="${c.id}" class="${ct.sel.has(c.id) ? 'sel' : ''}">
@@ -2092,14 +2092,14 @@ function ctCambiar(id, fn){
 }
 function descargarCsv(filas, nombre){
   const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const cols = ['Nombre','Teléfono','Correo','Etapa','Asesor','Producto','Empresa','Ciudad','Origen','Etiquetas','No contactar'];
+  const cols = ['Nombre','Teléfono','Correo','Etapa','Miembro','Producto','Empresa','Ciudad','Origen','Etiquetas','No contactar'];
   const csv = '﻿' + [cols.join(';'), ...filas.map(c => [c.n, c.tel, c.correo, c.etapa, c.asig || '', c.producto, c.empresa, c.ciudad, c.origen, (c.tags || []).join(', '), c.noContactar ? 'Sí' : ''].map(q).join(';'))].join('\r\n');
   const url = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'})); const a = document.createElement('a'); a.href = url; a.download = nombre; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 function ctFicha(id){
   const c = ctTodos().find(x => x.id === id); if (!c) return;
   const fila = (k, v) => v ? `<div class="kvr"><span>${k}</span><b>${esc(v)}</b></div>` : '';
-  abrirDialogo(`<h3>${esc(c.n)}</h3><div class="kvl">${fila('Teléfono', c.tel)}${fila('Correo', c.correo)}${fila('Canal', CANALES[c.canal].n)}${fila('Etapa', c.etapa)}${fila('Asesor', c.asig || 'Sin asignar')}${fila('Producto', c.producto)}${fila('Empresa', c.empresa)}${fila('Ciudad', c.ciudad)}${fila('Origen', c.origen)}${fila('Cuotas', c.cuotas ? `${c.cuotas[0]} de ${c.cuotas[1]} pagadas` : 'Sin compras')}${fila('Último mensaje', ctFecha(c.ultimoDias))}</div>
+  abrirDialogo(`<h3>${esc(c.n)}</h3><div class="kvl">${fila('Teléfono', c.tel)}${fila('Correo', c.correo)}${fila('Canal', CANALES[c.canal].n)}${fila('Etapa', c.etapa)}${fila('Miembro', c.asig || 'Sin asignar')}${fila('Producto', c.producto)}${fila('Empresa', c.empresa)}${fila('Ciudad', c.ciudad)}${fila('Origen', c.origen)}${fila('Cuotas', c.cuotas ? `${c.cuotas[0]} de ${c.cuotas[1]} pagadas` : 'Sin compras')}${fila('Último mensaje', ctFecha(c.ultimoDias))}</div>
     <div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cerrar</button>${c.conv ? `<button type="button" class="btn pri" data-ct-abrir="${c.id}">${I('chat')}Abrir conversación</button>` : `<button type="button" class="btn pri" data-ct-escribir="${c.id}">${I('wa')}Escribir por WhatsApp</button>`}</div>`);
 }
 function ctAbrirConv(id){ cerrarDialogo(); st.sel = id; st.vista = 'todas'; st.pagina = ''; st.carpeta = st.equipo = st.etq = st.linea = st.q = ''; st.menciones = false; st.est = 'abiertas'; document.getElementById('q').value = ''; render(); }
@@ -2509,7 +2509,7 @@ function paginaInformes(el){
       <p class="sub" style="margin:2px 0 14px">Encuesta al finalizar cada conversación, en los mismos 7 días.</p>
       <div class="kpis"><div class="kpi"><span>NPS de ${esc(ESPACIO.nombre || 'la empresa')}</span><b>${e.nps != null ? (e.nps > 0 ? '+' : '') + Math.round(e.nps) : '—'}</b><small>${pctP != null && e.respondidas ? `${Math.round(pctP)} % promotores · ${Math.round(pctD || 0)} % detractores` : 'sin respuestas todavía'}</small></div><div class="kpi"><span>Atención de los asesores</span><b>${e.atencion != null ? coma(e.atencion) + ' de 5' : '—'}</b><small>${e.atencion != null ? estrellas(Math.round(e.atencion)) : 'sin respuestas todavía'}</small></div><div class="kpi"><span>Respondieron</span><b>${e.enviadas ? Math.round((e.respondidas || 0) / e.enviadas * 100) + ' %' : '—'}</b><small>${(e.respondidas || 0).toLocaleString('es-CO')} de ${(e.enviadas || 0).toLocaleString('es-CO')} encuestas</small></div><div class="kpi"><span>Calificaciones bajas</span><b>${e.bajas || 0}</b><small>2 de 5 o menos · revisar</small></div></div>
       <div class="two">
-        <div><table class="tb3"><thead><tr><th>Asesor</th><th>Encuestas</th><th>Atención</th><th>NPS</th><th>Detractores</th></tr></thead><tbody>
+        <div><table class="tb3"><thead><tr><th>Miembro</th><th>Encuestas</th><th>Atención</th><th>NPS</th><th>Detractores</th></tr></thead><tbody>
           ${filasEnc.length ? filasEnc.map(r => `<tr><td>${esc(r.asesor)}</td><td>${r.encuestas || 0}</td><td>${r.atencion != null ? estrellas(Math.round(r.atencion)) + ' ' + coma(r.atencion) : '—'}</td><td>${r.nps != null ? `<span class="nps ${r.nps >= 50 ? 'p' : r.nps >= 30 ? 'n' : 'd'}">${r.nps > 0 ? '+' : ''}${Math.round(r.nps)}</span>` : '—'}</td><td>${r.detractores || 0}</td></tr>`).join('') : '<tr><td colspan="5" class="muted">Todavía no hay encuestas respondidas.</td></tr>'}
         </tbody></table>${lider ? '' : '<p class="muted" style="margin-top:8px">Como asesora ves solo tus calificaciones. El líder ve las de todo el equipo.</p>'}</div>
         <div><h3 style="font-size:13px;margin:0 0 10px">Últimos comentarios</h3><div class="coms">${coms.length ? coms.map(x => `<div><span class="nps ${npsCls(x.nps)}">${x.nps}</span><span>${x.com ? `«${esc(x.com)}»` : '<span style="color:var(--ink4)">Sin comentario</span>'}<br><small>${esc(x.n)} sobre ${esc(x.asesor)} · ${estrellas(x.aten)}</small></span><small>${esc((cu => cu && Date.parse(cu) ? hcDia(cu).toLowerCase() : cu || '')(x.cuando || x.t))}</small></div>`).join('') : '<p class="muted" style="margin:0">Todavía no hay comentarios.</p>'}</div></div>
