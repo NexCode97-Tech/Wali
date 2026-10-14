@@ -360,6 +360,8 @@ export async function conectarWhatsappMeta(entrada: Json, por: string | null): P
     token = String(r.access_token ?? '')
   } catch (e) { throw porQueNoConecta(e, 'Meta no aceptó la conexión') }
   if (!token) throw new AppError('Meta no entregó el acceso a la cuenta', 502)
+  const llave = await tokenDeEmpresa(token, p)
+  token = llave.token
   if (await cuentaEnOtroEspacio([wabaId])) throw new ConflictError('Esa cuenta de WhatsApp ya está conectada en otro espacio del CRM')
   if (await cuentaPorOtroCamino([wabaId], 'meta')) throw new ConflictError('Esa cuenta de WhatsApp ya está conectada con los datos de la app. Si quieres usar el botón de Meta, desconéctala primero en Líneas de WhatsApp')
   try {
@@ -368,7 +370,7 @@ export async function conectarWhatsappMeta(entrada: Json, por: string | null): P
 
   const previa = (await prisma.crmConexion.findMany({ where: { tipo: 'whatsapp', modo: 'meta' } })).find(c => (obj(c.datos).wabas ?? []).includes(wabaId))
   const coexAntes = previa ? (obj(previa.datos) as DatosWhatsapp).coex ?? [] : []
-  const datos: DatosWhatsapp = { appId: p.appId, wabas: [wabaId], verifyToken: '', ...(coexistencia || coexAntes.length ? { coex: [...new Set([...coexAntes, ...(coexistencia ? [phoneNumberId] : [])])] } : {}) }
+  const datos: DatosWhatsapp = { appId: p.appId, wabas: [wabaId], verifyToken: '', vence: llave.vence, ...(coexistencia || coexAntes.length ? { coex: [...new Set([...coexAntes, ...(coexistencia ? [phoneNumberId] : [])])] } : {}) }
   const c = previa
     ? await prisma.crmConexion.update({ where: { id: previa.id }, data: { secretos: cifrar({ token }), datos: datos as unknown as Prisma.InputJsonValue, estado: 'conectada', error: null }, include: { _count: { select: { lineas: true } } } })
     : await prisma.crmConexion.create({
@@ -378,6 +380,38 @@ export async function conectarWhatsappMeta(entrada: Json, por: string | null): P
   logger.info(`[CRM conexiones] WhatsApp con el botón de Meta: cuenta ${wabaId}, por ${por}`)
   await emitirConexiones(por)
   return { ...conexionAFront(c), phoneNumberId, wabaId }
+}
+
+/**
+ * El token de empresa sin vencimiento (13-oct). La configuración del registro integrado de Meta solo entrega tokens
+ * de 60 días, y uno vencido deja de recibir mensajes. Meta deja que el token de empresa del cliente genere otro para
+ * el mismo cliente y las mismas cuentas, que por defecto no vence. Si Meta no lo entrega, sigue el de 60 días con su
+ * fecha: la revisión diaria de conexiones avisa antes de que venza.
+ */
+async function tokenDeEmpresa(token: string, p: ProveedorMeta): Promise<{ token: string; vence: number }> {
+  const llaveApp = `${p.appId}|${p.appSecret}`
+  const info = await revisarToken(token, llaveApp).catch(() => null)
+  if (!info || !info.vence) return { token, vence: 0 }
+  const appsecret_proof = crypto.createHmac('sha256', p.appSecret).update(token).digest('hex')
+  try {
+    const yo = await graph<{ client_business_id?: string; id?: string }>('/me', { cred: { token }, query: { fields: 'client_business_id', appsecret_proof } })
+    const negocio = String(yo.client_business_id ?? '')
+    if (!/^\d{5,30}$/.test(negocio)) throw new Error('Meta no dijo de qué empresa es el token')
+    const pedir = (conUsuario: boolean) => graph<{ access_token?: string }>(`/${negocio}/system_user_access_tokens`, {
+      cred: { token }, method: 'POST', query: { appsecret_proof, ...(conUsuario && yo.id ? { system_user_id: yo.id } : {}) },
+    })
+    const r = await pedir(false).catch(() => pedir(true))
+    const nuevo = String(r.access_token ?? '')
+    const infoNuevo = nuevo ? await revisarToken(nuevo, llaveApp) : null
+    if (infoNuevo?.valido && !infoNuevo.vence) {
+      logger.info(`[CRM conexiones] Token de empresa sin vencimiento para la empresa ${negocio}`)
+      return { token: nuevo, vence: 0 }
+    }
+    logger.warn(`[CRM conexiones] Meta entregó otro token de empresa para ${negocio}, pero también vence: sigue el de 60 días`)
+  } catch (e) {
+    logger.warn(`[CRM conexiones] No se pudo pedir el token sin vencimiento: ${(e as Error).message}. Sigue el de 60 días`)
+  }
+  return { token, vence: info.vence }
 }
 
 // ─── Números, revisión y desconexión ─────────────────────────────────────────

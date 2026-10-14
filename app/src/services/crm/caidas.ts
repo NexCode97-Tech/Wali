@@ -119,6 +119,24 @@ export async function whatsappCaido() {
 }
 
 /**
+ * El token de la conexión todavía sirve pero vence en menos de 7 días (13-oct: el botón de Meta entrega tokens de 60
+ * días cuando Meta no da el de empresa sin vencimiento). Un aviso en la campana a cada administrador, una sola vez por
+ * fecha de vencimiento (`datos.porVencerAvisado`), para que reconecten antes de que dejen de llegar los mensajes.
+ */
+async function avisarPorVencer(id: string, vence: number) {
+  if (vence - Date.now() > 7 * UN_DIA) return
+  const c = await prisma.crmConexion.findUnique({ where: { id }, include: { lineas: { select: { nombre: true } } } })
+  if (!c || obj(c.datos).porVencerAvisado === vence) return
+  await prisma.crmConexion.update({ where: { id }, data: { datos: { ...obj(c.datos), porVencerAvisado: vence } as Prisma.InputJsonValue } })
+  const f = new Date(vence).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', timeZone: 'America/Bogota' })
+  const cuales = c.lineas.length ? c.lineas.map(l => `«${l.nombre}»`).join(', ') : 'tu línea de WhatsApp'
+  for (const a of await administradores()) {
+    await avisar({ userId: a.id, autorId: null, tipo: 'CRM_WHATSAPP_POR_VENCER', titulo: 'Tu WhatsApp se desconecta pronto', texto: `La conexión de ${cuales} vence el ${f}. Reconéctala antes en Ajustes › Líneas de WhatsApp para que los mensajes sigan llegando.`, url: '/' })
+  }
+  logger.info(`[CRM caídas] Aviso de vencimiento: ${c.nombre} vence el ${f}`)
+}
+
+/**
  * Revisión diaria (procesos.ts, cada 10 minutos, pero cada conexión a lo sumo una vez por día): ¿Meta sigue aceptando
  * el token? Solo cuenta lo que Meta responde; si no se pudo hablar con Meta (la red), se deja para la próxima.
  */
@@ -137,7 +155,7 @@ export async function revisarConexionesWhatsapp(): Promise<number> {
     try {
       const info = await revisarToken(s.token, llave)
       await prisma.crmConexion.update({ where: { id: c.id }, data: { datos: { ...obj((await prisma.crmConexion.findUnique({ where: { id: c.id }, select: { datos: true } }))?.datos), revisadoEn: Date.now() } as Prisma.InputJsonValue } })
-      if (info.valido) await marcarViva(c.id)
+      if (info.valido) { await marcarViva(c.id); if (info.vence) await avisarPorVencer(c.id, info.vence * 1000) }
       else await marcarCaida(c.id, 'El token de Meta venció o no es válido. Genera uno que nunca venza para el usuario del sistema y vuelve a conectar WhatsApp en Ajustes › Canales', info.vence ? info.vence * 1000 : undefined)
     } catch (e) {
       if (!(e instanceof ErrorMeta)) { logger.info(`[CRM caídas] ${c.id}: no se pudo revisar (${(e as Error).message})`); continue }
