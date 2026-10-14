@@ -671,12 +671,14 @@ function opcionesAsesor(c, q){
   const eq = equipoConv(c), n = norm(q), abiertas = id => CONV.filter(x => x.asigId === id && x.est === 'abiertas').length;
   // Primero los conectados (en línea, ocupados, ausentes y al final los desconectados), luego por nombre (6-oct).
   const ORDEN_EST = {'En línea':0, 'Ocupada':1, 'Ausente':2, 'Desconectado':3};
-  const gente = personasDeEquipo(eq).filter(u => !n || norm(u.nombre).includes(n))
+  // Los administradores también responden y se les puede asignar (14-oct), aunque no estén en el equipo.
+  const delEq = personasDeEquipo(eq), admins = USUARIOS.filter(u => u.rol === 'ADMIN' && !delEq.some(x => x.id === u.id));
+  const gente = [...delEq, ...admins].filter(u => !n || norm(u.nombre).includes(n))
     .sort((a, b) => (ORDEN_EST[estadoDe(a)] ?? 3) - (ORDEN_EST[estadoDe(b)] ?? 3) || a.nombre.localeCompare(b.nombre, 'es'));
   const sin = !n || norm('Sin asignar').includes(n) ? `<button type="button" role="option" class="pc-op" data-a="" aria-selected="${!c.asig}"><span class="av" style="background:#e5e9f0;color:#6b7280">–</span><span class="pc-tx"><span>Sin asignar</span><small>La toma el reparto del equipo</small></span>${!c.asig ? I('check','i ck') : ''}</button>` : '';
   const vacio = gente.length ? '' : `<p class="muted" style="padding:8px 10px;margin:0">${n ? 'Nadie coincide.' : esc(eq) + ' todavía no tiene personas. Agrégalas en Equipos y reparto.'}</p>`;
   return sin + gente.map(u => { const e = estadoDe(u), k = abiertas(u.id), sel = c.asig === u.nombre;
-    return `<button type="button" role="option" class="pc-op" data-a="${esc(u.nombre)}" aria-selected="${sel}"><span class="av" style="background:${colorPersona(u.nombre)}">${fotoAv(u.foto, u.nombre)}</span><span class="pc-tx"><span>${esc(u.nombre)}${esLiderDe(u.id, eq) ? '<span class="pc-lid">Líder</span>' : ''}</span><small><i class="pc-st" style="background:${EST_COL[e] || '#d1d5db'}"></i>${esc(e)} · ${k} ${k === 1 ? 'abierta' : 'abiertas'}</small></span>${sel ? I('check','i ck') : ''}</button>`; }).join('') + vacio;
+    return `<button type="button" role="option" class="pc-op" data-a="${esc(u.nombre)}" aria-selected="${sel}"><span class="av" style="background:${colorPersona(u.nombre)}">${fotoAv(u.foto, u.nombre)}</span><span class="pc-tx"><span>${esc(u.nombre)}${admins.includes(u) ? '<span class="pc-lid">Administrador</span>' : ''}${esLiderDe(u.id, eq) ? '<span class="pc-lid">Líder</span>' : ''}</span><small><i class="pc-st" style="background:${EST_COL[e] || '#d1d5db'}"></i>${esc(e)} · ${k} ${k === 1 ? 'abierta' : 'abiertas'}</small></span>${sel ? I('check','i ck') : ''}</button>`; }).join('') + vacio;
 }
 function opcionesEquipo(c, q){
   const n = norm(q), actual = c ? equipoConv(c) : '';
