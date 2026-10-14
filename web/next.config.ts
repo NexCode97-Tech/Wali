@@ -30,6 +30,15 @@ const seguridad = [
 const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
+  // Las maquetas también se podían abrir como /inicio.html, /precios.html y /partners.html: Google las vería como
+  // páginas duplicadas. Se mandan (301) a su dirección limpia.
+  async redirects() {
+    return [
+      { source: "/inicio.html", destination: "/", permanent: true },
+      { source: "/precios.html", destination: "/precios", permanent: true },
+      { source: "/partners.html", destination: "/partners", permanent: true },
+    ];
+  },
   async rewrites() {
     return {
       // El home y los precios son las maquetas aprobadas (8-oct), tal cual: public/inicio.html y public/precios.html.
