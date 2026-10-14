@@ -2,7 +2,7 @@
 <title>Mi bandeja · Wali</title>
 <link rel="icon" type="image/png" sizes="32x32" href="__BASE__/img/wali-32.png">
 <link rel="apple-touch-icon" href="__BASE__/img/wali-180.png">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,800&family=Noto+Color+Emoji&display=swap">
 <style>
 [hidden]{display:none!important}
 :root{
@@ -945,6 +945,11 @@ button.pc-hi:hover > span{color:var(--blue-ink)}
 .emop{position:fixed;z-index:95;width:292px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 40px -12px rgba(15,23,42,.25);padding:6px;display:grid;grid-template-columns:repeat(8,1fr);gap:2px}
 .emop button{height:32px;border-radius:8px;font-size:19px;line-height:1}
 .emop button:hover{background:var(--hover)}
+/* Todos los emojis de WhatsApp (maqueta aprobada «chat con archivos, notas de voz y emojis», 14-oct). */
+/* Emojis a color iguales en todos los equipos (Windows no pinta banderas): la fuente de emojis después de Inter. */
+.ch-b,.ch-trans,#ta,.box textarea{font-family:Inter,"Noto Color Emoji",system-ui,sans-serif}
+.emop.emop-full{width:360px;padding:0;display:block;overflow:hidden;border-radius:16px;box-shadow:0 24px 48px -20px rgba(11,11,16,.35)}
+.emop-ep{display:block;width:100%;height:380px;--border-size:0;--border-color:#eef1f5;--background:#fff;--emoji-size:1.5rem;--emoji-padding:.4rem;--num-columns:9;--emoji-font-family:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif;--indicator-color:#0b0b10;--input-border-color:#e5e9f0;--input-border-radius:10px;--input-font-color:#0b0b10;--input-placeholder-color:#9ca3af;--input-padding:.5rem .75rem;--outline-color:#0b0b10;--button-hover-background:#f2f4f6;--button-active-background:#e5e9f0;--category-font-color:#6b7280;--category-font-size:.75rem;--skintone-border-radius:8px}
 .nm .adj{margin:8px 20px 0}
 .lk .pm button:disabled{opacity:.5;cursor:not-allowed}
 /* ── Modales ──

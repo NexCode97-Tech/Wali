@@ -979,13 +979,44 @@ document.getElementById('msgs').addEventListener('click', e => {
   a.addEventListener('ended', () => { a.currentTime = 0; pintar(); });
   a.play().catch(() => toast('No se pudo reproducir la nota de voz'));
 });
+/* Tipo de documento por su extensión: color y sigla del ícono (PDF rojo, Excel verde, Word azul…). */
+function chTipoDoc(n){
+  const ext = (String(n || '').match(/\.([a-z0-9]{1,5})$/i) || [])[1] || '';
+  const e = ext.toLowerCase(), t = {pdf:['PDF', '#dc2626', 'PDF'], xls:['XLS', '#15803d', 'Hoja de cálculo'], xlsx:['XLS', '#15803d', 'Hoja de cálculo'], csv:['CSV', '#15803d', 'Hoja de cálculo'],
+    doc:['DOC', '#2563eb', 'Documento de Word'], docx:['DOC', '#2563eb', 'Documento de Word'], ppt:['PPT', '#ea580c', 'Presentación'], pptx:['PPT', '#ea580c', 'Presentación'],
+    zip:['ZIP', '#4b5563', 'Archivo comprimido'], rar:['RAR', '#4b5563', 'Archivo comprimido'], txt:['TXT', '#4b5563', 'Texto'], mp3:['MP3', '#7c3aed', 'Audio'], m4a:['M4A', '#7c3aed', 'Audio'], ogg:['OGG', '#7c3aed', 'Audio']}[e];
+  return t ? {s:t[0], c:t[1], d:t[2]} : {s:(e || 'doc').toUpperCase().slice(0, 4), c:'#4b5563', d:'Abrir el archivo'};
+}
+const chIcDoc = n => { const t = chTipoDoc(n); return `<span class="ic tipo" style="background:${t.c}">${esc(t.s)}</span>`; };
+/** Ubicación («📍 nombre dirección https://maps.google.com/?q=lat,lng») o contacto («Contacto: nombre número»), como tarjeta. */
+function chTarjetaTexto(x){
+  const loc = x.match(/^📍\s*(.*?)\s*(https:\/\/maps\.google\.com\/\?q=-?[\d.]+,-?[\d.]+)\s*$/s);
+  if (loc) {
+    const dir = loc[1].trim();
+    return `<a class="ch-loc" href="${esc(loc[2])}" target="_blank" rel="noopener"><svg class="mapa" viewBox="0 0 280 130" aria-hidden="true"><rect width="280" height="130" fill="#e8f0e3"/><path d="M0 52h280M0 100h280M84 0v130M196 0v130" stroke="#fff" stroke-width="9"/><path d="M140 40c-11 0-18 8-18 18 0 13 18 30 18 30s18-17 18-30c0-10-7-18-18-18z" fill="#dc2626"/><circle cx="140" cy="58" r="6" fill="#fff"/></svg><span><b>Ubicación</b><small>${esc(dir || 'Abrir en el mapa')}</small></span></a>`;
+  }
+  const lineas = x.split('\n'), cts = lineas.map(l => l.match(/^Contacto: (.+?)(?: (\+?[\d ]{7,}))?$/)).filter(Boolean);
+  if (cts.length && cts.length === lineas.length) return cts.map(c => {
+    const n = c[1].trim(), tel = (c[2] || '').trim(), ini = n.split(/\s+/).slice(0, 2).map(p => p[0] || '').join('').toUpperCase();
+    return `<div class="ch-ct"><div class="fila"><span class="av">${esc(ini || '?')}</span><span><b>${esc(n)}</b><small>${esc(tel || 'Sin número')}</small></span></div>${tel ? `<button type="button" data-ch-guardarct="${esc(n)}|${esc(tel)}">Guardar contacto</button>` : ''}</div>`;
+  }).join('');
+  return '';
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-ch-guardarct]'); if (!b || b.disabled) return;
+  const [nombre, telefono] = b.dataset.chGuardarct.split('|'); b.disabled = true;
+  crmApi('POST', '/crm/contactos', {contacto: {n: nombre, tel: telefono}})
+    .then(() => { b.textContent = 'Contacto guardado'; toast(`${nombre} quedó en Contactos`); })
+    .catch(err => { b.disabled = false; toast(err.message || 'No se pudo guardar el contacto'); });
+});
 function chBloqueIn(c, m, ult){
   const x = m.in, u = ult ? ' ult' : '';
-  if (typeof x !== 'object') return `<div class="ch-b in${u}">${m.asunto ? `<span class="ch-asunto">${I('mail')}${esc(m.asunto)}</span>` : ''}${esc(x)}</div>`;
+  if (typeof x !== 'object') { const tarjeta = chTarjetaTexto(String(x)); if (tarjeta) return tarjeta;
+    return `<div class="ch-b in${u}">${m.asunto ? `<span class="ch-asunto">${I('mail')}${esc(m.asunto)}</span>` : ''}${esc(x)}</div>`; }
   const cap = x.cap ? `<div class="ch-b in${u}">${esc(x.cap)}</div>` : '';
   if (x.img) return `<a class="ch-img${x.sticker ? ' stk' : ''}${u && !cap ? u : ''}" href="${esc(x.img)}" target="_blank" rel="noopener"><img src="${esc(x.img)}" alt="${x.sticker ? 'Sticker' : 'Imagen'}" loading="lazy"></a>${cap}`;
   if (x.video) return `<div class="ch-b in media${u && !cap ? u : ''}"><video controls preload="metadata" src="${esc(x.video)}"></video></div>${cap}`;
-  if (x.doc) return `<a class="ch-file in${u && !cap ? u : ''}" href="${esc(x.doc)}" target="_blank" rel="noopener"><span class="ic">${I('file')}</span><span class="tx"><b>${esc(x.n || 'Documento')}</b><small>Abrir el archivo</small></span></a>${cap}`;
+  if (x.doc) return `<a class="ch-file in${u && !cap ? u : ''}" href="${esc(x.doc)}" target="_blank" rel="noopener">${chIcDoc(x.n)}<span class="tx"><b>${esc(x.n || 'Documento')}</b><small>${chTipoDoc(x.n).d}</small></span><span class="baja" aria-hidden="true">${I('download')}</span></a>${cap}`;
   const id = m._id || '', trans = typeof x.trans === 'string' && x.trans.trim();
   return `<div class="ch-b in ch-voz${u}">${chAudio(x.url)}${trans ? `<div class="ch-trans"><b>Transcripción:</b> ${esc(trans)}</div>` : x.url && id ? `<button type="button" class="ch-vertrans" data-ch-trans="${esc(id)}">${m._transc ? 'Transcribiendo…' : 'Ver transcripción'}</button>` : ''}</div>${cap}`;
 }
@@ -1066,7 +1097,8 @@ document.getElementById('msgs').addEventListener('click', e => {
   if (e.target.closest('[data-ch-plantilla]')) { const b = document.getElementById('b-tpl'); if (b) b.click(); }
 });
 document.head.insertAdjacentHTML('beforeend', `<style>
-#msgs.msgs{gap:16px;padding:22px 28px;background:#f7f8fa}
+/* Maqueta aprobada «chat con archivos, notas de voz y emojis» (14-oct): fondo de trazos dorados y lo enviado en amarillo. */
+#msgs.msgs{gap:16px;padding:22px 28px;background-color:#f5f4ef;background-image:url('__BASE__/img/fondo-chat.png');background-size:288px auto}
 .ch-fila{display:flex;align-items:flex-end;gap:10px;max-width:100%}
 .ch-fila.yo{justify-content:flex-end}
 .ch-av{width:32px;height:32px;font-size:11px;flex:none;align-self:flex-end;margin-bottom:21px}
@@ -1079,7 +1111,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ch-b{padding:9px 14px;border-radius:16px;font-size:14px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%;box-sizing:border-box}
 .ch-b.in{background:#fff;border:1px solid #e5e9f0;color:var(--ink);box-shadow:0 1px 1px rgba(15,23,42,.04)}
 .ch-b.in.ult{border-bottom-left-radius:6px}
-.ch-b.out{background:#1f93ff;color:#fff}
+.ch-b.out{background:#FFD21F;color:#0b0b10}
 .ch-b.out.ult{border-bottom-right-radius:6px}
 .ch-b.ia{background:#f5f3ff;border:1px solid #e4defc;color:var(--ink)}
 .ch-b.ia.ult{border-bottom-right-radius:6px}
@@ -1094,12 +1126,27 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ch-img.stk{background:transparent;border:0}
 .ch-img.stk img{max-width:140px}
 .ch-file{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:16px;text-decoration:none;min-width:260px;box-sizing:border-box}
-.ch-file.out{background:#1f93ff;color:#fff}
+.ch-file.out{background:#FFD21F;color:#0b0b10}
 .ch-file.out.ult{border-bottom-right-radius:6px}
 .ch-file.in{background:#fff;border:1px solid #e5e9f0;color:var(--ink)}
 .ch-file.in.ult{border-bottom-left-radius:6px}
 .ch-file .ic{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;flex:none}
-.ch-file.out .ic{background:rgba(255,255,255,.18)}
+.ch-file.out .ic{background:rgba(255,255,255,.55)}
+.ch-file .ic.tipo{width:40px;height:46px;border-radius:8px;color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.02em}
+.ch-file .baja{margin-left:auto;width:34px;height:34px;border-radius:50%;background:#fff;border:1px solid #e5e9f0;display:grid;place-items:center;flex:none;color:#0b0b10}
+.ch-file .baja svg{width:15px;height:15px}
+.ch-loc{display:block;width:280px;border-radius:16px;overflow:hidden;background:#fff;border:1px solid #e5e9f0;text-decoration:none;color:var(--ink)}
+.ch-loc svg.mapa{display:block;width:100%;height:130px}
+.ch-loc span{display:block;padding:8px 12px 10px}
+.ch-loc b{display:block;font-size:13.5px;font-weight:600}
+.ch-loc small{display:block;font-size:12px;color:#6b7280;margin-top:2px}
+.ch-ct{width:270px;border-radius:16px;background:#fff;border:1px solid #e5e9f0;overflow:hidden}
+.ch-ct .fila{display:flex;align-items:center;gap:12px;padding:12px}
+.ch-ct .av{width:40px;height:40px;border-radius:50%;background:#7c3aed;color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px;flex:none}
+.ch-ct b{display:block;font-size:13.5px;font-weight:600}
+.ch-ct small{display:block;font-size:12px;color:#6b7280}
+.ch-ct button{display:block;width:100%;border:0;border-top:1px solid #eef1f5;background:none;padding:9px;font:inherit;font-size:13px;font-weight:600;color:#0b0b10;cursor:pointer}
+.ch-ct button:hover{background:#f6f7f9}
 .ch-file.in .ic{background:#f1f5f9;color:#4b5563}
 .ch-file .ic svg{width:18px;height:18px}
 .ch-file .tx{display:flex;flex-direction:column;gap:1px;min-width:0}
@@ -1110,13 +1157,13 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ch-voz{display:flex;flex-direction:column;gap:8px;min-width:300px}
 .ch-audio{display:flex;align-items:center;gap:10px}
 .ch-audio .pl{width:34px;height:34px;border:0;border-radius:50%;background:#0b0b10;color:#fff;display:grid;place-items:center;cursor:pointer;flex:none}
-.ch-b.out .ch-audio .pl{background:#fff;color:#1f93ff}
+.ch-b.out .ch-audio .pl{background:#0b0b10;color:#fff}
 .ch-audio .pl svg{width:13px;height:13px;fill:currentColor;stroke:none}
 .ch-audio .wave{position:relative;flex:1;height:24px;background:repeating-linear-gradient(90deg,#94a3b8 0 2px,transparent 2px 5px);border-radius:2px;opacity:.6;overflow:hidden}
-.ch-b.out .ch-audio .wave{background:repeating-linear-gradient(90deg,#fff 0 2px,transparent 2px 5px);opacity:.75}
+.ch-b.out .ch-audio .wave{background:repeating-linear-gradient(90deg,#0b0b10 0 2px,transparent 2px 5px);opacity:.45}
 .ch-audio .wave i{position:absolute;inset:0 auto 0 0;width:0;background:rgba(31,147,255,.35)}
 .ch-audio .dur{font-size:12px;color:#6b7280;min-width:30px;text-align:right}
-.ch-b.out .ch-audio .dur{color:#fff;opacity:.85}
+.ch-b.out .ch-audio .dur{color:#5b5130;opacity:1}
 .ch-sinaudio{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:#6b7280}
 .ch-sinaudio svg{width:14px;height:14px}
 .ch-trans{font-size:12.5px;line-height:1.5;color:#4b5563;padding-top:8px;border-top:1px dashed #d1d9e2;white-space:normal}

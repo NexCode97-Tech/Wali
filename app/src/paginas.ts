@@ -152,4 +152,24 @@ router.get('/img/wa-fondo.jpg', (_req: Request, res: Response) => {
   res.sendFile(join(PANTALLA, 'img', 'wa-fondo.jpg'))
 })
 
+// Fondo del chat (maqueta aprobada «chat con archivos, notas de voz y emojis», 14-oct): trazos dorados muy suaves.
+router.get('/img/fondo-chat.png', (_req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'public, max-age=604800')
+  res.sendFile(join(PANTALLA, 'img', 'fondo-chat.png'))
+})
+
+// Selector de emojis completo (emoji-picker-element) y sus datos en español, servidos desde el CRM: sin otros sitios.
+const EMOJI_JS: Record<string, string> = {
+  'picker.js': require.resolve('emoji-picker-element/picker.js'),
+  'database.js': require.resolve('emoji-picker-element/database.js'),
+}
+router.get('/vendor/emoji/:archivo', (req: Request, res: Response) => {
+  const archivo = String(req.params.archivo)
+  const ruta = archivo === 'es.json' ? require.resolve('emoji-picker-element-data/es/cldr/data.json') : EMOJI_JS[archivo]
+  if (!ruta) { res.status(404).end(); return }
+  res.setHeader('Cache-Control', 'public, max-age=604800')
+  res.type(archivo.endsWith('.json') ? 'application/json' : 'text/javascript')
+  res.sendFile(ruta)
+})
+
 export default router

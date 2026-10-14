@@ -2457,7 +2457,19 @@ function abrirEmojis(boton, campo){
     document.addEventListener('click', e => { if (!e.target.closest('#emop') && !e.target.closest('[data-emo-abrir]')) p.hidden = true; });
   }
   if (!p.hidden && p._campo === campo) { p.hidden = true; return; }
-  p._campo = campo; p.innerHTML = EMOJIS.map(x => `<button type="button" data-emo="${x}" aria-label="${x}">${x}</button>`).join('');
+  p._campo = campo; p._boton = boton;
+  if (!p._completo) {
+    // El selector completo (14-oct): buscador, recientes, categorías con banderas y tono de piel. Mientras carga, los de siempre.
+    p._completo = true; p.classList.add('emop-full');
+    p.innerHTML = EMOJIS.map(x => `<button type="button" data-emo="${x}" aria-label="${x}">${x}</button>`).join('');
+    import('__BASE__/vendor/emoji/picker.js').then(() => {
+      const ep = document.createElement('emoji-picker');
+      ep.setAttribute('locale', 'es'); ep.setAttribute('data-source', '__BASE__/vendor/emoji/es.json'); ep.className = 'emop-ep';
+      ep.addEventListener('emoji-click', ev => { const c = p._campo, v = ev.detail.unicode, i = c.selectionStart ?? c.value.length, j = c.selectionEnd ?? i; c.value = c.value.slice(0, i) + v + c.value.slice(j); c.focus(); c.selectionStart = c.selectionEnd = i + v.length; c.dispatchEvent(new Event('input', {bubbles: true})); });
+      p.replaceChildren(ep);
+      if (!p.hidden) { const r = p._boton.getBoundingClientRect(); p.style.left = Math.max(8, Math.min(r.left, innerWidth - p.offsetWidth - 8)) + 'px'; p.style.top = Math.max(8, r.top - p.offsetHeight - 6) + 'px'; }
+    }).catch(() => {});
+  }
   const r = boton.getBoundingClientRect(); p.hidden = false; p.style.left = Math.max(8, Math.min(r.left, innerWidth - p.offsetWidth - 8)) + 'px'; p.style.top = Math.max(8, r.top - p.offsetHeight - 6) + 'px';
 }
 document.querySelector('.box .bar [data-emo-abrir]').addEventListener('click', e => { e.stopPropagation(); abrirEmojis(e.currentTarget, ta); });
