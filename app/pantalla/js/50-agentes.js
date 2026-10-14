@@ -1111,7 +1111,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ch-b{padding:9px 14px;border-radius:16px;font-size:14px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%;box-sizing:border-box}
 .ch-b.in{background:#fff;border:1px solid #e5e9f0;color:var(--ink);box-shadow:0 1px 1px rgba(15,23,42,.04)}
 .ch-b.in.ult{border-bottom-left-radius:6px}
-.ch-b.out{background:#FFD21F;color:#0b0b10}
+.ch-b.out{background:#FFEC9E;color:#0b0b10}
 .ch-b.out.ult{border-bottom-right-radius:6px}
 .ch-b.ia{background:#f5f3ff;border:1px solid #e4defc;color:var(--ink)}
 .ch-b.ia.ult{border-bottom-right-radius:6px}
@@ -1126,7 +1126,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ch-img.stk{background:transparent;border:0}
 .ch-img.stk img{max-width:140px}
 .ch-file{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:16px;text-decoration:none;min-width:260px;box-sizing:border-box}
-.ch-file.out{background:#FFD21F;color:#0b0b10}
+.ch-file.out{background:#FFEC9E;color:#0b0b10}
 .ch-file.out.ult{border-bottom-right-radius:6px}
 .ch-file.in{background:#fff;border:1px solid #e5e9f0;color:var(--ink)}
 .ch-file.in.ult{border-bottom-left-radius:6px}

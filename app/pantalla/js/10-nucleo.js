@@ -594,14 +594,29 @@ function sec(id, ic, t, body, src = '', closed = false){
   return `<section class="sec" data-id="${id}" ${cerrada ? 'data-closed' : ''}><button type="button" data-sec="${id}" aria-expanded="${!cerrada}">${I(ic)}<span class="t">${t}</span>${src ? `<span class="src">${src}</span>` : ''}${I('chev','i chev')}</button><div class="body">${body}</div></section>`;
 }
 function recHtml(c){
-  const sg = sugerenciaRec(c), ops = recOpciones();
-  // Lote 7 (tablero 5): día y hora en dos desplegables; por defecto, la próxima media hora (o mañana a las 9 si ya es tarde).
-  st.recNuevo = st.recNuevo && st.recNuevo.id === c.id ? st.recNuevo : {id:c.id, abierto:false, cuando:'otra', texto:'', ...recPorDefecto()};
-  const n = st.recNuevo; n.cuando = 'otra';
-  return `${sg ? `<div class="rsug"><span>Dijo «${esc(sg.frase)}». ¿Te lo recuerdo?</span><button type="button" class="btn" data-rec-sug="1">${I('bell')}Recordarme ${esc(sg.cuando.split(',')[0].toLowerCase())} a las 10 a. m.</button></div>` : ''}
-    ${(c.recs || []).length ? `<div class="recs">${c.recs.map((r, i) => { const e = recEst(r); return `<div class="rec ${r.hecho ? 'hecho' : ''}"><button type="button" class="ck" data-rec-done="${i}" aria-label="${r.hecho ? 'Marcar pendiente' : 'Marcar hecho'}">${I('check')}</button><span><b>${esc(r.t)}</b><small class="${r.hecho ? '' : e === 'vencido' ? 'vence' : e === 'hoy' ? 'hoy' : ''}">${r.hecho ? 'Hecho' : (e === 'vencido' ? 'Venció · ' : '') + esc(recFechaDe(r) ? hcCuando(recFechaDe(r)) : r.cuando)}</small></span><button type="button" class="x" data-rec-del="${i}" aria-label="Borrar recordatorio">${I('x')}</button></div>`; }).join('')}</div>` : (sg ? '' : '<p class="muted">Sin recordatorios. El día que programes, la conversación sale de primera en tu bandeja.</p>')}
-    ${n.abierto ? `<div class="rnew"><input id="rec-t" placeholder="¿Qué hay que hacer? Ej. confirmar el pago" value="${esc(n.texto)}"><div class="rdos">${ddSel('data-rec-dia', recDias(), n.dia, 'Elige el día')}${ddSel('data-rec-hora', hcOpcionesHora(), n.hora, 'Elige la hora')}</div><div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn" data-rec-cancel="1">Cancelar</button><button type="button" class="btn pri" data-rec-add="1">${I('bell')}Programar</button></div></div>` : `<div><button type="button" class="btn" data-rec-nuevo="1">${I('plus')}Nuevo recordatorio</button></div>`}`;
+  // Maqueta aprobada «recordatorios de seguimiento» (14-oct): atajos de un toque, fecha y hora en un renglón cada una,
+  // lo de hoy en amarillo y lo vencido en rojo.
+  const sg = sugerenciaRec(c);
+  st.recNuevo = st.recNuevo && st.recNuevo.id === c.id ? st.recNuevo : {id:c.id, abierto:false, cuando:'manana', texto:'', ...recAtajo('manana')};
+  const n = st.recNuevo, hora = t => hcHora(t);
+  const atajos = [['1h', 'En 1 hora', hora(Date.now() + 3600e3)], ['manana', 'Mañana', '9:00 a. m.'], ['3dias', 'En 3 días', recDias(4)[3][1]], ['otra', 'Otra fecha', 'Elegir']];
+  const lista = (c.recs || []).map((r, i) => {
+    const e = recEst(r), f = recFechaDe(r), cuando = f ? hcCuando(f) : r.cuando;
+    const chip = r.hecho ? '<span class="rcd-cu">Hecho</span>' : `<span class="rcd-cu ${e === 'vencido' ? 'vence' : e === 'hoy' ? 'hoy' : ''}">${I('clock')}${e === 'vencido' ? 'Venció ' + esc(String(cuando).replace(/^./, x => x.toLowerCase())) : esc(cuando)}</span>`;
+    return `<div class="rcd-it${r.hecho ? ' hecho' : ''}"><button type="button" class="rcd-ck" data-rec-done="${i}" aria-label="${r.hecho ? 'Marcar pendiente' : 'Marcar hecho'}">${r.hecho ? I('check') : ''}</button><div class="rcd-tx"><b>${esc(r.t)}</b>${chip}</div>${r.hecho ? '' : `<button type="button" class="rcd-del" data-rec-del="${i}" aria-label="Quitar recordatorio">${I('x')}</button>`}</div>`;
+  }).join('');
+  const sug = sg ? `<div class="rcd-sug"><p>Dijo «${esc(sg.frase)}». ¿Te lo recuerdo?</p><button type="button" data-rec-sug="1">${I('bell')}${esc(sg.cuando.split(',')[0])} a las 10 a. m.</button></div>` : '';
+  const vacio = !lista && !sg && !n.abierto ? '<p class="rcd-vacio">El día que programes, esta conversación sale de primera en tu bandeja.</p>' : '';
+  const form = n.abierto ? `<div class="rcd-fm"><label class="rcd-lbl" for="rec-t">¿Qué hay que hacer?</label><textarea id="rec-t" rows="2" placeholder="Ej. Confirmar el pago">${esc(n.texto)}</textarea>
+      <span class="rcd-lbl">¿Cuándo?</span><div class="rcd-rap">${atajos.map(([k, t, d]) => `<button type="button" data-rec-cuando="${k}" aria-pressed="${n.cuando === k}">${t}<small>${esc(d)}</small></button>`).join('')}</div>
+      ${n.cuando === '1h' ? '' : `<div class="rcd-dd">${I('calendar')}${ddSel('data-rec-dia', recDias().map(([v, t]) => [v, recDiaLargo(v) || t]), n.dia, 'Elige el día')}</div><div class="rcd-dd">${I('clock')}${ddSel('data-rec-hora', hcOpcionesHora(), n.hora, 'Elige la hora')}</div>`}
+      <div class="rcd-acc"><button type="button" class="rcd-x" data-rec-cancel="1" aria-label="Cancelar">${I('x')}</button><button type="button" class="rcd-prog" data-rec-add="1">${I('bell')}Programar</button></div></div>` : '';
+  return `${sug}${vacio}${lista ? `<div class="rcd-lista">${lista}</div>` : ''}${form}${n.abierto ? '' : `<button type="button" class="rcd-nuevo" data-rec-nuevo="1">${I('plus')}Nuevo recordatorio</button>`}`;
 }
+/* Día largo del recordatorio («Jueves 15 de octubre») a partir de «2026-10-15». */
+function recDiaLargo(v){ const [y, m, d] = String(v).split('-').map(Number); if (!y) return ''; const q = hcPartes(hcFecha(y, m - 1, d, 12)), dia = HC_DIA[q.w]; return `${dia.charAt(0).toUpperCase()}${dia.slice(1)} ${q.d} de ${HC_MES[q.m]}`; }
+/* Día y hora que pone cada atajo (la hora en minutos del día, como los desplegables). */
+function recAtajo(k){ const p = hcPartes(Date.now()), dias = recDias(4); if (k === 'manana') return {dia:dias[1][0], hora:String(9 * 60)}; if (k === '3dias') return {dia:dias[3][0], hora:String(9 * 60)}; return recPorDefecto(); }
 function listaTags(c, q){
   const t = norm(q).trim(), eq = eqDeConv(c);
   const pasa = ([n]) => !c.tags.includes(n) && (!t || norm(n).includes(t));
@@ -950,15 +965,15 @@ document.getElementById('panel').addEventListener('click', e => {
   if (e.target.closest('#etq-b')) { e.stopPropagation(); if (abrirMenuPanel('etq')) document.getElementById('etq-m').innerHTML = etapasDe(equipoConv(c)).map(([n,col]) => `<button type="button" role="option" data-t="${esc(n)}" aria-selected="${c.etq.includes(n)}"><span class="pc-dot" style="background:${colorOk(col)}"></span>${esc(n)}${c.etq.includes(n) ? I('check','i ck') : ''}</button>`).join(''); return; }
   const t = e.target.closest('[data-t]'); if (t) { c.etq = [t.dataset.t]; render(); toast(`Etapa: ${t.dataset.t}`); return; }
   const rn = e.target.closest('[data-rec-nuevo]'); if (rn) { st.recNuevo.abierto = true; panel(c); document.getElementById('rec-t').focus(); return; }
-  const rc = e.target.closest('[data-rec-cuando]'); if (rc) { st.recNuevo.texto = document.getElementById('rec-t').value; st.recNuevo.cuando = rc.dataset.recCuando; panel(c); return; }
-  const rdia = e.target.closest('[data-rec-dia]'); if (rdia) { st.recNuevo.texto = document.getElementById('rec-t').value; st.recNuevo.dia = rdia.dataset.recDia; panel(c); return; }
-  const rhora = e.target.closest('[data-rec-hora]'); if (rhora) { st.recNuevo.texto = document.getElementById('rec-t').value; st.recNuevo.hora = rhora.dataset.recHora; panel(c); return; }
+  const rc = e.target.closest('[data-rec-cuando]'); if (rc) { const k = rc.dataset.recCuando; st.recNuevo.texto = document.getElementById('rec-t').value; st.recNuevo.cuando = k; if (k === 'manana' || k === '3dias') Object.assign(st.recNuevo, recAtajo(k)); panel(c); return; }
+  const rdia = e.target.closest('[data-rec-dia]'); if (rdia) { st.recNuevo.texto = document.getElementById('rec-t').value; st.recNuevo.dia = rdia.dataset.recDia; st.recNuevo.cuando = 'otra'; panel(c); return; }
+  const rhora = e.target.closest('[data-rec-hora]'); if (rhora) { st.recNuevo.texto = document.getElementById('rec-t').value; st.recNuevo.hora = rhora.dataset.recHora; st.recNuevo.cuando = 'otra'; panel(c); return; }
   if (e.target.closest('[data-rec-cancel]')) { st.recNuevo.abierto = false; panel(c); return; }
   const agregarRec = (t, para) => { const cuando = hcCuando(para); c.recs = [...(c.recs || []), {t, cuando, fecha: para.toISOString(), hecho:false, por: yo}]; c.msgs.push({ev:'bell', t:`${yo} programó un recordatorio: ${t} · ${cuando}`}); st.recNuevo = null; render(); toast(`Recordatorio para ${cuando.split(',')[0].toLowerCase().replace(/\.$/, '')}. Ese día la conversación sale de primera en tu bandeja.`); };
   if (e.target.closest('[data-rec-add]')) {
     const t = document.getElementById('rec-t').value.trim(); if (!t) { toast('Escribe qué hay que hacer'); document.getElementById('rec-t').focus(); return; }
     const n = st.recNuevo; let para;
-    if (n.cuando === 'otra') { if (!n.dia || !n.hora) { n.texto = t; toast('Elige el día y la hora'); return; } para = hcDeOpciones(n.dia, n.hora); } else para = recFecha(n.cuando);
+    if (n.cuando === '1h') para = recFecha('1h'); else { if (!n.dia || !n.hora) { n.texto = t; toast('Elige el día y la hora'); return; } para = hcDeOpciones(n.dia, n.hora); }
     if (!para || para.getTime() <= Date.now()) { n.texto = t; toast('Esa hora ya pasó. Elige una más adelante.'); return; }
     agregarRec(t, para); return;
   }

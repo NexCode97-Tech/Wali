@@ -745,6 +745,50 @@ button.pc-hi:hover > span{color:var(--blue-ink)}
 .rsug{border:1px dashed var(--amber-line);background:var(--amber-soft);border-radius:10px;padding:9px 10px;font-size:12.5px;color:var(--amber-ink);display:grid;gap:6px}
 .rsug button{justify-self:start}
 .rnew{display:grid;gap:8px}
+/* Recordatorios de seguimiento (maqueta aprobada, 14-oct). */
+.rcd-vacio{margin:0;font-size:13px;line-height:1.5;color:var(--ink3);text-align:center;padding:4px 6px}
+.rcd-nuevo{width:100%;height:40px;border-radius:10px;border:1px dashed #cfd5de;background:#fff;font:inherit;font-size:13.5px;font-weight:600;color:var(--ink);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}
+.rcd-nuevo:hover{border-color:#9aa3af;background:#f9fafb}
+.rcd-nuevo svg{width:16px;height:16px}
+.rcd-fm{display:flex;flex-direction:column;gap:10px}
+.rcd-lbl{font-size:12px;font-weight:600;color:var(--ink3)}
+.rcd-fm textarea{width:100%;box-sizing:border-box;min-height:62px;resize:none;border:1px solid var(--line);border-radius:10px;padding:9px 12px;font:inherit;font-size:13.5px;line-height:1.45;color:var(--ink)}
+.rcd-fm textarea:focus{outline:none;border-color:#0b0b10;box-shadow:0 0 0 3px rgba(11,11,16,.08)}
+.rcd-rap{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rcd-rap button{min-height:44px;border:1px solid var(--line);border-radius:10px;background:#fff;font:inherit;font-size:13px;font-weight:600;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.2;cursor:pointer;padding:4px}
+.rcd-rap button small{font-size:11.5px;font-weight:400;color:var(--ink3);white-space:nowrap}
+.rcd-rap button:hover{border-color:#cfd5de}
+.rcd-rap button[aria-pressed="true"]{border-color:#0b0b10;box-shadow:inset 0 0 0 1px #0b0b10}
+.rcd-dd{display:flex;align-items:center;gap:8px}
+.rcd-dd > svg{width:16px;height:16px;color:var(--ink3);flex:none}
+.rcd-dd > *:not(svg){flex:1;min-width:0}
+.rcd-dd .dd > button,.rcd-dd button{white-space:nowrap}
+.rcd-acc{display:flex;justify-content:flex-end;gap:8px}
+.rcd-x{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:#fff;display:grid;place-items:center;color:#dc2626;cursor:pointer}
+.rcd-x svg{width:17px;height:17px}
+.rcd-prog{height:40px;padding:0 16px;border-radius:10px;border:0;background:#FFD21F;font:inherit;font-size:13.5px;font-weight:700;color:#0b0b10;display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+.rcd-prog:hover{background:#f5c800}
+.rcd-prog svg{width:16px;height:16px}
+.rcd-sug{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:12px;background:#f6f7f9}
+.rcd-sug p{margin:0;font-size:12.5px;line-height:1.5;color:#374151}
+.rcd-sug button{align-self:flex-start;height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:#fff;font:inherit;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.rcd-sug button svg{width:14px;height:14px}
+.rcd-lista{display:flex;flex-direction:column;gap:8px}
+.rcd-it{display:flex;align-items:flex-start;gap:10px;padding:10px 10px 10px 12px;border:1px solid var(--line);border-radius:12px}
+.rcd-ck{width:22px;height:22px;border-radius:50%;border:2px solid #cfd5de;background:#fff;flex:none;display:grid;place-items:center;margin-top:1px;cursor:pointer;padding:0}
+.rcd-ck svg{width:12px;height:12px;color:#fff}
+.rcd-it.hecho .rcd-ck{background:#0b0b10;border-color:#0b0b10}
+.rcd-tx{flex:1;min-width:0}
+.rcd-tx b{display:block;font-size:13.5px;font-weight:600;line-height:1.35;color:var(--ink);overflow-wrap:anywhere}
+.rcd-it.hecho .rcd-tx b{color:#9ca3af;text-decoration:line-through}
+.rcd-cu{display:inline-flex;align-items:center;gap:5px;margin-top:5px;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:#f2f4f6;color:#374151;white-space:nowrap}
+.rcd-cu svg{width:12px;height:12px}
+.rcd-cu.hoy{background:#FFD21F;color:#0b0b10}
+.rcd-cu.vence{background:#fdecec;color:#b91c1c}
+.rcd-del{width:28px;height:28px;border:0;background:none;color:#dc2626;display:grid;place-items:center;border-radius:8px;flex:none;cursor:pointer}
+.rcd-del:hover{background:#fef2f2}
+.rcd-del svg{width:15px;height:15px}
+
 .rnew input{border:1px solid var(--line);border-radius:9px;padding:8px 10px;font:inherit;font-size:13px;width:100%}
 .rnew input:focus{outline:0;border-color:var(--blue)}
 .rnew .chips2 button[aria-pressed="true"]{border-color:var(--blue);background:var(--blue-soft);color:var(--blue-ink)}
