@@ -2571,13 +2571,37 @@ function pintarArchivoListo(){
   adj.insertAdjacentHTML('beforeend', `${ic}<span><b>${esc(a.n)}</b><small>${a.subiendo ? 'Subiendo…' : `${a.t ? esc(a.t) + ' · ' : ''}Listo. Escribe un mensaje si quieres y toca Enviar.`}</small></span><button type="button" id="arch-x" aria-label="Quitar el archivo" data-tip="Quitar">${I('x')}</button>`);
   adj.hidden = false;
 }
-function enviarArchivoPc(c){
-  elegirArchivo(ACEPTA, async f => {
-    const a = archivoListo = {c, n: f.name, subiendo: true}; pintarArchivoListo();
-    try { const r = await crmSubir(f); if (archivoListo !== a) return; Object.assign(a, {n: r.n || f.name, t: r.t, url: r.url, mime: r.mime}); delete a.subiendo; pintarArchivoListo(); ta.focus(); }
-    catch (err) { if (archivoListo === a) { archivoListo = null; pintarArchivoListo(); } toast(err.message); }
-  });
+async function subirArchivoListo(c, f){
+  if (!c || !f) return;
+  if (/cerrada/i.test(c.ventana)) { toast(cerradaTxt(c)); return; }
+  const n = f.name && f.name !== 'image.png' ? f.name : `imagen-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.${(f.type.split('/')[1] || 'png').replace('jpeg', 'jpg')}`;
+  const a = archivoListo = {c, n, subiendo: true}; pintarArchivoListo();
+  try { const r = await crmSubir(f.name === n ? f : new File([f], n, {type: f.type})); if (archivoListo !== a) return; Object.assign(a, {n: r.n || n, t: r.t, url: r.url, mime: r.mime || f.type}); delete a.subiendo; pintarArchivoListo(); ta.focus(); }
+  catch (err) { if (archivoListo === a) { archivoListo = null; pintarArchivoListo(); } toast(err.message); }
 }
+function enviarArchivoPc(c){ elegirArchivo(ACEPTA, f => subirArchivoListo(c, f)); }
+// Pegar (Ctrl+V) una imagen o un archivo en el cuadro de texto: queda listo para enviar.
+ta.addEventListener('paste', e => {
+  const f = [...((e.clipboardData && e.clipboardData.files) || [])][0]; if (!f) return;
+  e.preventDefault(); subirArchivoListo(conv(), f);
+});
+// Arrastrar archivos al chat (bandeja o chat del embudo): se ve el recuadro «Suelta aquí» y queda listo para enviar.
+(() => {
+  const zona = () => { const d = document.getElementById('ec-cajon'); return d && d.classList.contains('on') ? d : document.querySelector('section.chat'); };
+  const conArchivos = e => [...((e.dataTransfer && e.dataTransfer.types) || [])].includes('Files');
+  let dentro = 0;
+  const marcar = on => document.querySelectorAll('.soltando').forEach(x => x.classList.remove('soltando')) || (on && zona() && zona().classList.add('soltando'));
+  document.addEventListener('dragenter', e => { if (!conArchivos(e) || !conv()) return; dentro++; marcar(true); });
+  document.addEventListener('dragleave', e => { if (!conArchivos(e)) return; dentro = Math.max(0, dentro - 1); if (!dentro) marcar(false); });
+  document.addEventListener('dragover', e => { if (conArchivos(e) && conv()) e.preventDefault(); });
+  document.addEventListener('drop', e => {
+    if (!conArchivos(e)) return; e.preventDefault(); dentro = 0; marcar(false);
+    const z = zona(); if (!z || !z.contains(e.target)) return;
+    const fs = [...e.dataTransfer.files]; if (!fs.length) return;
+    if (fs.length > 1) toast('Va el primer archivo; los demás, uno por uno');
+    subirArchivoListo(conv(), fs[0]);
+  });
+})();
 document.getElementById('adj').addEventListener('click', e => { if (e.target.closest('#arch-x')) { archivoListo = null; pintarArchivoListo(); } });
 // «Enviar» con un archivo listo: sale el archivo con el texto escrito como mensaje.
 document.querySelector('.box .bar').addEventListener('click', e => {

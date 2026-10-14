@@ -1084,6 +1084,9 @@ function chBloqueOut(m, ult){
   const fallo = m._estado === 'fallido', u = ult ? ' ult' : '';
   let texto = String(m.out || ''); if (m.link && m.link.url && texto.endsWith(m.link.url)) texto = texto.slice(0, -m.link.url.length).trim();
   const plantilla = m.plantilla ? `<span class="ch-pl">Plantilla «${esc(m.plantilla)}»</span>` : '';
+  // Una foto o un video que enviamos se ven como tales (14-oct), con el texto debajo, como en WhatsApp.
+  if (m.file && !fallo && m.file.url && /^image\//.test(m.file.mime || '')) return `<a class="ch-img${u && !(texto || plantilla) ? u : ''}" href="${esc(m.file.url)}" target="_blank" rel="noopener"><img src="${esc(m.file.url)}" alt="Imagen" loading="lazy"></a>${texto || plantilla ? `<div class="ch-b out${u}">${plantilla}${esc(texto)}</div>` : ''}`;
+  if (m.file && !fallo && m.file.url && /^video\//.test(m.file.mime || '')) return `<div class="ch-b out media${u && !(texto || plantilla) ? u : ''}"><video controls preload="metadata" src="${esc(m.file.url)}"></video></div>${texto || plantilla ? `<div class="ch-b out${u}">${plantilla}${esc(texto)}</div>` : ''}`;
   if (m.file && !fallo) return `${texto || plantilla ? `<div class="ch-b out">${plantilla}${esc(texto)}</div>` : ''}<a class="ch-file out${u}"${m.file.url ? ` href="${esc(m.file.url)}" target="_blank" rel="noopener"` : ''}>${CH_DOC_EXT.test(m.file.n || '') ? chIcDoc(m.file.n) : `<span class="ic">${I(m.file.ic || 'file')}</span>`}<span class="tx"><b>${esc(m.file.n)}</b><small>${esc(m.file.t || 'Abrir el archivo')}</small></span></a>`;
   const extra = m.audio ? chAudio(m.audio.url)
     : m.link ? `<div class="linkcard"${m.link.url ? ` data-url="${esc(m.link.url)}" title="Copiar el enlace"` : ''}><span class="lc">${I('link')}</span><span><b>${esc(m.link.p)}</b><span>${esc(m.link.m)} · ${esc(m.link.pr)} · enlace de ${esc(m.by || yo)}</span></span></div>`
@@ -1181,6 +1184,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ch-asunto svg{width:13px;height:13px}
 .ch-img{display:block;border-radius:16px;overflow:hidden;border:1px solid #e5e9f0;background:#dfe5ec;max-width:260px}
 .ch-img.ult{border-bottom-left-radius:6px}
+.ch-fila.yo .ch-img.ult{border-bottom-left-radius:16px;border-bottom-right-radius:6px}
 .ch-img img{display:block;max-width:260px;max-height:320px;object-fit:cover}
 .ch-img.stk{background:transparent;border:0}
 .ch-img.stk img{max-width:140px}

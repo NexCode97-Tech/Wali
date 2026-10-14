@@ -578,6 +578,8 @@ button.pill svg{width:12px;height:12px}
 .adj button:hover{background:#d3e8ff}
 /* Nota de voz en el compositor (maqueta aprobada «chat con archivos», 14-oct): ocupa el lugar del texto. */
 /* Archivo listo para enviar (14-oct): sale solo al tocar «Enviar». */
+section.chat{position:relative}
+.soltando::after{content:"Suelta aquí para adjuntar";position:absolute;inset:10px;z-index:60;display:grid;place-items:center;border:2px dashed #0b0b10;border-radius:16px;background:rgba(255,236,158,.85);font-size:16px;font-weight:600;color:#0b0b10;pointer-events:none}
 .adj.arch{margin:10px 12px 0;padding:8px 8px 8px 10px;background:#f6f7f9;border:1px solid var(--line2);border-radius:10px;gap:12px;color:var(--ink)}
 .adj.arch .arch-img{width:40px;height:40px;border-radius:8px;object-fit:cover;flex:none}
 .adj.arch .arch-ic{width:40px;height:40px;border-radius:8px;background:#fff;border:1px solid var(--line);display:grid;place-items:center;color:var(--ink2);flex:none}
