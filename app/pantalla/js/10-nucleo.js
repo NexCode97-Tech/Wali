@@ -2609,7 +2609,7 @@ async function notaDeVoz(boton){
   rec.ondataavailable = e => { if (e.data.size) partes.push(e.data); };
   rec.onstop = async () => {
     const g = grabacion; grabacion = null; clearInterval(g.t); flujo.getTracks().forEach(t => t.stop()); if (ctx) ctx.close().catch(() => {});
-    boton.classList.remove('rec'); boton.setAttribute('aria-pressed', 'false'); vzrPintar('');
+    boton.classList.remove('grabando'); boton.setAttribute('aria-pressed', 'false'); vzrPintar('');
     if (g.cancelada) { toast('Nota de voz cancelada'); return; }
     const dur = Math.round((Date.now() - inicio) / 1000); if (dur < 1 || !partes.length) { toast('La nota de voz quedó vacía'); return; }
     const mime = (rec.mimeType || tipo || 'audio/webm').split(';')[0], ext = mime.includes('ogg') ? 'ogg' : mime.includes('mp4') ? 'm4a' : 'webm';
@@ -2621,7 +2621,7 @@ async function notaDeVoz(boton){
     notaLista = {c: g.c, blob, mime, ext, dur, url: URL.createObjectURL(blob), onda: onda.map(v => Math.max(.12, v / max)), audio: null};
     if (g.enviar) enviarNotaLista(); else pintarNotaLista();
   };
-  rec.start(); boton.classList.add('rec'); boton.setAttribute('aria-pressed', 'true'); pintar();
+  rec.start(); boton.classList.add('grabando'); boton.setAttribute('aria-pressed', 'true'); pintar();
 }
 document.querySelector('.box .bar [aria-label="Nota de voz"]').addEventListener('click', e => notaDeVoz(e.currentTarget));
 // La nota grabada, lista para escuchar, borrar o enviar.
