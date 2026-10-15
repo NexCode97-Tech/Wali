@@ -80,6 +80,9 @@ p{margin:0}
 .barra{display:flex;align-items:center;gap:16px;padding:4px 6px}
 .logo{display:flex;align-items:center;gap:8px}
 .logo b{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-weight:800;font-size:25px;letter-spacing:-.02em;line-height:1}
+/* El punto de la «i» de wali va en el naranja del logo. */
+.wi{position:relative;display:inline-block}
+.wi::after{content:"";position:absolute;left:50%;top:.035em;width:.2em;height:.2em;margin-left:-.1em;border-radius:50%;background:#FF4D1A}
 .pild{margin-inline:auto;display:flex;gap:4px;background:var(--tarjeta);border-radius:999px;padding:5px;box-shadow:var(--sombra)}
 .pild a{height:38px;display:inline-flex;align-items:center;gap:7px;padding:0 15px;border-radius:999px;font-size:13.5px;font-weight:600;color:var(--tinta-2)}
 .pild a.on{background:var(--tinta);color:#fff}
@@ -464,7 +467,7 @@ if(document.readyState==="complete")cuandoListo();else window.addEventListener("
 </svg>
 <div class="marco">
   <header class="barra">
-    <a class="logo" href="/" aria-label="Wali, inicio"><svg width="34" height="34"><use href="#wali"/></svg><b>wali</b></a>
+    <a class="logo" href="/" aria-label="Wali, inicio"><svg width="34" height="34"><use href="#wali"/></svg><b>wal<span class="wi">ı</span></b></a>
     <nav class="pild" aria-label="Principal">
       <a href="/#inicio"><svg><use href="#i-bandeja"/></svg>Bandeja</a>
       <a href="/#agente"><svg><use href="#i-bot"/></svg>Agente IA</a>
@@ -569,7 +572,7 @@ if(document.readyState==="complete")cuandoListo();else window.addEventListener("
   </div>
 
   <footer class="pie-pag">
-    <a class="logo" href="/" aria-label="Wali"><svg width="24" height="24"><use href="#wali"/></svg><b style="font-size:19px">wali</b></a>
+    <a class="logo" href="/" aria-label="Wali"><svg width="24" height="24"><use href="#wali"/></svg><b style="font-size:19px">wal<span class="wi">ı</span></b></a>
     <a href="/precios">Precios</a><a href="/partners">Partners</a><a href="https://www.nexcode97.com/privacidad">Privacidad</a><a href="https://www.nexcode97.com/terminos">Términos</a>
     <span class="der">Un producto de NexCode97</span>
   </footer>
