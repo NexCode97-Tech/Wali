@@ -365,7 +365,7 @@ function difusion(){
         <div class="fld">Público${ddSel('data-dpub', [['etapas', 'Por etapas del embudo'], ...(d.seleccion ? [['sel', `Los ${d.seleccion} contactos elegidos en Contactos`]] : []), ...[...SEGMENTOS, ...st.ct.propios].map(x => ['seg:' + x.id, 'Segmento: ' + x.n])], d.publico || 'etapas')}</div>
         ${!d.publico || d.publico === 'etapas' ? `<div class="fld">Etapas del embudo<div class="chips2">${AUD.map(a => `<button type="button" data-aud="${esc(a[0])}" aria-pressed="${d.aud.has(a[0])}">${esc(a[0])} · ${a[1]}</button>`).join('')}</div></div>` : ''}
         <div class="aud"><b>${total.toLocaleString('es-CO')} personas</b><span>Se descuentan las que pidieron no recibir mensajes y las que ya recibieron esta plantilla en los últimos 7 días.</span></div>`
-      : d.paso === 2 ? `<div class="fld">Plantilla aprobada${TPL.length ? ddSel('data-tpl', TPL.map(t => [t.n, t.n]), d.tpl) : '<p class="muted" style="margin:0">Todavía no hay plantillas aprobadas por Meta. Créalas en Plantillas.</p>'}</div>
+      : d.paso === 2 ? `<div class="fld">Plantilla aprobada${TPL.length ? ddSel('data-tpl', TPL.filter(t => tplEnLinea(t, d.linea)).map(t => [t.n, t.n]), d.tpl) : '<p class="muted" style="margin:0">Todavía no hay plantillas aprobadas por Meta. Créalas en Plantillas.</p>'}</div>
         <div class="fld">Variables<div class="vars">${['nombre → Nombre del contacto','producto → Último producto de interés','fecha → Fecha de la cuota'].map(v => `<span class="vb">{{${esc(v.split(' → ')[0])}}} = ${esc(v.split(' → ')[1])}</span>`).join('')}</div></div>
         <p class="muted">Solo se pueden enviar plantillas aprobadas por Meta. Para escribir texto libre, el cliente debe haber escrito en las últimas 24 horas.</p>`
       : `<div class="fld">Línea de salida${ddSel('data-lin', LINEAS.map(l => [l.id, `${esc(l.n)} · ${esc(l.tel)}`]), d.linea)}</div>
@@ -390,59 +390,6 @@ function difusion(){
     // Queda en la lista con todo lo necesario para enviarla: contactos, plantilla, línea y ritmo. Sale desde el servidor.
     DIFUSIONES.unshift(difNueva(d));
     st.dif = null; render(); toast(`Difusión en cola para ${total.toLocaleString('es-CO')} personas`); });
-}
-function plantillaNueva(){
-  const t = st.tplNueva, el = document.getElementById('page');
-  const cuerpo = t.body || ' ';
-  el.innerHTML = `<div class="pg-h"><div><h2>Nueva plantilla</h2><p class="sub">Escribe el mensaje, mira cómo se ve y mándalo a Meta para aprobación.</p></div><button type="button" class="btn" id="t-x">${I('back')}Volver a plantillas</button></div>
-    <div class="wiz"><div class="frm">
-      <label>Nombre interno<input id="t-n" value="${esc(t.nombre)}" placeholder="Ej. Recordatorio de pago"></label>
-      <div class="fld">Categoría${ddSel('data-cat', [['Marketing','Marketing · 0,0125 USD por envío'],['Utilidad','Utilidad · 0,0008 USD por envío']], t.cat)}</div>
-      <div class="fld">Encabezado${ddSel('data-headtipo', [['texto','Texto'],['video','Video']], t.headTipo || 'texto')}</div>
-      ${(t.headTipo || 'texto') === 'video'
-        ? (t.video ? `<div class="mj-arch"><span class="ic">${I('video')}</span><span style="flex-grow:1;min-width:0"><b>${esc(t.video.n)}</b><small>${t.video.subiendo ? 'Subiendo…' : `Video${t.video.dur ? ' · ' + esc(t.video.dur) : ''} · ${esc(tamano(t.video.peso || 0))} (máximo 16 MB)`}</small></span><button type="button" class="mj-x2" id="t-vx" aria-label="Quitar el video">${I('x')}</button></div>`
-          : `<div><button type="button" class="btn" id="t-vadd">${I('clip')}Agregar video</button> <span class="muted" style="font-size:12px">MP4 de hasta 16 MB</span></div>`)
-        : `<label>Texto del encabezado, opcional<input id="t-h" value="${esc(t.head)}" placeholder="Ej. Te recordamos"></label>`}
-      <label>Cuerpo<textarea id="t-b">${esc(t.body)}</textarea></label>
-      <div class="vars"><span style="font-size:11.5px;color:var(--ink3);align-self:center">Insertar variable:</span>${['nombre','producto','fecha','asesor','enlace'].map(v => `<button type="button" data-var="${v}">{{${v}}}</button>`).join('')}</div>
-      <label>Pie, opcional<input id="t-f" value="${esc(t.foot)}"></label>
-      <div class="fld">Botón, opcional${ddSel('data-btn', [['','Sin botón'],['Respuesta rápida','Respuesta rápida'],['Enlace','Enlace'],['Llamar','Llamar']], t.btn)}</div>
-      ${t.btn ? `<label>Texto del botón<input id="t-bt" value="${esc(t.btnTxt)}" placeholder="${t.btn === 'Enlace' ? 'Ver más' : t.btn === 'Llamar' ? 'Llamar a mi asesor' : 'Sí, quiero información'}"></label>` : ''}
-      ${t.btn === 'Enlace' ? `<label>Enlace del botón<input id="t-bu" value="${esc(t.btnUrl || '')}" placeholder="https://www.tuempresa.com"></label>` : ''}
-      ${t.btn === 'Llamar' ? `<div class="fld">Número a llamar${campoTel('t-bl', t.btnTel || '')}</div>` : ''}
-      <p class="muted">Meta rechaza plantillas con promesas sin condiciones, mayúsculas sostenidas o variables sin ejemplo. Antes de enviarla se revisan esas reglas aquí.</p>
-      <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn" id="t-guardar">Guardar borrador</button><button type="button" class="btn pri" id="t-meta">${I('send')}Enviar a Meta</button></div>
-    </div>
-    <div class="phone"><div class="hd">Así lo ve el cliente</div><div class="bub">${t.headTipo === 'video' ? `<div class="mj-vid"><span>${I('play')}</span></div>` : ''}${t.head && t.headTipo !== 'video' ? `<div class="h">${esc(t.head)}</div>` : ''}${esc(cuerpo)}${t.foot ? `<div class="ft">${esc(t.foot)}</div>` : ''}<div class="tm">${hcHora(Date.now())}</div>${t.btn ? `<span class="btn2">${esc(t.btnTxt || (t.btn === 'Enlace' ? 'Ver más' : t.btn === 'Llamar' ? 'Llamar a mi asesor' : 'Sí, quiero información'))}</span>` : ''}</div></div></div>`;
-  const bind = (id, k) => { const x = el.querySelector(id); if (x) x.addEventListener('input', () => { t[k] = x.value; if (k !== 'body' && k !== 'nombre' && k !== 'btnTxt') return; const pv = el.querySelector('.bub'); if (k === 'body') pv.childNodes[t.headTipo === 'video' || t.head ? 1 : 0].textContent = x.value; }); };
-  bind('#t-n', 'nombre'); bind('#t-b', 'body'); bind('#t-bt', 'btnTxt'); bind('#t-bu', 'btnUrl');
-  const tbl = el.querySelector('#t-bl'); if (tbl) tbl.addEventListener('input', () => { t.btnTel = valorTel('t-bl'); });
-  const btx = el.querySelector('#t-bt'); if (btx) btx.addEventListener('input', () => { const b2 = el.querySelector('.bub .btn2'); if (b2) b2.textContent = btx.value || b2.textContent; });
-  ['#t-h', '#t-f'].forEach((id, i) => { const x = el.querySelector(id); if (!x) return; x.addEventListener('input', () => { t[i ? 'foot' : 'head'] = x.value; const pv = el.querySelector('.bub'); const n = pv.querySelector(i ? '.ft' : '.h'); if (n) n.textContent = x.value; }); x.addEventListener('change', () => { t[i ? 'foot' : 'head'] = x.value; render(); }); });
-  el.querySelectorAll('[data-cat]').forEach(b => b.addEventListener('click', () => { t.cat = b.dataset.cat; render(); }));
-  // Encabezado con video (lote 7, tablero 7): un MP4 de hasta 16 MB que se sube a la Nube del CRM.
-  el.querySelectorAll('[data-headtipo]').forEach(b => b.addEventListener('click', () => { t.headTipo = b.dataset.headtipo; render(); }));
-  const vadd = el.querySelector('#t-vadd'); if (vadd) vadd.addEventListener('click', () => {
-    const i = document.createElement('input'); i.type = 'file'; i.accept = 'video/mp4'; i.hidden = true; document.body.appendChild(i);
-    i.addEventListener('cancel', () => i.remove());
-    i.addEventListener('change', () => { const f = (i.files || [])[0]; i.remove(); if (!f) return;
-      if (!/^video\/mp4$/.test(f.type || '') && !/\.mp4$/i.test(f.name)) { toast('El video debe ser MP4'); return; }
-      if (f.size > 16 * 1024 * 1024) { toast('El video pasa de 16 MB, el máximo de WhatsApp'); return; }
-      const v = t.video = {n: f.name, peso: f.size, subiendo: true}; render();
-      crmSubir(f).then(r => { Object.assign(v, {n: r.n || f.name, url: r.url, mime: 'video/mp4', peso: r.bytes || f.size}); delete v.subiendo; }, err => { if (t.video === v) t.video = null; toast(`No se pudo subir el video. ${err.message}`); })
-        .finally(() => { if (st.tplNueva === t) render(); }); });
-    i.click(); });
-  const vx = el.querySelector('#t-vx'); if (vx) vx.addEventListener('click', () => { t.video = null; render(); });
-  el.querySelectorAll('[data-btn]').forEach(b => b.addEventListener('click', () => { t.btn = b.dataset.btn; render(); }));
-  el.querySelectorAll('[data-var]').forEach(b => b.addEventListener('click', () => { const ta = el.querySelector('#t-b'); const p = ta.selectionStart ?? ta.value.length; ta.value = ta.value.slice(0, p) + '{{' + b.dataset.var + '}}' + ta.value.slice(p); t.body = ta.value; render(); }));
-  el.querySelector('#t-x').addEventListener('click', () => { st.tplNueva = null; render(); });
-  // Los borradores son de cada persona (quedan en sus preferencias); «Enviar a Meta» la crea en Meta para aprobación.
-  el.querySelector('#t-guardar').addEventListener('click', () => { const b = {n: t.nombre.trim() || 'Plantilla sin nombre', c: t.cat, e:'g', x:'Borrador', u:0, b: t.body, head: t.head, foot: t.foot, btn: t.btn, btnTxt: t.btnTxt, borrador:true}; AJ.borradores = [b, ...(AJ.borradores || []).filter(x => x.n !== b.n)]; PLANTILLAS.unshift(b); st.tplNueva = null; render(); toast('Plantilla guardada como borrador'); });
-  el.querySelector('#t-meta').addEventListener('click', async ev => { if (!t.nombre.trim() || !t.body.trim()) { toast('Ponle nombre y cuerpo a la plantilla'); return; }
-    const conVideo = t.headTipo === 'video'; if (conVideo && (!t.video || !t.video.url)) { toast(t.video ? 'Espera a que termine de subir el video' : 'Agrega el video del encabezado'); return; }
-    const bt = ev.currentTarget; bt.disabled = true;
-    try { await crmApi('POST', '/crm/plantillas', {n: t.nombre.trim(), c: t.cat, b: t.body, head: conVideo ? '' : (t.head || ''), foot: t.foot || '', btn: t.btn || '', btnTxt: t.btnTxt || '', btnUrl: t.btnUrl || '', btnTel: t.btnTel || '', ...(conVideo ? {video: {url: t.video.url, n: t.video.n, peso: t.video.peso}} : {})}); AJ.borradores = (AJ.borradores || []).filter(x => x.n !== t.nombre.trim()); st.tplNueva = null; await crmPlantillas(); render(); toast('Plantilla enviada a Meta: queda «En revisión»'); }
-    catch (err) { bt.disabled = false; toast(err.message); } });
 }
 // Un filtro que apunta a algo que ya no existe (otra persona borró la línea, el equipo, la etapa
 // o la etiqueta) se quita solo: si no, la bandeja fallaba al pintarse.
@@ -767,11 +714,7 @@ function pagina(){
   } else if (st.pagina === 'plantillas') {
     if (st.tplNueva) { plantillaNueva(); return; }
 
-    el.innerHTML = `<div class="pg-h"><div><h2>Plantillas de WhatsApp</h2><p class="sub">Los mensajes que la empresa puede enviar primero. Meta las aprueba en minutos u horas; las de marketing cuestan 0,0125 USD y las de utilidad 0,0008 USD por envío en Colombia.</p></div><button type="button" class="btn pri" id="b-tpl-nueva">${I('plus')}Nueva plantilla</button></div>
-      <table class="tb2"><thead><tr><th>Plantilla</th><th>Categoría</th><th>Estado</th><th>Envíos</th><th>Texto</th></tr></thead><tbody>
-      ${PLANTILLAS.length ? '' : '<tr><td colspan="5" class="muted" style="padding:18px 10px">Todavía no hay plantillas. Las aprobadas en Meta aparecen aquí solas.</td></tr>'}${PLANTILLAS.map(p => `<tr><td><b style="font-weight:500">${esc(p.n)}</b></td><td>${esc(p.c)}</td><td><span class="est ${esc(p.e)}">${esc(p.x)}</span></td><td>${p.u ? p.u.toLocaleString('es-CO') : '—'}</td><td style="white-space:normal;color:var(--ink3);max-width:420px">${esc(p.b)}</td></tr>`).join('')}
-      </tbody></table>`;
-    document.getElementById('b-tpl-nueva').addEventListener('click', () => { st.tplNueva = {nombre:'', cat:'Marketing', head:'', body:'Hola, {{nombre}}. ', foot:ESPACIO.nombre || '', btn:'', btnTxt:''}; render(); });
+    el.innerHTML = paginaPlantillas();
   } else if (st.pagina.startsWith('cfg-')) {
     el.innerHTML = paginaCfg(st.pagina.slice(4));
   } else if (st.pagina === 'flujos') {
@@ -1252,7 +1195,7 @@ document.getElementById('nm-via-m').addEventListener('click', e => { const b = e
   if (nmEsCorreo()) { const bx = buzonesNm().find(x => 'mail:' + x.id === nm.via); el.innerHTML = `Correo · ${esc(bx ? bx.nombre : '')}` + I('chev'); }
   else { const l = LINEAS.find(x => x.id === nm.via); el.innerHTML = `${esc(l.n)} · ${esc(l.tel)}` + I('chev'); }
   el.classList.add('on'); document.getElementById('nm-via-m').hidden = true; nmModoVia(); });
-document.getElementById('nm-tpl').addEventListener('click', e => { e.stopPropagation(); const m = document.getElementById('nm-tpl-m'); m.innerHTML = `<div class="hd">${TPL.length ? 'Plantillas aprobadas por Meta' : 'Todavía no hay plantillas aprobadas por Meta'}</div>` + TPL.map(t => `<button type="button" role="option" data-tpl="${esc(t.n)}" aria-selected="${nm.tpl === t.n}">${I('bolt')}${esc(t.n)}</button>`).join(''); m.hidden = !m.hidden; });
+document.getElementById('nm-tpl').addEventListener('click', e => { e.stopPropagation(); const m = document.getElementById('nm-tpl-m'); const usables = TPL.filter(t => tplEnLinea(t, nm.via)); m.innerHTML = `<div class="hd">${usables.length ? 'Plantillas aprobadas por Meta' : TPL.length ? 'Ninguna plantilla aprobada es de esta línea' : 'Todavía no hay plantillas aprobadas por Meta'}</div>` + usables.map(t => `<button type="button" role="option" data-tpl="${esc(t.n)}" aria-selected="${nm.tpl === t.n}">${I('bolt')}${esc(t.n)}</button>`).join(''); m.hidden = !m.hidden; });
 document.getElementById('nm-tpl-m').addEventListener('click', e => { const b = e.target.closest('[data-tpl]'); if (!b) return; const t = TPL.find(x => x.n === b.dataset.tpl); if (!t) return; document.getElementById('nm-tpl-m').hidden = true;
   const auto = {nombre: nm.contacto ? nm.contacto.n.split(' ')[0] : '', asesor: yo.split(' ')[0], producto: (nm.contacto && nm.contacto.campos && nm.contacto.campos.producto) || ''};
   pedirVars({n: t.n, b: t.x}, auto, vars => { nm.tpl = t.n; nm.vars = vars; const el = document.getElementById('nm-tpl'); el.innerHTML = esc(t.n) + I('chev'); el.classList.add('on'); nmTxt.value = llenarVars(t.x, vars); });
@@ -1327,7 +1270,7 @@ document.getElementById('b-tpl').addEventListener('click', e => {
   e.stopPropagation(); const p = document.getElementById('tplp'); if (!p.hidden) { p.hidden = true; return; }
   const c = CONV.find(x => x.id === st.sel);
   if (sinPlantillas(c)) { toast(`${CANALES[c.canal].n} no usa plantillas: son de WhatsApp`); return; }
-  p.innerHTML = `<div class="hd">Plantillas aprobadas por Meta${/cerrada/i.test(c.ventana) ? ' · la ventana está cerrada, solo sirven estas' : ''}</div>` + (PLANTILLAS.some(x => x.e === 'ok') ? PLANTILLAS.filter(x => x.e === 'ok').map(x => `<button type="button" data-usar-tpl="${esc(x.n)}"><b>${esc(x.n)}</b><span>${esc(x.b.replace(/\{\{nombre\}\}/g, c.n.split(' ')[0]))}</span></button>`).join('') : '<p class="muted" style="padding:8px 10px;margin:0">Todavía no hay plantillas aprobadas por Meta.</p>');
+  p.innerHTML = `<div class="hd">Plantillas aprobadas por Meta${/cerrada/i.test(c.ventana) ? ' · la ventana está cerrada, solo sirven estas' : ''}</div>` + (PLANTILLAS.some(x => x.e === 'ok' && tplEnLinea(x, c.linea)) ? PLANTILLAS.filter(x => x.e === 'ok' && tplEnLinea(x, c.linea)).map(x => `<button type="button" data-usar-tpl="${esc(x.n)}"><b>${esc(x.n)}</b><span>${esc(x.b.replace(/\{\{nombre\}\}/g, c.n.split(' ')[0]))}</span></button>`).join('') : '<p class="muted" style="padding:8px 10px;margin:0">Todavía no hay plantillas aprobadas por Meta.</p>');
   document.getElementById('qr').hidden = true; document.getElementById('lk').hidden = true; p.hidden = false;
 });
 // Las variables que el servidor llena solo (services/crm/whatsapp.ts valorVariable); las demás se piden aquí.

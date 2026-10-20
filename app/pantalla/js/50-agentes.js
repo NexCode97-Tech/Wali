@@ -1084,6 +1084,10 @@ function chBloqueOut(m, ult){
   const fallo = m._estado === 'fallido', u = ult ? ' ult' : '';
   let texto = String(m.out || ''); if (m.link && m.link.url && texto.endsWith(m.link.url)) texto = texto.slice(0, -m.link.url.length).trim();
   const plantilla = m.plantilla ? `<span class="ch-pl">Plantilla «${esc(m.plantilla)}»</span>` : '';
+  // La plantilla enviada se ve como le llegó al cliente (maqueta «Nueva plantilla», 20-oct): encabezado, pie y botón.
+  const tp = m.plantilla ? PLANTILLAS.find(p => !p.borrador && (p.n === m.plantilla || p.slug === m.plantilla)) : null;
+  const tpCab = tp && tp.headTipo === 'texto' && tp.head ? `<div class="ch-th">${esc(tp.head)}</div>` : '';
+  const tpPie = tp ? `${tp.foot ? `<div class="ch-tf">${esc(tp.foot)}</div>` : ''}${tp.btn ? `<div class="ch-tb"><span>${({'Respuesta rápida':TP_IC.responder, Enlace:TP_IC.enlace, Llamar:TP_IC.llamar})[tp.btn] || ''}${esc(tp.btnTxt)}</span></div>` : ''}` : '';
   // Una foto o un video que enviamos se ven como tales (14-oct), con el texto debajo, como en WhatsApp.
   if (m.file && !fallo && m.file.url && /^image\//.test(m.file.mime || '')) return `<a class="ch-img${u && !(texto || plantilla) ? u : ''}" href="${esc(m.file.url)}" target="_blank" rel="noopener"><img src="${esc(m.file.url)}" alt="Imagen" loading="lazy"></a>${texto || plantilla ? `<div class="ch-b out${u}">${plantilla}${esc(texto)}</div>` : ''}`;
   if (m.file && !fallo && m.file.url && /^video\//.test(m.file.mime || '')) return `<div class="ch-b out media${u && !(texto || plantilla) ? u : ''}"><video controls preload="metadata" src="${esc(m.file.url)}"></video></div>${texto || plantilla ? `<div class="ch-b out${u}">${plantilla}${esc(texto)}</div>` : ''}`;
@@ -1091,7 +1095,7 @@ function chBloqueOut(m, ult){
   const extra = m.audio ? chAudio(m.audio.url)
     : m.link ? `<div class="linkcard"${m.link.url ? ` data-url="${esc(m.link.url)}" title="Copiar el enlace"` : ''}><span class="lc">${I('link')}</span><span><b>${esc(m.link.p)}</b><span>${esc(m.link.m)} · ${esc(m.link.pr)} · enlace de ${esc(m.by || yo)}</span></span></div>`
     : m.file ? `<div class="ch-fnombre">${I(m.file.ic || 'file')}${esc(m.file.n)}</div>` : '';
-  return `<div class="ch-b out${fallo ? ' fallo' : ''}${m.audio ? ' ch-voz' : ''}${u}">${plantilla}${esc(texto)}${extra}</div>`;
+  return `<div class="ch-b out${fallo ? ' fallo' : ''}${m.audio ? ' ch-voz' : ''}${u}">${plantilla}${tpCab}${esc(texto)}${tpPie}${extra}</div>`;
 }
 function chMetaOut(c, m, i){
   if (m._estado === 'fallido') {
