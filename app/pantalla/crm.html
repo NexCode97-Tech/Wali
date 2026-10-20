@@ -1050,7 +1050,8 @@ button.pc-hi:hover > span{color:var(--blue-ink)}
 /* ── Modales ──
    Los tres tipos (diálogos de abrirDialogo, «Mensaje nuevo» y «Finalizar conversación») comparten el fondo, la
    entrada y el marco. Los diálogos llevan cabecera con cerrar, cuerpo con aire y un pie propio para los botones. */
-.ov{background:rgba(15,23,42,.46);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);padding:9vh 16px 32px;overflow-y:auto}
+.ov{background:rgba(15,23,42,.46);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);padding:32px 16px;overflow-y:auto}
+.ov > .dlg{margin-block:auto}
 .dlg,.nm,.res{border:1px solid rgba(15,23,42,.06);box-shadow:0 1px 2px rgba(15,23,42,.06),0 24px 64px -16px rgba(15,23,42,.38);border-radius:18px}
 @media (prefers-reduced-motion:no-preference){
   .ov:not([hidden]){animation:ovEntra .16s ease-out}
@@ -1070,8 +1071,8 @@ button.pc-hi:hover > span{color:var(--blue-ink)}
 .dlg .ft2 .btn.pri[style*="dc2626"]{box-shadow:0 1px 2px rgba(11,11,16,.12),0 4px 12px -4px rgba(220,38,38,.45)}
 .dlg .ft2 .btn.pri:hover{filter:brightness(1.06)}
 .dlg .ft2 .btn:disabled{opacity:.5;box-shadow:none;cursor:default}
-.dlg-cerrar{position:absolute;top:18px;right:18px;width:32px;height:32px;border-radius:9px;display:grid;place-items:center;color:var(--ink3);z-index:2}
-.dlg-cerrar:hover{background:var(--bg3);color:var(--ink)}
+.dlg-cerrar{position:absolute;top:18px;right:18px;width:32px;height:32px;border-radius:9px;display:grid;place-items:center;color:#dc2626;z-index:2}
+.dlg-cerrar:hover{background:#fef2f2;color:#b91c1c}
 .dlg-cerrar svg{width:16px;height:16px}
 /* Cabecera con marca: el ícono del canal en su color, título y una línea que explica */
 .dlg-cab{display:flex;align-items:center;gap:14px;padding-right:36px}
