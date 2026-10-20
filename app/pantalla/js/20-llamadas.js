@@ -255,7 +255,9 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ln-vacio > p{margin:6px 0 0;font-size:13.5px;color:var(--ink3);max-width:56ch}
 .ln-pasos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:26px 0;width:100%;max-width:760px;text-align:left}
 .ln-paso{display:flex;gap:12px;align-items:flex-start;padding:14px;border-radius:12px;background:var(--bg2)}
-.ln-paso .n{width:26px;height:26px;border-radius:50%;background:#0b0b10;color:#FFD21F;display:flex;align-items:center;justify-content:center;line-height:1;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;flex:none}
+/* Un solo diseño de círculo numerado (20-oct): el de la barra de pasos; amarillo el paso actual, negro con chulo el terminado */
+.ln-paso .n,.ln-pm .n{width:28px;height:28px;border-radius:50%;border:2px solid var(--line);background:#fff;color:var(--ink3);display:flex;align-items:center;justify-content:center;line-height:1;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;flex:none}
+.ln-paso .n.on,.ln-pm .n.on{background:#FFD21F;border-color:#FFD21F;color:#0b0b10}
 .ln-paso b{display:block;font-size:13.5px;font-weight:600}
 .ln-paso small{display:block;font-size:12.5px;color:var(--ink3);margin-top:1px}
 .ln-vacio .nota{margin:12px 0 0;font-size:12.5px;color:var(--ink3)}
@@ -267,8 +269,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ln-plat-sec .ln-copiables{margin:14px 0 0;padding:0;background:none}
 .ln-plat-sec .ln-copiable div{background:var(--bg2)}
 .ln-pm{display:grid;gap:10px;margin-top:14px}
-.ln-pm > div{display:grid;grid-template-columns:26px 1fr;gap:12px;align-items:start}
-.ln-pm .n{width:26px;height:26px;border-radius:50%;background:var(--bg3);color:var(--ink2);display:flex;align-items:center;justify-content:center;line-height:1;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+.ln-pm > div{display:grid;grid-template-columns:28px 1fr;gap:12px;align-items:start}
 .ln-pm p{margin:0;font-size:13px;color:var(--ink2);padding-top:3px}
 .ln-pm p b{color:var(--ink);font-weight:600}
 .ln-plat .ln-plat-pie{border-top:1px solid var(--line);background:var(--bg2);padding:14px 20px 16px}
@@ -364,7 +365,7 @@ function cajaProveedor(){
       <div class="ln-campo"><label for="pv-cfgp">Configuración de Instagram y Messenger <small>(config_id)</small></label><input id="pv-cfgp" value="${val('pv-cfgp', p.configPaginas)}" inputmode="numeric" autocomplete="off" placeholder="Ej. 1234567890123456"><span class="ayuda">Otra configuración, para páginas</span></div>
     </div></div>
     ${p.verifyToken ? `<div class="ln-plat-sec"><h4>Avisos de mensajes (webhook)</h4>
-      <div class="ln-pm"><div><span class="n">1</span><p>En la app de Meta, ve a <b>WhatsApp → Configuración → Webhook</b> y pega esta dirección y este código.</p></div>
+      <div class="ln-pm"><div><span class="n on">1</span><p>En la app de Meta, ve a <b>WhatsApp → Configuración → Webhook</b> y pega esta dirección y este código.</p></div>
         <div><span class="n">2</span><p>Suscríbete a <b>messages</b>, <b>message_template_status_update</b> y <b>phone_number_quality_update</b>.</p></div>
         <div><span class="n">3</span><p>Para Instagram y Messenger, usa la dirección de páginas con el mismo código.</p></div></div>
       <div class="ln-copiables">${lnCopiable('Dirección de avisos', p.webhookUrl)}${lnCopiable('Código de verificación', p.verifyToken)}${p.webhookPaginas ? lnCopiable('Dirección de páginas', p.webhookPaginas) : ''}</div></div>` : ''}
@@ -417,7 +418,7 @@ function paginaLineas(){
   if (!crmSoloLectura()) LINEAS.forEach(l => ajLinea(l.id));
   const vacio = `<div class="ln-vacio"><span class="wa">${LOGO.wa}</span><h3>Conecta tu primer número de WhatsApp</h3>
       <p>Toma un par de minutos. Los mensajes de tus clientes empiezan a llegar a la bandeja apenas termines.</p>
-      <div class="ln-pasos"><div class="ln-paso"><span class="n">1</span><div><b>Entra con Facebook</b><small>Con la cuenta que administra tu empresa en Meta</small></div></div>
+      <div class="ln-pasos"><div class="ln-paso"><span class="n on">1</span><div><b>Entra con Facebook</b><small>Con la cuenta que administra tu empresa en Meta</small></div></div>
         <div class="ln-paso"><span class="n">2</span><div><b>Elige tu número</b><small>Uno que ya tengas en Meta o uno nuevo</small></div></div>
         <div class="ln-paso"><span class="n">3</span><div><b>Asigna el equipo</b><small>Quién atiende las conversaciones que lleguen</small></div></div></div>
       <button type="button" class="ln-conectar grande" data-ll-conectar="1">${I('plus')}Conectar WhatsApp</button>
