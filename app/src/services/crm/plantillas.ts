@@ -371,6 +371,9 @@ export async function editarPlantilla(slug: string, entrada: EntradaPlantilla, p
   const guardados = await mediaDePlantillas()
   const cambioVideo = !!video && guardados[slug]?.url !== videoUrl
   const cambioTexto = cambioVideo || firma(existentes[0].components) !== firma(armar(video ? 'x' : null).components)
+  if (cambioTexto && existentes.some(p => !['APPROVED', 'REJECTED', 'PAUSED'].includes(p.status))) {
+    throw new ValidationError('Meta no deja cambiar el texto mientras la plantilla está en revisión o deshabilitada. Puedes cambiar el nombre y las líneas.')
+  }
   const videoBuf = video && (cambioTexto || elegidas) ? await videoDeMuestra(videoUrl || guardados[slug]?.url || '') : null
   if (cambioTexto) {
     for (const p of existentes) {
@@ -399,7 +402,9 @@ export async function eliminarPlantilla(slug: string, por: string | null): Promi
   if (!(await waConfigurado())) throw new AppError('Primero conecta WhatsApp en Ajustes del CRM, Canales', 409)
   let borradas = 0
   for (const waba of await wabasConectadas()) {
-    if (!(await plantillasDeWaba(waba, true)).some(p => p.name === slug)) continue
+    const deEsta = (await plantillasDeWaba(waba, true)).filter(p => p.name === slug)
+    if (!deEsta.length) continue
+    if (deEsta.every(p => p.status === 'DISABLED')) throw new ValidationError('Meta no deja eliminar una plantilla deshabilitada')
     await graph(`/${encodeURIComponent(waba)}/message_templates`, { cred: await credDeWaba(waba), method: 'DELETE', query: { name: slug } })
     borradas++
   }

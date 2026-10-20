@@ -434,7 +434,7 @@ export async function numerosDisponibles(conexionId: string) {
       if (conectadas.has(n.id)) continue
       numeros.push({
         phoneNumberId: n.id, wabaId: waba, tel: telVisible(telDigitos(n.display_phone_number)) || n.display_phone_number || '',
-        nombre: n.verified_name ?? '', nombreEstado: n.name_status ?? '', ok: numeroListo(n), calidad: calidadTexto(n.quality_rating), limite: limiteTexto(n.messaging_limit_tier),
+        nombre: n.verified_name ?? '', nombreEstado: n.name_status ?? '', ok: numeroListo(n), calidad: calidadTexto(n.quality_rating), limite: limiteTexto(n.whatsapp_business_manager_messaging_limit),
         estadoMeta: estadoMetaTexto(n),
       })
     }

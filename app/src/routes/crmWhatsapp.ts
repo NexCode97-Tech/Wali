@@ -294,7 +294,7 @@ rutasWaCrm.post('/lineas', soloLideres, asyncHandler(async (req: Request, res: R
     linea = await prisma.crmLinea.create({
       data: {
         conexionId: c.id, nombre, telefono: telVisible(telDigitos(n.display_phone_number)) || n.display_phone_number || '', phoneNumberId, wabaId,
-        estado: 'conectada', calidad: calidadTexto(n.quality_rating), limite: limiteTexto(n.messaging_limit_tier),
+        estado: 'conectada', calidad: calidadTexto(n.quality_rating), limite: limiteTexto(n.whatsapp_business_manager_messaging_limit),
         ajustes: { equipo, llamadas: Boolean(b.llamadas), ...(coex ? { coex: true } : {}) },
       },
     })

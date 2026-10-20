@@ -720,7 +720,7 @@ let fbSdk = null;
 function cargarSdkFacebook(appId){
   if (fbSdk) return fbSdk;
   fbSdk = new Promise((ok, mal) => {
-    window.fbAsyncInit = () => { try { FB.init({appId, autoLogAppEvents:true, xfbml:false, version:'v21.0'}); ok(); } catch (e) { mal(e); } };
+    window.fbAsyncInit = () => { try { FB.init({appId, autoLogAppEvents:true, xfbml:false, version:'v26.0'}); ok(); } catch (e) { mal(e); } };
     const s = document.createElement('script'); s.src = 'https://connect.facebook.net/es_LA/sdk.js'; s.async = true; s.crossOrigin = 'anonymous';
     s.onerror = () => { fbSdk = null; mal(new Error('No se pudo abrir Meta. Revisa la conexión a internet o si un bloqueador lo impide')); };
     document.head.appendChild(s);
@@ -739,7 +739,7 @@ function conectarConFacebook(x, coex){
     } } catch { /* otro mensaje de Facebook */ }
   };
   window.addEventListener('message', oir);
-  cargarSdkFacebook(p.appId).then(() => new Promise(ok => FB.login(r => ok(r), {config_id:p.configId, response_type:'code', override_default_response_type:true, extras:{setup:{}, featureType:coex ? 'whatsapp_business_app_onboarding' : '', sessionInfoVersion:'3'}})))
+  cargarSdkFacebook(p.appId).then(() => new Promise(ok => FB.login(r => ok(r), {config_id:p.configId, response_type:'code', override_default_response_type:true, extras:coex ? {featureType:'whatsapp_business_app_onboarding'} : {}})))
     .then(r => {
       const code = r && r.authResponse && r.authResponse.code;
       if (!code) throw new Error(x.errorCx || 'No se terminó la conexión con Meta.');

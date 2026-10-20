@@ -200,7 +200,9 @@ export function calidadTexto(q: unknown): string {
 export function limiteTexto(t: unknown): string | null {
   const s = String(t ?? '').toUpperCase()
   if (!s) return null
-  if (s === 'TIER_UNLIMITED') return 'Sin límite'
+  if (s === 'TIER_UNLIMITED' || s === 'UNLIMITED') return 'Sin límite'
+  // El webhook business_capability_update lo manda en número (2000, 10000…); el campo nuevo, como TIER_250.
+  if (/^\d+$/.test(s)) return `${Number(s).toLocaleString('es-CO')} por día`
   const m = s.match(/^TIER_(\d+)(K)?$/)
   if (!m) return s
   return `${(Number(m[1]) * (m[2] ? 1000 : 1)).toLocaleString('es-CO')} por día`
@@ -236,13 +238,13 @@ export async function revisarToken(token: string, llaveApp: string): Promise<Inf
 
 export interface NumeroMeta {
   id: string; display_phone_number?: string; verified_name?: string; code_verification_status?: string; quality_rating?: string
-  messaging_limit_tier?: string; platform_type?: string; status?: string; name_status?: string
+  whatsapp_business_manager_messaging_limit?: string; platform_type?: string; status?: string; name_status?: string
 }
 
 export async function numerosDeWaba(waba: string, cred: CredMeta): Promise<NumeroMeta[]> {
   const r = await graph<{ data?: NumeroMeta[] }>(`/${encodeURIComponent(waba)}/phone_numbers`, {
     cred,
-    query: { fields: 'display_phone_number,verified_name,code_verification_status,quality_rating,messaging_limit_tier,platform_type,status,name_status', limit: 100 },
+    query: { fields: 'display_phone_number,verified_name,code_verification_status,quality_rating,whatsapp_business_manager_messaging_limit,platform_type,status,name_status', limit: 100 },
   })
   return r.data ?? []
 }

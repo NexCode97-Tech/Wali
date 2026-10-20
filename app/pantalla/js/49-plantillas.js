@@ -133,6 +133,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .tn-video small{display:block;font-size:12px;color:var(--ink3)}
 .tn-video .x{margin-left:auto;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#dc2626;border:0;background:none;cursor:pointer}
 .tn-video .x svg{width:16px;height:16px}
+.tn-bloq{opacity:.55}
 .tn-aviso{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--amber-soft);border:1px solid var(--amber-line);font-size:12.5px;color:var(--ink2)}
 .tn-aviso svg{width:16px;height:16px;color:var(--amber-ink);flex:none;margin-top:1px}
 .tn-rev{display:grid;gap:8px;padding:14px 16px;border-radius:12px;background:var(--bg2)}
@@ -279,7 +280,7 @@ function paginaPlantillas(){
       <span><span class="tp-est ${e}"><i></i>${esc(et)}</span></span>
       <div class="tp-num">${p.u ? p.u.toLocaleString('es-CO') : '—'}</div>
       <div class="tp-acc">${puedeEditarTpl() ? `<button type="button" class="tp-mas" data-tp-menu="${esc(k)}" aria-haspopup="menu" aria-expanded="${ab}" aria-label="Más acciones de ${esc(p.n)}">${I('more')}</button>
-        <div class="tp-menu" role="menu" ${ab ? '' : 'hidden'}><button type="button" role="menuitem" data-tp-editar="${esc(k)}">${TP_IC.editar}Editar</button><button type="button" role="menuitem" class="tp-peligro" data-tp-borrar="${esc(k)}">${TP_IC.borrar}Eliminar</button></div>` : ''}</div>
+        <div class="tp-menu" role="menu" ${ab ? '' : 'hidden'}><button type="button" role="menuitem" data-tp-editar="${esc(k)}">${TP_IC.editar}Editar</button>${p.estadoMeta === 'DISABLED' ? '' : `<button type="button" role="menuitem" class="tp-peligro" data-tp-borrar="${esc(k)}">${TP_IC.borrar}Eliminar</button>`}</div>` : ''}</div>
       ${p.e === 'b' && p.motivo ? `<div class="tp-motivo">${TP_IC.alerta}<span><b>Por qué la rechazó Meta:</b> ${esc(p.motivo)}.</span></div>` : ''}
     </div>`;
   }).join('');
@@ -294,7 +295,8 @@ function tplDesde(p){
   return {nombre:p.n, cat:p.c === 'Marketing' ? 'Marketing' : 'Utilidad', lineas:new Set(lineas), headTipo:p.headTipo || (p.head ? 'texto' : ''), head:p.head || '', body:p.b || '', foot:p.foot || '',
     btn:p.btn || '', btnTxt:p.btnTxt || '', btnUrl:p.btnUrl || '', btnTel:p.btnTel || '',
     video:p.headTipo === 'video' && p.mediaUrl ? {n:p.mediaN || 'video.mp4', url:p.mediaUrl} : null,
-    editar:p.borrador ? null : p.slug, borradorDe:p.borrador ? p.n : null, aprobada:!p.borrador && p.estadoMeta === 'APPROVED'};
+    editar:p.borrador ? null : p.slug, borradorDe:p.borrador ? p.n : null, aprobada:!p.borrador && p.estadoMeta === 'APPROVED',
+    soloLineas:!p.borrador && !['APPROVED', 'REJECTED', 'PAUSED'].includes(p.estadoMeta)};
 }
 function tnNueva(){
   return {nombre:'', cat:'Utilidad', lineas:new Set(LINEAS.length === 1 ? [LINEAS[0].id] : []), headTipo:'', head:'', body:'Hola, {{nombre}}. ', foot:ESPACIO.nombre || '',
@@ -329,10 +331,11 @@ function plantillaNueva(){
   const t = st.tplNueva, el = document.getElementById('page');
   const marca = (ESPACIO.nombre || 'Tu empresa').trim(), ini = marca.charAt(0).toUpperCase();
   const linea = l => { const eq = tpEquipo(l.id); return `<button type="button" class="tn-op" role="checkbox" aria-checked="${t.lineas.has(l.id)}" data-tn-linea="${esc(l.id)}"><span class="tn-cb">${TP_IC.chulo}</span><span class="tp-cara">${LOGO.wa}</span><span style="min-width:0"><b>${esc(l.n)}</b><small>${esc(l.tel || '')}${eq ? ` · <i style="background:${colorEquipo(eq)}"></i>${esc(eq)}` : ''}</small></span></button>`; };
-  const cat = (k, precio, d) => `<button type="button" class="tn-op cat" role="radio" aria-checked="${t.cat === k}" data-tn-cat="${k}" ${t.aprobada && t.cat !== k ? 'disabled' : ''}><span class="tn-rd"></span><span><b>${k} · ${precio}</b><small>${d}</small></span></button>`;
+  const cat = (k, precio, d) => `<button type="button" class="tn-op cat" role="radio" aria-checked="${t.cat === k}" data-tn-cat="${k}" ${(t.aprobada || t.soloLineas) && t.cat !== k ? 'disabled' : ''}><span class="tn-rd"></span><span><b>${k} · ${precio}</b><small>${d}</small></span></button>`;
   const seg = (attr, ops, val) => ops.map(([v, txt, ic]) => `<button type="button" ${attr}="${v}" aria-pressed="${val === v}">${ic || ''}${txt}</button>`).join('');
   el.innerHTML = `<div class="pg-h"><div><h2>${t.editar ? 'Editar plantilla' : 'Nueva plantilla'}</h2><p class="sub">Escribe el mensaje, elige sus líneas y mándalo a Meta para aprobación.</p></div><button type="button" class="btn" id="t-x">${I('back')}Volver a plantillas</button></div>
     <div class="tn"><div class="tn-frm">
+      ${t.soloLineas ? `<div class="tn-aviso">${TP_IC.alerta}<span>Meta no deja cambiar el texto mientras la plantilla está en revisión o deshabilitada. Por ahora puedes cambiar el nombre y las líneas.</span></div>` : ''}
       ${t.aprobada ? `<div class="tn-aviso">${TP_IC.alerta}<span>Si cambias el texto, vuelve a revisión de Meta y no se puede enviar hasta que la apruebe. Meta deja editar una plantilla aprobada una vez al día y hasta 10 veces al mes. Cambiar solo el nombre o las líneas no pasa por Meta.</span></div>` : ''}
       <section class="tn-sec"><h3>Datos</h3>
         <div class="tn-campo"><label for="t-n">Nombre interno <em>· solo lo ve tu equipo</em></label><input id="t-n" value="${esc(t.nombre)}" placeholder="Ej. Recordatorio de pago" autocomplete="off"></div>
@@ -342,7 +345,7 @@ function plantillaNueva(){
         <div class="tn-campo"><span>Categoría${t.aprobada ? ' <em>· fija: Meta no deja cambiarla en una aprobada</em>' : ''}</span>
           <div class="tn-elige" role="radiogroup" aria-label="Categoría">${cat('Utilidad', '0,0008 USD', 'Avisos de algo que el cliente ya pidió: citas, pagos, pedidos')}${cat('Marketing', '0,0125 USD', 'Promociones, ofertas y mensajes para volver a escribir')}</div></div>
       </section>
-      <section class="tn-sec"><h3>Mensaje</h3>
+      <section class="tn-sec${t.soloLineas ? ' tn-bloq' : ''}"${t.soloLineas ? ' inert' : ''}><h3>Mensaje</h3>
         <div class="tn-campo"><span>Encabezado <em>· opcional</em></span>
           <div class="tn-seg" role="group" aria-label="Tipo de encabezado">${seg('data-tn-head', [['', 'Ninguno'], ['texto', 'Texto', TP_IC.texto], ['video', 'Video', TP_IC.video]], t.headTipo)}</div>
           ${t.headTipo === 'texto' ? `<input id="t-h" value="${esc(t.head)}" placeholder="Ej. Te recordamos" maxlength="60" aria-label="Texto del encabezado">` : ''}
@@ -353,7 +356,7 @@ function plantillaNueva(){
             <div class="tn-vars"><span>Insertar:</span>${TP_VARS.map(v => `<button type="button" data-var="${v}">{{${v}}}</button>`).join('')}<span class="cont" id="tn-cont">${String(t.body || '').length.toLocaleString('es-CO')} / 1.024</span></div></div></div>
         <div class="tn-campo"><label for="t-f">Pie <em>· opcional</em></label><input id="t-f" value="${esc(t.foot)}" maxlength="60" autocomplete="off"></div>
       </section>
-      <section class="tn-sec"><h3>Botón <small>Opcional</small></h3>
+      <section class="tn-sec${t.soloLineas ? ' tn-bloq' : ''}"${t.soloLineas ? ' inert' : ''}><h3>Botón <small>Opcional</small></h3>
         <div class="tn-seg" role="group" aria-label="Tipo de botón">${seg('data-tn-btn', [['', 'Sin botón'], ['Respuesta rápida', 'Respuesta rápida'], ['Enlace', 'Enlace'], ['Llamar', 'Llamar']], t.btn)}</div>
         ${t.btn ? `<div class="tn-campo"><label for="t-bt">Texto del botón <em>· hasta 25 letras</em></label><input id="t-bt" value="${esc(t.btnTxt)}" maxlength="25" placeholder="${t.btn === 'Enlace' ? 'Ver más' : t.btn === 'Llamar' ? 'Llamar a mi asesor' : 'Sí, quiero información'}"></div>` : ''}
         ${t.btn === 'Enlace' ? `<div class="tn-campo"><label for="t-bu">Enlace del botón</label><input id="t-bu" value="${esc(t.btnUrl)}" placeholder="https://www.tuempresa.com"></div>` : ''}

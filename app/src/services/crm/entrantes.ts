@@ -1104,12 +1104,12 @@ async function actualizarCalidad(v: Json) {
   if (!digitos) return
   const linea = (await prisma.crmLinea.findMany()).find(l => l.telefono.replace(/\D/g, '') === digitos)
   if (!linea) return
-  const d = await credDeLinea(linea).then(cred => graph<Json>(`/${linea.phoneNumberId}`, { cred, query: { fields: 'quality_rating,messaging_limit_tier' } })).catch(() => ({} as Json))
+  const d = await credDeLinea(linea).then(cred => graph<Json>(`/${linea.phoneNumberId}`, { cred, query: { fields: 'quality_rating,whatsapp_business_manager_messaging_limit' } })).catch(() => ({} as Json))
   const l = await prisma.crmLinea.update({
     where: { id: linea.id },
     data: {
       calidad: d.quality_rating ? calidadTexto(d.quality_rating) : linea.calidad,
-      limite: limiteTexto(d.messaging_limit_tier ?? v.current_limit) ?? linea.limite,
+      limite: limiteTexto(d.whatsapp_business_manager_messaging_limit ?? v.max_daily_conversations_per_business ?? v.current_limit) ?? linea.limite,
     },
   })
   emitirCrm({ tipo: 'linea', linea: lineaAFront(l) })
@@ -1216,6 +1216,14 @@ export async function procesarWebhookCrm(cuerpo: Json, conexionId: string | null
             if (linea) for (const e of v.message_echoes ?? []) await procesarEcoWhatsapp(linea, e).catch(err => { fallas.push(`eco ${e?.id}: ${(err as Error).message}`) })
           } else if (cambio?.field === 'phone_number_quality_update') {
             await actualizarCalidad(v)
+          } else if (cambio?.field === 'business_capability_update') {
+            // El límite es del portafolio (desde 2025-10-07): lo comparten todas las líneas de la cuenta.
+            const limite = limiteTexto(v.max_daily_conversations_per_business ?? v.max_daily_conversation_per_phone)
+            const wabaId = String(entrada?.id ?? '')
+            if (limite && wabaId) {
+              await prisma.crmLinea.updateMany({ where: { wabaId }, data: { limite } })
+              for (const l of await prisma.crmLinea.findMany({ where: { wabaId } })) emitirCrm({ tipo: 'linea', linea: lineaAFront(l) })
+            }
           } else {
             logger.info(`[CRM WA] aviso de Meta sin uso en el CRM: ${cambio?.field}`)
           }

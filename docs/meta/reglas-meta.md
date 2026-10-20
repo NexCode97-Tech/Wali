@@ -133,10 +133,10 @@ Leído de la documentación oficial el 2026-10-20 (`developers.facebook.com/docu
 ## Pendientes de Wali según estas reglas (2026-10-20)
 
 1. **Hecho:** plantillas por línea, editar y eliminar.
-2. **Corregir:** no dejar editar el texto de una plantilla en revisión (PENDING) y no ofrecer «Eliminar» en una DISABLED.
-3. **Corregir:** usar `whatsapp_business_manager_messaging_limit` en vez de `messaging_limit_tier`, porque hoy el límite sale «Sin dato».
-4. **Corregir:** dejar el registro integrado en v4: `extras` sin `sessionInfoVersion`; solo `featureType` para coexistencia.
+2. **Hecho (2026-10-20):** no dejar editar el texto de una plantilla en revisión (PENDING) y no ofrecer «Eliminar» en una DISABLED.
+3. **Hecho (2026-10-20):** usar `whatsapp_business_manager_messaging_limit` en vez de `messaging_limit_tier`, porque hoy el límite sale «Sin dato».
+4. **Hecho (2026-10-20):** dejar el registro integrado en v4: `extras` sin `sessionInfoVersion`; solo `featureType` para coexistencia.
 5. **Configurar:** suscribir la app a `account_update`, `business_capability_update` y `account_alerts`.
-6. **Avisar en Wali:** cuando la Messaging account no tiene método de pago (`primary_funding_id`).
+6. ~~Avisar en Wali cuando la Messaging account no tiene método de pago~~. No se puede: `primary_funding_id` solo lo pueden leer los Solution Partners (error 10, probado el 2026-10-20). Wali le recuerda al cliente agregarlo al conectar.
 7. **Agregar:** encabezado con imagen y con documento.
 8. **Agregar:** revisar en el formulario que las variables no sean demasiadas para lo corto del texto, y que no se repita una plantilla existente.
