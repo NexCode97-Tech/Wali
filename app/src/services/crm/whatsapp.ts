@@ -5,7 +5,7 @@ import { AppError } from '../../utils/errors'
 import { emitirMsg } from './tiempoReal'
 import { nombreDe } from './usuarios'
 import { telDigitos } from './formas'
-import { buscarPlantilla, variablesDe, type PlantillaMeta } from './plantillas'
+import { buscarPlantilla, plantillaEnLinea, variablesDe, type PlantillaMeta } from './plantillas'
 import { credDeLinea, hayWhatsapp, type CredMeta } from './credenciales'
 import { leerAjuste } from './ajustes'
 
@@ -570,6 +570,7 @@ async function armarCuerpo(m: MsgConTodo, cred: CredMeta): Promise<Json> {
     const p = await buscarPlantilla(c.linea.wabaId, plantilla, txt(datos.idioma) || undefined)
     if (!p) throw new ErrorEnvio(`La plantilla «${plantilla}» no existe en Meta para esta línea`)
     if (p.status !== 'APPROVED') throw new ErrorEnvio(`La plantilla «${plantilla}» no está aprobada por Meta todavía`)
+    if (c.lineaId && !(await plantillaEnLinea(p.name, c.lineaId))) throw new ErrorEnvio(`La plantilla «${plantilla}» no está habilitada para esta línea`)
     return cuerpoPlantilla(m, datos, p)
   }
 

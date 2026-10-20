@@ -1,6 +1,6 @@
 import { prisma } from './bd'
 import { espacioActual } from './espacio'
-import { AppError, ValidationError } from '../../utils/errors'
+import { AppError, NotFoundError, ValidationError } from '../../utils/errors'
 import { leerAjuste, guardarAjuste } from './ajustes'
 import { emitirCrm } from './tiempoReal'
 import { archivoPermitido, baseGraph, graph, waConfigurado } from './whatsapp'
@@ -11,6 +11,8 @@ import { credDeWaba, type CredMeta } from './credenciales'
  * en la cuenta (WABA) de cada línea conectada. Meta pide el nombre en
  * minúsculas y sin tildes («aviso_de_cuota»); el nombre con tildes que se
  * muestra en la pantalla se guarda en el ajuste `plantillasNombres`.
+ * Cada plantilla es de unas líneas (20-oct, ajuste `plantillasLineas`, por slug): solo se envía desde ellas. Sin
+ * entrada en el ajuste (las creadas directo en Meta o antes de esto) sirve en todas las líneas de su cuenta.
  */
 
 type Json = Record<string, any>
@@ -28,6 +30,14 @@ export interface PlantillaFront {
   media?: 'imagen' | 'video' | 'documento'
   /** El archivo guardado del encabezado (plantillas con video creadas desde el CRM): sale con la plantilla. */
   mediaUrl?: string; mediaN?: string
+  /** Las líneas donde se usa; null = todas las de su cuenta. */
+  lineas: string[] | null
+  /** Las cuentas de Meta donde existe (una plantilla de líneas de cuentas distintas vive en cada una). */
+  wabas: string[]
+  /** Estado tal cual lo da Meta, el motivo del rechazo y lo demás que el formulario necesita para editarla. */
+  estadoMeta: string; motivo: string
+  headTipo: '' | 'texto' | 'video'; head: string; foot: string
+  btn: '' | 'Respuesta rápida' | 'Enlace' | 'Llamar'; btnTxt: string; btnUrl: string; btnTel: string
 }
 
 const MEDIA_CABECERA: Record<string, PlantillaFront['media']> = { IMAGE: 'imagen', VIDEO: 'video', DOCUMENT: 'documento' }
@@ -112,7 +122,20 @@ async function usos(): Promise<Map<string, number>> {
   return new Map(filas.map(f => [f.n, Number(f.c)]))
 }
 
-function aFront(p: PlantillaMeta, nombres: Record<string, string>, u: Map<string, number>, guardados: Record<string, { url: string; n?: string }> = {}): PlantillaFront | null {
+async function lineasDePlantillas(): Promise<Record<string, string[]>> {
+  const v = await leerAjuste<unknown>('plantillasLineas')
+  return v && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, string[]> : {}
+}
+
+/** ¿La plantilla se puede enviar desde esa línea? Sin líneas guardadas, sí (sirve en toda su cuenta). */
+export async function plantillaEnLinea(slug: string, lineaId: string): Promise<boolean> {
+  const l = (await lineasDePlantillas())[slug]
+  return !Array.isArray(l) || !l.length || l.includes(lineaId)
+}
+
+const TIPO_BOTON: Record<string, PlantillaFront['btn']> = { QUICK_REPLY: 'Respuesta rápida', URL: 'Enlace', PHONE_NUMBER: 'Llamar' }
+
+function aFront(p: PlantillaMeta, nombres: Record<string, string>, u: Map<string, number>, guardados: Record<string, { url: string; n?: string }> = {}, lineas: Record<string, string[]> = {}): PlantillaFront | null {
   const n = nombres[p.name] ?? humanizar(p.name)
   const cuerpo = String((p.components ?? []).find(c => String(c.type).toUpperCase() === 'BODY')?.text ?? '')
   let e: PlantillaFront['e']; let x: string
@@ -127,11 +150,18 @@ function aFront(p: PlantillaMeta, nombres: Record<string, string>, u: Map<string
   }
   const cabecera = (p.components ?? []).find(c => String(c.type).toUpperCase() === 'HEADER')
   const media = MEDIA_CABECERA[String(cabecera?.format ?? '').toUpperCase()]
+  const pie = (p.components ?? []).find(c => String(c.type).toUpperCase() === 'FOOTER')
+  const boton = ((p.components ?? []).find(c => String(c.type).toUpperCase() === 'BUTTONS')?.buttons ?? [])[0] as Json | undefined
+  const formato = String(cabecera?.format ?? '').toUpperCase()
   return {
     n, slug: p.name, c: CATEGORIA[p.category] ?? p.category, e, x, u: u.get(n) ?? 0, b: cuerpo,
     idioma: p.language, id: p.id, waba: p.waba, vars: variablesDe(cuerpo),
     ...(media ? { media } : {}),
     ...(media && guardados[p.name]?.url ? { mediaUrl: guardados[p.name].url, mediaN: guardados[p.name].n ?? '' } : {}),
+    lineas: Array.isArray(lineas[p.name]) && lineas[p.name].length ? lineas[p.name] : null, wabas: [p.waba],
+    estadoMeta: p.status, motivo: p.status === 'REJECTED' ? (MOTIVO[p.rejected_reason ?? 'NONE'] ?? String(p.rejected_reason).toLowerCase().replace(/_/g, ' ')) : '',
+    headTipo: formato === 'VIDEO' ? 'video' : formato === 'TEXT' ? 'texto' : '', head: formato === 'TEXT' ? String(cabecera?.text ?? '') : '', foot: String(pie?.text ?? ''),
+    btn: TIPO_BOTON[String(boton?.type ?? '').toUpperCase()] ?? '', btnTxt: String(boton?.text ?? ''), btnUrl: String(boton?.url ?? ''), btnTel: String(boton?.phone_number ?? ''),
   }
 }
 
@@ -145,15 +175,18 @@ export async function listarPlantillas(): Promise<PlantillaFront[]> {
   if (!(await waConfigurado())) return []
   const wabas = await wabasConectadas()
   if (!wabas.length) return []
-  const [nombres, u, guardados] = await Promise.all([nombresVisibles(), usos(), mediaDePlantillas()])
-  const salida: PlantillaFront[] = []
+  const [nombres, u, guardados, lineas] = await Promise.all([nombresVisibles(), usos(), mediaDePlantillas(), lineasDePlantillas()])
+  // Una plantilla de líneas de cuentas distintas existe en cada cuenta: sale una sola vez, con todas sus cuentas.
+  const porSlug = new Map<string, PlantillaFront>()
   for (const waba of wabas) {
     for (const p of await plantillasDeWaba(waba, true)) {
-      const f = aFront(p, nombres, u, guardados)
-      if (f) salida.push(f)
+      const f = aFront(p, nombres, u, guardados, lineas)
+      if (!f) continue
+      const ya = porSlug.get(f.slug + '|' + f.idioma)
+      if (ya) ya.wabas.push(waba); else porSlug.set(f.slug + '|' + f.idioma, f)
     }
   }
-  return salida
+  return [...porSlug.values()]
 }
 
 const EJEMPLOS: Record<string, string> = {
@@ -182,11 +215,12 @@ async function muestraEnMeta(cred: CredMeta, archivo: Buffer, nombre: string): P
   return j.h
 }
 
-/** Crea la plantilla en Meta (en cada cuenta de las líneas conectadas). Solo líderes. */
-export async function crearPlantilla(entrada: { n?: unknown; c?: unknown; b?: unknown; head?: unknown; foot?: unknown; btn?: unknown; btnTxt?: unknown; btnUrl?: unknown; btnTel?: unknown; video?: unknown }, por: string | null): Promise<PlantillaFront> {
-  if (!(await waConfigurado())) throw new AppError('Primero conecta WhatsApp en Ajustes del CRM, Canales', 409)
+type EntradaPlantilla = { n?: unknown; c?: unknown; b?: unknown; head?: unknown; foot?: unknown; btn?: unknown; btnTxt?: unknown; btnUrl?: unknown; btnTel?: unknown; video?: unknown; lineas?: unknown }
+
+/** Revisa lo que llega del formulario y arma los componentes de Meta. Crear y editar usan lo mismo; al editar, el slug no cambia. */
+function armarPlantilla(entrada: EntradaPlantilla, slugFijo?: string) {
   const n = String(entrada.n ?? '').trim()
-  const slug = slugPlantilla(n)
+  const slug = slugFijo ?? slugPlantilla(n)
   if (!n || !slug) throw new ValidationError('Ponle un nombre a la plantilla')
   if (n.length > 200) throw new ValidationError('El nombre de la plantilla es demasiado largo')
   const cat = String(entrada.c ?? '').trim().toLowerCase()
@@ -204,9 +238,6 @@ export async function crearPlantilla(entrada: { n?: unknown; c?: unknown; b?: un
   if (/^\{\{/.test(b) || /\}\}$/.test(b)) throw new ValidationError('Las variables no pueden ir al principio ni al final del mensaje: Meta la rechaza')
   if (/\}\}\s*\{\{/.test(b)) throw new ValidationError('Dos variables seguidas no se pueden: pon texto entre ellas')
   const vars = variablesDe(b)
-
-  const wabas = await wabasConectadas()
-  if (!wabas.length) throw new ValidationError('Primero conecta una línea de WhatsApp: la plantilla se crea en la cuenta de esa línea')
 
   // Encabezado, pie y botón que arma la pantalla (límites de Meta: 60, 60 y 25 caracteres).
   const head = String(entrada.head ?? '').trim()
@@ -254,14 +285,43 @@ export async function crearPlantilla(entrada: { n?: unknown; c?: unknown; b?: un
       ...(boton ? [{ type: 'BUTTONS', buttons: [boton] }] : []),
     ],
   })
+  return { n, slug, categoria, b, vars, video, videoUrl, armar }
+}
+
+/** Baja de la Nube el video de muestra del encabezado (se sube a Meta con el token de cada cuenta). */
+async function videoDeMuestra(videoUrl: string): Promise<Buffer> {
+  const r = await fetch(videoUrl.replace(/\.[a-z0-9]{2,5}(\?.*)?$/i, '') + '.mp4', { signal: AbortSignal.timeout(60_000) }).catch(() => null)
+  if (!r || !r.ok) throw new ValidationError('No se pudo leer el video de la Nube del CRM. Súbelo otra vez.')
+  const buf = Buffer.from(await r.arrayBuffer())
+  if (buf.length > 16 * 1024 * 1024) throw new ValidationError('El video pasa de 16 MB, el máximo de WhatsApp')
+  return buf
+}
+
+/** Las líneas elegidas en el formulario y sus cuentas de Meta. Sin el campo (llamadas viejas), null: todas. */
+async function lineasElegidas(valor: unknown): Promise<{ ids: string[]; wabas: string[] } | null> {
+  if (valor === undefined || valor === null) return null
+  const ids = Array.isArray(valor) ? [...new Set(valor.map(v => String(v ?? '').trim()).filter(Boolean))] : []
+  if (!ids.length) throw new ValidationError('Elige al menos una línea donde se use la plantilla')
+  const filas = await prisma.crmLinea.findMany({ where: { id: { in: ids } }, select: { id: true, wabaId: true } })
+  if (filas.length !== ids.length) throw new ValidationError('Una de las líneas elegidas ya no está conectada: recarga y elige otra vez')
+  return { ids, wabas: [...new Set(filas.map(f => f.wabaId))] }
+}
+
+async function guardarLineas(slug: string, ids: string[] | null, por: string | null) {
+  const todas = await lineasDePlantillas()
+  if (ids) todas[slug] = ids; else delete todas[slug]
+  await guardarAjuste('plantillasLineas', todas, por)
+}
+
+/** Crea la plantilla en Meta, en la cuenta de cada línea elegida. Solo líderes. */
+export async function crearPlantilla(entrada: EntradaPlantilla, por: string | null): Promise<PlantillaFront> {
+  if (!(await waConfigurado())) throw new AppError('Primero conecta WhatsApp en Ajustes del CRM, Canales', 409)
+  const { n, slug, categoria, b, vars, video, videoUrl, armar } = armarPlantilla(entrada)
+  const elegidas = await lineasElegidas(entrada.lineas)
+  const wabas = elegidas ? elegidas.wabas : await wabasConectadas()
+  if (!wabas.length) throw new ValidationError('Primero conecta una línea de WhatsApp: la plantilla se crea en la cuenta de esa línea')
   // El video de muestra se baja una vez de la Nube y se sube a Meta con el token de cada cuenta.
-  let videoBuf: Buffer | null = null
-  if (video) {
-    const r = await fetch(videoUrl.replace(/\.[a-z0-9]{2,5}(\?.*)?$/i, '') + '.mp4', { signal: AbortSignal.timeout(60_000) }).catch(() => null)
-    if (!r || !r.ok) throw new ValidationError('No se pudo leer el video de la Nube del CRM. Súbelo otra vez.')
-    videoBuf = Buffer.from(await r.arrayBuffer())
-    if (videoBuf.length > 16 * 1024 * 1024) throw new ValidationError('El video pasa de 16 MB, el máximo de WhatsApp')
-  }
+  const videoBuf = video ? await videoDeMuestra(videoUrl) : null
   let cuerpo = armar(null)
   let creada: { id?: string; status?: string; category?: string } = {}
   for (const waba of wabas) {
@@ -272,6 +332,7 @@ export async function crearPlantilla(entrada: { n?: unknown; c?: unknown; b?: un
   }
   const nombres = await nombresVisibles()
   await guardarAjuste('plantillasNombres', { ...nombres, [slug]: n }, por)
+  if (elegidas) await guardarLineas(slug, elegidas.ids, por)
   // El video de la plantilla queda guardado: sale con ella cada vez que se envía (whatsapp.ts lo toma de aquí).
   if (video) await guardarAjuste('plantillasMedia', { ...(await mediaDePlantillas()), [slug]: { url: videoUrl, n: String(video.n ?? 'video.mp4').slice(0, 200), mime: 'video/mp4', peso: videoBuf?.length ?? null } }, por)
   olvidarPlantillas()
@@ -279,6 +340,76 @@ export async function crearPlantilla(entrada: { n?: unknown; c?: unknown; b?: un
   const f = aFront({
     id: creada.id ?? '', name: slug, language: 'es', status: creada.status ?? 'PENDING', category: creada.category ?? categoria,
     parameter_format: 'NAMED', components: cuerpo.components, waba: wabas[0],
-  }, { ...nombres, [slug]: n }, new Map())
-  return f ?? { n, slug, c: CATEGORIA[categoria], e: 'w', x: 'En revisión en Meta', u: 0, b, idioma: 'es', id: creada.id ?? '', waba: wabas[0], vars }
+  }, { ...nombres, [slug]: n }, new Map(), {}, elegidas ? { [slug]: elegidas.ids } : {})
+  if (f) f.wabas = wabas
+  return f ?? { n, slug, c: CATEGORIA[categoria], e: 'w', x: 'En revisión en Meta', u: 0, b, idioma: 'es', id: creada.id ?? '', waba: wabas[0], vars,
+    lineas: elegidas?.ids ?? null, wabas, estadoMeta: 'PENDING', motivo: '', headTipo: '', head: '', foot: '', btn: '', btnTxt: '', btnUrl: '', btnTel: '' }
+}
+
+/** Lo que Meta compara de una plantilla: sin los ejemplos ni el archivo de muestra. */
+function firma(componentes: Json[] | undefined): string {
+  return JSON.stringify((componentes ?? []).map(c => ({
+    t: String(c.type).toUpperCase(), f: String(c.format ?? '').toUpperCase(), x: String(c.text ?? ''),
+    b: (c.buttons ?? []).map((k: Json) => [String(k.type).toUpperCase(), String(k.text ?? ''), String(k.url ?? ''), String(k.phone_number ?? '')]),
+  })))
+}
+
+/**
+ * Edita una plantilla (20-oct). Cambiar solo el nombre o las líneas es del CRM y no pasa por Meta. Cambiar el texto
+ * la manda otra vez a revisión de Meta en cada cuenta donde exista (Meta deja editar una aprobada una vez al día y 10
+ * veces al mes, y no deja cambiarle la categoría). Si se agregan líneas de otra cuenta, se crea también allá.
+ */
+export async function editarPlantilla(slug: string, entrada: EntradaPlantilla, por: string | null): Promise<PlantillaFront> {
+  if (!(await waConfigurado())) throw new AppError('Primero conecta WhatsApp en Ajustes del CRM, Canales', 409)
+  const existentes: PlantillaMeta[] = []
+  for (const waba of await wabasConectadas()) existentes.push(...(await plantillasDeWaba(waba, true)).filter(p => p.name === slug))
+  if (!existentes.length) throw new NotFoundError('Esa plantilla ya no existe en Meta')
+  const { n, categoria, video, videoUrl, armar } = armarPlantilla(entrada, slug)
+  const aprobada = existentes.some(p => p.status === 'APPROVED')
+  if (aprobada && categoria !== existentes[0].category) throw new ValidationError('A una plantilla aprobada no se le puede cambiar la categoría: crea una nueva con la otra categoría')
+  const elegidas = await lineasElegidas(entrada.lineas)
+  const guardados = await mediaDePlantillas()
+  const cambioVideo = !!video && guardados[slug]?.url !== videoUrl
+  const cambioTexto = cambioVideo || firma(existentes[0].components) !== firma(armar(video ? 'x' : null).components)
+  const videoBuf = video && (cambioTexto || elegidas) ? await videoDeMuestra(videoUrl || guardados[slug]?.url || '') : null
+  if (cambioTexto) {
+    for (const p of existentes) {
+      const cred = await credDeWaba(p.waba)
+      const cuerpo = armar(videoBuf ? await muestraEnMeta(cred, videoBuf, String(video?.n ?? 'video.mp4')) : null)
+      await graph(`/${encodeURIComponent(p.id)}`, { cred, method: 'POST', body: { components: cuerpo.components, ...(p.status === 'APPROVED' ? {} : { category: categoria }) } })
+    }
+  }
+  // Líneas de una cuenta donde la plantilla no existe todavía: se crea allá con el texto nuevo.
+  for (const waba of (elegidas?.wabas ?? []).filter(w => !existentes.some(p => p.waba === w))) {
+    const cred = await credDeWaba(waba)
+    await graph(`/${encodeURIComponent(waba)}/message_templates`, { cred, method: 'POST', body: armar(videoBuf ? await muestraEnMeta(cred, videoBuf, String(video?.n ?? 'video.mp4')) : null) })
+  }
+  await guardarAjuste('plantillasNombres', { ...(await nombresVisibles()), [slug]: n }, por)
+  if (elegidas) await guardarLineas(slug, elegidas.ids, por)
+  if (video && cambioVideo) await guardarAjuste('plantillasMedia', { ...guardados, [slug]: { url: videoUrl, n: String(video.n ?? 'video.mp4').slice(0, 200), mime: 'video/mp4', peso: videoBuf?.length ?? null } }, por)
+  olvidarPlantillas()
+  emitirCrm({ tipo: 'plantillas' }, por)
+  const f = (await listarPlantillas()).find(x => x.slug === slug)
+  if (!f) throw new NotFoundError('Esa plantilla ya no existe en Meta')
+  return f
+}
+
+/** Borra la plantilla en Meta, en cada cuenta donde exista. Es inmediato y no pasa por revisión; Meta no deja usar ese nombre por 30 días. */
+export async function eliminarPlantilla(slug: string, por: string | null): Promise<{ slug: string }> {
+  if (!(await waConfigurado())) throw new AppError('Primero conecta WhatsApp en Ajustes del CRM, Canales', 409)
+  let borradas = 0
+  for (const waba of await wabasConectadas()) {
+    if (!(await plantillasDeWaba(waba, true)).some(p => p.name === slug)) continue
+    await graph(`/${encodeURIComponent(waba)}/message_templates`, { cred: await credDeWaba(waba), method: 'DELETE', query: { name: slug } })
+    borradas++
+  }
+  if (!borradas) throw new NotFoundError('Esa plantilla ya no existe en Meta')
+  const nombres = await nombresVisibles(); delete nombres[slug]
+  await guardarAjuste('plantillasNombres', nombres, por)
+  await guardarLineas(slug, null, por)
+  const media = await mediaDePlantillas()
+  if (media[slug]) { delete media[slug]; await guardarAjuste('plantillasMedia', media, por) }
+  olvidarPlantillas()
+  emitirCrm({ tipo: 'plantillas' }, por)
+  return { slug }
 }

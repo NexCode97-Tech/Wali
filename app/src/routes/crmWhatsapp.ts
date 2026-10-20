@@ -11,7 +11,7 @@ import { AppError, ConflictError, ForbiddenError, NotFoundError, ValidationError
 import { lineaAFront, telDigitos, telVisible } from '../services/crm/formas'
 import { emitirConv, emitirCrm } from '../services/crm/tiempoReal'
 import { procesarEventoGuardado } from '../services/crm/entrantes'
-import { crearPlantilla, listarPlantillas } from '../services/crm/plantillas'
+import { crearPlantilla, editarPlantilla, eliminarPlantilla, listarPlantillas } from '../services/crm/plantillas'
 import { ErrorMeta, calidadTexto, graph, limiteTexto, numeroListo, numerosDeWaba } from '../services/crm/whatsapp'
 import {
   agregarCuentaWhatsapp, conectarWhatsappManual, conectarWhatsappMeta, conexionConClaves, conexionPorClave, desconectar, guardarProveedor, listarConexiones,
@@ -359,6 +359,14 @@ rutasWaCrm.get('/plantillas', asyncHandler(async (_req: Request, res: Response) 
 
 rutasWaCrm.post('/plantillas', soloLideres, asyncHandler(async (req: Request, res: Response) => {
   return ApiResponse.created(res, await crearPlantilla(req.body ?? {}, req.userId ?? null))
+}))
+
+rutasWaCrm.put('/plantillas/:slug', soloLideres, asyncHandler(async (req: Request, res: Response) => {
+  return ApiResponse.success(res, await editarPlantilla(String(req.params.slug), req.body ?? {}, req.userId ?? null))
+}))
+
+rutasWaCrm.delete('/plantillas/:slug', soloLideres, asyncHandler(async (req: Request, res: Response) => {
+  return ApiResponse.success(res, await eliminarPlantilla(String(req.params.slug), req.userId ?? null))
 }))
 
 // ─── Telegram, TikTok y el regreso de las ventanas de autorización (públicos) ─

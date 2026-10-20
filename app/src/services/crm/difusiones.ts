@@ -10,7 +10,7 @@ import { idDeNombre, nombreDe } from './usuarios'
 import { avisar } from '../notificaciones'
 import { avisarLideres } from './avisosCrm'
 import { waConfigurado } from './whatsapp'
-import { buscarPlantilla, variablesDe, type PlantillaMeta } from './plantillas'
+import { buscarPlantilla, plantillaEnLinea, variablesDe, type PlantillaMeta } from './plantillas'
 
 /**
  * Motor de difusiones del CRM (26-sep-2026). La pantalla guarda cada difusión
@@ -209,6 +209,7 @@ async function revisarPlantilla(linea: CrmLinea, nombre: string): Promise<InfoPl
     return { ok: false, estado: 'pausada', motivo: `no se pudo consultar la plantilla en Meta (${(e as Error).message}). Se reintenta sola cada minuto` }
   }
   if (!p) return { ok: false, estado: 'error', motivo: `la plantilla «${nombre}» ya no existe en Meta para la línea ${linea.nombre}` }
+  if (!(await plantillaEnLinea(p.name, linea.id))) return { ok: false, estado: 'error', motivo: `la plantilla «${nombre}» no está habilitada para la línea ${linea.nombre}` }
   if (p.status === 'PAUSED') return { ok: false, estado: 'pausada', motivo: `Meta pausó la plantilla «${nombre}» por baja calidad. Sigue sola cuando Meta la reactive` }
   if (p.status !== 'APPROVED') return { ok: false, estado: 'error', motivo: `la plantilla «${nombre}» no está aprobada en Meta: ${ESTADO_PLANTILLA[p.status] ?? p.status}` }
   const faltan = new Set<string>()
