@@ -65,13 +65,16 @@ app.use(helmet({
       // Solo a donde la pantalla de verdad llama (revisión de seguridad 8-oct): el propio CRM, los archivos de la nube
       // (base de conocimiento) y el botón de Meta. Antes era cualquier https:, por donde un script colado podía sacar datos.
       connectSrc:     ["'self'", 'https://res.cloudinary.com', 'https://*.facebook.com', 'https://*.facebook.net'],
-      frameSrc:       ["'self'", 'https://www.facebook.com', 'https://web.facebook.com'],
+      frameSrc:       ["'self'", 'https://www.facebook.com', 'https://web.facebook.com', 'https://staticxx.facebook.com'],
       frameAncestors: ["'self'"],
       objectSrc:      ["'none'"],
       ...(process.env.NODE_ENV === 'production' ? { upgradeInsecureRequests: [] } : { upgradeInsecureRequests: null }),
     },
   },
   crossOriginEmbedderPolicy: false,
+  // La ventana de Meta (registro integrado) le devuelve el código a esta página por window.opener: con «same-origin»
+  // el navegador corta ese lazo y FB.login vuelve sin código («No se terminó la conexión con Meta», 20-oct).
+  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
   hsts: process.env.NODE_ENV === 'production' ? { maxAge: 31536000, includeSubDomains: true } : false,
 }))
 
