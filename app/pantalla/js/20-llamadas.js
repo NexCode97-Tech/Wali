@@ -274,6 +274,32 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ln-plat .ln-plat-pie{border-top:1px solid var(--line);background:var(--bg2);padding:14px 20px 16px}
 .ln-plat-h2{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 @media (max-width:760px){.ln-pasos{grid-template-columns:1fr}.ln-vacio{padding:32px 18px 28px}}
+/* Carga entre los pasos de «Conectar WhatsApp» (opción A aprobada, 20-oct): la burbuja de la nota de voz con su borde
+   amarillo dando la vuelta, como cuando suena, la onda moviéndose y la línea hacia el paso que viene llenándose. */
+.cxc{display:flex;flex-direction:column;align-items:center;text-align:center;padding:30px 0 26px;gap:16px}
+.cxc-bur{width:72px;height:72px;display:block}
+.cxc-bur svg{display:block;width:72px;height:72px;overflow:visible}
+.cxc-bur .vz-cuerpo{fill:#17140F}
+.cxc-bur .vz-pista,.cxc-bur .vz-lleno{fill:none;stroke-width:2.1;stroke-linejoin:round;stroke-linecap:round}
+.cxc-bur .vz-pista{stroke:#e5e7eb}
+.cxc-bur .vz-lleno{stroke:#FFD21F;stroke-dasharray:100;animation:cxc-llenar 1.8s cubic-bezier(.65,0,.35,1) infinite}
+@keyframes cxc-llenar{0%{stroke-dashoffset:100;opacity:1}70%{stroke-dashoffset:0;opacity:1}88%{stroke-dashoffset:0;opacity:0}100%{stroke-dashoffset:100;opacity:0}}
+.cxc-pt{fill:#FFD21F;animation:cxc-punto 1.2s ease-in-out infinite}
+.cxc-pt:nth-child(2){animation-delay:.15s}
+.cxc-pt:nth-child(3){animation-delay:.3s}
+@keyframes cxc-punto{0%,60%,100%{opacity:.35;transform:translateY(0)}30%{opacity:1;transform:translateY(-1.6px)}}
+.cxc b{display:block;font-size:15px;font-weight:600;color:var(--ink)}
+.cxc small{display:block;margin-top:2px;font-size:12.5px;color:var(--ink3)}
+.cxc-onda{display:flex;align-items:center;gap:3px;height:26px}
+.cxc-onda i{display:block;width:3px;border-radius:3px;background:#d5d8e0;animation:cxc-barra 1.1s ease-in-out infinite}
+@keyframes cxc-barra{0%,100%{height:5px;background:#d5d8e0}50%{height:22px;background:#FFD21F}}
+.cxc-lento{font-size:12.5px;color:var(--ink2);opacity:0;animation:cxc-ver .4s ease-out 10s forwards}
+@keyframes cxc-ver{to{opacity:1}}
+.pasos2.cxc-sig > div.on + div::after,.pasos2.cxc-act > div.on::after{content:"";position:absolute;top:13px;left:calc(-50% + 16px);height:2px;border-radius:2px;background:#FFD21F;animation:cxc-linea 1.8s cubic-bezier(.65,0,.35,1) infinite}
+.pasos2.cxc-sig > div.on + div i,.pasos2.cxc-act > div.on i{border-color:#FFD21F;animation:cxc-latido 1.8s ease-in-out infinite}
+@keyframes cxc-linea{0%{width:0}70%,100%{width:calc(100% - 32px)}}
+@keyframes cxc-latido{0%,60%{box-shadow:0 0 0 0 rgba(255,210,31,0)}75%{box-shadow:0 0 0 6px rgba(255,210,31,.35)}100%{box-shadow:0 0 0 0 rgba(255,210,31,0)}}
+@media (prefers-reduced-motion:reduce){.cxc-bur .vz-lleno,.cxc-pt,.cxc-onda i,.pasos2.cxc-sig > div.on + div::after,.pasos2.cxc-act > div.on::after,.pasos2.cxc-sig > div.on + div i,.pasos2.cxc-act > div.on i{animation-duration:3s}}
 @media (max-width:1100px){.ln-res,.ln-grilla{grid-template-columns:1fr}}
 @media (max-width:600px){.ln-f{flex-wrap:wrap}.ln-f .ctl{width:100%;padding-left:42px}.ln-f .dsel{min-width:0!important;width:100%}.ln-form,.ln-copiables{grid-template-columns:1fr}.ln-sub{padding-left:16px}}
 @media (prefers-reduced-motion:reduce){.ln-conectar svg,.ln-lnk svg{transition:none}}
@@ -469,6 +495,12 @@ const numeroSel = x => x.numeros.find(n => n.phoneNumberId === x.sel) || {};
 const cxNombre = c => c.modo === 'meta' ? 'WhatsApp conectado con Meta' : c.nombre;
 const cxDetalle = c => [c.modo === 'meta' ? 'Con el botón de Meta' : `App de Meta ${c.appId || ''}`.trim(), `${c.cuentas} ${c.cuentas === 1 ? 'cuenta' : 'cuentas'} de WhatsApp`, c.lineas ? `${c.lineas} ${c.lineas === 1 ? 'línea' : 'líneas'} en el CRM` : ''].filter(Boolean).join(' · ');
 const datoCopiable = (etq, v) => `<div class="cx-dato"><span>${etq}</span><code>${esc(v)}</code><button type="button" class="btn ic" data-cx-copiar="${esc(v)}" aria-label="Copiar ${etq}">${I('share')}</button></div>`;
+function cxCarga(titulo, sub){
+  return `<div class="cxc" role="status"><span class="cxc-bur"><svg viewBox="-1.5 -1 47 47" aria-hidden="true"><g transform="translate(22 22.5) scale(1.14) translate(-22 -22.5)"><path class="vz-pista" d="${VZ_FORMA}" pathLength="100"/><path class="vz-lleno" d="${VZ_FORMA}" pathLength="100"/></g><path class="vz-cuerpo" d="${VZ_FORMA}"/><g><circle class="cxc-pt" cx="15.5" cy="19" r="2.1"/><circle class="cxc-pt" cx="22" cy="19" r="2.1"/><circle class="cxc-pt" cx="28.5" cy="19" r="2.1"/></g></svg></span>
+    <div><b>${titulo}</b><small>${sub}</small></div>
+    <span class="cxc-onda" aria-hidden="true">${Array.from({length: 12}, (_, k) => `<i style="animation-delay:${(k * .08).toFixed(2)}s"></i>`).join('')}</span>
+    <p class="cxc-lento">Sigue trabajando, no cierres la ventana.</p></div>`;
+}
 function pasoCuenta(x){
   const usables = conexionesWa().filter(cxUsable);
   if (!x.nueva && usables.length) return `<p>Elige la cuenta de Meta del número que vas a conectar.</p>
@@ -479,6 +511,9 @@ function pasoCuenta(x){
     ${datoCopiable('Dirección', c.webhookUrl || '')}${datoCopiable('Código de verificación', c.verifyToken || '')}
     <p class="muted">Cuando Meta la verifique, los mensajes empiezan a llegar. Mientras tanto ya puedes elegir el número.</p>`; }
   const prov = x.prov, fbListo = prov && prov.listo;
+  if (x.fbCargando) return x.fbFase === 'crm' ? cxCarga('Conectando tu cuenta con Wali…', 'Meta ya respondió; el CRM está guardando el acceso')
+    : cxCarga('Termina en la ventana de Meta', 'Cuando oprimas Finalizar allá, seguimos aquí');
+  if (x.enviandoCx) return cxCarga('Conectando tu cuenta de Meta…', 'Revisando la app y sus permisos');
   if (!x.manual) return `<p>Elige cómo conectar la cuenta de WhatsApp Business de tu empresa.</p>
     <div class="cx-list">
       <button type="button" class="opc" data-cx-fb="1" ${fbListo && !x.fbCargando ? '' : 'disabled'}><span class="marca fb">${LOGO.fb}</span><span class="tx"><b>${x.fbCargando ? 'Abriendo Facebook…' : 'Continuar con Facebook'}${fbListo ? '<span class="etq-rec">Recomendado</span>' : prov == null ? '' : '<span class="etq-pronto">No disponible todavía</span>'}</b><small>${prov == null ? 'Revisando…' : fbListo ? 'Inicias sesión con Facebook, eliges o creas el número y listo.' : 'Se activa cuando Meta apruebe este CRM. Mientras tanto, usa los datos de tu app.'}</small></span>${fbListo ? I('chev', 'i ch') : ''}</button>
@@ -515,7 +550,8 @@ function faltaCx(x, todo){
   return t.charAt(0).toUpperCase() + t.slice(1) + '.';
 }
 function pintarConexion(){
-  const x = st.cx, pasos = pasosHTML(['Cuenta', 'Número', 'Datos', 'Conexión'], x.paso);
+  const x = st.cx, carga = x.paso === 1 && (x.fbCargando || x.enviandoCx) ? 'cxc-sig' : x.paso === 2 && x.cargando ? 'cxc-act' : '';
+  const pasos = pasosHTML(['Cuenta', 'Número', 'Datos', 'Conexión'], x.paso).replace('class="pasos2"', `class="pasos2${carga ? ' ' + carga : ''}"`);
   const cab = (titulo, sub) => dlgCab('wa', LOGO.wa, titulo, sub);
   const tel = esc(numeroSel(x).tel || '');
   let h = '';
@@ -529,7 +565,7 @@ function pintarConexion(){
     h = `${cab('Conectar WhatsApp', x.manual ? 'Pega los datos de tu app de Meta: el CRM configura el resto' : 'Conecta tu cuenta de WhatsApp Business y elige el número')}${pasos}${pasoCuenta(x)}<div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button>${pie}</div>`;
   }
   if (x.paso === 2) {
-    const cuerpo = x.cargando ? '<p class="muted">Buscando los números de la cuenta de Meta…</p>'
+    const cuerpo = x.cargando ? cxCarga('Buscando los números de tu cuenta…', 'Meta tarda unos segundos en responder')
       : x.error ? `<p>No se pudo consultar la cuenta de Meta: ${esc(x.error)}</p><div><button type="button" class="btn" data-cx-reintentar="1">${I('swap')}Volver a intentar</button></div>`
       : !x.numeros.length ? '<p>Esa cuenta de WhatsApp no tiene números libres para conectar.</p><p class="muted">Primero se agrega el número en el administrador de WhatsApp de Meta y se verifica con el código que llega por SMS. Después aparece aquí.</p>'
       : `<p>Estos son los números de la cuenta de WhatsApp que todavía no están en el CRM.</p>
@@ -706,13 +742,14 @@ function conectarConFacebook(x, coex){
     .then(r => {
       const code = r && r.authResponse && r.authResponse.code;
       if (!code) throw new Error(x.errorCx || 'No se terminó la conexión con Meta.');
+      x.fbFase = 'crm'; pintarConexion();
       // El número llega por el mensaje de Meta; a veces después de la respuesta: se le da un momento.
       return new Promise(ok => setTimeout(ok, sesion.waba_id ? 0 : 800)).then(() =>
         crmApi('POST', '/crm/conexiones/whatsapp/meta', {code, wabaId:sesion.waba_id || '', phoneNumberId:sesion.phone_number_id || '', coexistencia:!!coex}));
     })
     .then(c => { mezclarConexion(c); x.conexionId = c.id; x.preferido = c.phoneNumberId || null; x.coexNum = coex ? c.phoneNumberId || null : null; x.paso = 2; x.sel = null; toast(coex ? 'Tu app de WhatsApp Business quedó conectada' : 'Cuenta de WhatsApp conectada con Meta'); buscarNumeros(x); })
     .catch(err => { x.errorCx = err.message || 'No se pudo conectar con Meta'; })
-    .finally(() => { window.removeEventListener('message', oir); x.fbCargando = false; if (st.cx === x && !document.getElementById('ov-x').hidden) pintarConexion(); });
+    .finally(() => { window.removeEventListener('message', oir); x.fbCargando = false; x.fbFase = ''; if (st.cx === x && !document.getElementById('ov-x').hidden) pintarConexion(); });
 }
 function conectarLinea(x){
   const n = numeroSel(x);
@@ -762,12 +799,10 @@ document.getElementById('ov-x').addEventListener('click', e => {
     .then(() => { const i = LINEAS.findIndex(l => l.id === id); if (i >= 0) LINEAS.splice(i, 1); waCaidoSin(c => { c.lineas = (c.lineas || []).filter(n => n !== nombre); return c.lineas.length > 0; }); cerrarDialogo(); render(); toast('Línea quitada del CRM'); })
     .catch(err => { b.disabled = false; toast(err.message || 'No se pudo quitar la línea'); });
 });
-// Del primer paso de la ventana de conexión al recuadro del botón de Facebook de la plataforma (solo el operador).
+// Del primer paso de la ventana de conexión a la página Plataforma Wali (solo el operador).
 document.getElementById('ov-x').addEventListener('click', e => {
   if (!e.target.closest('[data-cx-irprov]')) return;
-  cerrarDialogo(); st.pagina = 'cfg-lineas'; render();
-  // El recuadro sale cuando llega la configuración de la plataforma: se busca hasta 2 s.
-  let n = 0; const ir = () => { const b = document.querySelector('.ln-plat'); if (b) b.scrollIntoView({behavior: 'smooth', block: 'start'}); else if (++n < 20) setTimeout(ir, 100); }; setTimeout(ir, 80);
+  cerrarDialogo(); st.pagina = 'cfg-plataforma'; render();
 });
 /** La franja roja sin lo que se acaba de quitar (83-wa-caido.js), sin esperar el aviso del servidor. */
 function waCaidoSin(queda){
