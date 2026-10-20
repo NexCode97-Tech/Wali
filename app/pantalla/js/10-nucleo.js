@@ -845,7 +845,9 @@ function pagina(){
         ['folder','Archivos','Material para enviar en mensajes, difusiones y flujos','cfg-archivos']]],
       ['Cuenta', [
         ['card','Plan y pagos','Tu plan del CRM, el historial de pagos y los recibos','cfg-plan'],
-        ['users','Espacios de trabajo','Las empresas de tu cuenta, cada una con su CRM aparte','cfg-espacios']]],
+        ['users','Espacios de trabajo','Las empresas de tu cuenta, cada una con su CRM aparte','cfg-espacios'],
+        // La configuración del botón de Meta de toda la plataforma: solo la ve su administrador (rediseño de Líneas, 20-oct).
+        ...(CRM_YO.operador ? [['lock','Plataforma Wali','Botón de Meta y avisos. Solo tú lo ves','cfg-plataforma']] : [])]],
     ];
     const tg = (k, t, d) => `<div class="tgr"><span>${t}${d ? `<small>${d}</small>` : ''}</span><button type="button" class="tg" role="switch" data-aj-tg="${k}" aria-checked="${!!AJ[k]}" aria-label="${esc(t)}"></button></div>`;
     const SECS = []; const ac = (id, ic, t, d, body) => { SECS.push({id, ic, t, d, body}); return ''; };
