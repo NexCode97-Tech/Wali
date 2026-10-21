@@ -312,9 +312,10 @@ export async function proveedorPublico(baseApi: string) {
   const filas = await prismaGlobal.configApp.findMany({ where: { clave: { in: [CLAVES_PROVEEDOR.verify, CLAVES_PROVEEDOR.appId, CLAVES_PROVEEDOR.configId, CLAVES_PROVEEDOR.configPaginas] } } })
   const v = (k: string) => filas.find(f => f.clave === k)?.valor ?? ''
   return {
-    listo: !!(p && p.configId), listoPaginas: !!(p && p.configPaginas), conClave: !!p,
+    // Lo que el botón necesita para abrir la ventana de Meta: nada de la configuración de la plataforma (código de
+    // verificación, direcciones de avisos). Eso se maneja fuera del CRM (21-oct).
+    listo: !!(p && p.configId), listoPaginas: !!(p && p.configPaginas),
     appId: v(CLAVES_PROVEEDOR.appId), configId: v(CLAVES_PROVEEDOR.configId), configPaginas: v(CLAVES_PROVEEDOR.configPaginas),
-    webhookUrl: urlAvisosGeneral(baseApi), webhookPaginas: `${baseApi}/api/crm/meta/webhook`, verifyToken: v(CLAVES_PROVEEDOR.verify),
   }
 }
 

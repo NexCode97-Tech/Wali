@@ -202,14 +202,6 @@ rutasWaCrm.get('/conexiones/proveedores', asyncHandler(async (req: Request, res:
   return ApiResponse.success(res, { instagram: await proveedorInstagramPublico(urlApi(req)), tiktok: await proveedorTiktokPublico(urlApi(req)) })
 }))
 
-rutasWaCrm.put('/conexiones/proveedores/:canal', asyncHandler(async (req: Request, res: Response) => {
-  if (!req.operador) throw new ForbiddenError('Solo el operador de la plataforma configura los botones de conexión')
-  const canal = String(req.params.canal)
-  if (canal === 'instagram') return ApiResponse.success(res, await guardarProveedorInstagram(req.body ?? {}, urlApi(req)))
-  if (canal === 'tiktok') return ApiResponse.success(res, await guardarProveedorTiktok(req.body ?? {}, urlApi(req)))
-  throw new NotFoundError('Ese canal no tiene botón de conexión')
-}))
-
 /** Instagram y Messenger con los datos de la app. Si el token llega a varias páginas, devuelve cuáles para elegir. */
 rutasWaCrm.post('/conexiones/pagina', soloLideres, asyncHandler(async (req: Request, res: Response) => {
   const r = await conectarPaginaManual(req.body ?? {}, urlApi(req), req.userId ?? null)
@@ -228,13 +220,6 @@ rutasWaCrm.delete('/conexiones/:id', soloLideres, asyncHandler(async (req: Reque
 
 /** El botón de Meta: lo que el CRM necesita para abrirlo (sin la clave secreta). */
 rutasWaCrm.get('/conexiones/proveedor', asyncHandler(async (req: Request, res: Response) => {
-  return ApiResponse.success(res, await proveedorPublico(urlApi(req)))
-}))
-
-/** Configurar la app proveedora: solo el operador de la plataforma (cuenta con `operador`). */
-rutasWaCrm.put('/conexiones/proveedor', asyncHandler(async (req: Request, res: Response) => {
-  if (!req.operador) throw new ForbiddenError('Solo el operador de la plataforma configura el botón de Meta')
-  await guardarProveedor(req.body ?? {})
   return ApiResponse.success(res, await proveedorPublico(urlApi(req)))
 }))
 

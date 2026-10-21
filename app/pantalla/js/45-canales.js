@@ -207,28 +207,7 @@ function paginaCanal(k){
       ${fila('Recibir sus mensajes', hay ? (on ? 'Llegan a la bandeja' : 'Apagado: sus mensajes no entran al CRM') : 'Se activa al conectar la cuenta', sw(info.sw, on, `aria-label="Recibir los mensajes de ${info.n}" ${hay ? '' : 'disabled'}`))}
       ${fila('Equipo que los atiende', 'Recibe las conversaciones nuevas de este canal', eqSel)}</div>
       ${cxs.length ? `<div class="box2"><h4>${I('lock')}${k === 'fb' ? 'Páginas conectadas' : k === 'tg' ? 'Bots conectados' : 'Cuentas conectadas'}</h4>${cxs.map(tarjeta).join('')}</div>` : ''}
-      <div><button type="button" class="btn${cxs.length ? '' : ' pri'}" data-ccm-conectar="1">${I('plus')}${cxs.length ? ({fb:'Conectar otra página', tg:'Conectar otro bot'}[k] || 'Conectar otra cuenta') : ({fb:'Conectar una página', tg:'Conectar un bot'}[k] || 'Conectar la cuenta')}</button></div>
-      ${cajaProveedorCanal(k)}</div></div>`;
-}
-
-/* Botones de la plataforma para Instagram y TikTok: solo los configura el operador de la plataforma. */
-st.provCanales = null;
-function cajaProveedorCanal(k){
-  if ((k !== 'ig' && k !== 'tt') || !CRM_YO.operador) return '';
-  const P = st.provCanales;
-  if (!P) { crmApi('GET', '/crm/conexiones/proveedores').then(d => { st.provCanales = d; if (st.pagina === INFO_CANAL[k].pagina) render(); }).catch(() => {}); return ''; }
-  const p = (k === 'ig' ? P.instagram : P.tiktok) || {};
-  const estado = `<span class="${p.listo ? 'll-ok' : 'muted'}">${p.listo ? `${I('check')}Activo` : 'Sin configurar'}</span>`;
-  if (k === 'ig') return `<div class="box2"><h4>${I('lock')}Botón «Continuar con Instagram» de la plataforma</h4>
-    <p class="muted" style="margin:0 0 8px">Lo ven todas las empresas al conectar Instagram. Usa la app de Meta de la plataforma, con el inicio de sesión para empresas de Instagram aprobado por Meta. Los avisos llegan a la dirección de páginas del botón de Meta (Líneas de WhatsApp), firmados con la clave de esa app.</p>
-    <div class="cx-f">${campo('pv-ig-app', 'Identificador de la app de Instagram', p.appId, 'inputmode="numeric"')}${campo('pv-ig-sec', 'Clave secreta de la app de Instagram', '', `type="password" placeholder="${p.listo ? 'Guardada: déjala vacía para no cambiarla' : '32 letras y números'}"`)}</div>
-    ${p.regreso ? `<p class="muted" style="margin:0">En la app, «URL de redireccionamiento de OAuth»:</p>${datoCopiable('Dirección de regreso', p.regreso)}` : ''}
-    <div class="cx-acc">${estado}<button type="button" class="btn pri" data-pv-canal="ig">${I('check')}Guardar</button></div></div>`;
-  return `<div class="box2"><h4>${I('lock')}Botón «Continuar con TikTok» de la plataforma</h4>
-    <p class="muted" style="margin:0 0 8px">Lo ven todas las empresas al conectar TikTok. Usa la app de TikTok API for Business de la plataforma con acceso a Business Messaging. Al guardar, el CRM apunta los avisos de la app a su dirección.</p>
-    <div class="cx-f">${campo('pv-tt-app', 'App ID', p.appId, 'inputmode="numeric"')}${campo('pv-tt-sec', 'Secret', '', `type="password" placeholder="${p.listo ? 'Guardado: déjalo vacío para no cambiarlo' : 'El Secret de la app'}"`)}${campo('pv-tt-url', 'Enlace de autorización', p.urlAutorizacion)}</div>
-    ${p.regreso ? `<p class="muted" style="margin:0">En la app, «TikTok account holder redirect URL»:</p>${datoCopiable('Dirección de regreso', p.regreso)}` : ''}
-    <div class="cx-acc">${estado}<button type="button" class="btn pri" data-pv-canal="tt">${I('check')}Guardar</button></div></div>`;
+      <div><button type="button" class="btn${cxs.length ? '' : ' pri'}" data-ccm-conectar="1">${I('plus')}${cxs.length ? ({fb:'Conectar otra página', tg:'Conectar otro bot'}[k] || 'Conectar otra cuenta') : ({fb:'Conectar una página', tg:'Conectar un bot'}[k] || 'Conectar la cuenta')}</button></div></div></div>`;
 }
 
 const PAGINA_A_CANAL = {'cfg-instagram':'ig', 'cfg-messenger':'fb', 'cfg-telegram':'tg', 'cfg-tiktok':'tt', 'cfg-meta':'fb'};
@@ -245,11 +224,6 @@ document.getElementById('page').addEventListener('click', e => {
       .catch(err => { toast(err.message || 'No se pudo revisar'); rv.disabled = false; }); return; }
   const qt = t.closest('[data-ccm-quitar]'); if (qt) { const c = CONEXIONES.find(x => x.id === qt.dataset.ccmQuitar); if (!c) return; st.cc = null; const info = INFO_CANAL[k];
     abrirDialogo(`${dlgCab(info.marca, info.logo(), `Desconectar ${esc(nombreCx(c))}`, `Dejan de llegar sus mensajes de ${info.n}`)}<p>Las conversaciones que ya hay se quedan en la bandeja, pero no se pueden responder hasta volver a conectarla.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" data-ccm-quitarok="${c.id}">${I('x')}Desconectar</button></div>`); return; }
-  const pv = t.closest('[data-pv-canal]'); if (pv) { const v = id => ((document.getElementById(id) || {}).value || '').trim(), c = pv.dataset.pvCanal;
-    const cuerpo = c === 'ig' ? {appId:v('pv-ig-app'), appSecret:v('pv-ig-sec')} : {appId:v('pv-tt-app'), appSecret:v('pv-tt-sec'), urlAutorizacion:v('pv-tt-url')};
-    crmApi('PUT', `/crm/conexiones/proveedores/${c === 'ig' ? 'instagram' : 'tiktok'}`, cuerpo)
-      .then(p => { st.provCanales = {...(st.provCanales || {}), [c === 'ig' ? 'instagram' : 'tiktok']: p}; render(); toast(p.errorAvisos ? `Guardado, pero TikTok no aceptó la dirección de avisos: ${p.errorAvisos}` : 'Botón guardado'); })
-      .catch(err => toast(err.message || 'No se pudo guardar')); return; }
 });
 document.getElementById('ov-x').addEventListener('click', e => {
   const b = e.target.closest('[data-ccm-quitarok]'); if (!b || b.disabled) return; b.disabled = true;

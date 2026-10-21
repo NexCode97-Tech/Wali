@@ -206,33 +206,12 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ln-nota span{flex:1 1 300px}
 .ln-hook{padding:12px 16px;background:var(--bg2);display:grid;gap:8px}
 .ln-hook p{margin:0;font-size:12.5px;color:var(--ink2)}
-.ln-plat{border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden}
-.ln-plat-cab{display:flex;align-items:flex-start;gap:14px;padding:16px 18px 4px;flex-wrap:wrap}
-.ln-plat-cab .fic{width:38px;height:38px;border-radius:10px;background:var(--bg3);display:grid;place-items:center;flex:none}
-.ln-plat-cab .fic svg{width:21px;height:21px;display:block}
-.ln-plat-cab div{flex:1 1 320px;min-width:0}
-.ln-plat-cab h4{margin:0;font-size:14.5px;font-weight:600;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.ln-plat-cab p{margin:4px 0 0;color:var(--ink3);font-size:13px;max-width:72ch}
-.ln-solo{font-size:11.5px;font-weight:600;padding:2px 9px;border-radius:999px;border:1px solid #d5d8e0;color:var(--ink2)}
-.ln-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 18px;padding:14px 18px 4px}
-.ln-campo label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
-.ln-campo label small{font-weight:400;color:var(--ink3)}
-.ln-campo input{width:100%;height:38px;border:1px solid #d5d8e0;border-radius:10px;padding:0 12px;font:inherit;font-size:13px;font-variant-numeric:tabular-nums;background:#fff;transition:border-color .15s,box-shadow .15s}
-.ln-campo input:hover{border-color:var(--ink3)}
-.ln-campo input:focus{outline:none;border-color:var(--blue-ink);box-shadow:0 0 0 3px rgba(25,118,210,.15)}
-.ln-campo .ayuda{display:block;margin-top:5px;font-size:12px;color:var(--ink3)}
-.ln-copiables{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 18px;margin:12px 18px 0;padding:12px 14px;border-radius:12px;background:var(--bg2)}
-.ln-copiables p{grid-column:1/-1;margin:0;font-size:12.5px;color:var(--ink2)}
 .ln-copiable small{display:block;font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:4px}
 .ln-copiable div{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:5px 5px 5px 10px}
 .ln-copiable code{flex:1;min-width:0;font-family:inherit;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ln-copiable button{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;color:var(--ink2);border:0;background:none;cursor:pointer;flex:none}
 .ln-copiable button:hover{background:var(--bg3);color:var(--ink)}
 .ln-copiable button svg{width:15px;height:15px}
-.ln-plat-pie{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px 16px;flex-wrap:wrap}
-.ln-plat-est{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--amber-ink)}
-.ln-plat-est.ok{color:var(--green-ink)}
-.ln-plat-est i{width:7px;height:7px;border-radius:50%;background:currentColor}
 /* Rediseño aprobado (lienzo «Maquetas Wali», 20-oct): un solo botón para conectar, estado vacío con los tres pasos,
    «Conexión con Meta» compacta abajo y la configuración del botón de Meta en su propia página (Plataforma Wali). */
 .ln .ln-conectar{height:40px;padding:0 18px 0 14px;white-space:nowrap;flex:none;box-shadow:0 1px 2px rgba(11,11,16,.12),0 4px 12px -4px rgba(230,217,0,.6)}
@@ -269,19 +248,10 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ln-paso b{display:block;font-size:13.5px;font-weight:600}
 .ln-paso small{display:block;font-size:12.5px;color:var(--ink3);margin-top:1px}
 .ln-vacio .nota{margin:12px 0 0;font-size:12.5px;color:var(--ink3)}
-.ln-plat-sec{padding:18px 20px;border-top:1px solid var(--line)}
-.ln-plat-sec:first-child{border-top:0}
-.ln-plat-sec h4{margin:0;font-size:14px;font-weight:600}
-.ln-plat-sec > p{margin:3px 0 0;color:var(--ink3);font-size:13px;max-width:80ch}
-.ln-plat-sec .ln-form{padding:0;margin-top:14px}
-.ln-plat-sec .ln-copiables{margin:14px 0 0;padding:0;background:none}
-.ln-plat-sec .ln-copiable div{background:var(--bg2)}
 .ln-pm{display:grid;gap:10px;margin-top:14px}
 .ln-pm > div{display:grid;grid-template-columns:28px 1fr;gap:12px;align-items:start}
 .ln-pm p{margin:0;font-size:13px;color:var(--ink2);padding-top:3px}
 .ln-pm p b{color:var(--ink);font-weight:600}
-.ln-plat .ln-plat-pie{border-top:1px solid var(--line);background:var(--bg2);padding:14px 20px 16px}
-.ln-plat-h2{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 @media (max-width:760px){.ln-pasos{grid-template-columns:1fr}.ln-vacio{padding:32px 18px 28px}}
 /* Carga entre los pasos de «Conectar WhatsApp» (opción A aprobada, 20-oct): la burbuja de la nota de voz con su borde
    amarillo dando la vuelta, como cuando suena, la onda moviéndose y la línea hacia el paso que viene llenándose. */
@@ -390,36 +360,6 @@ function mmRevisar(id, callado){
 }
 const lnCopiable = (etq, v) => `<div class="ln-copiable"><small>${etq}</small><div><code>${esc(v)}</code><button type="button" data-cx-copiar="${esc(v)}" aria-label="Copiar ${etq}">${LN_IC.copiar}</button></div></div>`;
 
-/* El botón «Conectar con Facebook» usa la app de Meta de la plataforma: la configura su administrador, una sola vez. */
-st.provCfg = null;
-st.pvBorrador = null;
-function paginaPlataforma(){
-  const volver = `<button type="button" class="volver" data-ir="ajustes-crm">${I('back')}Ajustes del CRM</button>`;
-  const cab = `<div class="ln-cab"><div><h2 class="ln-plat-h2">Plataforma Wali <span class="ln-solo">Solo tú lo ves</span></h2><p class="sub">La app de Meta que usan todas las empresas de Wali para conectar WhatsApp, Instagram y Messenger con un clic. Se configura una sola vez.</p></div></div>`;
-  return `<div class="ajw" style="max-width:920px">${volver}<div class="ln">${cab}${CRM_YO.operador ? cajaProveedor() : '<div class="box2"><p class="sub">Esta página es solo para el administrador de la plataforma.</p></div>'}</div></div>`;
-}
-function cajaProveedor(){
-  const p = st.provCfg, bo = st.pvBorrador || {};
-  const val = (k, guardado) => esc(bo[k] != null ? bo[k] : guardado || '');
-  if (!p) { crmApi('GET', '/crm/conexiones/proveedor').then(d => { st.provCfg = d; if (st.pagina === 'cfg-plataforma') render(); }).catch(() => {}); return ''; }
-  const estado = p.listo && p.listoPaginas ? ['ok', 'Activo para WhatsApp, Instagram y Messenger'] : p.listo ? ['ok', 'Activo para WhatsApp'] : p.listoPaginas ? ['', 'Falta la configuración de WhatsApp'] : ['', 'Sin configurar'];
-  return `<section class="ln-plat" aria-label="Botón Conectar con Facebook">
-    <div class="ln-plat-sec"><h4>App de Meta</h4><p>Los datos de la app en developers.facebook.com.</p>
-    <div class="ln-form">
-      <div class="ln-campo"><label for="pv-app">Identificador de la app <small>(App ID)</small></label><input id="pv-app" value="${val('pv-app', p.appId)}" inputmode="numeric" autocomplete="off" placeholder="Ej. 1234567890123456"><span class="ayuda">Configuración de la app → Básica</span></div>
-      <div class="ln-campo"><label for="pv-sec">Clave secreta de la app</label><input id="pv-sec" type="password" value="${val('pv-sec', '')}" autocomplete="new-password" placeholder="${p.conClave ? 'Guardada: déjala vacía para no cambiarla' : '32 letras y números'}"><span class="ayuda">Se guarda cifrada y no se vuelve a mostrar</span></div>
-      <div class="ln-campo"><label for="pv-cfg">Configuración de WhatsApp <small>(config_id)</small></label><input id="pv-cfg" value="${val('pv-cfg', p.configId)}" inputmode="numeric" autocomplete="off" placeholder="Ej. 1234567890123456"><span class="ayuda">Facebook Login for Business → Configuraciones → registro integrado</span></div>
-      <div class="ln-campo"><label for="pv-cfgp">Configuración de Instagram y Messenger <small>(config_id)</small></label><input id="pv-cfgp" value="${val('pv-cfgp', p.configPaginas)}" inputmode="numeric" autocomplete="off" placeholder="Ej. 1234567890123456"><span class="ayuda">Otra configuración, para páginas</span></div>
-    </div></div>
-    ${p.verifyToken ? `<div class="ln-plat-sec"><h4>Avisos de mensajes (webhook)</h4>
-      <div class="ln-pm"><div><span class="n on">1</span><p>En la app de Meta, ve a <b>WhatsApp → Configuración → Webhook</b> y pega esta dirección y este código.</p></div>
-        <div><span class="n">2</span><p>Suscríbete a <b>messages</b>, <b>message_template_status_update</b> y <b>phone_number_quality_update</b>.</p></div>
-        <div><span class="n">3</span><p>Para Instagram y Messenger, usa la dirección de páginas con el mismo código.</p></div></div>
-      <div class="ln-copiables">${lnCopiable('Dirección de avisos', p.webhookUrl)}${lnCopiable('Código de verificación', p.verifyToken)}${p.webhookPaginas ? lnCopiable('Dirección de páginas', p.webhookPaginas) : ''}</div></div>` : ''}
-    <div class="ln-plat-pie"><span class="ln-plat-est ${estado[0]}"><i></i>${estado[1]}</span><button type="button" class="btn pri" data-pv-guardar="1">${I('check')}Guardar</button></div>
-  </section>`;
-}
-
 /* Una línea: encabezado con su estado y menú, y las filas de equipo, calidad, límite y llamadas. */
 function tarjetaLinea(l, lim){
   const i = CFG.lineas.findIndex(x => x.id === l.id), x = CFG.lineas[i] || {id:l.id, eq:'Ventas'};
@@ -478,10 +418,10 @@ function paginaLineas(){
   </div></div>`;
 }
 const paginaCfgBase = paginaCfg;
-paginaCfg = function(k){ return k === 'lineas' ? paginaLineas() : k === 'plataforma' ? paginaPlataforma() : paginaCfgBase(k); };
+paginaCfg = function(k){ return k === 'lineas' ? paginaLineas() : paginaCfgBase(k); };
 
 document.getElementById('page').addEventListener('click', e => {
-  if (!['cfg-lineas', 'cfg-plataforma'].includes(st.pagina)) return; const t = e.target;
+  if (st.pagina !== 'cfg-lineas') return; const t = e.target;
   if (t.closest('[data-ll-conectar]')) { abrirConexion('Ventas'); return; }
   const mn = t.closest('[data-ln-menu]'); if (mn) { st.lnMenu = st.lnMenu === mn.dataset.lnMenu ? null : mn.dataset.lnMenu; render(); return; }
   const vr = t.closest('[data-ln-ver]'); if (vr) { st.lnMenu = null; st.linea = ''; filtrar('linea', vr.dataset.lnVer); return; }
@@ -496,18 +436,11 @@ document.getElementById('page').addEventListener('click', e => {
     abrirDialogo(`<h3>Quitar ${esc(l.n)} del CRM</h3><p>El CRM deja de recibir y enviar mensajes por ${esc(l.tel)}. Las conversaciones que ya hay se quedan. En Meta no se toca nada: la puedes volver a conectar cuando quieras.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626" data-ln-quitarok="${l.id}">${I('x')}Quitar</button></div>`); return; }
   const qt = t.closest('[data-cxm-quitar]'); if (qt) { const c = CONEXIONES.find(x => x.id === qt.dataset.cxmQuitar); if (!c) return;
     abrirDialogo(`<h3>Desconectar ${esc(cxNombre(c))}</h3><p>Sus ${c.lineas} ${c.lineas === 1 ? 'línea sale' : 'líneas salen'} del CRM y dejan de llegar sus mensajes. Las conversaciones que ya hay se quedan.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626" data-cxm-quitarok="${c.id}">${I('x')}Desconectar</button></div>`); return; }
-  const pg = t.closest('[data-pv-guardar]'); if (pg) { if (pg.disabled) return;
-    const p = st.provCfg || {}, bo = st.pvBorrador || {};
-    const v = (id, guardado) => String((document.getElementById(id) || {}).value || bo[id] || guardado || '').trim();
-    pg.disabled = true;
-    crmApi('PUT', '/crm/conexiones/proveedor', {appId:v('pv-app', p.appId), configId:v('pv-cfg', p.configId), configPaginas:v('pv-cfgp', p.configPaginas), appSecret:v('pv-sec')})
-      .then(r => { st.provCfg = r; st.pvBorrador = null; render(); toast('Botón de Meta guardado'); })
-      .catch(err => { pg.disabled = false; toast(err.message || 'No se pudo guardar'); }); return; }
   const on = t.closest('[data-ll-on]'); if (on && !on.disabled) { const id = on.dataset.llOn, c = LLAM.lineas[id]; c.on = !c.on; c.desde = c.on ? new Date().toISOString() : null; st.lnAbierto[id] = c.on ? 'aj' : ''; render(); toast(c.on ? 'Llamadas activadas en ' + lineaDe(id).n : 'Llamadas apagadas en ' + lineaDe(id).n); return; }
   const tg = t.closest('[data-ll-tg]'); if (tg) { const [id, k] = tg.dataset.llTg.split('|'); LLAM.lineas[id][k] = !LLAM.lineas[id][k]; render(); toast(LLAM.lineas[id][k] ? 'Activado' : 'Apagado'); return; }
   const eq = t.closest('[data-ll-eq]'); if (eq) { const [id, n] = eq.dataset.llEq.split('|'); LLAM.lineas[id].eq = n; render(); toast(`Las llamadas de ${lineaDe(id).n} suenan a ${n}`); return; }
 });
-document.getElementById('page').addEventListener('input', e => { if (st.pagina === 'cfg-plataforma' && /^pv-/.test(e.target.id || '')) st.pvBorrador = {...(st.pvBorrador || {}), [e.target.id]: e.target.value}; });
+
 document.getElementById('page').addEventListener('input', e => { if (['cfg-lineas', 'cfg-llamadas'].includes(st.pagina) && e.target.dataset.llIn === 'proposito') { const c = document.getElementById('ll-prop-c'); if (c) c.textContent = `${e.target.value.length}/250`; } });
 document.getElementById('page').addEventListener('change', e => {
   if (!['cfg-lineas', 'cfg-llamadas'].includes(st.pagina) || !e.target.dataset.llIn) return;
@@ -568,7 +501,7 @@ function pasoCuenta(x){
       <button type="button" class="opc" data-cx-fb="1" ${fbListo && !x.fbCargando ? '' : 'disabled'}><span class="marca fb">${LOGO.fb}</span><span class="tx"><b>${x.fbCargando ? 'Abriendo Facebook…' : 'Continuar con Facebook'}${fbListo ? '<span class="etq-rec">Recomendado</span>' : prov == null ? '' : '<span class="etq-pronto">No disponible todavía</span>'}</b><small>${prov == null ? 'Revisando…' : fbListo ? 'Inicias sesión con Facebook, eliges o creas el número y listo.' : 'Se activa cuando Meta apruebe este CRM. Mientras tanto, usa los datos de tu app.'}</small></span>${fbListo ? I('chev', 'i ch') : ''}</button>
       <button type="button" class="opc" data-cx-coex="1" ${fbListo && !x.fbCargando ? '' : 'disabled'}><span class="marca wa">${I('wa')}</span><span class="tx"><b>${x.fbCargando && x.coex ? 'Abriendo Meta…' : 'Con tu app de WhatsApp Business'}${fbListo ? '<span class="etq-rec">Escaneas un QR</span>' : prov == null ? '' : '<span class="etq-pronto">No disponible todavía</span>'}</b><small>${prov == null ? 'Revisando…' : fbListo ? 'El número sigue funcionando en tu celular y también en el CRM. Escaneas un QR desde la app.' : 'Se activa cuando Meta apruebe este CRM.'}</small></span>${fbListo ? I('chev', 'i ch') : ''}</button>
       <button type="button" class="opc" data-cx-manual="1"><span class="marca neutra">${LOGO.llave}</span><span class="tx"><b>Con los datos de tu app de Meta</b><small>Si ya tienes una app en developers.facebook.com: pegas su identificador, su clave secreta y un token.</small></span>${I('chev', 'i ch')}</button>
-    </div>${CRM_YO.operador && prov && !fbListo ? `<button type="button" class="cx-lnk" data-cx-irprov="1">Activa «Continuar con Facebook»: configura la app de Meta de la plataforma</button>` : ''}${x.errorCx ? `<div class="ll-nota">${esc(x.errorCx)}</div>` : ''}`;
+    </div>${x.errorCx ? `<div class="ll-nota">${esc(x.errorCx)}</div>` : ''}`;
   const a = x.app;
   return `<div class="cx-f">
       <label>Identificador de la app (App ID)<input id="cx-app" value="${esc(a.appId)}" inputmode="numeric" autocomplete="off" placeholder="Ej. 1234567890123456"></label>
@@ -847,11 +780,6 @@ document.getElementById('ov-x').addEventListener('click', e => {
   crmApi('DELETE', `/crm/lineas/${id}`)
     .then(() => { const i = LINEAS.findIndex(l => l.id === id); if (i >= 0) LINEAS.splice(i, 1); waCaidoSin(c => { c.lineas = (c.lineas || []).filter(n => n !== nombre); return c.lineas.length > 0; }); cerrarDialogo(); render(); toast('Línea quitada del CRM'); })
     .catch(err => { b.disabled = false; toast(err.message || 'No se pudo quitar la línea'); });
-});
-// Del primer paso de la ventana de conexión a la página Plataforma Wali (solo el operador).
-document.getElementById('ov-x').addEventListener('click', e => {
-  if (!e.target.closest('[data-cx-irprov]')) return;
-  cerrarDialogo(); st.pagina = 'cfg-plataforma'; render();
 });
 /** La franja roja sin lo que se acaba de quitar (83-wa-caido.js), sin esperar el aviso del servidor. */
 function waCaidoSin(queda){
