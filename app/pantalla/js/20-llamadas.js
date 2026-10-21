@@ -246,6 +246,14 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ln-cta .ctx b{font-size:13.5px}
 .ln-cta .acc{gap:8px;margin-left:4px}
 .ln-cta [data-cxm-quitar] svg{color:#dc2626}
+.ln-mm{display:flex;align-items:center;gap:14px;padding:12px 16px;border-top:1px solid var(--line);background:#fff;flex-wrap:wrap}
+.ln-mm .fic{width:38px;height:38px;border-radius:10px;background:#FFD21F;color:#0b0b10;display:grid;place-items:center;flex:none}
+.ln-mm .fic svg{width:18px;height:18px;display:block}
+.ln-mm .ctx{flex:1 1 220px;min-width:0}
+.ln-mm .ctx b{display:block;font-weight:600;font-size:13.5px}
+.ln-mm .ctx small{display:block;color:var(--ink3);font-size:12.5px}
+.ln-mm .acc{display:flex;gap:8px}
+.ln-mm a.btn{text-decoration:none}
 .ln-sub-pie{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:2px;padding-top:9px;border-top:1px dashed var(--line);font-size:12.5px;color:var(--ink3);flex-wrap:wrap}
 .ln-sub-pie .ln-lnk svg{transform:rotate(-90deg)}
 .ln-vacio{border:1px solid var(--line);border-radius:16px;background:#fff;padding:44px 32px 36px;display:flex;flex-direction:column;align-items:center;text-align:center}
@@ -256,7 +264,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ln-pasos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:26px 0;width:100%;max-width:760px;text-align:left}
 .ln-paso{display:flex;gap:12px;align-items:flex-start;padding:14px;border-radius:12px;background:var(--bg2)}
 /* Un solo diseño de círculo numerado (20-oct): el de la barra de pasos; amarillo el paso actual, negro con chulo el terminado */
-.ln-paso .n,.ln-pm .n{width:28px;height:28px;border-radius:50%;border:2px solid var(--line);background:#fff;color:var(--ink3);display:flex;align-items:center;justify-content:center;line-height:1;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;flex:none}
+.ln-paso .n,.ln-pm .n{width:28px;height:28px;border-radius:50%;border:2px solid var(--line);background:#fff;color:var(--ink3);display:grid;place-items:center;line-height:1;text-box:trim-both cap alphabetic;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;flex:none}
 .ln-paso .n.on,.ln-pm .n.on{background:#FFD21F;border-color:#FFD21F;color:#0b0b10}
 .ln-paso b{display:block;font-size:13.5px;font-weight:600}
 .ln-paso small{display:block;font-size:12.5px;color:var(--ink3);margin-top:1px}
@@ -337,9 +345,48 @@ function cajaCuentasMeta(){
     return `<div class="ln-cta"><span class="fic">${logoMeta()}</span><div class="ctx"><b>${esc(cxNombre(c))}</b><small>${n} ${n === 1 ? 'número' : 'números'} · ${avisos}</small></div>
       ${est}
       <div class="acc"><button type="button" class="btn" data-cxm-revisar="${c.id}">${I('swap')}Revisar</button><button type="button" class="btn" data-cxm-quitar="${c.id}">${I('x')}Desconectar</button></div></div>
+      ${lnFilaMarketing(c)}
       ${c.error ? `<div class="ln-nota">${LN_IC.alerta}<span>${esc(c.error)}</span></div>` : ''}
       ${manualPendiente ? `<div class="ln-hook"><p>Si Meta no manda los mensajes solo: en tu app de Meta ve a WhatsApp, Configuración, Webhook; pega esta dirección y este código y suscríbete al campo «messages».</p>${lnCopiable('Dirección de avisos', c.webhookUrl)}${lnCopiable('Código de verificación', c.verifyToken || '')}</div>` : ''}`;
   }).join('')}</div>`;
+}
+/* Marketing optimizado de Meta (maqueta aprobada 21-oct): si el portafolio de la cuenta aceptó los términos de la API
+   de Mensajes de marketing. El servidor lo guarda en cada línea (ajustes.mm); solo lo ve quien configura el CRM. */
+const LN_MM_IC = {
+  voz: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4.7a.7.7 0 0 0-1.2-.5L6.4 7.6A1.4 1.4 0 0 1 5.4 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.4a1.4 1.4 0 0 1 1 .4l3.4 3.4a.7.7 0 0 0 1.2-.5Z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.4 5.6a9 9 0 0 1 0 12.8"/></svg>',
+  revisar: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/></svg>',
+  afuera: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>',
+};
+st.mmPedido = st.mmPedido || {};
+/** El estado de una cuenta de Meta: el peor de sus líneas ('' = todavía no se sabe). */
+function mmDeConexion(c){
+  const es = LINEAS.filter(l => l.conexionId === c.id).map(l => (l.ajustes || {}).mm || '');
+  if (!es.length) return null;
+  return es.includes('pendiente') ? 'pendiente' : es.includes('') ? '' : es.every(e => e === 'no_elegible') ? 'no_elegible' : 'activo';
+}
+function lnFilaMarketing(c){
+  if (!puedeConfigurarCrm()) return '';
+  const e = mmDeConexion(c); if (e === null) return '';
+  // Sin estado todavía (líneas de antes): se le pregunta a Meta una vez por sesión.
+  if (e === '' && !st.mmPedido[c.id]) { st.mmPedido[c.id] = 1; mmRevisar(c.id, true); }
+  const waba = (LINEAS.find(l => l.conexionId === c.id && (l.ajustes || {}).mm === 'pendiente') || LINEAS.find(l => l.conexionId === c.id) || {}).wabaId || '';
+  const txt = e === 'activo' ? 'Las difusiones de marketing le llegan primero a quien más probabilidad tiene de leerlas. Misma tarifa.'
+    : e === 'pendiente' ? 'Falta aceptar los términos de Meta. Mientras tanto, tus difusiones salen por la vía normal. Desde abril de 2027 Meta lo exige.'
+    : e === 'no_elegible' ? 'Meta no lo ofrece para esta cuenta. Tus difusiones salen por la vía normal.'
+    : st.mmPedido[c.id] === 2 ? 'No se pudo saber con Meta. Tus difusiones salen igual.' : 'Revisando con Meta…';
+  const der = e === 'activo' ? `<span class="ln-chip ok">${I('check')}Activo</span>`
+    : e === 'pendiente' ? `<div class="acc"><button type="button" class="btn" data-mm-revisar="${c.id}">${LN_MM_IC.revisar}Revisar</button><a class="btn pri" href="https://business.facebook.com/wa/manage/home/?waba_id=${encodeURIComponent(waba)}" target="_blank" rel="noopener noreferrer">${LN_MM_IC.afuera}Aceptar en Meta</a></div>`
+    : e === 'no_elegible' ? `<span class="ln-chip">No disponible</span>`
+    : st.mmPedido[c.id] === 2 ? `<div class="acc"><button type="button" class="btn" data-mm-revisar="${c.id}">${LN_MM_IC.revisar}Revisar</button></div>` : '';
+  return `<div class="ln-mm"><span class="fic">${LN_MM_IC.voz}</span><div class="ctx"><b>Marketing optimizado de Meta</b><small>${txt}</small></div>${der}</div>`;
+}
+function mmRevisar(id, callado){
+  return crmApi('POST', `/crm/conexiones/${id}/marketing`).then(ls => {
+    for (const n of ls || []) { const x = LINEAS.find(l => l.id === n.id); if (x) x.ajustes = n.ajustes || {}; }
+    if (mmDeConexion({id}) === '') st.mmPedido[id] = 2;
+    if (!callado) { const e = mmDeConexion({id}); toast(e === 'activo' ? 'Marketing optimizado activo' : e === 'pendiente' ? 'Meta todavía no tiene los términos aceptados' : 'Revisado'); }
+    render();
+  }).catch(err => { st.mmPedido[id] = 2; if (!callado) toast(err.message || 'No se pudo revisar con Meta'); render(); });
 }
 const lnCopiable = (etq, v) => `<div class="ln-copiable"><small>${etq}</small><div><code>${esc(v)}</code><button type="button" data-cx-copiar="${esc(v)}" aria-label="Copiar ${etq}">${LN_IC.copiar}</button></div></div>`;
 
@@ -441,6 +488,7 @@ document.getElementById('page').addEventListener('click', e => {
   const ab = t.closest('[data-ln-abrir]'); if (ab) { const [id, k] = ab.dataset.lnAbrir.split('|'); st.lnAbierto[id] = st.lnAbierto[id] === k ? '' : k; render(); return; }
   if (st.lnMenu && !t.closest('.ln-menu')) { st.lnMenu = null; render(); }
   const cpy = t.closest('[data-cx-copiar]'); if (cpy) { copiar(cpy.dataset.cxCopiar, 'Copiado'); return; }
+  const mr = t.closest('[data-mm-revisar]'); if (mr && !mr.disabled) { mr.disabled = true; mmRevisar(mr.dataset.mmRevisar).finally(() => { mr.disabled = false; }); return; }
   const rv = t.closest('[data-cxm-revisar]'); if (rv && !rv.disabled) { rv.disabled = true;
     crmApi('POST', `/crm/conexiones/${rv.dataset.cxmRevisar}/revisar`).then(c => { mezclarConexion(c); toast(c.estado === 'conectada' ? 'La cuenta de Meta está bien' : 'La cuenta de Meta tiene un problema'); render(); })
       .catch(err => { toast(err.message || 'No se pudo revisar'); rv.disabled = false; }); return; }

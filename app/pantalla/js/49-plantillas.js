@@ -82,7 +82,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .tp-demo .bt{margin-top:6px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px;text-align:center;font-size:13px;font-weight:500;color:#1f93ff}
 .tp-pasos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:26px 0;width:100%;max-width:760px;text-align:left}
 .tp-paso{display:flex;gap:12px;align-items:flex-start;padding:14px;border-radius:12px;background:var(--bg2)}
-.tp-paso .n{width:28px;height:28px;border-radius:50%;border:2px solid var(--line);background:#fff;color:var(--ink3);display:flex;align-items:center;justify-content:center;line-height:1;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;flex:none;box-sizing:border-box}
+.tp-paso .n{width:28px;height:28px;border-radius:50%;border:2px solid var(--line);background:#fff;color:var(--ink3);display:grid;place-items:center;line-height:1;text-box:trim-both cap alphabetic;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;flex:none;box-sizing:border-box}
 .tp-paso .n.on{background:#FFD21F;border-color:#FFD21F;color:#0b0b10}
 .tp-paso b{display:block;font-size:13.5px;font-weight:600}
 .tp-paso small{display:block;font-size:12.5px;color:var(--ink3);margin-top:1px}
@@ -126,13 +126,26 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .tn-vars > span{font-size:12px;color:var(--ink3);margin-right:2px}
 .tn-vars button{height:26px;padding:0 9px;border-radius:999px;border:1px dashed #d5d8e0;background:#fff;font:inherit;font-size:12px;font-weight:500;color:var(--ink2);cursor:pointer;line-height:1}
 .tn-vars .cont{margin-left:auto;font-size:12px;color:var(--ink3);font-variant-numeric:tabular-nums}
-.tn-video{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px}
-.tn-video .ic{width:36px;height:36px;border-radius:10px;background:var(--bg3);display:flex;align-items:center;justify-content:center;flex:none}
-.tn-video .ic svg{width:18px;height:18px}
-.tn-video b{display:block;font-size:13px;font-weight:500}
-.tn-video small{display:block;font-size:12px;color:var(--ink3)}
-.tn-video .x{margin-left:auto;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#dc2626;border:0;background:none;cursor:pointer}
-.tn-video .x svg{width:16px;height:16px}
+.tn-subir{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1.5px dashed #cbd5e1;border-radius:12px;background:var(--bg2)}
+.tn-subir .pre{width:64px;height:64px;border-radius:10px;background:#FFD21F;display:flex;align-items:center;justify-content:center;flex:none;overflow:hidden}
+.tn-subir .pre b{font-size:13px;font-weight:700;color:#0b0b10;line-height:1;text-box:trim-both cap alphabetic}
+.tn-subir .pre img{width:100%;height:100%;object-fit:cover;display:block}
+.tn-subir .tx{flex:1;min-width:0}
+.tn-subir .tx b{display:block;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tn-subir .tx small{display:block;font-size:12.5px;color:var(--ink3)}
+.tn-subir .btn svg{color:#dc2626}
+.tn-seg .tag{font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:999px;background:#0b0b10;color:#FFD21F;letter-spacing:.02em;line-height:1.4}
+.tn-seg button:disabled{opacity:.45;cursor:not-allowed}
+.tn-vig{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.tn-vig button{height:40px;border:1px solid var(--line);border-radius:10px;background:#fff;font:inherit;font-size:13px;font-weight:500;color:var(--ink2);cursor:pointer}
+.tn-vig button[aria-pressed="true"]{border-color:#0b0b10;box-shadow:inset 0 0 0 1px #0b0b10;color:var(--ink)}
+.tn-vig button small{font-weight:400;color:var(--ink3)}
+.tn-bur .img{margin:-4px -6px 6px;border-radius:7px;overflow:hidden;background:#e9edef}
+.tn-bur .img img{width:100%;max-height:220px;object-fit:cover;display:block}
+.tn-bur .gif{position:relative}
+.tn-bur .gif span{position:absolute;left:8px;bottom:8px;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;background:rgba(11,20,26,.6);color:#fff}
+.tn-bur .doc{display:flex;align-items:center;gap:10px;margin:-4px -6px 6px;padding:10px;border-radius:7px;background:#f5f6f6;font-size:13.5px}
+.tn-bur .doc i{font-style:normal;font-size:11px;font-weight:700;color:#fff;background:#e53935;border-radius:4px;padding:4px 5px;line-height:1}
 .tn-bloq{opacity:.55}
 .tn-aviso{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--amber-soft);border:1px solid var(--amber-line);font-size:12.5px;color:var(--ink2)}
 .tn-aviso svg{width:16px;height:16px;color:var(--amber-ink);flex:none;margin-top:1px}
@@ -188,6 +201,10 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .tn-barrita{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:140px;height:5px;border-radius:3px;background:#000}
 /* La plantilla enviada en el chat del CRM: encabezado, pie y botón, como la recibió el cliente */
 .ch-th{font-weight:700;margin-bottom:2px}
+.ch-tm{margin:-2px -4px 6px;border-radius:8px;overflow:hidden;background:#e9edef}
+.ch-tm img,.ch-tm video{display:block;width:100%;max-width:300px;max-height:240px;object-fit:cover}
+.ch-td{display:flex;align-items:center;gap:10px;margin:-2px -4px 6px;padding:9px 10px;border-radius:8px;background:rgba(0,0,0,.05);color:inherit;text-decoration:none;font-size:13px}
+.ch-td i{font-style:normal;font-size:11px;font-weight:700;color:#fff;background:#e53935;border-radius:4px;padding:4px 5px;line-height:1}
 .ch-tf{margin-top:6px;font-size:12.5px;color:#5b5130}
 .ch-tb{display:flex;flex-direction:column;gap:4px;margin:8px -6px -3px;padding-top:8px;border-top:1px solid rgba(11,11,16,.12);white-space:normal}
 .ch-tb span{height:34px;border-radius:10px;background:rgba(255,255,255,.6);display:flex;align-items:center;justify-content:center;gap:7px;font-size:13.5px;font-weight:600;color:#0b0b10}
@@ -209,6 +226,8 @@ const TP_IC = {
   llamar: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/></svg>',
   texto: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14M12 6v13"/></svg>',
   video: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3"/></svg>',
+  imagen: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>',
+  documento: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8Z"/><path d="M14 3v5h5"/></svg>',
   plantilla: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h6"/></svg>',
 };
 const TP_CAT_COL = {Marketing:'#7c3aed', Utilidad:'#0284c7'};
@@ -294,14 +313,23 @@ function tplDesde(p){
     : LINEAS.filter(l => !p.wabas || !l.wabaId || p.wabas.includes(l.wabaId)).map(l => l.id);
   return {nombre:p.n, cat:p.c === 'Marketing' ? 'Marketing' : 'Utilidad', lineas:new Set(lineas), headTipo:p.headTipo || (p.head ? 'texto' : ''), head:p.head || '', body:p.b || '', foot:p.foot || '',
     btn:p.btn || '', btnTxt:p.btnTxt || '', btnUrl:p.btnUrl || '', btnTel:p.btnTel || '',
-    video:p.headTipo === 'video' && p.mediaUrl ? {n:p.mediaN || 'video.mp4', url:p.mediaUrl} : null,
+    media:TN_ARCHIVO[p.headTipo] && p.mediaUrl ? {tipo:p.headTipo, n:p.mediaN || 'archivo', url:p.mediaUrl, peso:p.mediaPeso || null} : null, vigencia:p.vigencia || 2592000,
     editar:p.borrador ? null : p.slug, borradorDe:p.borrador ? p.n : null, aprobada:!p.borrador && p.estadoMeta === 'APPROVED',
     soloLineas:!p.borrador && !['APPROVED', 'REJECTED', 'PAUSED'].includes(p.estadoMeta)};
 }
 function tnNueva(){
   return {nombre:'', cat:'Utilidad', lineas:new Set(LINEAS.length === 1 ? [LINEAS[0].id] : []), headTipo:'', head:'', body:'Hola, {{nombre}}. ', foot:ESPACIO.nombre || '',
-    btn:'', btnTxt:'', btnUrl:'', btnTel:'', video:null, editar:null, borradorDe:null, aprobada:false};
+    btn:'', btnTxt:'', btnUrl:'', btnTel:'', media:null, vigencia:2592000, editar:null, borradorDe:null, aprobada:false};
 }
+/* Encabezados con archivo (maqueta aprobada 21-oct, límites de Meta; el documento, hasta lo que sube la Nube del CRM). */
+const TN_ARCHIVO = {
+  imagen: {acepta:'image/jpeg,image/png', re:/^image\/(jpeg|png)$/, ext:/\.(jpe?g|png)$/i, max:5, nombre:'la imagen', formatos:'JPG o PNG', etq:'JPG'},
+  video: {acepta:'video/mp4', re:/^video\/mp4$/, ext:/\.mp4$/i, max:16, nombre:'el video', formatos:'MP4', etq:'MP4'},
+  gif: {acepta:'video/mp4', re:/^video\/mp4$/, ext:/\.mp4$/i, max:3.5, nombre:'el GIF', formatos:'MP4', etq:'GIF'},
+  documento: {acepta:'application/pdf', re:/^application\/pdf$/, ext:/\.pdf$/i, max:25, nombre:'el documento', formatos:'PDF', etq:'PDF'},
+};
+const TN_VIGENCIAS = [[43200, '12 horas'], [86400, '1 día'], [604800, '7 días'], [2592000, '30 días']];
+const tnMb = n => String(n).replace('.', ',') + ' MB';
 const tnTextoBoton = t => t.btnTxt || (t.btn === 'Enlace' ? 'Ver más' : t.btn === 'Llamar' ? 'Llamar' : 'Sí, quiero información');
 const tnLlenar = s => esc(s || '').replace(/\{\{\s*(\w+)\s*\}\}/g, (m, k) => esc(TP_EJ[k] || k));
 /** Las reglas de Meta que más rechazan, revisadas mientras se escribe. */
@@ -317,8 +345,16 @@ function tnReglas(t){
 function tnVista(t){
   const ic = {'Respuesta rápida':TP_IC.responder, Enlace:TP_IC.enlace, Llamar:TP_IC.llamar}[t.btn] || '';
   return `<span class="tn-dia">Hoy</span><span class="tn-cifra"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Los mensajes y las llamadas están cifrados de extremo a extremo.</span>
-    <div class="tn-msj"><div class="tn-bur">${t.headTipo === 'video' ? `<div class="vid">${I('play')}</div>` : ''}${t.headTipo === 'texto' && t.head.trim() ? `<div class="h">${esc(t.head)}</div>` : ''}${tnLlenar(t.body) || '<span style="color:#8696a0">Escribe el mensaje…</span>'}${t.foot.trim() ? `<div class="f">${esc(t.foot)}</div>` : ''}<span class="t">${hcHora(Date.now())}</span></div>
+    <div class="tn-msj"><div class="tn-bur">${tnCabeceraVista(t)}${t.headTipo === 'texto' && t.head.trim() ? `<div class="h">${esc(t.head)}</div>` : ''}${tnLlenar(t.body) || '<span style="color:#8696a0">Escribe el mensaje…</span>'}${t.foot.trim() ? `<div class="f">${esc(t.foot)}</div>` : ''}<span class="t">${hcHora(Date.now())}</span></div>
     ${t.btn ? `<div class="tn-boton">${ic}${esc(tnTextoBoton(t))}</div>` : ''}</div>`;
+}
+function tnCabeceraVista(t){
+  const m = t.media && t.media.tipo === t.headTipo && t.media.url ? t.media : null;
+  if (t.headTipo === 'video') return `<div class="vid">${I('play')}</div>`;
+  if (t.headTipo === 'gif') return m ? `<div class="img gif"><video src="${esc(m.url.replace(/\.[a-z0-9]{2,5}(\?.*)?$/i, '') + '.mp4')}" muted autoplay loop playsinline style="width:100%;max-height:220px;object-fit:cover;display:block"></video><span>GIF</span></div>` : `<div class="vid"><b style="font-size:15px">GIF</b></div>`;
+  if (t.headTipo === 'imagen') return m ? `<div class="img"><img src="${esc(m.url)}" alt=""></div>` : `<div class="vid">${TP_IC.imagen}</div>`;
+  if (t.headTipo === 'documento') return `<div class="doc"><i>PDF</i><span>${esc(m ? m.n : 'documento.pdf')}</span></div>`;
+  return '';
 }
 const tnRevision = t => `<b>Antes de enviarla a Meta</b>${tnReglas(t).map(([ok, si, no]) => `<div class="tn-rv${ok ? '' : ' mal'}"><span class="ok">${ok ? TP_IC.chulo : TP_IC.x}</span>${esc(ok ? si : no)}</div>`).join('')}`;
 function tnRefrescar(){
@@ -326,6 +362,15 @@ function tnRefrescar(){
   const v = document.getElementById('tn-chat'); if (v) v.innerHTML = tnVista(t);
   const r = document.getElementById('tn-rev'); if (r) r.innerHTML = tnRevision(t);
   const c = document.getElementById('tn-cont'); if (c) c.textContent = `${String(t.body || '').length.toLocaleString('es-CO')} / 1.024`;
+}
+function tnCampoArchivo(t){
+  const a = TN_ARCHIVO[t.headTipo], m = t.media && t.media.tipo === t.headTipo ? t.media : null;
+  const ayuda = t.headTipo === 'gif' ? 'GIF: un MP4 corto de hasta 3,5 MB. Solo para plantillas de marketing.' : `${a.formatos} de hasta ${tnMb(a.max)}.`;
+  if (!m) return `<div><button type="button" class="btn" id="t-vadd">${I('clip')}Agregar ${a.nombre.replace(/^(la|el) /, '')}</button> <span class="tn-ayuda">${ayuda}</span></div>`;
+  const pre = t.headTipo === 'imagen' && m.url ? `<img src="${esc(m.url)}" alt="">` : `<b>${a.etq}</b>`;
+  const det = m.subiendo ? 'Subiendo…' : t.headTipo === 'gif' ? `${m.peso ? esc(tamano(m.peso)) + ' · ' : ''}se repite sin sonido, como un GIF` : `${m.peso ? esc(tamano(m.peso)) + ' · ' : ''}máximo ${tnMb(a.max)}`;
+  return `<div class="tn-subir"><span class="pre">${pre}</span><div class="tx"><b>${esc(m.n)}</b><small>${det}</small></div><button type="button" class="btn" id="t-vx">${TP_IC.x}Quitar</button></div>
+    <span class="tn-ayuda">${ayuda}</span>`;
 }
 function plantillaNueva(){
   const t = st.tplNueva, el = document.getElementById('page');
@@ -347,15 +392,19 @@ function plantillaNueva(){
       </section>
       <section class="tn-sec${t.soloLineas ? ' tn-bloq' : ''}"${t.soloLineas ? ' inert' : ''}><h3>Mensaje</h3>
         <div class="tn-campo"><span>Encabezado <em>· opcional</em></span>
-          <div class="tn-seg" role="group" aria-label="Tipo de encabezado">${seg('data-tn-head', [['', 'Ninguno'], ['texto', 'Texto', TP_IC.texto], ['video', 'Video', TP_IC.video]], t.headTipo)}</div>
+          <div class="tn-seg" role="group" aria-label="Tipo de encabezado">${seg('data-tn-head', [['', 'Ninguno'], ['texto', 'Texto', TP_IC.texto], ['imagen', 'Imagen', TP_IC.imagen], ['video', 'Video', TP_IC.video]], t.headTipo)}<button type="button" data-tn-head="gif" aria-pressed="${t.headTipo === 'gif'}" ${t.cat !== 'Marketing' ? 'disabled title="Solo para plantillas de marketing"' : ''}><span class="tag">GIF</span>GIF</button>${seg('data-tn-head', [['documento', 'Documento', TP_IC.documento]], t.headTipo)}</div>
           ${t.headTipo === 'texto' ? `<input id="t-h" value="${esc(t.head)}" placeholder="Ej. Te recordamos" maxlength="60" aria-label="Texto del encabezado">` : ''}
-          ${t.headTipo === 'video' ? (t.video ? `<div class="tn-video"><span class="ic">${TP_IC.video}</span><span style="min-width:0"><b>${esc(t.video.n)}</b><small>${t.video.subiendo ? 'Subiendo…' : `Video${t.video.peso ? ' · ' + esc(tamano(t.video.peso)) : ''} · máximo 16 MB`}</small></span><button type="button" class="x" id="t-vx" aria-label="Quitar el video">${I('x')}</button></div>`
-            : `<div><button type="button" class="btn" id="t-vadd">${I('clip')}Agregar video</button> <span class="tn-ayuda">MP4 de hasta 16 MB</span></div>`) : ''}</div>
+          ${TN_ARCHIVO[t.headTipo] ? tnCampoArchivo(t) : ''}</div>
         <div class="tn-campo"><label for="t-b">Cuerpo</label>
           <div class="tn-area"><textarea id="t-b" maxlength="1024">${esc(t.body)}</textarea>
             <div class="tn-vars"><span>Insertar:</span>${TP_VARS.map(v => `<button type="button" data-var="${v}">{{${v}}}</button>`).join('')}<span class="cont" id="tn-cont">${String(t.body || '').length.toLocaleString('es-CO')} / 1.024</span></div></div></div>
         <div class="tn-campo"><label for="t-f">Pie <em>· opcional</em></label><input id="t-f" value="${esc(t.foot)}" maxlength="60" autocomplete="off"></div>
       </section>
+      ${t.cat === 'Marketing' ? `<section class="tn-sec${t.soloLineas ? ' tn-bloq' : ''}"${t.soloLineas ? ' inert' : ''}><h3><span>Vigencia <small>· solo marketing</small></span></h3>
+        <div class="tn-campo"><span>Si WhatsApp no logra entregarlo en este tiempo, no se entrega ni se cobra</span>
+          <div class="tn-vig" role="group" aria-label="Vigencia">${TN_VIGENCIAS.map(([v, txt]) => `<button type="button" data-tn-vig="${v}" aria-pressed="${t.vigencia === v}">${txt}${v === 2592000 ? ' <small>· Meta</small>' : ''}</button>`).join('')}</div>
+          <span class="tn-ayuda">Útil para promociones con fecha: una oferta de hoy no debe llegar en 3 días.</span></div>
+      </section>` : ''}
       <section class="tn-sec${t.soloLineas ? ' tn-bloq' : ''}"${t.soloLineas ? ' inert' : ''}><h3>Botón <small>Opcional</small></h3>
         <div class="tn-seg" role="group" aria-label="Tipo de botón">${seg('data-tn-btn', [['', 'Sin botón'], ['Respuesta rápida', 'Respuesta rápida'], ['Enlace', 'Enlace'], ['Llamar', 'Llamar']], t.btn)}</div>
         ${t.btn ? `<div class="tn-campo"><label for="t-bt">Texto del botón <em>· hasta 25 letras</em></label><input id="t-bt" value="${esc(t.btnTxt)}" maxlength="25" placeholder="${t.btn === 'Enlace' ? 'Ver más' : t.btn === 'Llamar' ? 'Llamar a mi asesor' : 'Sí, quiero información'}"></div>` : ''}
@@ -397,38 +446,42 @@ document.getElementById('page').addEventListener('click', e => {
   }
   if (x.closest('#t-x')) { st.tplNueva = null; render(); return; }
   const ln = x.closest('[data-tn-linea]'); if (ln) { const id = ln.dataset.tnLinea; t.lineas.has(id) ? t.lineas.delete(id) : t.lineas.add(id); ln.setAttribute('aria-checked', String(t.lineas.has(id))); return; }
-  const ct = x.closest('[data-tn-cat]'); if (ct && !ct.disabled) { t.cat = ct.dataset.tnCat; render(); return; }
-  const hd = x.closest('[data-tn-head]'); if (hd) { t.headTipo = hd.dataset.tnHead; render(); return; }
+  const ct = x.closest('[data-tn-cat]'); if (ct && !ct.disabled) { t.cat = ct.dataset.tnCat; if (t.cat !== 'Marketing' && t.headTipo === 'gif') { t.headTipo = ''; t.media = null; toast('El GIF es solo para marketing: se quitó'); } render(); return; }
+  const hd = x.closest('[data-tn-head]'); if (hd && !hd.disabled) { t.headTipo = hd.dataset.tnHead; if (t.media && t.media.tipo !== t.headTipo) t.media = null; render(); return; }
+  const vg = x.closest('[data-tn-vig]'); if (vg) { t.vigencia = +vg.dataset.tnVig; render(); return; }
   const bt = x.closest('[data-tn-btn]'); if (bt) { t.btn = bt.dataset.tnBtn; render(); return; }
   const va = x.closest('[data-var]'); if (va) { const ta = document.getElementById('t-b'), p = ta.selectionStart ?? ta.value.length; ta.value = ta.value.slice(0, p) + '{{' + va.dataset.var + '}}' + ta.value.slice(ta.selectionEnd ?? p); t.body = ta.value; ta.focus(); const n = p + va.dataset.var.length + 4; ta.setSelectionRange(n, n); tnRefrescar(); return; }
-  if (x.closest('#t-vx')) { t.video = null; render(); return; }
-  if (x.closest('#t-vadd')) { tnElegirVideo(t); return; }
+  if (x.closest('#t-vx')) { t.media = null; render(); return; }
+  if (x.closest('#t-vadd')) { tnElegirArchivo(t); return; }
   if (x.closest('#t-guardar')) { tnBorrador(t); return; }
   const go = x.closest('#t-meta'); if (go && !go.disabled) tnEnviar(t, go);
 });
-function tnElegirVideo(t){
-  const i = document.createElement('input'); i.type = 'file'; i.accept = 'video/mp4'; i.hidden = true; document.body.appendChild(i);
+function tnElegirArchivo(t){
+  const tipo = t.headTipo, a = TN_ARCHIVO[tipo]; if (!a) return;
+  const May = a.nombre.charAt(0).toUpperCase() + a.nombre.slice(1);
+  const i = document.createElement('input'); i.type = 'file'; i.accept = a.acepta; i.hidden = true; document.body.appendChild(i);
   i.addEventListener('cancel', () => i.remove());
   i.addEventListener('change', () => { const f = (i.files || [])[0]; i.remove(); if (!f) return;
-    if (!/^video\/mp4$/.test(f.type || '') && !/\.mp4$/i.test(f.name)) { toast('El video debe ser MP4'); return; }
-    if (f.size > 16 * 1024 * 1024) { toast('El video pasa de 16 MB, el máximo de WhatsApp'); return; }
-    const v = t.video = {n: f.name, peso: f.size, subiendo: true}; render();
-    crmSubir(f).then(r => { Object.assign(v, {n: r.n || f.name, url: r.url, peso: r.bytes || f.size}); delete v.subiendo; }, err => { if (t.video === v) t.video = null; toast(`No se pudo subir el video. ${err.message}`); })
+    if (!a.re.test(f.type || '') && !a.ext.test(f.name)) { toast(`${May} debe ser ${a.formatos}`); return; }
+    if (f.size > a.max * 1024 * 1024) { toast(`${May} pasa de ${tnMb(a.max)}, el máximo${tipo === 'documento' ? '' : ' de WhatsApp'}`); return; }
+    const v = t.media = {tipo, n: f.name, peso: f.size, mime: f.type || '', subiendo: true}; render();
+    crmSubir(f).then(r => { Object.assign(v, {n: r.n || f.name, url: r.url, peso: r.bytes || f.size, mime: r.mime || f.type || ''}); delete v.subiendo; }, err => { if (t.media === v) t.media = null; toast(`No se pudo subir ${a.nombre}. ${err.message}`); })
       .finally(() => { if (st.tplNueva === t) render(); }); });
   i.click();
 }
 // Los borradores son de cada persona (quedan en sus preferencias, AJ.borradores).
 function tnBorrador(t){
-  const b = {n: t.nombre.trim() || 'Plantilla sin nombre', c: t.cat, e:'g', x:'Borrador', u:0, b: t.body, headTipo: t.headTipo, head: t.head, foot: t.foot, btn: t.btn, btnTxt: t.btnTxt, btnUrl: t.btnUrl, btnTel: t.btnTel, lineas:[...t.lineas], borrador:true};
+  const b = {n: t.nombre.trim() || 'Plantilla sin nombre', c: t.cat, e:'g', x:'Borrador', u:0, b: t.body, headTipo: t.headTipo, head: t.head, foot: t.foot, btn: t.btn, btnTxt: t.btnTxt, btnUrl: t.btnUrl, btnTel: t.btnTel, vigencia: t.vigencia, lineas:[...t.lineas], borrador:true};
   AJ.borradores = [b, ...(AJ.borradores || []).filter(x => x.n !== b.n && x.n !== t.borradorDe)];
   crmPlantillas().catch(() => {}).finally(() => { st.tplNueva = null; render(); toast('Plantilla guardada como borrador'); });
 }
 async function tnEnviar(t, bt){
   if (!t.nombre.trim() || !t.body.trim()) { toast('Ponle nombre y cuerpo a la plantilla'); return; }
   if (LINEAS.length && !t.lineas.size) { toast('Elige al menos una línea donde se use la plantilla'); return; }
-  const conVideo = t.headTipo === 'video'; if (conVideo && (!t.video || !t.video.url)) { toast(t.video ? 'Espera a que termine de subir el video' : 'Agrega el video del encabezado'); return; }
+  const a = TN_ARCHIVO[t.headTipo], m = a && t.media && t.media.tipo === t.headTipo ? t.media : null;
+  if (a && (!m || !m.url)) { toast(m ? `Espera a que termine de subir ${a.nombre}` : `Agrega ${a.nombre} del encabezado`); return; }
   const datos = {n: t.nombre.trim(), c: t.cat, b: t.body, head: t.headTipo === 'texto' ? t.head : '', foot: t.foot || '', btn: t.btn || '', btnTxt: t.btn ? (t.btnTxt || tnTextoBoton(t)) : '', btnUrl: t.btnUrl || '', btnTel: t.btnTel || '',
-    lineas: [...t.lineas], ...(conVideo ? {video: {url: t.video.url, n: t.video.n, peso: t.video.peso}} : {})};
+    lineas: [...t.lineas], ...(m ? {media: {tipo: m.tipo, url: m.url, n: m.n, peso: m.peso, mime: m.mime || ''}} : {}), ...(t.cat === 'Marketing' ? {vigencia: t.vigencia || 2592000} : {})};
   bt.disabled = true;
   try {
     if (t.editar) await crmApi('PUT', `/crm/plantillas/${encodeURIComponent(t.editar)}`, datos);

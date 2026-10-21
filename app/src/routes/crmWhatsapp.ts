@@ -28,6 +28,7 @@ import { descifrar } from '../services/crm/cifrado'
 import { enEspacio } from '../services/crm/espacio'
 import { recibirManychat } from '../services/crm/manychat'
 import { emitirConexiones as emitirConexionesDe } from '../services/crm/conexiones'
+import { LLAVES_MARKETING, revisarMarketingDeConexion } from '../services/crm/marketingMeta'
 
 /**
  * WhatsApp Cloud API del CRM (26-sep-2026). Todo se conecta desde el CRM, sin variables del
@@ -237,6 +238,13 @@ rutasWaCrm.put('/conexiones/proveedor', asyncHandler(async (req: Request, res: R
   return ApiResponse.success(res, await proveedorPublico(urlApi(req)))
 }))
 
+/** «Revisar» en Líneas de WhatsApp: vuelve a preguntarle a Meta si el portafolio aceptó el marketing optimizado. */
+rutasWaCrm.post('/conexiones/:id/marketing', soloLideres, asyncHandler(async (req: Request, res: Response) => {
+  await revisarMarketingDeConexion(String(req.params.id))
+  const lineas = await prisma.crmLinea.findMany({ where: { conexionId: String(req.params.id) } })
+  return ApiResponse.success(res, lineas.map(lineaAFront))
+}))
+
 // ─── Líneas (con sesión) ─────────────────────────────────────────────────────
 
 rutasWaCrm.get('/lineas/disponibles', asyncHandler(async (req: Request, res: Response) => {
@@ -324,6 +332,8 @@ rutasWaCrm.post('/lineas', soloLideres, asyncHandler(async (req: Request, res: R
   }
   const front = lineaAFront(linea)
   emitirCrm({ tipo: 'linea', linea: front }, req.userId ?? null)
+  // El marketing optimizado de su cuenta se averigua aparte: no demora la conexión.
+  void revisarMarketingDeConexion(c.id)
   return ApiResponse.created(res, front)
 }))
 
@@ -339,7 +349,9 @@ rutasWaCrm.patch('/lineas/:id', soloLideres, asyncHandler(async (req: Request, r
     data.nombre = nombre
   }
   if (cambios.ajustes && typeof cambios.ajustes === 'object' && !Array.isArray(cambios.ajustes)) {
-    data.ajustes = { ...(actual.ajustes as Json ?? {}), ...cambios.ajustes }
+    // El estado del marketing optimizado lo escribe solo el servidor (marketingMeta.ts).
+    const propios = Object.fromEntries(Object.entries(cambios.ajustes as Json).filter(([k]) => !(LLAVES_MARKETING as readonly string[]).includes(k)))
+    data.ajustes = { ...(actual.ajustes as Json ?? {}), ...propios }
   }
   if (!Object.keys(data).length) throw new ValidationError('No hay nada que cambiar')
   const linea = await prisma.crmLinea.update({ where: { id: actual.id }, data })

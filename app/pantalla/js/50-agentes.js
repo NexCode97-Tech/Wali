@@ -1086,7 +1086,13 @@ function chBloqueOut(m, ult){
   const plantilla = m.plantilla ? `<span class="ch-pl">Plantilla «${esc(m.plantilla)}»</span>` : '';
   // La plantilla enviada se ve como le llegó al cliente (maqueta «Nueva plantilla», 20-oct): encabezado, pie y botón.
   const tp = m.plantilla ? PLANTILLAS.find(p => !p.borrador && (p.n === m.plantilla || p.slug === m.plantilla)) : null;
-  const tpCab = tp && tp.headTipo === 'texto' && tp.head ? `<div class="ch-th">${esc(tp.head)}</div>` : '';
+  const mp4 = u2 => u2.replace(/\.[a-z0-9]{2,5}(\?.*)?$/i, '') + '.mp4';
+  const tpCab = !tp ? '' : tp.headTipo === 'texto' && tp.head ? `<div class="ch-th">${esc(tp.head)}</div>`
+    : !tp.mediaUrl ? ''
+    : tp.headTipo === 'imagen' ? `<div class="ch-tm"><img src="${esc(tp.mediaUrl)}" alt="" loading="lazy"></div>`
+    : tp.headTipo === 'gif' ? `<div class="ch-tm"><video src="${esc(mp4(tp.mediaUrl))}" muted autoplay loop playsinline></video></div>`
+    : tp.headTipo === 'video' ? `<div class="ch-tm"><video src="${esc(mp4(tp.mediaUrl))}" controls preload="metadata"></video></div>`
+    : tp.headTipo === 'documento' ? `<a class="ch-td" href="${esc(tp.mediaUrl)}" target="_blank" rel="noopener"><i>PDF</i><span>${esc(tp.mediaN || 'documento.pdf')}</span></a>` : '';
   const tpPie = tp ? `${tp.foot ? `<div class="ch-tf">${esc(tp.foot)}</div>` : ''}${tp.btn ? `<div class="ch-tb"><span>${({'Respuesta rápida':TP_IC.responder, Enlace:TP_IC.enlace, Llamar:TP_IC.llamar})[tp.btn] || ''}${esc(tp.btnTxt)}</span></div>` : ''}` : '';
   // Una foto o un video que enviamos se ven como tales (14-oct), con el texto debajo, como en WhatsApp.
   if (m.file && !fallo && m.file.url && /^image\//.test(m.file.mime || '')) return `<a class="ch-img${u && !(texto || plantilla) ? u : ''}" href="${esc(m.file.url)}" target="_blank" rel="noopener"><img src="${esc(m.file.url)}" alt="Imagen" loading="lazy"></a>${texto || plantilla ? `<div class="ch-b out${u}">${plantilla}${esc(texto)}</div>` : ''}`;

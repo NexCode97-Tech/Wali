@@ -155,7 +155,12 @@ export async function revisarConexionesWhatsapp(): Promise<number> {
     try {
       const info = await revisarToken(s.token, llave)
       await prisma.crmConexion.update({ where: { id: c.id }, data: { datos: { ...obj((await prisma.crmConexion.findUnique({ where: { id: c.id }, select: { datos: true } }))?.datos), revisadoEn: Date.now() } as Prisma.InputJsonValue } })
-      if (info.valido) { await marcarViva(c.id); if (info.vence) await avisarPorVencer(c.id, info.vence * 1000) }
+      if (info.valido) {
+        await marcarViva(c.id)
+        if (info.vence) await avisarPorVencer(c.id, info.vence * 1000)
+        // De paso, si el portafolio ya aceptó el marketing optimizado de Meta (marketingMeta.ts).
+        await (await import('./marketingMeta')).revisarMarketingDeConexion(c.id)
+      }
       else await marcarCaida(c.id, 'El token de Meta venció o no es válido. Genera uno que nunca venza para el usuario del sistema y vuelve a conectar WhatsApp en Ajustes › Canales', info.vence ? info.vence * 1000 : undefined)
     } catch (e) {
       if (!(e instanceof ErrorMeta)) { logger.info(`[CRM caídas] ${c.id}: no se pudo revisar (${(e as Error).message})`); continue }

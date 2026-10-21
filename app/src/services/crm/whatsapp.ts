@@ -500,8 +500,38 @@ async function valorVariable(nombre: string, m: MsgConTodo, datos: Json): Promis
 
 /** Texto final de cada plantilla que se está enviando (por id de mensaje), para guardarlo en el chat. */
 const textoFinalPlantilla = new Map<string, string>()
+/**
+ * Plantillas de marketing (21-oct): salen por la API de Mensajes de marketing (`/marketing_messages`), que Meta optimiza
+ * y que desde el 13-oct-2027 será la única vía para el marketing. Si la cuenta no ha aceptado sus términos, Meta la
+ * manda por la vía normal (`product_policy: CLOUD_API_FALLBACK`), así que nunca deja de salir.
+ */
+const porMarketing = new Set<string>()
+/** Errores de la cuenta o de la app (no del mensaje ni del cliente): con ellos se reintenta por `/messages`. */
+const MM_REINTENTO_NORMAL = new Set([1, 2, 3, 10, 100, 200, 131000])
 
-async function cuerpoPlantilla(m: MsgConTodo, datos: Json, p: PlantillaMeta): Promise<Json> {
+/**
+ * El archivo del encabezado de una plantilla, subido a Meta una vez por número (Meta recomienda mandar el id y no el
+ * enlace: así no depende de que la Nube lo entregue). El id vale 30 días; se reusa 25. Si la subida falla, va el enlace.
+ */
+const idsDeCabecera = new Map<string, { id: string; en: number }>()
+async function archivoDeCabecera(cred: CredMeta, phoneNumberId: string, formato: string, f: Json): Promise<{ id: string } | { link: string }> {
+  const esVideo = formato === 'VIDEO' || formato === 'GIF'
+  const url = esVideo ? txt(f.url).replace(/\.[a-z0-9]{2,5}(\?.*)?$/i, '') + '.mp4' : txt(f.url)
+  const clave = `${phoneNumberId}|${url}`
+  const ya = idsDeCabecera.get(clave)
+  if (ya && Date.now() - ya.en < 25 * 864e5) return { id: ya.id }
+  try {
+    const mime = esVideo ? 'video/mp4' : txt(f.mime) || (formato === 'DOCUMENT' ? 'application/pdf' : 'image/jpeg')
+    const { id } = await subirAMeta(cred, phoneNumberId, url, mime, txt(f.n) || (esVideo ? 'video.mp4' : 'archivo'))
+    idsDeCabecera.set(clave, { id, en: Date.now() })
+    return { id }
+  } catch (e) {
+    logger.warn(`[CRM WA] el encabezado ${formato} no se pudo subir a Meta (${(e as Error)?.message ?? e}): va con su enlace`)
+    return { link: txt(f.url) }
+  }
+}
+
+async function cuerpoPlantilla(m: MsgConTodo, datos: Json, p: PlantillaMeta, cred: CredMeta): Promise<Json> {
   const faltan: string[] = []
   const componentes: Json[] = []
   const llenos = new Map<string, string>()
@@ -522,13 +552,14 @@ async function cuerpoPlantilla(m: MsgConTodo, datos: Json, p: PlantillaMeta): Pr
       if (formato === 'TEXT' && comp.text) {
         const params = await valores(comp.text)
         if (params.length) componentes.push({ type: 'header', parameters: params })
-      } else if (['IMAGE', 'VIDEO', 'DOCUMENT'].includes(formato)) {
-        // Sin archivo en el mensaje, el guardado de la plantilla (lote 7: las de video creadas desde el CRM).
+      } else if (['IMAGE', 'VIDEO', 'GIF', 'DOCUMENT'].includes(formato)) {
+        // Sin archivo en el mensaje, el guardado de la plantilla (las de imagen, video, GIF o documento creadas desde el CRM).
         let f = obj(datos.file)
         if (!txt(f.url)) f = obj(obj(await leerAjuste<unknown>('plantillasMedia'))[String(p.name)])
-        if (!txt(f.url)) { faltan.push(formato === 'IMAGE' ? 'imagen' : formato === 'VIDEO' ? 'video' : 'documento'); continue }
+        if (!txt(f.url)) { faltan.push(formato === 'IMAGE' ? 'imagen' : formato === 'VIDEO' ? 'video' : formato === 'GIF' ? 'GIF' : 'documento'); continue }
         const clave = formato.toLowerCase()
-        componentes.push({ type: 'header', parameters: [{ type: clave, [clave]: { link: f.url, ...(clave === 'document' && f.n ? { filename: f.n } : {}) } }] })
+        const archivo = await archivoDeCabecera(cred, m.conversacion.linea?.phoneNumberId ?? '', formato, f)
+        componentes.push({ type: 'header', parameters: [{ type: clave, [clave]: { ...archivo, ...(clave === 'document' && f.n ? { filename: f.n } : {}) } }] })
       }
     } else if (tipo === 'BODY' && comp.text) {
       const params = await valores(comp.text)
@@ -556,6 +587,7 @@ async function cuerpoPlantilla(m: MsgConTodo, datos: Json, p: PlantillaMeta): Pr
     if ((tipo === 'HEADER' && String(comp.format ?? 'TEXT').toUpperCase() === 'TEXT' && comp.text) || (tipo === 'BODY' && comp.text) || (tipo === 'FOOTER' && comp.text)) partes.push(llenar(String(comp.text)))
   }
   textoFinalPlantilla.set(m.id, partes.join('\n\n'))
+  if (String(p.category).toUpperCase() === 'MARKETING') porMarketing.add(m.id)
   return { type: 'template', template: { name: p.name, language: { code: p.language }, ...(componentes.length ? { components: componentes } : {}) } }
 }
 
@@ -573,7 +605,7 @@ async function armarCuerpo(m: MsgConTodo, cred: CredMeta): Promise<Json> {
     if (!p) throw new ErrorEnvio(`La plantilla «${plantilla}» no existe en Meta para esta línea`)
     if (p.status !== 'APPROVED') throw new ErrorEnvio(`La plantilla «${plantilla}» no está aprobada por Meta todavía`)
     if (c.lineaId && !(await plantillaEnLinea(p.name, c.lineaId))) throw new ErrorEnvio(`La plantilla «${plantilla}» no está habilitada para esta línea`)
-    return cuerpoPlantilla(m, datos, p)
+    return cuerpoPlantilla(m, datos, p, cred)
   }
 
   // La ventana de 24 h es de Meta por línea y cliente, no por conversación del CRM.
@@ -687,11 +719,23 @@ export async function enviarPorWhatsapp(msgId: string): Promise<void> {
     if (!m.conversacion.linea) throw new ErrorEnvio('La conversación ya no tiene línea de WhatsApp: esa línea se quitó del CRM')
     const cred = await credDeLinea(m.conversacion.linea)
     const cuerpo = await armarCuerpo(m, cred)
-    const r = await graph<{ messages?: { id?: string }[]; contacts?: { wa_id?: string }[] }>(`/${m.conversacion.linea.phoneNumberId}/messages`, {
-      cred,
-      method: 'POST',
-      body: { messaging_product: 'whatsapp', recipient_type: 'individual', ...destinoWa(m.conversacion.contacto), ...cuerpo },
-    })
+    const marketing = porMarketing.delete(msgId)
+    const envio = { messaging_product: 'whatsapp', recipient_type: 'individual', ...destinoWa(m.conversacion.contacto), ...cuerpo }
+    const pnid = m.conversacion.linea.phoneNumberId
+    type RespEnvio = { messages?: { id?: string }[]; contacts?: { wa_id?: string }[] }
+    let r: RespEnvio
+    if (marketing) {
+      try {
+        r = await graph<RespEnvio>(`/${pnid}/marketing_messages`, { cred, method: 'POST', body: { ...envio, product_policy: 'CLOUD_API_FALLBACK' } })
+      } catch (e) {
+        // Si Meta no deja usar la vía de marketing (app o cuenta sin habilitar), el mensaje igual sale por la normal.
+        if (!(e instanceof ErrorMeta && MM_REINTENTO_NORMAL.has(e.codigo))) throw e
+        logger.info(`[CRM WA] ${msgId}: la vía de marketing no está disponible para ${pnid} (${e.codigo}): sale por la normal`)
+        r = await graph<RespEnvio>(`/${pnid}/messages`, { cred, method: 'POST', body: envio })
+      }
+    } else {
+      r = await graph<RespEnvio>(`/${pnid}/messages`, { cred, method: 'POST', body: envio })
+    }
     const wamid = r.messages?.[0]?.id
     if (!wamid) throw new ErrorEnvio('Meta no devolvió el id del mensaje')
     // Leído al responder (6-oct): al cliente le salen las palomitas azules en su último mensaje.
@@ -712,6 +756,7 @@ export async function enviarPorWhatsapp(msgId: string): Promise<void> {
     }
   } catch (e) {
     textoFinalPlantilla.delete(msgId)
+    porMarketing.delete(msgId)
     const texto = e instanceof ErrorEnvio || e instanceof AppError ? e.message : esCorte(e) ? 'No se pudo enviar: la conexión se cortó mientras salía. Toca Reintentar.' : `No se pudo enviar: ${(e as Error)?.message ?? e}`
     logger.warn(`[CRM WA] envío ${msgId} falló: ${texto}`)
     // Token vencido o sin permiso: la cuenta de Meta queda con el problema a la vista en Líneas de WhatsApp (6-oct),

@@ -1149,7 +1149,9 @@ async function espacioDeEntrada(entrada: Json, conexionId: string | null): Promi
   const l = await prismaGlobal.crmLinea.findFirst({
     where: {
       OR: [...(waba ? [{ wabaId: waba }] : []), ...(numeros.length ? [{ phoneNumberId: { in: numeros } }] : [])],
-      conexion: conexionId ? { id: conexionId } : { modo: 'meta' },
+      // Sin conexión, el aviso llegó a la dirección general: la de las líneas del botón de Meta y la de las conexiones
+      // manuales hechas con la misma app de la plataforma (conexiones.ts las apunta ahí).
+      conexion: conexionId ? { id: conexionId } : { OR: [{ modo: 'meta' }, { datos: { path: ['webhookApp'], equals: 'plataforma' } }] },
     },
     select: { espacioId: true },
   })
@@ -1185,6 +1187,14 @@ async function procesarEcoWhatsapp(linea: { id: string }, e: Json): Promise<void
 export async function procesarWebhookCrm(cuerpo: Json, conexionId: string | null = null): Promise<void> {
   const fallas: string[] = []
   for (const entrada of Array.isArray(cuerpo?.entry) ? cuerpo.entry : []) {
+    // Marketing optimizado (21-oct): Meta avisa que el portafolio aceptó los términos. Llega con el id del portafolio
+    // (no de la cuenta), así que se atiende antes de buscar el espacio y vale para todos los que tengan esa cuenta.
+    for (const cambio of Array.isArray(entrada?.changes) ? entrada.changes : []) {
+      const v = obj(cambio?.value)
+      if (cambio?.field !== 'account_update' || !['MM_LITE_TERMS_SIGNED', 'AD_ACCOUNT_LINKED'].includes(String(v.event))) continue
+      const waba = String(obj(v.waba_info).waba_id ?? '')
+      if (waba) await (await import('./marketingMeta')).marketingAceptado(waba).catch(e => { fallas.push(`marketing ${waba}: ${(e as Error).message}`) })
+    }
     const espacio = await espacioDeEntrada(entrada, conexionId)
     if (!espacio) {
       // Cuenta o número que no es de ningún espacio del CRM (o la línea de Alma): solo queda en el registro.
@@ -1224,6 +1234,8 @@ export async function procesarWebhookCrm(cuerpo: Json, conexionId: string | null
               await prisma.crmLinea.updateMany({ where: { wabaId }, data: { limite } })
               for (const l of await prisma.crmLinea.findMany({ where: { wabaId } })) emitirCrm({ tipo: 'linea', linea: lineaAFront(l) })
             }
+          } else if (cambio?.field === 'account_update' && ['MM_LITE_TERMS_SIGNED', 'AD_ACCOUNT_LINKED'].includes(String(v.event))) {
+            // Ya se atendió arriba (marketing optimizado).
           } else {
             logger.info(`[CRM WA] aviso de Meta sin uso en el CRM: ${cambio?.field}`)
           }

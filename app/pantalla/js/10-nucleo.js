@@ -350,6 +350,16 @@ function difNueva(d, extra = {}){
   return {id:'d' + ahora, n: d.n || (p => `Difusión del ${p.d} de ${HC_MES_L[p.m]}`)(hcPartes(ahora)), t: (TPL.find(t => t.n === d.tpl) || {}).n || '', a: d.publico === 'sel' ? `${d.seleccion} contactos elegidos` : segD ? 'Segmento: ' + segD.n : [...d.aud].join(' + '), env:0, ent:0, le:0, resp:0, f: hcCuando(ahora), est:'w', e:'En cola',
     publico: d.publico || 'etapas', etapas: [...d.aud], segmento: segD ? {id: segD.id, filtros: segD.filtros || null, q: segD.q || ''} : null, contactoIds: ids, linea: d.linea || null, ritmo: d.ritmo || 200, para: new Date(ahora).toISOString(), total: ids.length, por: yo, ...extra};
 }
+// Por dónde sale una difusión de marketing (maqueta aprobada 21-oct): con el marketing optimizado de Meta si el
+// portafolio de la línea aceptó los términos; si no, por la vía normal. Nunca bloquea el envío.
+function difVia(tpl, lineaId){
+  if (!tpl.n || tpl.c !== 'Marketing') return '';
+  const l = LINEAS.find(x => x.id === lineaId); if (!l) return '';
+  const mm = (l.ajustes || {}).mm;
+  if (mm === 'activo') return `<div class="via ok"><span class="ic">${I('check')}</span><div><b>Sale con el marketing optimizado de Meta</b><p>Meta la entrega primero a quien más probabilidad tiene de leerla. La tarifa es la misma.</p></div></div>`;
+  if (mm !== 'pendiente') return '';
+  return `<div class="via ambar"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v5M12 16.5v.01"/><circle cx="12" cy="12" r="9"/></svg></span><div><b>Sale por la vía normal de Meta</b><p>Igual llega, sin la optimización. ${puedeConfigurarCrm() ? 'Para activarla, acepta los términos en <a data-ir="cfg-lineas">Líneas de WhatsApp</a>.' : 'Pídele al administrador que lo active en Líneas de WhatsApp.'}</p></div></div>`;
+}
 function difusion(){
   const d = st.dif, el = document.getElementById('page');
   const {segD, ids} = difPublico(d);
@@ -372,6 +382,7 @@ function difusion(){
         <div class="fld">Cuándo<div class="chips2"><button type="button" data-cuando="ahora" aria-pressed="${d.cuando === 'ahora'}">Ahora</button><button type="button" data-cuando="prog" aria-pressed="${d.cuando === 'prog'}">Programar</button></div></div>
         ${d.cuando === 'prog' ? `<label>Fecha y hora<input type="datetime-local" value="2026-10-01T09:00"></label>` : ''}
         <div class="fld">Ritmo<div class="chips2"><button type="button" data-ritmo="200" aria-pressed="${(d.ritmo || 200) === 200}">200 por hora, recomendado</button><button type="button" data-ritmo="500" aria-pressed="${d.ritmo === 500}">500 por hora</button></div><p class="muted" style="margin:6px 0 0">Tarda unas ${Math.max(1, Math.ceil(total / (d.ritmo || 200)))} h en salir completa.</p><div hidden></div></div>
+        ${difVia(tpl, d.linea)}
         <div class="cost"><div><span>Personas</span><b>${total.toLocaleString('es-CO')}</b></div><div><span>Costo estimado en Meta</span><b>${costo.toLocaleString('es-CO', {style:'currency', currency:'USD'})}</b></div></div>
         <p class="muted">Cuando alguien responda, la conversación se abre en la bandeja y el reparto se la entrega a su asesor o al siguiente del turno.</p>`}
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">${d.paso > 1 ? `<button type="button" class="btn atras" data-paso="${d.paso - 1}">Atrás</button>` : ''}${d.paso < 3 ? `<button type="button" class="btn pri" data-paso="${d.paso + 1}">Siguiente</button>` : `<button type="button" class="btn pri" id="d-go">${I('send')}${d.cuando === 'ahora' ? 'Enviar a ' + total.toLocaleString('es-CO') + ' personas' : 'Programar difusión'}</button>`}</div>

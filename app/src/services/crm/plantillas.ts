@@ -27,20 +27,43 @@ export interface PlantillaFront {
   n: string; slug: string; c: string; e: 'ok' | 'w' | 'b' | 'g'; x: string; u: number; b: string
   idioma: string; id: string; waba: string; vars: string[]
   /** Encabezado con archivo («Con imagen» en el menú de plantillas del chat); sin él, no viene. */
-  media?: 'imagen' | 'video' | 'documento'
-  /** El archivo guardado del encabezado (plantillas con video creadas desde el CRM): sale con la plantilla. */
-  mediaUrl?: string; mediaN?: string
+  media?: 'imagen' | 'video' | 'gif' | 'documento'
+  /** El archivo guardado del encabezado (plantillas con archivo creadas desde el CRM): sale con la plantilla. */
+  mediaUrl?: string; mediaN?: string; mediaPeso?: number | null
   /** Las líneas donde se usa; null = todas las de su cuenta. */
   lineas: string[] | null
   /** Las cuentas de Meta donde existe (una plantilla de líneas de cuentas distintas vive en cada una). */
   wabas: string[]
   /** Estado tal cual lo da Meta, el motivo del rechazo y lo demás que el formulario necesita para editarla. */
   estadoMeta: string; motivo: string
-  headTipo: '' | 'texto' | 'video'; head: string; foot: string
+  headTipo: '' | 'texto' | 'imagen' | 'video' | 'gif' | 'documento'; head: string; foot: string
+  /** Vigencia de una de marketing, en segundos (null = la de Meta, 30 días). */
+  vigencia: number | null
   btn: '' | 'Respuesta rápida' | 'Enlace' | 'Llamar'; btnTxt: string; btnUrl: string; btnTel: string
 }
 
-const MEDIA_CABECERA: Record<string, PlantillaFront['media']> = { IMAGE: 'imagen', VIDEO: 'video', DOCUMENT: 'documento' }
+const MEDIA_CABECERA: Record<string, PlantillaFront['media']> = { IMAGE: 'imagen', VIDEO: 'video', GIF: 'gif', DOCUMENT: 'documento' }
+
+/**
+ * Encabezados con archivo (maqueta aprobada 21-oct, límites oficiales de Meta). El GIF es un MP4 corto que WhatsApp
+ * repite sin sonido y Meta solo lo permite en marketing (API de Mensajes de marketing).
+ */
+const ARCHIVOS_CABECERA = {
+  imagen: { formato: 'IMAGE', max: 5 * 1024 * 1024, tipos: /^image\/(jpeg|png)$/, nombre: 'la imagen', formatos: 'JPG o PNG' },
+  video: { formato: 'VIDEO', max: 16 * 1024 * 1024, tipos: /^video\/mp4$/, nombre: 'el video', formatos: 'MP4' },
+  gif: { formato: 'GIF', max: 3.5 * 1024 * 1024, tipos: /^video\/mp4$/, nombre: 'el GIF', formatos: 'MP4' },
+  documento: { formato: 'DOCUMENT', max: 100 * 1024 * 1024, tipos: /^application\/pdf$/, nombre: 'el documento', formatos: 'PDF' },
+} as const
+type TipoArchivo = keyof typeof ARCHIVOS_CABECERA
+const MB = (n: number) => `${String(n / 1024 / 1024).replace('.', ',')} MB`
+const mayuscula = (t: string) => t[0].toUpperCase() + t.slice(1)
+/** Vigencias que ofrece la pantalla para marketing (Meta acepta de 12 horas a 30 días). */
+const VIGENCIAS = [43_200, 86_400, 604_800, 2_592_000]
+
+async function vigenciasDePlantillas(): Promise<Record<string, number>> {
+  const v = await leerAjuste<unknown>('plantillasVigencia')
+  return v && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, number> : {}
+}
 
 const CATEGORIA: Record<string, string> = { MARKETING: 'Marketing', UTILITY: 'Utilidad', AUTHENTICATION: 'Autenticación' }
 const MOTIVO: Record<string, string> = {
@@ -135,7 +158,7 @@ export async function plantillaEnLinea(slug: string, lineaId: string): Promise<b
 
 const TIPO_BOTON: Record<string, PlantillaFront['btn']> = { QUICK_REPLY: 'Respuesta rápida', URL: 'Enlace', PHONE_NUMBER: 'Llamar' }
 
-function aFront(p: PlantillaMeta, nombres: Record<string, string>, u: Map<string, number>, guardados: Record<string, { url: string; n?: string }> = {}, lineas: Record<string, string[]> = {}): PlantillaFront | null {
+function aFront(p: PlantillaMeta, nombres: Record<string, string>, u: Map<string, number>, guardados: Record<string, { url: string; n?: string; peso?: number | null }> = {}, lineas: Record<string, string[]> = {}, vigencias: Record<string, number> = {}): PlantillaFront | null {
   const n = nombres[p.name] ?? humanizar(p.name)
   const cuerpo = String((p.components ?? []).find(c => String(c.type).toUpperCase() === 'BODY')?.text ?? '')
   let e: PlantillaFront['e']; let x: string
@@ -157,10 +180,11 @@ function aFront(p: PlantillaMeta, nombres: Record<string, string>, u: Map<string
     n, slug: p.name, c: CATEGORIA[p.category] ?? p.category, e, x, u: u.get(n) ?? 0, b: cuerpo,
     idioma: p.language, id: p.id, waba: p.waba, vars: variablesDe(cuerpo),
     ...(media ? { media } : {}),
-    ...(media && guardados[p.name]?.url ? { mediaUrl: guardados[p.name].url, mediaN: guardados[p.name].n ?? '' } : {}),
+    ...(media && guardados[p.name]?.url ? { mediaUrl: guardados[p.name].url, mediaN: guardados[p.name].n ?? '', mediaPeso: guardados[p.name].peso ?? null } : {}),
     lineas: Array.isArray(lineas[p.name]) && lineas[p.name].length ? lineas[p.name] : null, wabas: [p.waba],
     estadoMeta: p.status, motivo: p.status === 'REJECTED' ? (MOTIVO[p.rejected_reason ?? 'NONE'] ?? String(p.rejected_reason).toLowerCase().replace(/_/g, ' ')) : '',
-    headTipo: formato === 'VIDEO' ? 'video' : formato === 'TEXT' ? 'texto' : '', head: formato === 'TEXT' ? String(cabecera?.text ?? '') : '', foot: String(pie?.text ?? ''),
+    headTipo: media ?? (formato === 'TEXT' ? 'texto' : ''), head: formato === 'TEXT' ? String(cabecera?.text ?? '') : '', foot: String(pie?.text ?? ''),
+    vigencia: p.category === 'MARKETING' && vigencias[p.name] ? vigencias[p.name] : null,
     btn: TIPO_BOTON[String(boton?.type ?? '').toUpperCase()] ?? '', btnTxt: String(boton?.text ?? ''), btnUrl: String(boton?.url ?? ''), btnTel: String(boton?.phone_number ?? ''),
   }
 }
@@ -175,12 +199,12 @@ export async function listarPlantillas(): Promise<PlantillaFront[]> {
   if (!(await waConfigurado())) return []
   const wabas = await wabasConectadas()
   if (!wabas.length) return []
-  const [nombres, u, guardados, lineas] = await Promise.all([nombresVisibles(), usos(), mediaDePlantillas(), lineasDePlantillas()])
+  const [nombres, u, guardados, lineas, vigencias] = await Promise.all([nombresVisibles(), usos(), mediaDePlantillas(), lineasDePlantillas(), vigenciasDePlantillas()])
   // Una plantilla de líneas de cuentas distintas existe en cada cuenta: sale una sola vez, con todas sus cuentas.
   const porSlug = new Map<string, PlantillaFront>()
   for (const waba of wabas) {
     for (const p of await plantillasDeWaba(waba, true)) {
-      const f = aFront(p, nombres, u, guardados, lineas)
+      const f = aFront(p, nombres, u, guardados, lineas, vigencias)
       if (!f) continue
       const ya = porSlug.get(f.slug + '|' + f.idioma)
       if (ya) ya.wabas.push(waba); else porSlug.set(f.slug + '|' + f.idioma, f)
@@ -194,7 +218,7 @@ const EJEMPLOS: Record<string, string> = {
   fecha: '5 de octubre', valor: '$150.000', curso: 'Plan anual', hora: '4:00 p. m.',
 }
 
-/** El archivo guardado de cada plantilla con encabezado de video (ajuste `plantillasMedia`, por slug). */
+/** El archivo guardado de cada plantilla con encabezado de imagen, video, GIF o documento (ajuste `plantillasMedia`, por slug). */
 export async function mediaDePlantillas(): Promise<Record<string, { url: string; n?: string; mime?: string; peso?: number | null }>> {
   const v = await leerAjuste<unknown>('plantillasMedia')
   return v && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, { url: string; n?: string; mime?: string; peso?: number | null }> : {}
@@ -204,18 +228,21 @@ export async function mediaDePlantillas(): Promise<Record<string, { url: string;
  * Sube el archivo de muestra de un encabezado a Meta (carga reanudable de la app del token) y devuelve su
  * `header_handle`, que es lo que pide la creación de una plantilla con video.
  */
-async function muestraEnMeta(cred: CredMeta, archivo: Buffer, nombre: string): Promise<string> {
+async function muestraEnMeta(cred: CredMeta, m: Muestra): Promise<string> {
   const app = await graph<{ id?: string }>('/app', { cred, query: { fields: 'id' } })
   if (!app.id) throw new ValidationError('Meta no dijo de qué app es el token: revisa la conexión de WhatsApp en Ajustes del CRM, Canales')
-  const sesion = await graph<{ id?: string }>(`/${app.id}/uploads`, { cred, method: 'POST', query: { file_name: nombre.replace(/[^\w.-]+/g, '_').slice(0, 80) || 'video.mp4', file_length: archivo.length, file_type: 'video/mp4' } })
-  if (!sesion.id) throw new ValidationError('Meta no aceptó el video de la plantilla. Intenta de nuevo.')
-  const r = await fetch(`${baseGraph()}/${sesion.id}`, { method: 'POST', headers: { Authorization: `OAuth ${cred.token}`, file_offset: '0' }, body: new Uint8Array(archivo), signal: AbortSignal.timeout(120_000) })
+  const def = ARCHIVOS_CABECERA[m.tipo]
+  const sesion = await graph<{ id?: string }>(`/${app.id}/uploads`, { cred, method: 'POST', query: { file_name: m.nombre.replace(/[^\w.-]+/g, '_').slice(0, 80) || 'archivo', file_length: m.buf.length, file_type: m.mime } })
+  if (!sesion.id) throw new ValidationError(`Meta no aceptó ${def.nombre} de la plantilla. Intenta de nuevo.`)
+  const r = await fetch(`${baseGraph()}/${sesion.id}`, { method: 'POST', headers: { Authorization: `OAuth ${cred.token}`, file_offset: '0' }, body: new Uint8Array(m.buf), signal: AbortSignal.timeout(120_000) })
   const j = await r.json().catch(() => ({})) as { h?: string; error?: { message?: string } }
-  if (!r.ok || !j.h) throw new ValidationError(`Meta no recibió el video de la plantilla${j.error?.message ? `: ${j.error.message}` : ''}. Intenta de nuevo.`)
+  if (!r.ok || !j.h) throw new ValidationError(`Meta no recibió ${def.nombre} de la plantilla${j.error?.message ? `: ${j.error.message}` : ''}. Intenta de nuevo.`)
   return j.h
 }
 
-type EntradaPlantilla = { n?: unknown; c?: unknown; b?: unknown; head?: unknown; foot?: unknown; btn?: unknown; btnTxt?: unknown; btnUrl?: unknown; btnTel?: unknown; video?: unknown; lineas?: unknown }
+type EntradaPlantilla = { n?: unknown; c?: unknown; b?: unknown; head?: unknown; foot?: unknown; btn?: unknown; btnTxt?: unknown; btnUrl?: unknown; btnTel?: unknown; video?: unknown; media?: unknown; vigencia?: unknown; lineas?: unknown }
+/** El archivo de muestra del encabezado, ya bajado de la Nube. */
+type Muestra = { tipo: TipoArchivo; buf: Buffer; mime: string; nombre: string }
 
 /** Revisa lo que llega del formulario y arma los componentes de Meta. Crear y editar usan lo mismo; al editar, el slug no cambia. */
 function armarPlantilla(entrada: EntradaPlantilla, slugFijo?: string) {
@@ -245,14 +272,22 @@ function armarPlantilla(entrada: EntradaPlantilla, slugFijo?: string) {
   if (head.length > 60) throw new ValidationError('El encabezado pasa de 60 caracteres, el máximo de Meta')
   if (foot.length > 60) throw new ValidationError('El pie pasa de 60 caracteres, el máximo de Meta')
   if (/\{\{/.test(head) || /\{\{/.test(foot)) throw new ValidationError('El encabezado y el pie van sin variables: pon las variables en el mensaje')
-  // Encabezado con video (lote 7, tablero 7): MP4 de hasta 16 MB, ya subido a la Nube del CRM. No va con encabezado de texto.
-  const video = entrada.video && typeof entrada.video === 'object' ? entrada.video as Record<string, unknown> : null
-  const videoUrl = String(video?.url ?? '').trim()
-  if (video) {
-    if (!archivoPermitido(videoUrl)) throw new ValidationError('Sube el video otra vez: no quedó en la Nube del CRM')
-    if (head) throw new ValidationError('Con video, el encabezado de texto no va: quita uno de los dos')
-    if (Number(video.peso) > 16 * 1024 * 1024) throw new ValidationError('El video pasa de 16 MB, el máximo de WhatsApp')
+  // Encabezado con archivo, ya subido a la Nube del CRM: {tipo, url, n, mime, peso}. Las llamadas viejas mandan `video`.
+  const crudo = entrada.media && typeof entrada.media === 'object' ? entrada.media as Record<string, unknown>
+    : entrada.video && typeof entrada.video === 'object' ? { ...(entrada.video as Record<string, unknown>), tipo: 'video' } : null
+  const media = crudo ? { tipo: String(crudo.tipo ?? '') as TipoArchivo, url: String(crudo.url ?? '').trim(), n: String(crudo.n ?? '').slice(0, 200), mime: String(crudo.mime ?? ''), peso: Number(crudo.peso) || null } : null
+  if (media) {
+    const def = ARCHIVOS_CABECERA[media.tipo]
+    if (!def) throw new ValidationError('El encabezado debe ser texto, imagen, video, GIF o documento')
+    if (media.tipo === 'gif' && categoria !== 'MARKETING') throw new ValidationError('Meta solo permite GIF en plantillas de marketing')
+    if (!archivoPermitido(media.url)) throw new ValidationError(`Sube ${def.nombre} otra vez: no quedó en la Nube del CRM`)
+    if (head) throw new ValidationError(`Con ${def.nombre.replace(/^(la|el) /, '')}, el encabezado de texto no va: quita uno de los dos`)
+    if (media.peso && media.peso > def.max) throw new ValidationError(`${mayuscula(def.nombre)} pasa de ${MB(def.max)}, el máximo de WhatsApp`)
   }
+  // Vigencia (solo marketing): si WhatsApp no lo entrega en ese tiempo, no se entrega ni se cobra. 30 días es la de Meta.
+  const v = Number(entrada.vigencia) || null
+  if (v && !VIGENCIAS.includes(v)) throw new ValidationError('La vigencia debe ser de 12 horas, 1 día, 7 días o 30 días')
+  const vigencia = categoria === 'MARKETING' && v && v !== 2_592_000 ? v : null
   const tipoBoton = String(entrada.btn ?? '').trim()
   const textoBoton = String(entrada.btnTxt ?? '').trim()
   let boton: Record<string, string> | null = null
@@ -276,7 +311,7 @@ function armarPlantilla(entrada: EntradaPlantilla, slugFijo?: string) {
     name: slug, language: 'es', category: categoria, parameter_format: 'NAMED',
     components: [
       ...(head ? [{ type: 'HEADER', format: 'TEXT', text: head }] : []),
-      ...(handle ? [{ type: 'HEADER', format: 'VIDEO', example: { header_handle: [handle] } }] : []),
+      ...(handle && media ? [{ type: 'HEADER', format: ARCHIVOS_CABECERA[media.tipo].formato, example: { header_handle: [handle] } }] : []),
       {
         type: 'BODY', text: b,
         ...(vars.length ? { example: { body_text_named_params: vars.map(v => ({ param_name: v, example: EJEMPLOS[v] ?? 'dato de ejemplo' })) } } : {}),
@@ -284,17 +319,37 @@ function armarPlantilla(entrada: EntradaPlantilla, slugFijo?: string) {
       ...(foot ? [{ type: 'FOOTER', text: foot }] : []),
       ...(boton ? [{ type: 'BUTTONS', buttons: [boton] }] : []),
     ],
+    ...(vigencia ? { message_send_ttl_seconds: vigencia } : {}),
   })
-  return { n, slug, categoria, b, vars, video, videoUrl, armar }
+  return { n, slug, categoria, b, vars, media, vigencia, armar }
 }
 
-/** Baja de la Nube el video de muestra del encabezado (se sube a Meta con el token de cada cuenta). */
-async function videoDeMuestra(videoUrl: string): Promise<Buffer> {
-  const r = await fetch(videoUrl.replace(/\.[a-z0-9]{2,5}(\?.*)?$/i, '') + '.mp4', { signal: AbortSignal.timeout(60_000) }).catch(() => null)
-  if (!r || !r.ok) throw new ValidationError('No se pudo leer el video de la Nube del CRM. Súbelo otra vez.')
+/**
+ * Baja de la Nube el archivo de muestra del encabezado (se sube a Meta con el token de cada cuenta). El video y el GIF
+ * se piden en MP4 (la Nube lo convierte); la imagen y el PDF, tal cual.
+ */
+async function muestraDeNube(media: { tipo: TipoArchivo; url: string; n: string; mime: string }): Promise<Muestra> {
+  const def = ARCHIVOS_CABECERA[media.tipo]
+  const esVideo = media.tipo === 'video' || media.tipo === 'gif'
+  const url = esVideo ? media.url.replace(/\.[a-z0-9]{2,5}(\?.*)?$/i, '') + '.mp4' : media.url
+  const r = await fetch(url, { signal: AbortSignal.timeout(90_000) }).catch(() => null)
+  if (!r || !r.ok) throw new ValidationError(`No se pudo leer ${def.nombre} de la Nube del CRM. Súbelo otra vez.`)
   const buf = Buffer.from(await r.arrayBuffer())
-  if (buf.length > 16 * 1024 * 1024) throw new ValidationError('El video pasa de 16 MB, el máximo de WhatsApp')
-  return buf
+  const mime = esVideo ? 'video/mp4' : (media.mime || r.headers.get('content-type') || '').split(';')[0].trim().toLowerCase()
+  if (!def.tipos.test(mime)) throw new ValidationError(`${mayuscula(def.nombre)} debe ser ${def.formatos}`)
+  if (buf.length > def.max) throw new ValidationError(`${mayuscula(def.nombre)} pasa de ${MB(def.max)}, el máximo de WhatsApp`)
+  return { tipo: media.tipo, buf, mime, nombre: media.n || (esVideo ? 'video.mp4' : media.tipo === 'documento' ? 'documento.pdf' : 'imagen.jpg') }
+}
+
+/** Guarda (o quita) el archivo del encabezado y la vigencia de una plantilla. Sin `muestra`, el archivo guardado no cambia. */
+async function guardarExtras(slug: string, media: { url: string; n: string } | null, muestra: Muestra | null, vigencia: number | null, por: string | null) {
+  const guardados = await mediaDePlantillas()
+  if (media && muestra) guardados[slug] = { url: media.url, n: media.n || muestra.nombre, mime: muestra.mime, peso: muestra.buf.length }
+  else if (!media) delete guardados[slug]
+  await guardarAjuste('plantillasMedia', guardados, por)
+  const vigencias = await vigenciasDePlantillas()
+  if (vigencia) vigencias[slug] = vigencia; else delete vigencias[slug]
+  await guardarAjuste('plantillasVigencia', vigencias, por)
 }
 
 /** Las líneas elegidas en el formulario y sus cuentas de Meta. Sin el campo (llamadas viejas), null: todas. */
@@ -316,34 +371,34 @@ async function guardarLineas(slug: string, ids: string[] | null, por: string | n
 /** Crea la plantilla en Meta, en la cuenta de cada línea elegida. Solo líderes. */
 export async function crearPlantilla(entrada: EntradaPlantilla, por: string | null): Promise<PlantillaFront> {
   if (!(await waConfigurado())) throw new AppError('Primero conecta WhatsApp en Ajustes del CRM, Canales', 409)
-  const { n, slug, categoria, b, vars, video, videoUrl, armar } = armarPlantilla(entrada)
+  const { n, slug, categoria, b, vars, media, vigencia, armar } = armarPlantilla(entrada)
   const elegidas = await lineasElegidas(entrada.lineas)
   const wabas = elegidas ? elegidas.wabas : await wabasConectadas()
   if (!wabas.length) throw new ValidationError('Primero conecta una línea de WhatsApp: la plantilla se crea en la cuenta de esa línea')
-  // El video de muestra se baja una vez de la Nube y se sube a Meta con el token de cada cuenta.
-  const videoBuf = video ? await videoDeMuestra(videoUrl) : null
+  // El archivo de muestra se baja una vez de la Nube y se sube a Meta con el token de cada cuenta.
+  const muestra = media ? await muestraDeNube(media) : null
   let cuerpo = armar(null)
   let creada: { id?: string; status?: string; category?: string } = {}
   for (const waba of wabas) {
     const cred = await credDeWaba(waba)
-    if (videoBuf) cuerpo = armar(await muestraEnMeta(cred, videoBuf, String(video?.n ?? 'video.mp4')))
+    if (muestra) cuerpo = armar(await muestraEnMeta(cred, muestra))
     const r = await graph<{ id?: string; status?: string; category?: string }>(`/${encodeURIComponent(waba)}/message_templates`, { cred, method: 'POST', body: cuerpo })
     if (!creada.id) creada = { ...r }
   }
   const nombres = await nombresVisibles()
   await guardarAjuste('plantillasNombres', { ...nombres, [slug]: n }, por)
   if (elegidas) await guardarLineas(slug, elegidas.ids, por)
-  // El video de la plantilla queda guardado: sale con ella cada vez que se envía (whatsapp.ts lo toma de aquí).
-  if (video) await guardarAjuste('plantillasMedia', { ...(await mediaDePlantillas()), [slug]: { url: videoUrl, n: String(video.n ?? 'video.mp4').slice(0, 200), mime: 'video/mp4', peso: videoBuf?.length ?? null } }, por)
+  // El archivo de la plantilla queda guardado: sale con ella cada vez que se envía (whatsapp.ts lo toma de aquí).
+  if (media || vigencia) await guardarExtras(slug, media, muestra, vigencia, por)
   olvidarPlantillas()
   emitirCrm({ tipo: 'plantillas' }, por)
   const f = aFront({
     id: creada.id ?? '', name: slug, language: 'es', status: creada.status ?? 'PENDING', category: creada.category ?? categoria,
     parameter_format: 'NAMED', components: cuerpo.components, waba: wabas[0],
-  }, { ...nombres, [slug]: n }, new Map(), {}, elegidas ? { [slug]: elegidas.ids } : {})
+  }, { ...nombres, [slug]: n }, new Map(), media && muestra ? { [slug]: { url: media.url, n: media.n, peso: muestra.buf.length } } : {}, elegidas ? { [slug]: elegidas.ids } : {}, vigencia ? { [slug]: vigencia } : {})
   if (f) f.wabas = wabas
   return f ?? { n, slug, c: CATEGORIA[categoria], e: 'w', x: 'En revisión en Meta', u: 0, b, idioma: 'es', id: creada.id ?? '', waba: wabas[0], vars,
-    lineas: elegidas?.ids ?? null, wabas, estadoMeta: 'PENDING', motivo: '', headTipo: '', head: '', foot: '', btn: '', btnTxt: '', btnUrl: '', btnTel: '' }
+    lineas: elegidas?.ids ?? null, wabas, estadoMeta: 'PENDING', motivo: '', headTipo: '', head: '', foot: '', vigencia, btn: '', btnTxt: '', btnUrl: '', btnTel: '' }
 }
 
 /** Lo que Meta compara de una plantilla: sin los ejemplos ni el archivo de muestra. */
@@ -364,32 +419,38 @@ export async function editarPlantilla(slug: string, entrada: EntradaPlantilla, p
   const existentes: PlantillaMeta[] = []
   for (const waba of await wabasConectadas()) existentes.push(...(await plantillasDeWaba(waba, true)).filter(p => p.name === slug))
   if (!existentes.length) throw new NotFoundError('Esa plantilla ya no existe en Meta')
-  const { n, categoria, video, videoUrl, armar } = armarPlantilla(entrada, slug)
+  const { n, categoria, media, vigencia, armar } = armarPlantilla(entrada, slug)
   const aprobada = existentes.some(p => p.status === 'APPROVED')
   if (aprobada && categoria !== existentes[0].category) throw new ValidationError('A una plantilla aprobada no se le puede cambiar la categoría: crea una nueva con la otra categoría')
   const elegidas = await lineasElegidas(entrada.lineas)
   const guardados = await mediaDePlantillas()
-  const cambioVideo = !!video && guardados[slug]?.url !== videoUrl
-  const cambioTexto = cambioVideo || firma(existentes[0].components) !== firma(armar(video ? 'x' : null).components)
+  const vigenciaAntes = (await vigenciasDePlantillas())[slug] ?? null
+  const cambioArchivo = !!media && guardados[slug]?.url !== media.url
+  const cambioVigencia = vigenciaAntes !== vigencia
+  const cambioTexto = cambioArchivo || cambioVigencia || firma(existentes[0].components) !== firma(armar(media ? 'x' : null).components)
   if (cambioTexto && existentes.some(p => !['APPROVED', 'REJECTED', 'PAUSED'].includes(p.status))) {
     throw new ValidationError('Meta no deja cambiar el texto mientras la plantilla está en revisión o deshabilitada. Puedes cambiar el nombre y las líneas.')
   }
-  const videoBuf = video && (cambioTexto || elegidas) ? await videoDeMuestra(videoUrl || guardados[slug]?.url || '') : null
+  const muestra = media && (cambioTexto || elegidas) ? await muestraDeNube({ ...media, url: media.url || guardados[slug]?.url || '' }) : null
   if (cambioTexto) {
     for (const p of existentes) {
       const cred = await credDeWaba(p.waba)
-      const cuerpo = armar(videoBuf ? await muestraEnMeta(cred, videoBuf, String(video?.n ?? 'video.mp4')) : null)
-      await graph(`/${encodeURIComponent(p.id)}`, { cred, method: 'POST', body: { components: cuerpo.components, ...(p.status === 'APPROVED' ? {} : { category: categoria }) } })
+      const cuerpo = armar(muestra ? await muestraEnMeta(cred, muestra) : null)
+      await graph(`/${encodeURIComponent(p.id)}`, { cred, method: 'POST', body: {
+        components: cuerpo.components, ...(p.status === 'APPROVED' ? {} : { category: categoria }),
+        // Quitar la vigencia es volver a la de Meta (30 días).
+        ...(categoria === 'MARKETING' ? { message_send_ttl_seconds: vigencia ?? 2_592_000 } : {}),
+      } })
     }
   }
   // Líneas de una cuenta donde la plantilla no existe todavía: se crea allá con el texto nuevo.
   for (const waba of (elegidas?.wabas ?? []).filter(w => !existentes.some(p => p.waba === w))) {
     const cred = await credDeWaba(waba)
-    await graph(`/${encodeURIComponent(waba)}/message_templates`, { cred, method: 'POST', body: armar(videoBuf ? await muestraEnMeta(cred, videoBuf, String(video?.n ?? 'video.mp4')) : null) })
+    await graph(`/${encodeURIComponent(waba)}/message_templates`, { cred, method: 'POST', body: armar(muestra ? await muestraEnMeta(cred, muestra) : null) })
   }
   await guardarAjuste('plantillasNombres', { ...(await nombresVisibles()), [slug]: n }, por)
   if (elegidas) await guardarLineas(slug, elegidas.ids, por)
-  if (video && cambioVideo) await guardarAjuste('plantillasMedia', { ...guardados, [slug]: { url: videoUrl, n: String(video.n ?? 'video.mp4').slice(0, 200), mime: 'video/mp4', peso: videoBuf?.length ?? null } }, por)
+  if (cambioArchivo || (!media && guardados[slug]) || cambioVigencia) await guardarExtras(slug, media, cambioArchivo ? muestra : null, vigencia, por)
   olvidarPlantillas()
   emitirCrm({ tipo: 'plantillas' }, por)
   const f = (await listarPlantillas()).find(x => x.slug === slug)
@@ -414,6 +475,8 @@ export async function eliminarPlantilla(slug: string, por: string | null): Promi
   await guardarLineas(slug, null, por)
   const media = await mediaDePlantillas()
   if (media[slug]) { delete media[slug]; await guardarAjuste('plantillasMedia', media, por) }
+  const vigencias = await vigenciasDePlantillas()
+  if (vigencias[slug]) { delete vigencias[slug]; await guardarAjuste('plantillasVigencia', vigencias, por) }
   olvidarPlantillas()
   emitirCrm({ tipo: 'plantillas' }, por)
   return { slug }
