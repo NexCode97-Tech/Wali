@@ -123,7 +123,7 @@ Leído de la documentación oficial el 2026-10-20 (`developers.facebook.com/docu
 
 - `whatsapp_business_management` (cuentas y plantillas) y `whatsapp_business_messaging` (enviar y recibir), ambos con acceso avanzado. Wali ya los tiene aprobados (2026-10-15).
 - La app CRM está suscrita a `messages`, `message_template_status_update`, `message_template_quality_update`, `template_category_update` y `phone_number_quality_update`.
-- **Faltan** `account_update` (obligatorio para el registro integrado; también avisa restricciones y sanciones), `business_capability_update` (límites) y `account_alerts`.
+- Desde el 2026-10-20 también recibe `account_update` (obligatorio para el registro integrado; también avisa restricciones y sanciones), `business_capability_update` (límites) y `account_alerts`.
 - Los webhooks se reintentan hasta 7 días. Meta pide una latencia media menor a 250 ms.
 
 ## Sanciones
@@ -136,7 +136,7 @@ Leído de la documentación oficial el 2026-10-20 (`developers.facebook.com/docu
 2. **Hecho (2026-10-20):** no dejar editar el texto de una plantilla en revisión (PENDING) y no ofrecer «Eliminar» en una DISABLED.
 3. **Hecho (2026-10-20):** usar `whatsapp_business_manager_messaging_limit` en vez de `messaging_limit_tier`, porque hoy el límite sale «Sin dato».
 4. **Hecho (2026-10-20):** dejar el registro integrado en v4: `extras` sin `sessionInfoVersion`; solo `featureType` para coexistencia.
-5. **Configurar:** suscribir la app a `account_update`, `business_capability_update` y `account_alerts`.
+5. **Hecho (2026-10-20):** app suscrita a `account_update`, `business_capability_update` y `account_alerts` (verificado con el MCP de Meta).
 6. ~~Avisar en Wali cuando la Messaging account no tiene método de pago~~. No se puede: `primary_funding_id` solo lo pueden leer los Solution Partners (error 10, probado el 2026-10-20). Wali le recuerda al cliente agregarlo al conectar.
 7. **Agregar:** encabezado con imagen y con documento.
 8. **Agregar:** revisar en el formulario que las variables no sean demasiadas para lo corto del texto, y que no se repita una plantilla existente.
