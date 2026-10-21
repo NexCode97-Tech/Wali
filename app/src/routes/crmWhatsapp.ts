@@ -109,12 +109,24 @@ function direccionesDeAvisos(r: Router) {
       await prismaGlobal.crmConexion.update({ where: { id: c.id }, data: { verificadoEn: new Date() } }).catch(() => null)
       return res.status(200).type('text/plain').send(String(req.query['hub.challenge'] ?? ''))
     }
+    if (!c) {
+      const p = await proveedorBase().catch(() => null)
+      if (p && req.query['hub.mode'] === 'subscribe' && p.verifyToken && req.query['hub.verify_token'] === p.verifyToken) {
+        return res.status(200).type('text/plain').send(String(req.query['hub.challenge'] ?? ''))
+      }
+    }
     return res.sendStatus(403)
   }))
 
   r.post('/webhook/:clave', async (req: Request, res: Response) => {
     const c = await conexionPorClave(String(req.params.clave)).catch(() => null)
-    if (!c) return res.sendStatus(404)
+    // La conexión ya no existe (se desconectó y el número volvió por el botón de Meta), pero la app de Meta
+    // puede seguir mandando a su dirección vieja (21-oct): se recibe como aviso de la app proveedora, con su firma.
+    if (!c) {
+      const p = await proveedorBase().catch(() => null)
+      if (!p) return res.sendStatus(404)
+      return recibirAviso(req, res, p.appSecret, { espacioId: null, conexionId: null })
+    }
     let secreto = ''
     try { secreto = String(descifrar<{ appSecret?: string }>(c.secretos).appSecret ?? '') } catch (e) { logger.warn(`[CRM Meta] conexión ${c.id}: ${(e as Error).message}`) }
     if (!secreto) return res.sendStatus(200)
