@@ -333,7 +333,7 @@ function cajaCuentasMeta(){
     const n = lnLineasDe(c), avisos = c.ultimoAviso ? `el último mensaje llegó ${cuandoKB(c.ultimoAviso)}` : (c.verificado || c.modo === 'meta') ? 'todavía no llega ningún mensaje' : 'Meta no ha verificado los avisos';
     const est = c.estado === 'conectada' ? `<span class="ln-chip ok">${I('check')}${c.modo === 'meta' ? 'Conectada con Facebook' : 'Conectada con los datos de la app'}</span>`
       : c.estado === 'error' ? `<span class="ln-chip mal">${LN_IC.alerta}Con un problema</span>` : `<span class="ln-chip ambar">${LN_IC.reloj}Pendiente</span>`;
-    const manualPendiente = c.modo === 'manual' && c.webhookUrl && (c.estado === 'error' || (!c.verificado && !c.ultimoAviso && c.webhookApp !== 'otro'));
+    const manualPendiente = c.modo === 'manual' && c.webhookUrl && (c.estado === 'error' || (!c.verificado && !c.ultimoAviso && c.webhookApp !== 'otro' && c.webhookApp !== 'plataforma'));
     return `<div class="ln-cta"><span class="fic">${logoMeta()}</span><div class="ctx"><b>${esc(cxNombre(c))}</b><small>${n} ${n === 1 ? 'número' : 'números'} · ${avisos}</small></div>
       ${est}
       <div class="acc"><button type="button" class="btn" data-cxm-revisar="${c.id}">${I('swap')}Revisar</button><button type="button" class="btn" data-cxm-quitar="${c.id}">${I('x')}Desconectar</button></div></div>

@@ -44,7 +44,7 @@ export interface DatosWhatsapp {
   /** Números conectados «Con tu app de WhatsApp Business» (coexistencia): siguen en la app del celular, sin PIN. */
   coex?: string[]
   /** propio: la app manda sus avisos a esta conexión. otro: la app ya tenía otra dirección; se desvía cada línea. */
-  webhookApp?: 'propio' | 'otro'
+  webhookApp?: 'propio' | 'otro' | 'plataforma'
   webhookUrl?: string
   vence?: number
   permisos?: string[]
@@ -203,8 +203,12 @@ export async function conectarWhatsappManual(entrada: Json, baseApi: string, por
   // Volver a conectar la misma app suma cuentas: las líneas de las que ya tenía siguen listándose y recibiendo avisos.
   if (previa) wabas = [...new Set([...((obj(previa.datos).wabas as string[] | undefined) ?? []), ...wabas])]
   const clave = previa?.clave ?? azar(24)
-  const verifyToken = String(obj(previa?.datos).verifyToken ?? '') || azar(16)
-  const webhookUrl = urlAvisosConexion(baseApi, clave)
+  // Con la misma app de la plataforma (la del botón de Meta), los avisos van a la dirección general: si se le
+  // pusiera la de esta conexión, al desconectarla se cortarían los avisos de todos los clientes (pasó el 21-oct).
+  const plataforma = await proveedorBase().catch(() => null)
+  const deLaPlataforma = !!plataforma && plataforma.appId === appId
+  const verifyToken = deLaPlataforma ? plataforma.verifyToken : String(obj(previa?.datos).verifyToken ?? '') || azar(16)
+  const webhookUrl = deLaPlataforma ? urlAvisosGeneral(baseApi) : urlAvisosConexion(baseApi, clave)
   const datos: DatosWhatsapp = { appId, wabas, verifyToken, webhookUrl, vence: info.vence || 0, permisos: info.permisos }
   // Se guarda antes de pedirle nada a Meta: al configurar los avisos, Meta llama de una vez a la
   // dirección para verificarla, y la conexión tiene que existir para contestarle.
@@ -218,7 +222,9 @@ export async function conectarWhatsappManual(entrada: Json, baseApi: string, por
     const llave = { token: `${appId}|${appSecret}` }
     const subs = await graph<{ data?: { object?: string; callback_url?: string; active?: boolean }[] }>(`/${appId}/subscriptions`, { cred: llave })
     const actual = (subs.data ?? []).find(s => s.object === 'whatsapp_business_account')
-    if (!actual || !actual.active || !actual.callback_url || actual.callback_url === webhookUrl) {
+    if (deLaPlataforma) {
+      datos.webhookApp = 'plataforma'
+    } else if (!actual || !actual.active || !actual.callback_url || actual.callback_url === webhookUrl) {
       await graph(`/${appId}/subscriptions`, { cred: llave, method: 'POST', query: { object: 'whatsapp_business_account', callback_url: webhookUrl, verify_token: verifyToken, fields: CAMPOS_AVISOS, include_values: 'true' } })
       datos.webhookApp = 'propio'
     } else {
