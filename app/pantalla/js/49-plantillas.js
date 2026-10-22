@@ -168,9 +168,9 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .tn-tel::after{content:"";position:absolute;right:-3px;top:230px;width:3px;height:100px;border-radius:2px;background:#2a2a2d}
 .tn-pant{position:relative;width:100%;height:100%;border-radius:56px;overflow:hidden;background:#efeae2;display:flex;flex-direction:column;font-family:-apple-system,"SF Pro Text",Inter,system-ui,sans-serif}
 .tn-isla{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:124px;height:36px;border-radius:20px;background:#000;z-index:3}
-.tn-estado{height:54px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 34px 6px 42px;font-size:16px;font-weight:600;color:#000;background:#f6f6f6}
-.tn-estado .der{display:flex;align-items:center;gap:6px}
-.tn-estado svg{height:12px}
+.tn-estado{height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 32px 0 46px;font-size:17px;font-weight:600;letter-spacing:-.01em;color:#000;background:#f6f6f6}
+.tn-estado .der{display:flex;align-items:center;gap:7px}
+.tn-estado svg{height:13px}
 .tn-wcab{display:flex;align-items:center;gap:10px;padding:8px 14px 10px 8px;background:#f6f6f6;border-bottom:1px solid #dcdcdc}
 .tn-wcab .atras{display:flex;align-items:center;color:#007aff}
 .tn-wcab .atras svg{width:22px;height:22px;stroke-width:2.4}
