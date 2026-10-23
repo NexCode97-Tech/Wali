@@ -53,7 +53,33 @@
   };
   const VACIAS = new Set('a al como con cual cuales de del donde el en es esta este esto eso hace hacer hago la las le lo los me mi mis o para pero por porque puedo pueda puede que quiero quisiera necesito se si sin su sus te tengo tu tus un una uno unos y ya hay ver hola gracias favor ayuda ayudame alguien algo cosa forma manera debo deberia quien funciona funcionar sirve servir hacen tiene tienen veo encuentro encontrar esta estan'.split(' '));
   const raiz = w => w.length > 5 && /es$/.test(w) ? w.slice(0, -2) : w.length > 4 && /s$/.test(w) ? w.slice(0, -1) : w;
-  const palabras = t => norm(t).split(' ').filter(Boolean).map(w => SINONIMOS[w] || w).filter(w => !VACIAS.has(w)).map(raiz);
+  /* Grupos de palabras que en el CRM significan lo mismo: la primera de cada grupo es la que se usa para buscar. Así
+     «enlazar», «meter» o «vincular» encuentran las guías que dicen «conectar». */
+  const GRUPOS = [
+    'conectar enlazar enlazo enlace vincular vinculo integrar integro sincronizar conecto conecte conectarlo',
+    'desconectado desconecto desconectada caido caida cayo cae caer tumbo',
+    'varios segundo otra otro adicional dos 2 mas',
+    'difusion masivo masiva campaña promocion promo oferta ofertas todos muchos 500 1000 base',
+    'rechazo rechazada rechazaron rechazar aprueban aprobaron revision paso negaron',
+    'variable variables personalizar personalizado nombre',
+    'automatico automatica solo sola automaticamente auto',
+    'desactivar apagar apago quitar pausar detener',
+    'asesor asesora vendedora vendedor agente_humano persona compañera compañero empleada',
+    'entrar ingresar acceder iniciar login loguear',
+    'equipo area departamento',
+    'agendar agenda cita citas reserva reservas calendario',
+    'informe informes estadistica estadisticas reporte reportes metrica metricas cuantas numeros',
+    'exportar bajar descargar sacar',
+    'importar subir cargar lista',
+    'nota_voz audio audios voz grabar',
+    'cancelar baja darme retirarme',
+    'notificacion notificaciones alerta alertas aviso avisos sonido suena',
+    'empezar arranco arrancar empiezo empezar comienzo comenzar inicio',
+    'factura facturas recibo recibos comprobante',
+    'equivocado equivocada mal incorrecto incorrecta error',
+  ].map(g => g.split(' '));
+  const GRUPO = new Map(); for (const g of GRUPOS) for (const w of g) GRUPO.set(w, g[0]);
+  const palabras = t => norm(t).split(' ').filter(Boolean).map(w => SINONIMOS[w] || w).map(w => GRUPO.get(w) || w).filter(w => !VACIAS.has(w)).map(raiz);
   // Distancia de edición (con transposición), cortando apenas pasa el máximo.
   function distancia(a, b, max){
     if (Math.abs(a.length - b.length) > max) return max + 1;
@@ -77,7 +103,9 @@
     const docs = AYUDA_GUIAS.map(g => {
       const pesos = new Map(), suma = (txt, w) => palabras(txt).forEach(p => pesos.set(p, Math.max(pesos.get(p) || 0, w)));
       suma(g.t, 3); (g.q || []).forEach(q => suma(q, 2.5)); suma(g.a, 1); (g.p || []).forEach(p => suma(p.replace(/\*\*/g, ''), 1));
-      return {g, pesos};
+      // Las frases completas (el título y cada forma de preguntar): pesan cuando la pregunta se parece a una entera.
+      const frases = [g.t, ...(g.q || [])].map(f => [...new Set(palabras(f))]).filter(f => f.length);
+      return {g, pesos, frases};
     });
     const df = new Map(); docs.forEach(d => d.pesos.forEach((_, p) => df.set(p, (df.get(p) || 0) + 1)));
     const idf = new Map([...df].map(([p, n]) => [p, Math.log(1 + docs.length / n)]));
@@ -101,15 +129,28 @@
     if (!qs.length) return {lista: [], cubre: 0};
     const conjuntos = qs.map(w => parecidas(w, ix));
     const pag = paginaActual();
+    const parecidaA = conjuntos.map(c => new Map(c));
     const lista = ix.docs.filter(d => permitida(d.g)).map(d => {
       let s = 0, cubiertas = 0;
       conjuntos.forEach(c => { let mejor = 0; for (const [v, sim] of c) { const w = d.pesos.get(v); if (w) mejor = Math.max(mejor, w * sim * ix.idf.get(v)); } if (mejor) { s += mejor; cubiertas++; } });
+      // La frase más parecida: cuántas palabras de la pregunta están en ella y cuántas de ella en la pregunta (F1).
+      let frase = 0;
+      for (const f of d.frases) {
+        let dentro = 0; parecidaA.forEach(m => { if (f.some(w => m.has(w))) dentro++; });
+        const enF = f.filter(w => parecidaA.some(m => m.has(w))).length;
+        if (dentro && enF) frase = Math.max(frase, 2 * (dentro / qs.length) * (enF / f.length) / ((dentro / qs.length) + (enF / f.length)));
+      }
+      s += frase * frase * 14;
       if ((d.g.pag || []).includes(pag) || d.g.ir === pag) s *= 1.15;
+      // Seguimiento («¿y cómo lo borro?»): una pregunta corta se lee con el tema de la guía anterior.
+      if (A.ultima && qs.length <= 3 && d.g.a === A.ultima.a) s *= 1.3;
       return {g: d.g, s, cubre: cubiertas / qs.length};
     }).filter(x => x.s > 0).sort((a, b) => b.s - a.s);
     return {lista, cubre: lista[0] ? lista[0].cubre : 0};
   }
   const entendio = r => r.lista.length && r.lista[0].s >= 4 && r.cubre >= .6 && (!r.lista[1] || r.lista[0].s >= r.lista[1].s * 1.08 || r.lista[0].cubre === 1);
+  // Confianza media: responde la más probable y ofrece las otras dos («¿O buscabas…?»), sin quedarse dudando.
+  const probable = r => !entendio(r) && r.lista.length && r.lista[0].s >= 6 && r.cubre >= .5;
 
   /* ── Dónde está la persona: sugerencias de esa pantalla ── */
   const NOMBRE_PAG = {inbox: 'Mi bandeja', todas: 'Conversaciones', contactos: 'Contactos', embudo: 'Embudo', difusiones: 'Difusiones', plantillas: 'Plantillas', informes: 'Informes', agentes: 'Agentes IA', vivo: 'Equipo en vivo', flujos: 'Flujos', reglas: 'Reglas automáticas', ajustes: 'Ajustes', 'cfg-lineas': 'Líneas de WhatsApp', 'cfg-reparto': 'Equipos y reparto', 'cfg-encuesta': 'la encuesta', 'cfg-canales': 'Canales', 'cfg-plan': 'Plan y pagos', 'cfg-primeros': 'Primeros pasos'};
@@ -129,12 +170,13 @@
     const r = buscar(`${g.t} ${(g.q || []).join(' ')}`).lista.filter(x => x.g.id !== g.id && x.g.a === g.a).slice(0, 2);
     return r.length ? `<div class="ay-rel"><small>También te puede servir</small>${r.map(x => `<button type="button" data-ay-guia="${x.g.id}">${esc(x.g.t)}${IC.chev}</button>`).join('')}</div>` : '';
   }
-  function tarjeta(g, entendido){
+  function tarjeta(g, entendido, otras){
+    A.ultima = g;
     return `<div class="ay-msj bot"><span class="ay-iso pq">${ISO}</span><div class="ay-msj-c">
       ${entendido ? `<p class="ay-entiendo">Entendí: <b>${esc(g.t)}</b></p>` : ''}
       <div class="ay-guia"><b>${esc(g.t)}</b><ol>${pasosHTML(g.p)}</ol>${g.ir ? `<button type="button" class="btn pri" data-ay-ir="${g.id}">Llevarme ahí${IC.flecha}</button>` : ''}</div>
       <div class="ay-util" data-ay-utilde="${g.id}"><span>¿Te sirvió?</span><button type="button" data-ay-util="${g.id}|1">${IC.si}Sí</button><button type="button" data-ay-util="${g.id}|0">${IC.no}No</button></div>
-      ${relacionadas(g)}</div></div>`;
+      ${otras && otras.length ? `<div class="ay-rel"><small>¿O buscabas…?</small>${otras.map(o => `<button type="button" data-ay-guia="${o.id}">${esc(o.t)}${IC.chev}</button>`).join('')}</div>` : relacionadas(g)}</div></div>`;
   }
   function soporteHTML(q){
     const asunto = encodeURIComponent('Ayuda con Wali'), cuerpo = encodeURIComponent(q ? `Hola, necesito ayuda con esto: ${q}` : 'Hola, necesito ayuda con Wali.');
@@ -204,6 +246,16 @@
     if (GRACIAS.test(t) && palabras(t.replace(GRACIAS, '')).length === 0) return bot('¡Con gusto! Si necesitas algo más, aquí estoy.');
     if (QUIEN.test(t)) return bot('Soy la ayuda de Wali: respondo al instante con las guías del CRM. No soy una persona; si no encuentro lo que buscas, te paso con el equipo de soporte.');
     if (ADIOS.test(t)) return bot('¡Hasta luego! Cuando me necesites, toca la burbuja amarilla.');
+    // Más charla: lo que la gente escribe y no es una guía.
+    if (/(que (puedes|sabes) hacer|en que (me )?(ayudas|puedes ayudar)|para que sirves|que temas)/.test(t)) return bot('Te explico cómo hacer cualquier cosa en Wali: conectar WhatsApp, crear plantillas y difusiones, armar equipos y el reparto, flujos, agentes IA, informes, pagos y más. También te llevo a la pantalla y te señalo dónde tocar. Prueba con:', sugs());
+    if (/(hablar|comunicar|contactar|escribir).*(persona|humano|asesor|alguien|soporte|agente real)|quiero (un|una) (persona|humano)|atencion humana|servicio al cliente/.test(t)) return bot('Claro. Escríbele al equipo de soporte de Wali y te responde una persona en horario hábil.', soporteHTML(''));
+    if (/(estoy perdid|no entiendo nada|no se (nada|como|que hacer)|me perdi|esto es dificil|que es esto|ayuda+$|socorro|auxilio)/.test(t)) return bot('Tranquilo, vamos paso a paso. Lo más fácil es empezar por aquí:', sugs());
+    if (/(urgente|emergencia|ya mismo|rapido por favor|se cayo todo|no funciona nada)/.test(t)) return bot('Entiendo que es urgente. Mira primero si arriba hay una franja roja de WhatsApp desconectado; si no es eso, escríbele a soporte con lo que pasa y lo revisamos de una.', soporteHTML(q));
+    if (/(tonto|estupido|inutil|no sirves|no sirve para nada|malo|pesimo|basura)/.test(t)) return bot('Lamento no haberte ayudado bien. Dime con otras palabras qué quieres hacer, o escríbele a una persona de soporte:', soporteHTML(q));
+    if (/(clima|futbol|partido|chiste|receta|noticias|horoscopo|bitcoin|dolar)/.test(t)) return bot('Eso se me escapa: solo sé de Wali. Pregúntame cualquier cosa del CRM y te digo cómo.', sugs());
+    if (/(te quiero|eres (lo maximo|genial|el mejor|la mejor)|me encantas|buen trabajo)/.test(t)) return bot('¡Gracias! 💛 Aquí sigo para lo que necesites.');
+    if (/(como estas|como te va|que tal estas)/.test(t)) return bot('¡Muy bien, gracias! ¿En qué te ayudo con Wali?', sugs());
+    if (/(quien te (hizo|creo|programo)|de donde eres)/.test(t)) return bot('Me hizo el equipo de Wali para ayudarte a sacarle el máximo al CRM.');
     if (!palabras(resto || t).length) return bot('Claro, te ayudo. ¿Qué quieres hacer? Escríbelo con tus palabras, por ejemplo «conectar WhatsApp» o «crear una plantilla».', sugs());
     return null;
   }
@@ -216,6 +268,7 @@
       if (charla) { A.msgs.push(charla); pintar(); return; }
       const r = buscar(q);
       if (entendio(r)) A.msgs.push(tarjeta(r.lista[0].g, true));
+      else if (probable(r)) A.msgs.push(tarjeta(r.lista[0].g, true, r.lista.slice(1, 3).map(x => x.g)));
       else { A.msgs.push(noEntendio(q, r)); crmApi('POST', '/crm/ayuda/sin-respuesta', {q}).catch(() => { /* no importa si no se guarda */ }); }
       pintar();
     }, 380);
@@ -276,7 +329,7 @@
   const arrancar = () => { if (document.body) pintarFab(); else setTimeout(arrancar, 200); };
   setTimeout(arrancar, 400);
   // Para la prueba de guías (y para quien la quiera usar desde la consola).
-  window.ayudaBuscar = q => { const r = buscar(q); return {entendio: !!entendio(r), top: r.lista.slice(0, 3).map(x => [x.g.id, +x.s.toFixed(2), +x.cubre.toFixed(2)])}; };
+  window.ayudaBuscar = q => { const r = buscar(q); return {entendio: !!entendio(r) || !!probable(r), seguro: !!entendio(r), top: r.lista.slice(0, 3).map(x => [x.g.id, +x.s.toFixed(2), +x.cubre.toFixed(2)])}; };
 
   document.head.insertAdjacentHTML('beforeend', `<style>
 .ay-fab{position:fixed;right:22px;bottom:22px;width:56px;height:56px;border-radius:50%;background:#FFD21F;color:#0b0b10;display:grid;place-items:center;box-shadow:0 8px 24px -6px rgba(11,11,16,.35);z-index:240;border:0;cursor:pointer;transition:transform .25s cubic-bezier(.16,1,.3,1)}
