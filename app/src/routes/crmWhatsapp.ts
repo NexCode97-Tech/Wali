@@ -29,6 +29,7 @@ import { enEspacio } from '../services/crm/espacio'
 import { recibirManychat } from '../services/crm/manychat'
 import { emitirConexiones as emitirConexionesDe } from '../services/crm/conexiones'
 import { LLAVES_MARKETING, revisarMarketingDeConexion } from '../services/crm/marketingMeta'
+import QRCode from 'qrcode'
 
 /**
  * WhatsApp Cloud API del CRM (26-sep-2026). Todo se conecta desde el CRM, sin variables del
@@ -141,6 +142,20 @@ direccionesDeAvisos(webhookCrmMeta)
 // ─── Conexiones (con sesión) ─────────────────────────────────────────────────
 
 const soloLideres = requireRole(...CONFIGURAN)
+
+/**
+ * Mis primeros pasos, «Recibe tu primer mensaje» (maqueta aprobada «PrimerosPasos»): el código QR que abre WhatsApp con
+ * un mensaje listo para la línea. Solo el número público de la línea y un texto fijo: nada sensible.
+ */
+rutasWaCrm.get('/primeros-pasos/qr', asyncHandler(async (req: Request, res: Response) => {
+  const id = String(req.query.linea ?? '').trim()
+  const l = id ? await prisma.crmLinea.findUnique({ where: { id }, select: { telefono: true } }) : await prisma.crmLinea.findFirst({ orderBy: { createdAt: 'asc' }, select: { telefono: true } })
+  const tel = telDigitos(l?.telefono)
+  if (!tel) throw new NotFoundError('Todavía no hay una línea de WhatsApp conectada')
+  const enlace = `https://wa.me/${tel}?text=${encodeURIComponent('Hola 👋 probando Wali')}`
+  const svg = await QRCode.toString(enlace, { type: 'svg', margin: 0, errorCorrectionLevel: 'M', color: { dark: '#0b0b10', light: '#ffffff' } })
+  return ApiResponse.success(res, { enlace, svg })
+}))
 
 rutasWaCrm.get('/conexiones', asyncHandler(async (_req: Request, res: Response) => {
   return ApiResponse.success(res, await listarConexiones())

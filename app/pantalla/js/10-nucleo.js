@@ -774,6 +774,7 @@ function pagina(){
     const lider = st.rol === 'l';
     const tab = lider ? st.ajTab : 'cuenta';
     const crmGrupos = [
+      ...(puedeConfigurarCrm() ? [['Para empezar', [['star','Primeros pasos','Tu guía para dejar el CRM funcionando en 10 minutos','cfg-primeros']]]] : []),
       ['Canales e integraciones', [
         ['chat','Canales','WhatsApp, Instagram, Messenger, TikTok, correo y chat de la web: conectar y administrar','cfg-canales'],
         ['phone','Llamadas','Canales de llamadas, grabaciones y horario para llamar','cfg-llamadas'],
