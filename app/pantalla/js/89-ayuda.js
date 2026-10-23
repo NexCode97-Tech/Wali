@@ -185,7 +185,6 @@
   function tarjeta(g, entendido, otras){
     A.ultima = g;
     return `<div class="ay-msj bot"><span class="ay-iso pq">${ISO}</span><div class="ay-msj-c">
-      ${entendido ? `<p class="ay-entiendo">Entendí: <b>${esc(g.t)}</b></p>` : ''}
       <div class="ay-guia"><b>${esc(g.t)}</b><ol>${pasosHTML(g.p)}</ol>${g.ir ? `<button type="button" class="btn pri" data-ay-ir="${g.id}">Llevarme ahí${IC.flecha}</button>` : ''}</div>
       <div class="ay-util" data-ay-utilde="${g.id}"><span>¿Te sirvió?</span><button type="button" data-ay-util="${g.id}|1">${IC.si}Sí</button><button type="button" data-ay-util="${g.id}|0">${IC.no}No</button></div>
       ${otras && otras.length ? `<div class="ay-rel"><small>¿O buscabas…?</small>${otras.map(o => `<button type="button" data-ay-guia="${o.id}">${esc(o.t)}${IC.chev}</button>`).join('')}</div>` : relacionadas(g)}</div></div>`;
@@ -289,6 +288,9 @@
     if (QUIEN.test(t)) return bot('Soy la ayuda de Wali: respondo al instante con las guías del CRM. No soy una persona; si no encuentro lo que buscas, te paso con el equipo de soporte.');
     if (ADIOS.test(t)) return bot('¡Hasta luego! Cuando me necesites, toca la burbuja amarilla.');
     // Más charla: lo que la gente escribe y no es una guía.
+    // Anuncia una pregunta sin decirla todavía («tengo otra duda», «una pregunta»): se le pide que la cuente.
+    if (/^(hola )?(tengo|tendria|me (surgio|quedo)|quiero hacer(te)?|te (hago|tengo)|una|otra|ultima) ?(otra|una|mas de una|varias|unas|la ultima)? ?(duda|dudas|pregunta|preguntas|consulta|consultas|inquietud|cosa|cosita)( mas)?( para ti)?$|^(puedo|te puedo|quiero) (hacer(te)?|preguntar(te)?)( una| otra)?( pregunta| cosa| algo)?$|^(necesito|quiero) (ayuda|preguntar(te)? algo|saber algo)$|^otra cosa$/.test(t)) return bot('¡Claro! Cuéntame tu duda con tus palabras y te digo cómo hacerlo.');
+    if (/^(si|no|ok|okey|okay|vale|dale|listo|bueno|bien|perfecto|entendido|ya|aja|claro|de una|super|genial)( gracias)?$/.test(t)) return bot('Listo. ¿Hay algo más en lo que te ayude?', sugs());
     if (/(que (puedes|sabes) hacer|en que (me )?(ayudas|puedes ayudar)|para que sirves|que temas)/.test(t)) return bot('Te explico cómo hacer cualquier cosa en Wali: conectar WhatsApp, crear plantillas y difusiones, armar equipos y el reparto, flujos, agentes IA, informes, pagos y más. También te llevo a la pantalla y te señalo dónde tocar. Prueba con:', sugs());
     if (/(hablar|comunicar|contactar|escribir).*(persona|humano|asesor|alguien|soporte|agente real)|quiero (un|una) (persona|humano)|atencion humana|servicio al cliente/.test(t)) return bot('Claro. Escríbele al equipo de soporte de Wali y te responde una persona en horario hábil.', soporteHTML(''));
     if (/(estoy perdid|no entiendo nada|no se (nada|como|que hacer)|me perdi|esto es dificil|que es esto|ayuda+$|socorro|auxilio)/.test(t)) return bot('Tranquilo, vamos paso a paso. Lo más fácil es empezar por aquí:', sugs());
