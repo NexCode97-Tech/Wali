@@ -147,7 +147,8 @@ document.addEventListener('click', e => {
   if (t.closest('[data-rr-quitarcita]')) { rrCita = null; rrPintarBarra(); ta.focus(); return; }
   const ir = t.closest('[data-rr-ir]');
   if (ir) {
-    const el = document.querySelector(`.rr-m[data-rr="${CSS.escape(ir.dataset.rrIr)}"]`);
+    // Si el chat está abierto en el panel del embudo, el mensaje que se busca es el de ahí.
+    const sel = `.rr-m[data-rr="${CSS.escape(ir.dataset.rrIr)}"]`, el = ir.closest('#ec-msgs, #msgs') ? ir.closest('#ec-msgs, #msgs').querySelector(sel) : document.querySelector(sel);
     if (!el) { toast('Ese mensaje ya no está en lo que se ve del chat'); return; }
     el.scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center'});
     el.classList.remove('rr-brilla'); void el.offsetWidth; el.classList.add('rr-brilla');
@@ -156,27 +157,31 @@ document.addEventListener('click', e => {
   rrCerrarMenu();
 });
 // Mantener presionado en el celular (o clic derecho) abre el mismo menú.
-document.getElementById('msgs').addEventListener('contextmenu', e => {
+['msgs', 'ec-msgs'].map(id => document.getElementById(id)).filter(Boolean).forEach(caja => caja.addEventListener('contextmenu', e => {
   const w = e.target.closest('.rr-m'); if (!w || e.target.closest('a,video,audio')) return;
   e.preventDefault(); rrAbrirMenu(w.querySelector('[data-rr-menu]'), w.dataset.rr);
-});
+}));
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && !rrMenu.hidden) { const b = rrMenuBoton; rrCerrarMenu(); if (b) b.focus(); e.stopPropagation(); }
   else if (e.key === 'Escape' && rrCita && document.activeElement === ta) { rrCita = null; rrPintarBarra(); }
 }, true);
-document.getElementById('msgs').addEventListener('scroll', rrCerrarMenu, {passive: true});
+['msgs', 'ec-msgs'].map(id => document.getElementById(id)).filter(Boolean).forEach(caja => caja.addEventListener('scroll', rrCerrarMenu, {passive: true}));
 addEventListener('resize', rrCerrarMenu);
 
 document.head.insertAdjacentHTML('beforeend', `<style>
 .rr-m{position:relative;display:flex;flex-direction:column;gap:3px;max-width:100%;min-width:0}
 .rr-m.in{align-items:flex-start;align-self:flex-start}
 .rr-m.out{align-items:flex-end;align-self:flex-end}
-.rr-pts-b{position:absolute;top:50%;width:30px;height:30px;margin-top:-15px;border-radius:50%;border:1px solid #e5e9f0;background:#fff;color:#4b5563;display:grid;place-items:center;cursor:pointer;padding:0;box-shadow:0 2px 6px rgba(15,23,42,.12);opacity:0;pointer-events:none;transform:scale(.85);transition:opacity .18s cubic-bezier(.16,1,.3,1),transform .18s cubic-bezier(.16,1,.3,1)}
-.rr-m.in .rr-pts-b{right:-38px}
-.rr-m.out .rr-pts-b{left:-38px}
+.rr-pts-b{position:absolute;top:50%;width:30px;height:30px;margin-top:-15px;border-radius:50%;border:1px solid #e5e9f0;background:#fff;color:#4b5563;display:grid;place-items:center;cursor:pointer;padding:0;box-shadow:0 2px 6px rgba(15,23,42,.12);opacity:0;pointer-events:none;transform:scale(.85);transition:opacity .18s cubic-bezier(.16,1,.3,1) .25s,transform .18s cubic-bezier(.16,1,.3,1) .25s}
+.rr-m.in .rr-pts-b{right:-34px}
+.rr-m.out .rr-pts-b{left:-34px}
+/* Puente invisible entre el mensaje y el ⋯: al llevar el cursor al botón no se pierde el «encima» y no se esconde. */
+.rr-m::after{content:"";position:absolute;top:0;bottom:0;width:40px}
+.rr-m.in::after{left:100%}
+.rr-m.out::after{right:100%}
 .rr-m:has(.rr-reacs) .rr-pts-b{margin-top:-28px}
 .rr-pts-b .rr-pts{width:16px;height:16px;fill:currentColor;stroke:none}
-.rr-m:hover .rr-pts-b,.rr-pts-b:focus-visible,.rr-pts-b[aria-expanded="true"]{opacity:1;pointer-events:auto;transform:none}
+.rr-m:hover .rr-pts-b,.rr-pts-b:focus-visible,.rr-pts-b[aria-expanded="true"]{opacity:1;pointer-events:auto;transform:none;transition-delay:0s}
 .rr-pts-b:hover{background:#f6f7f9;color:#0b0b10}
 .rr-cita{all:unset;box-sizing:border-box;display:grid;gap:1px;position:relative;margin-bottom:6px;padding:7px 10px 7px 14px;border-radius:10px;background:rgba(11,11,16,.06);font-size:13px;line-height:1.35;cursor:pointer;max-width:100%;min-width:0;white-space:normal}
 .rr-cita::before{content:"";position:absolute;left:5px;top:7px;bottom:7px;width:3px;border-radius:2px;background:var(--rr-c)}
@@ -193,7 +198,7 @@ button.rr-reac{cursor:pointer}
 @keyframes rr-pop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
 .rr-m.rr-brilla > .ch-b,.rr-m.rr-brilla > .ch-img,.rr-m.rr-brilla > .ch-file{animation:rr-brilla 1.4s cubic-bezier(.16,1,.3,1)}
 @keyframes rr-brilla{0%,35%{box-shadow:0 0 0 3px #FFD21F}100%{box-shadow:0 0 0 3px rgba(255,210,31,0)}}
-.rr-menu{position:fixed;z-index:60;width:250px;background:#fff;border:1px solid #e5e9f0;border-radius:14px;padding:6px;box-shadow:0 18px 40px -16px rgba(15,23,42,.35);display:grid;gap:2px;animation:rr-entra .18s cubic-bezier(.16,1,.3,1);transform-origin:top center}
+.rr-menu{position:fixed;z-index:79;width:250px;background:#fff;border:1px solid #e5e9f0;border-radius:14px;padding:6px;box-shadow:0 18px 40px -16px rgba(15,23,42,.35);display:grid;gap:2px;animation:rr-entra .18s cubic-bezier(.16,1,.3,1);transform-origin:top center}
 .rr-menu[hidden]{display:none}
 @keyframes rr-entra{from{opacity:0;transform:translateY(-4px) scale(.97)}to{opacity:1;transform:none}}
 .rr-emo,.rr-emo2{display:flex;align-items:center;justify-content:space-between;padding:4px 4px 8px;border-bottom:1px solid #eef1f5;margin-bottom:4px}

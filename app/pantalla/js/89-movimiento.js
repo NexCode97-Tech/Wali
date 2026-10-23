@@ -2,9 +2,12 @@
    Cualquier cosa que se borre, elimine o quite en el CRM sale con movimiento, sin tocar cada pantalla:
    1. Un clic en un control de borrar (data-*del, data-*borrar, data-*quitar, «Eliminar»…) o un DELETE que sale bien
       deja la marca de que lo próximo que se pinte es un borrado.
-   2. render() toma una foto de las filas (posición y contenido) antes de pintar. Lo que desapareció sale como un
-      fantasma en su sitio: se tiñe de rojo un instante y se desvanece hacia la izquierda; lo que quedó abajo sube
-      suave a su nuevo puesto (FLIP). Todo con transform y opacity, nada de layout.
+   2. render() toma una foto de las piezas (posición, contenido y qué tipo de pieza es) antes de pintar. Lo que
+      desapareció sale como un fantasma en su sitio, según su estructura (maqueta aprobada «Movimiento al borrar ·
+      según el diseño», 23-oct): fila → a la izquierda; tarjeta de cuadrícula → se encoge al centro; chip → se encoge
+      en su sitio; burbuja del chat → se recoge hacia su lado; columna del embudo → se pliega hacia arriba. Antes,
+      0,1 s de rojo suave. Lo que quedó viaja a su nuevo puesto (FLIP, también en 2D). Si se va media pantalla (un
+      espacio de trabajo), en vez de piezas volando la pantalla hace un fundido corto. Solo transform y opacity.
    3. El aviso del borrado entra con una papelera que cierra la tapa.
    Con movimiento reducido no se anima nada. Lo usan también pantallas propias: crmConMovimiento(() => pintar()). */
 (() => {
@@ -32,8 +35,17 @@
   }
 
   /* ── La foto de las filas antes de pintar ── */
-  const FILAS = 'tbody > tr, ul > li, ol > li, .ay-hi, .ch-fila, .rr-m, [class*="fila"], [class*="item"], [class*="card"], [class*="tarjeta"]';
-  const ZONAS = ['#page', '#panel', '#ficha', '#lista', '#list', '.ay-cuerpo', '.dlg', '#ov-x'];
+  const FILAS = 'tbody > tr, ul > li, ol > li, .ay-hi, .ch-fila, .rr-m, [data-col], .kc, .tagx, .fchip, .chip, .chips2 > *, .mt-chips > span, [class*="fila"], [class*="item"], [class*="card"], [class*="tarjeta"]';
+  const ZONAS = ['#page', '#panel', '#ficha', '#lista', '#list', '#msgs', '#ec-cajon', '.ay-cuerpo', '.dlg', '#ov-x'];
+  // Qué tipo de pieza es: define cómo sale.
+  function tipo(el, r){
+    if (el.matches('.rr-m, .ch-fila') || el.closest('#msgs, #ec-msgs')) return el.matches('.out, .yo') || el.closest('.ch-fila.yo, .rr-m.out') ? 'burbuja-der' : 'burbuja-izq';
+    if (el.hasAttribute('data-col')) return 'columna';
+    const p = el.parentElement, ps = p ? getComputedStyle(p) : null;
+    if (ps && ps.display.includes('grid') && ps.gridTemplateColumns.trim().split(/\s+/).length > 1) return 'carta';
+    if (r.height <= 38 && r.width < 280 && ps && ps.display.includes('flex') && ps.flexDirection.startsWith('row')) return 'chip';
+    return 'fila';
+  }
   const clave = el => `${el.tagName}|${el.className}|${(el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 160)}`;
   function foto(){
     const filas = [], vistos = new Set();
@@ -41,10 +53,10 @@
       for (const el of raiz.querySelectorAll(FILAS)) {
         if (vistos.has(el) || filas.length > 500) continue;
         const r = el.getBoundingClientRect();
-        if (r.height < 16 || r.height > 260 || r.width < 40 || r.bottom < 0 || r.top > innerHeight) continue;
+        if (r.height < 16 || (r.height > 260 && !el.hasAttribute('data-col')) || r.width < 24 || r.bottom < 0 || r.top > innerHeight) continue;
         // Solo la fila más externa: lo de adentro se mueve con ella.
         if (el.parentElement && el.parentElement.closest(FILAS) && vistos.has(el.parentElement.closest(FILAS))) continue;
-        vistos.add(el); filas.push({el, k: clave(el), r});
+        vistos.add(el); filas.push({el, k: clave(el), r, t: tipo(el, r)});
       }
     }
     return filas;
@@ -62,25 +74,37 @@
       usados.add(el);
       const r = el.getBoundingClientRect(), dy = a.r.top - r.top, dx = a.r.left - r.left;
       if (Math.abs(dy) < 1 && Math.abs(dx) < 1) continue;
-      if (Math.abs(dy) > 600) continue;
+      if (Math.abs(dy) > 600 || Math.abs(dx) > 900) continue;
       el.animate([{transform: `translate(${dx}px, ${dy}px)`}, {transform: 'none'}], {duration: 380, delay: 90, easing: SUBIDA, fill: 'backwards'});
     }
-    // Si «desaparece» media pantalla no es un borrado sino otra vista: no se anima.
-    if (salen.length > 6) return;
+    // Si se va media pantalla (un espacio de trabajo), no vuelan piezas: la pantalla hace un fundido corto.
+    if (salen.length > 6) { fundido(); return; }
     for (const a of salen) fantasma(a);
   }
-  function fantasma({el, r}){
+  function fundido(){
+    for (const z of ['#page', '#lista', '#list', '#msgs']) { const el = document.querySelector(z); if (el) el.animate([{opacity: 0, transform: 'translateY(8px)', filter: 'blur(4px)'}, {opacity: 1, transform: 'none', filter: 'blur(0)'}], {duration: 360, easing: SUBIDA}); }
+  }
+  // La salida de cada estructura (y desde dónde se encoge).
+  const SALE = {
+    fila: ['translateX(-18px) scale(.97)', 'left center'],
+    carta: ['scale(.8)', 'center'],
+    chip: ['scale(.5)', 'center'],
+    'burbuja-der': ['scale(.6)', 'right center'],
+    'burbuja-izq': ['scale(.6)', 'left center'],
+    columna: ['scaleY(.4) translateY(-20px)', 'top center'],
+  };
+  function fantasma({el, r, t}){
     const g = el.cloneNode(true);
     g.removeAttribute('id'); g.querySelectorAll('[id]').forEach(x => x.removeAttribute('id'));
     g.setAttribute('aria-hidden', 'true'); g.classList.add('mv-fantasma');
     const cs = getComputedStyle(el);
     Object.assign(g.style, {position: 'fixed', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px', margin: '0',
-      boxSizing: 'border-box', pointerEvents: 'none', zIndex: '70', background: cs.backgroundColor === 'rgba(0, 0, 0, 0)' ? '#fff' : cs.backgroundColor, borderRadius: cs.borderRadius, display: cs.display === 'table-row' ? 'flex' : cs.display, alignItems: 'center', overflow: 'hidden'});
+      boxSizing: 'border-box', pointerEvents: 'none', zIndex: '78', transformOrigin: (SALE[t] || SALE.fila)[1], background: cs.backgroundColor === 'rgba(0, 0, 0, 0)' ? '#fff' : cs.backgroundColor, borderRadius: cs.borderRadius, display: cs.display === 'table-row' ? 'flex' : cs.display, alignItems: 'center', overflow: 'hidden'});
     document.body.appendChild(g);
     g.animate([
       {opacity: 1, transform: 'none', boxShadow: 'inset 0 0 0 999px rgba(254,226,226,0)'},
       {opacity: 1, transform: 'none', boxShadow: 'inset 0 0 0 999px rgba(254,226,226,.85)', offset: .25},
-      {opacity: 0, transform: 'translateX(-18px) scale(.97)', boxShadow: 'inset 0 0 0 999px rgba(254,226,226,.85)'},
+      {opacity: 0, transform: (SALE[t] || SALE.fila)[0], boxShadow: 'inset 0 0 0 999px rgba(254,226,226,.85)'},
     ], {duration: 420, easing: SALIDA, fill: 'forwards'}).finished.then(() => g.remove(), () => g.remove());
   }
 
@@ -117,7 +141,7 @@
   };
 
   document.head.insertAdjacentHTML('beforeend', `<style>
-.toast.mv-borrado{display:flex;align-items:center;gap:9px;padding-left:12px}
+.toast.mv-borrado{z-index:90;display:flex;align-items:center;gap:9px;padding-left:12px}
 .mv-pap{width:17px;height:17px;flex:none;fill:none;stroke:#fca5a5;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;overflow:visible}
 .mv-pap .tapa{transform-box:fill-box;transform-origin:0% 100%;animation:mv-tapa .62s cubic-bezier(.16,1,.3,1) .08s both}
 @keyframes mv-tapa{0%{transform:translateY(-3px) rotate(-28deg)}55%{transform:translateY(-1px) rotate(-8deg)}100%{transform:none}}

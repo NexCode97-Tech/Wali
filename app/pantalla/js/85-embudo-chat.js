@@ -112,6 +112,20 @@
   // Lo que pinta la bandeja (enviar, llegar un mensaje, cargar la conversación) también repinta el panel.
   const renderAntes = render;
   render = function(...a){ const r = renderAntes.apply(this, a); if (abierta) { if (st.pagina !== 'embudo') cerrar(); else { st.sel = abierta; pintarCab(); pintarMsgs(); marcarTarjeta(); } } return r; };
+  // Al mover un lead de etapa (o con cualquier repintado) el embudo se vuelve a dibujar: se conserva dónde iba el scroll
+  // horizontal y el de cada columna, para no volver al inicio.
+  const renderSinScroll = render;
+  render = function(...a){
+    const kb = document.querySelector('#page .kb'), x = kb ? kb.scrollLeft : 0;
+    const cols = kb ? [...kb.querySelectorAll('.kcol[data-col]')].map(c => [c.dataset.col, c.scrollTop]) : [];
+    const r = renderSinScroll.apply(this, a);
+    const kb2 = document.querySelector('#page .kb');
+    if (kb && kb2 && kb2 !== kb) {
+      kb2.scrollLeft = x;
+      for (const [k, t] of cols) { const c = kb2.querySelector(`.kcol[data-col="${CSS.escape(k)}"]`); if (c && t) c.scrollTop = t; }
+    }
+    return r;
+  };
   const chatAntes = chat;
   chat = function(...a){ const r = chatAntes.apply(this, a); if (abierta) pintarMsgs(); return r; };
 })();
