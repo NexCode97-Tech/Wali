@@ -454,7 +454,7 @@
 .ay-fab{position:fixed;right:22px;bottom:22px;width:56px;height:56px;border-radius:50%;background:#FFD21F;color:#0b0b10;display:grid;place-items:center;box-shadow:0 8px 24px -6px rgba(11,11,16,.35);z-index:240;border:0;cursor:pointer;transition:transform .25s cubic-bezier(.16,1,.3,1)}
 .ay-fab.abierta:hover{transform:scale(1.05)}
 .ay-fab svg{width:26px;height:26px;display:block;stroke-width:1.9}
-.ay-fab:not(.abierta){width:64px;height:60px;border-radius:0;background:none;box-shadow:none;overflow:visible;filter:drop-shadow(0 10px 16px rgba(11,11,16,.22)) drop-shadow(0 2px 3px rgba(11,11,16,.12));animation:ay-flota 3.2s cubic-bezier(.45,0,.55,1) infinite;transition:transform .3s cubic-bezier(.16,1,.3,1),filter .3s cubic-bezier(.16,1,.3,1)}
+.ay-fab:not(.abierta){width:64px;height:60px;border-radius:0;background:none;box-shadow:none;overflow:visible;filter:drop-shadow(0 10px 16px rgba(11,11,16,.22)) drop-shadow(0 2px 3px rgba(11,11,16,.12));animation:ay-flota 3.2s cubic-bezier(.45,0,.55,1) infinite;transition:opacity .2s cubic-bezier(.16,1,.3,1),transform .3s cubic-bezier(.16,1,.3,1),filter .3s cubic-bezier(.16,1,.3,1)}
 .ay-fab .ay-globo{position:absolute;inset:0;width:64px;height:60px}
 .ay-fab .ay-globo path{fill:#FFD21F;stroke:#e6b800;stroke-width:1}
 .ay-fab:not(.abierta) .ay-astro{position:absolute;left:8px;top:2px;width:48px;height:48px;transition:transform .3s cubic-bezier(.16,1,.3,1)}
@@ -462,6 +462,9 @@
 @media (hover:hover){.ay-fab:not(.abierta):hover{animation:none;transform:translateY(-3px);filter:drop-shadow(0 14px 22px rgba(11,11,16,.28)) drop-shadow(0 2px 3px rgba(11,11,16,.12))}
 .ay-fab:not(.abierta):hover .ay-astro{transform:rotate(-6deg)}
 .ay-fab:not(.abierta):hover .ay-fab-hola{opacity:1;transform:none}}
+/* Con el panel del embudo abierto, el globo se aparta: si no, tapa el botón Enviar. */
+.ay-fab{transition:opacity .2s cubic-bezier(.16,1,.3,1),transform .3s cubic-bezier(.16,1,.3,1),filter .3s cubic-bezier(.16,1,.3,1)}
+body:has(#ec-cajon.on) .ay-fab:not(.abierta){opacity:0;pointer-events:none;transform:translateY(12px)}
 @keyframes ay-flota{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
 .ay-fab.abierta{background:#fff;color:#dc2626;border:1px solid var(--line)}
 .ay-fab.abierta svg{width:22px;height:22px}

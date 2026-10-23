@@ -5,7 +5,7 @@
    queda seleccionada (st.sel), así funcionan igual Responder y Nota privada, respuestas rápidas, emojis, material, nota
    de voz, plantillas, enlace de pago y programar. Al cerrar, el compositor vuelve a su sitio. ── */
 (() => {
-  let abierta = 0, menuEtapa = false, selAntes = 0, compCasa = null;
+  let abierta = 0, menuEtapa = false, menuTags = false, recien = '', selAntes = 0, compCasa = null;
   const conv2 = () => CONV.find(x => x.id === abierta);
   const colorEtq = n => { const e = (typeof ETQ !== 'undefined' ? ETQ : []).find(x => x[0] === n); return e ? colorOk(e[1]) : '#9ca3af'; };
   const canalN = k => ({wa:'WhatsApp', ig:'Instagram', fb:'Messenger', tg:'Telegram', tt:'TikTok', mail:'Correo', web:'Chat de la web'})[k] || 'WhatsApp';
@@ -41,6 +41,34 @@
 .ec-abrir{display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;font:inherit;font-size:12.5px;font-weight:600;color:#374151;border:0;border-top:1px solid #eef1f5;background:none;cursor:pointer;flex:none}
 .ec-abrir:hover{background:#f9fafb}
 .ec-abrir svg{width:14px;height:14px}
+.ec-tags{position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 16px;border-bottom:1px solid #eef1f5;flex:none}
+.ec-lb{font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#6b7280;margin-right:4px}
+.ec-tag{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 4px 0 10px;border:1px solid #e5e9f0;border-radius:999px;font-size:12.5px;background:#fff;white-space:nowrap}
+.ec-tag i{width:7px;height:7px;border-radius:50%;flex:none}
+.ec-tag button{width:20px;height:20px;border:0;border-radius:50%;background:none;color:#dc2626;display:grid;place-items:center;cursor:pointer;padding:0}
+.ec-tag button:hover{background:#fee2e2}
+.ec-tag button svg{width:12px;height:12px}
+.ec-tag.nuevo{border-color:#FFD21F;animation:ec-pop .5s cubic-bezier(.16,1,.3,1),ec-anillo 1.6s cubic-bezier(.23,1,.32,1)}
+@keyframes ec-pop{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+@keyframes ec-anillo{0%,40%{box-shadow:0 0 0 3px rgba(255,210,31,.5)}100%{box-shadow:0 0 0 3px rgba(255,210,31,0)}}
+.ec-tmas{width:28px;height:28px;border:1px dashed #cbd5e1;border-radius:50%;background:#fff;color:#374151;display:grid;place-items:center;cursor:pointer;padding:0;transition:border-color .15s,background .15s,transform .2s cubic-bezier(.16,1,.3,1)}
+.ec-tmas:hover,.ec-tmas[aria-expanded="true"]{border-style:solid;border-color:#0b0b10;background:#f6f7f9}
+.ec-tmas[aria-expanded="true"] svg{transform:rotate(45deg)}
+.ec-tmas svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;transition:transform .25s cubic-bezier(.16,1,.3,1)}
+.ec-tmenu{position:absolute;left:16px;top:calc(100% + 6px);z-index:4;width:260px;max-height:320px;overflow-y:auto;background:#fff;border:1px solid #e5e9f0;border-radius:12px;box-shadow:0 18px 40px -12px rgba(15,23,42,.3);padding:6px;display:grid;gap:2px;animation:ec-menu .2s cubic-bezier(.16,1,.3,1);transform-origin:top left}
+@keyframes ec-menu{from{opacity:0;transform:translateY(-4px) scale(.97)}to{opacity:1;transform:none}}
+.ec-tbus{display:flex;align-items:center;gap:8px;height:36px;padding:0 10px;border:1px solid #e5e9f0;border-radius:9px;margin-bottom:4px;color:#9ca3af}
+.ec-tbus svg{width:15px;height:15px;flex:none}
+.ec-tbus input{flex:1;min-width:0;border:0;outline:0;font:inherit;font-size:13px;color:var(--ink);background:none}
+.ec-tbus:focus-within{border-color:#0b0b10}
+.ec-top{display:flex;align-items:center;gap:9px;padding:8px 10px;border:0;border-radius:8px;background:none;font:inherit;font-size:13.5px;text-align:left;cursor:pointer;color:var(--ink)}
+.ec-top[hidden]{display:none}
+.ec-top:hover{background:#f6f7f9}
+.ec-top[aria-selected="true"]{background:#f6f7f9;font-weight:600}
+.ec-top i{width:8px;height:8px;border-radius:50%;flex:none}
+.ec-ok{width:15px;height:15px;margin-left:auto;fill:none;stroke:#16a34a;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.ec-tpie{margin:4px 6px 2px;font-size:11.5px;color:#6b7280}
+@media (prefers-reduced-motion:reduce){.ec-tag.nuevo,.ec-tmenu{animation:none}.ec-tmas svg{transition:none}}
 .kc.ec-on{border-color:#0b0b10!important;box-shadow:inset 0 0 0 1px #0b0b10}
 </style>`);
   document.body.insertAdjacentHTML('beforeend', '<div id="ec-velo"></div><aside id="ec-cajon" aria-label="Conversación" aria-hidden="true"><div id="ec-cab"></div><div class="ec-msgs" id="ec-msgs"></div><div id="ec-slot"></div><button type="button" class="ec-abrir" data-ec-bandeja="1"></button></aside>');
@@ -54,7 +82,20 @@
     document.getElementById('ec-cab').replaceChildren(frag(`<div class="ec-cab"><span class="av" style="background:${AVC[c.id % AVC.length]}">${esc(ini(trNombreConv(c)))}</span><div class="ec-nm"><b>${esc(trNombreConv(c))}</b><small>${esc(det)}</small></div>
       <button type="button" class="ec-et" data-ec-etapa="1" aria-haspopup="listbox" aria-expanded="${menuEtapa}"><i style="background:${colorEtq(et)}"></i>${esc(et)}${I('chev')}</button>
       <button type="button" class="ec-x" data-ec-cerrar="1" aria-label="Cerrar">${I('x')}</button>
-      ${menuEtapa ? `<div class="ec-menu" role="listbox">${etapas.map(n => `<button type="button" role="option" aria-selected="${n === et}" data-ec-pon="${esc(n)}"><i style="background:${colorEtq(n)}"></i>${esc(n)}</button>`).join('')}</div>` : ''}</div>`));
+      ${menuEtapa ? `<div class="ec-menu" role="listbox">${etapas.map(n => `<button type="button" role="option" aria-selected="${n === et}" data-ec-pon="${esc(n)}"><i style="background:${colorEtq(n)}"></i>${esc(n)}</button>`).join('')}</div>` : ''}</div>${tagsHTML(c)}`));
+    if (menuTags) { const q = document.getElementById('ec-tq'); if (q) q.focus({preventScroll: true}); }
+    recien = '';
+  }
+  const colorTag = n => colorOk((typeof ETIQ_COL !== 'undefined' && ETIQ_COL[n]) || ((ETIQS.find(e => e[0] === n) || [])[1]) || '#9ca3af');
+  const MAS_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+  const OK_SVG = '<svg class="ec-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>';
+  function tagsHTML(c){
+    const tags = c.tags || [], todas = typeof etiquetasQueVeo === 'function' ? etiquetasQueVeo() : ETIQS;
+    const chips = tags.map(t => `<span class="ec-tag${t === recien ? ' nuevo' : ''}"><i style="background:${colorTag(t)}"></i>${esc(t)}<button type="button" data-ec-tquitar="${esc(t)}" aria-label="Quitar ${esc(t)}">${I('x')}</button></span>`).join('');
+    const menu = menuTags ? `<div class="ec-tmenu" role="listbox" aria-label="Etiquetas"><label class="ec-tbus">${I('search')}<input id="ec-tq" placeholder="Buscar etiqueta" autocomplete="off" aria-label="Buscar etiqueta"></label>
+      ${todas.length ? todas.map(([n]) => `<button type="button" role="option" class="ec-top" aria-selected="${tags.includes(n)}" data-ec-ttoggle="${esc(n)}" data-ec-tn="${esc(n.toLowerCase())}"><i style="background:${colorTag(n)}"></i>${esc(n)}${tags.includes(n) ? OK_SVG : ''}</button>`).join('') : '<p class="ec-tpie">Todavía no hay etiquetas.</p>'}
+      <p class="ec-tpie">Las etiquetas las crea tu líder en Ajustes.</p></div>` : '';
+    return `<div class="ec-tags"><span class="ec-lb">Etiquetas</span>${chips}<button type="button" class="ec-tmas" data-ec-tmas="1" aria-label="Agregar etiqueta" aria-haspopup="listbox" aria-expanded="${menuTags}">${MAS_SVG}</button>${menu}</div>`;
   }
   function pintarMsgs(){
     const c = conv2(), m = document.getElementById('ec-msgs'); if (!c || !m) return;
@@ -69,7 +110,7 @@
   function abrir(id){
     const c = CONV.find(x => x.id === id); if (!c) return;
     if (!abierta) selAntes = st.sel;
-    abierta = id; menuEtapa = false; st.sel = id;
+    abierta = id; menuEtapa = false; menuTags = false; st.sel = id;
     if (!c._cargada && crmDatos && crmDatos.cargarMensajes) crmDatos.cargarMensajes(c);
     // El compositor de la bandeja entra al panel (con sus listeners: todo funciona igual).
     const comp = document.getElementById('comp');
@@ -98,16 +139,31 @@
   document.addEventListener('keydown', e => {
     if (e.key !== 'Escape' || !abierta) return;
     if (document.querySelector('#ec-slot .tplp:not([hidden]),#ec-slot .qr:not([hidden]),#ec-slot .lk:not([hidden]),#emop:not([hidden])')) return;
-    if (menuEtapa) { menuEtapa = false; pintarCab(); } else cerrar();
+    if (menuTags) { menuTags = false; pintarCab(); const b = caja.querySelector('[data-ec-tmas]'); if (b) b.focus(); }
+    else if (menuEtapa) { menuEtapa = false; pintarCab(); } else cerrar();
   });
   caja.addEventListener('click', e => {
     const c = conv2(); if (!c) return;
     if (e.target.closest('[data-ec-cerrar]')) { cerrar(); return; }
-    if (e.target.closest('[data-ec-etapa]')) { menuEtapa = !menuEtapa; pintarCab(); return; }
+    if (e.target.closest('[data-ec-etapa]')) { menuEtapa = !menuEtapa; menuTags = false; pintarCab(); return; }
+    if (e.target.closest('[data-ec-tmas]')) { menuTags = !menuTags; menuEtapa = false; pintarCab(); return; }
+    const tq = e.target.closest('[data-ec-tquitar]');
+    if (tq) { const n = tq.dataset.ecTquitar; c.tags = (c.tags || []).filter(t => t !== n); render(); toast(`Etiqueta quitada: ${n}`); return; }
+    const tt = e.target.closest('[data-ec-ttoggle]');
+    if (tt) { const n = tt.dataset.ecTtoggle; c.tags = c.tags || [];
+      if (c.tags.includes(n)) { c.tags = c.tags.filter(t => t !== n); menuTags = false; render(); toast(`Etiqueta quitada: ${n}`); }
+      else { c.tags.push(n); recien = n; menuTags = false; render(); toast(`Etiqueta: ${n}`); }
+      return; }
+    if (menuTags && !e.target.closest('.ec-tmenu')) { menuTags = false; pintarCab(); }
     const pon = e.target.closest('[data-ec-pon]');
     if (pon) { const n = pon.dataset.ecPon; menuEtapa = false; if ((c.etq || [])[0] !== n) { c.etq = [n]; c.msgs.push({ev:'tag', t:`Etapa: ${n} · ahora`}); render(); toast(`${trNombreConv(c)}: ${n}`); } pintarCab(); return; }
     if (menuEtapa && !e.target.closest('.ec-menu')) { menuEtapa = false; pintarCab(); }
     if (e.target.closest('[data-ec-bandeja]')) { const id = c.id; cerrar(); st.sel = id; st.pagina = ''; st.vista = 'todas'; st.carpeta = st.equipo = st.etq = st.linea = st.q = ''; st.menciones = false; render(); }
+  });
+  caja.addEventListener('input', e => {
+    if (e.target.id !== 'ec-tq') return;
+    const q = e.target.value.trim().toLowerCase();
+    caja.querySelectorAll('[data-ec-tn]').forEach(b => { b.hidden = !!q && !b.dataset.ecTn.includes(q); });
   });
   // Lo que pinta la bandeja (enviar, llegar un mensaje, cargar la conversación) también repinta el panel.
   const renderAntes = render;
