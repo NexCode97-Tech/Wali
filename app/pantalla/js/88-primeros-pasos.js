@@ -50,57 +50,88 @@
   const terminado = () => estado().actual < 0;
   const visible = () => !cfgPP().oculto && !(terminado() && ls('pp-fin:' + (ESPACIO.id || '') + ':' + yoId()) === '1');
 
-  /* ── 2 · La página ── */
-  const circulo = (i, est) => est === 'hecho' ? `<span class="pp-n hecho">${IC.chk}</span>` : `<span class="pp-n${est === 'on' ? ' on' : ''}">${i}</span>`;
-  function detalle(p){
-    if (p.k === 'wa') return `<div class="pp-dx"><div class="pp-dt"><b>Así se hace</b><ol><li>Toca <b>Conectar WhatsApp</b> y elige cómo: solo en Wali, o en tu celular y en Wali.</li><li>Entra con Facebook y elige tu número.</li><li>Ponle nombre y el equipo que lo atiende. Listo.</li></ol>
-      <div><button type="button" class="btn pri" data-pp-ir="wa">Conectar WhatsApp${IC.chev}</button></div></div></div>`;
-    if (p.k === 'msg' && puedeConfigurar()) {
+  /* ── 2 · El modal (maqueta aprobada «PrimerosPasosModal»): a la izquierda los pasos con su avance, a la derecha el
+     elegido para hacerlo ahí mismo. Se abre desde la tarjeta de la barra, «Primeros pasos» del menú o la bandeja vacía. */
+  const DESC = {
+    wa: 'Tu número de WhatsApp Business entra a Wali con Facebook. Eliges si queda solo en Wali o también en tu celular.',
+    msg: 'Escanea el código con la cámara del celular: se abre WhatsApp con un mensaje listo para tu línea. Solo dale enviar.',
+    team: 'Tus asesores entran con su cuenta de Google, sin contraseñas, y empiezan a recibir conversaciones de su equipo.',
+    rep: 'Elige quién atiende cada línea y cómo se reparten las conversaciones: por turnos, a quien tenga menos o que las asigne un líder.',
+    tpl: 'Con una plantilla le escribes primero a un cliente o lo retomas cuando ya pasaron 24 horas. Meta la revisa en minutos.',
+    flow: 'Se enciende la bienvenida: saluda, pregunta el nombre y pasa el lead al asesor, sin que nadie mueva un dedo.',
+  };
+  const DESC_ASESOR = {team: 'Sube tu foto y revisa tu nombre: así te ven tus compañeros y tus clientes.', msg: 'Un recorrido corto por la bandeja: dónde llegan tus conversaciones y cómo responder.', tpl: 'Cuando te asignen una conversación, contéstala desde aquí. Se marca solo.'};
+  const IDEAS = [['Bienvenida', 'Hola, {{nombre}}. Gracias por escribirnos, un asesor te atiende en un momento.'], ['Recaptura', 'Hola, {{nombre}}. ¿Seguimos con tu pedido? Aquí estamos para ayudarte.']];
+  const anillo = (n, t) => { const c = 2 * Math.PI * 22; return `<svg class="ppm-anillo" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="22" class="pista"/><circle cx="26" cy="26" r="22" class="lleno" style="stroke-dasharray:${c.toFixed(1)};stroke-dashoffset:${(c * (1 - n / t)).toFixed(1)};--c:${c.toFixed(1)}"/></svg>`; };
+  function cuerpoPaso(p, i, e){
+    const desc = (puedeConfigurar() ? DESC : DESC_ASESOR)[p.k] || p.d;
+    const cab = `<div class="ppm-dc"><span class="ppm-dic ${p.k}">${IC[p.k]}</span><span class="ppm-chip">Paso ${i + 1} de ${e.total}${p.min ? ` · ${p.min} min` : ''}</span>${e.h[i] ? `<span class="ppm-chip ok">${IC.chk}Listo</span>` : ''}</div>
+      <h3>${esc(p.t)}</h3><p class="ppm-d">${esc(desc)}</p>`;
+    if (!puedeConfigurar()) {
+      const ir = {team: ['Ir a Mi perfil', 'team'], msg: ['Ir a mi bandeja', 'msg'], tpl: ['Ir a mi bandeja', 'msg']}[p.k];
+      return cab + (ir && !e.h[i] ? `<div><button type="button" class="btn pri" data-pp-ir="${ir[1]}">${ir[0]}${IC.chev}</button></div>` : '');
+    }
+    if (p.k === 'msg') {
       const l = LINEAS[0] || {}, q = st.ppQr;
-      if (!q || q.linea !== l.id) pedirQr(l.id);
-      return `<div class="pp-dx pp-qrw"><div class="pp-qr">${q && q.svg ? `<img src="data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(q.svg)))}" alt="Código QR para escribirle a tu línea">` : '<span class="pp-qr-c"></span>'}<span class="pp-qr-wa">${IC.wa}</span></div>
-        <div class="pp-dt"><b>Escanea con la cámara de tu celular</b><p>Se abre WhatsApp con un mensaje listo para tu línea <b>${esc(l.n || 'de WhatsApp')}${l.tel ? ' · ' + esc(l.tel) : ''}</b>. Solo dale enviar.</p>
-          <div class="pp-esperando"><span class="pp-pulso"></span>Esperando tu mensaje…</div>
+      if (l.id && (!q || q.linea !== l.id)) pedirQr(l.id);
+      if (!l.id) return cab + `<div><button type="button" class="btn pri" data-pp-sel="0">Primero conecta tu WhatsApp${IC.chev}</button></div>`;
+      return cab + `<div class="ppm-qrbox"><div class="pp-qr">${q && q.svg ? `<img src="data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(q.svg)))}" alt="Código QR para escribirle a tu línea">` : '<span class="pp-qr-c"></span>'}<span class="pp-qr-wa">${IC.wa}</span></div>
+        <div class="ppm-qrt"><b>${esc(l.n || 'Tu línea')}</b><small>${esc(l.tel || '')}</small>${e.h[i] ? `<div class="pp-ok">${IC.chk}Ya llegó tu primer mensaje</div>` : '<div class="pp-esperando"><span class="pp-pulso"></span>Esperando tu mensaje…</div>'}
           ${q && q.enlace ? `<a class="pp-mas" href="${esc(q.enlace)}" target="_blank" rel="noopener noreferrer">¿Estás en el celular? Abre WhatsApp aquí</a>` : ''}</div></div>`;
     }
-    if (p.k === 'team' && puedeConfigurar()) {
+    if (p.k === 'team') {
       const inv = st.ppInv || (st.ppInv = {nombre: '', email: '', eq: (EQUIPOS[0] || {}).n || ''});
-      return `<div class="pp-dx"><div class="pp-dt"><b>Así se hace</b>
-        <ol><li>Escribe el nombre y el correo de cada asesor.</li><li>Elige su equipo: ${esc(EQUIPOS.slice(0, 2).map(e => e.n).join(', ') || 'Ventas')} o el que armes.</li><li>Le llega un correo; entra con su cuenta de Google y ya aparece en el reparto.</li></ol>
-        <div class="pp-in"><input id="pp-inv-n" value="${esc(inv.nombre)}" placeholder="Nombre" autocomplete="off" aria-label="Nombre"><input id="pp-inv-e" value="${esc(inv.email)}" placeholder="sara@tuempresa.com" autocomplete="off" inputmode="email" aria-label="Correo">${ddSel('data-pp-inveq', EQUIPOS.map(e => [e.n, e.n]), inv.eq)}<button type="button" class="btn pri" data-pp-invitar="1" ${inv.enviando ? 'disabled' : ''}>${inv.enviando ? 'Invitando…' : 'Invitar'}</button></div>
-        ${inv.ok ? `<span class="pp-ok">${IC.chk}Le enviamos la invitación a ${esc(inv.ok)}. Puedes invitar a otro.</span>` : ''}</div></div>`;
+      const otros = USUARIOS.filter(u => u.id !== yoId()).slice(0, 4);
+      return cab + `<div class="ppm-frm"><div class="ppm-f2"><label class="ppm-cmp"><span>Nombre</span><input id="pp-inv-n" value="${esc(inv.nombre)}" placeholder="Sara Gómez" autocomplete="off"></label><label class="ppm-cmp"><span>Correo</span><input id="pp-inv-e" value="${esc(inv.email)}" placeholder="sara@tuempresa.com" autocomplete="off" inputmode="email"></label></div>
+        <div class="ppm-f2"><div class="ppm-cmp"><span>Equipo</span>${ddSel('data-pp-inveq', EQUIPOS.map(x => [x.n, x.n]), inv.eq)}</div><div class="ppm-cmp ppm-cb"><button type="button" class="btn pri" data-pp-invitar="1" ${inv.enviando ? 'disabled' : ''}>${inv.enviando ? 'Invitando…' : 'Enviar invitación'}</button></div></div>
+        ${inv.ok ? `<span class="pp-ok">${IC.chk}Le enviamos la invitación a ${esc(inv.ok)}. Puedes invitar a otro.</span>` : ''}</div>
+        ${otros.length ? `<div class="ppm-inv"><small>Tu equipo</small>${otros.map(u => `<div class="ppm-invl"><span class="ppm-av" style="background:${colorEquipo((EQUIPOS.find(x => (typeof idsDe === 'function' ? idsDe(x.n) : []).includes(u.id)) || {}).n || '')}">${esc(String(u.nombre || '?').split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase())}</span><div><b>${esc(u.nombre || '')}</b><small>${esc(u.correo || u.email || '')}</small></div><span class="ppm-chip ok">${IC.chk}En Wali</span></div>`).join('')}</div>` : ''}`;
     }
-    const ir = {rep: ['Ir a Equipos y reparto', 'Elige quién atiende cada línea y cómo se reparten. Cuando entres, se marca.'], tpl: ['Crear plantilla', 'Escribe el mensaje, elige sus equipos y mándalo a Meta. Casi siempre la aprueba en minutos.'], flow: ['Activar la bienvenida', 'Se enciende la bienvenida de fábrica: saluda, pregunta el nombre y pasa el lead al reparto. Después la ajustas en Flujos.'],
-      team: ['Ir a Mi perfil', 'Sube tu foto y revisa cómo se ve tu nombre.'], msg: ['Ir a mi bandeja', 'Ahí llegan las conversaciones que te asignan, con su historial.']}[p.k];
-    return ir ? `<div class="pp-dx"><div class="pp-dt"><p>${ir[1]}</p><div><button type="button" class="btn pri" data-pp-ir="${p.k}">${ir[0]}${IC.chev}</button></div></div></div>` : '';
+    if (p.k === 'tpl') return cab + `<div class="ppm-ideas"><small>Empieza con una de estas</small>${IDEAS.map(([n, b], k) => `<button type="button" class="ppm-idea" data-pp-idea="${k}"><b>${n}</b><span>${esc(b)}</span>${IC.chev}</button>`).join('')}<button type="button" class="ppm-idea vacia" data-pp-idea="-1"><b>Desde cero</b><span>Escribe tu propio mensaje</span>${IC.chev}</button></div>`;
+    const ir = {wa: ['Conectar WhatsApp', 'wa'], rep: ['Ir a Equipos y reparto', 'rep'], flow: ['Activar la bienvenida', 'flow']}[p.k];
+    return cab + (ir && !e.h[i] ? `<div><button type="button" class="btn pri" data-pp-ir="${ir[1]}">${ir[0]}${IC.chev}</button></div>` : '');
   }
-  function fila(p, i, e){
-    const est = e.h[i] ? 'hecho' : i === e.actual ? 'on' : '', abierto = i === (st.ppAbierto ?? e.actual) && !e.h[i];
-    const accion = e.h[i] ? '' : `<button type="button" class="btn ${est === 'on' ? 'pri' : ''}" data-pp-abrir="${i}">${est === 'on' ? 'Empezar' : 'Hacerlo'}${IC.chev}</button>`;
-    return `<div class="pp-f${e.h[i] ? ' hecha' : ''}${abierto ? ' abierto' : ''}"><div class="pp-fh">${circulo(i + 1, est)}<span class="pp-pic ${p.k}">${IC[p.k]}</span><div class="pp-ft"><b>${esc(p.t)}</b><small>${esc(p.d)}</small></div>
-      <span class="pp-min">${e.h[i] ? 'Listo' : p.min ? IC.reloj + p.min + ' min' : ''}</span>${abierto ? '' : accion}</div>${abierto ? detalle(p) : ''}</div>`;
+  function modalHTML(){
+    const e = estado(), falta = e.ps.reduce((s, p, i) => s + (e.h[i] ? 0 : p.min), 0);
+    let sel = st.ppSel ?? (e.actual < 0 ? 0 : e.actual); if (sel >= e.total) sel = 0;
+    const est = e.n === e.total ? '¡Todo listo!' : e.n * 2 >= e.total ? 'Vas a la mitad' : e.n ? 'Vas muy bien' : 'Empecemos';
+    const items = e.ps.map((p, i) => `<button type="button" class="ppm-it${i === sel ? ' sel' : ''}${e.h[i] ? ' hecho' : ''}" data-pp-sel="${i}" style="--i:${i}">${e.h[i] ? `<span class="ppm-st hecho">${IC.chk}</span>` : `<span class="ppm-st${i === e.actual ? ' on' : ''}">${i + 1}</span>`}<span class="ppm-itx"><b>${esc(p.t)}</b><small>${e.h[i] ? 'Listo' : p.min ? p.min + ' min' : ''}</small></span>${i === sel ? IC.chev : ''}</button>`).join('');
+    return `<div class="ppm-md" role="dialog" aria-modal="true" aria-label="Tus primeros pasos">
+      <header class="ppm-h"><div class="ppm-ht"><span class="ppm-hic">${IC.flag}</span><div><h2>Tus primeros pasos</h2><p>${puedeConfigurar() ? 'Tu CRM queda funcionando en unos 10 minutos' : 'Tres pasos para empezar a atender'}</p></div></div>
+        <div class="ppm-p"><div class="ppm-prog">${anillo(e.n, e.total)}<b>${e.n}/${e.total}</b></div><div class="ppm-pt"><b>${est}</b><small>${falta ? `Faltan unos ${falta} ${falta === 1 ? 'minuto' : 'minutos'}` : 'Ya terminaste'}</small></div></div>
+        <div class="tp-acc"><button type="button" class="ppm-ic" data-pp-menu="1" aria-haspopup="menu" aria-expanded="${!!st.ppMenu}" aria-label="Más opciones">${I('more')}</button><div class="tp-menu" role="menu" ${st.ppMenu ? '' : 'hidden'}><button type="button" role="menuitem" class="tp-peligro" data-pp-ocultar="1">${I('x')}Ocultar primeros pasos</button></div></div>
+        <button type="button" class="ppm-ic ppm-x" data-pp-cerrar="1" aria-label="Cerrar">${I('x')}</button></header>
+      <div class="ppm-b"><nav class="ppm-l">${items}<div class="ppm-pie"><span class="pp-bar ppm-bar"><i style="width:${Math.round(e.n / e.total * 100)}%"></i></span><small>Se marcan solos cuando los haces</small></div></nav>
+        <section class="ppm-r" aria-live="polite">${cuerpoPaso(e.ps[sel], sel, e)}</section></div></div>`;
   }
-  function pagina(){
-    const e = estado(), falta = e.ps.reduce((s, p, i) => s + (e.h[i] ? 0 : p.min), 0), pct = Math.round(e.n / e.total * 100);
-    const menu = st.ppMenu;
-    return `<div class="ajw ancho pp"><div class="pp-cab"><div><h2>Tus primeros pasos</h2><p class="sub">${puedeConfigurar() ? `Termina estos ${e.total} pasos y tu CRM queda funcionando.` : 'Tres pasos para empezar a atender.'}${e.n ? ' Vas muy bien.' : ''}</p></div>
-      <div class="pp-prog"><div class="pp-anillo" style="--p:${pct}"><b>${e.n}/${e.total}</b></div><div><b>${falta ? `Te faltan unos ${falta} ${falta === 1 ? 'minuto' : 'minutos'}` : '¡Ya casi!'}</b><small>Los pasos se marcan solos cuando los haces</small></div>
-        <div class="tp-acc"><button type="button" class="tp-mas" data-pp-menu="1" aria-haspopup="menu" aria-expanded="${!!menu}" aria-label="Más acciones">${I('more')}</button><div class="tp-menu" role="menu" ${menu ? '' : 'hidden'}><button type="button" role="menuitem" data-pp-ocultar="1">${I('x')}Ocultar primeros pasos</button></div></div></div></div>
-      <div class="pp-lista">${e.ps.map((p, i) => fila(p, i, e)).join('')}</div>
-      ${puedeConfigurar() ? '' : '<p class="muted" style="margin-top:14px">Los demás ajustes del CRM los hace quien lo configura.</p>'}</div>`;
+  const modalAbierto = () => !!document.getElementById('ppm-ov');
+  function abrirModal(sel){
+    st.ppSel = sel ?? null; st.ppMenu = false;
+    if (cfgPP().oculto) { cfgPP().oculto = false; crmSincronizar(); }
+    let ov = document.getElementById('ppm-ov');
+    if (!ov) { document.body.insertAdjacentHTML('beforeend', '<div class="ppm-ov" id="ppm-ov"></div>'); ov = document.getElementById('ppm-ov'); }
+    pintarModal(true);
   }
+  function pintarModal(entrar){
+    const ov = document.getElementById('ppm-ov'); if (!ov) return;
+    const foco = document.activeElement && document.activeElement.id, val = foco && document.getElementById(foco) ? document.getElementById(foco).value : null;
+    ov.replaceChildren(); ov.insertAdjacentHTML('beforeend', modalHTML());
+    ov.classList.toggle('entra', !!entrar);
+    if (foco && document.getElementById(foco)) { const x = document.getElementById(foco); if (val != null) x.value = val; x.focus(); }
+  }
+  const cerrarModal = () => { const ov = document.getElementById('ppm-ov'); if (ov) ov.remove(); st.ppMenu = false; };
   function pedirQr(linea){
     if (!linea || (st.ppQr && st.ppQr.pidiendo === linea)) return;
     st.ppQr = {linea, pidiendo: linea};
-    crmApi('GET', `/crm/primeros-pasos/qr?linea=${encodeURIComponent(linea)}`).then(d => { st.ppQr = {linea, svg: d.svg, enlace: d.enlace}; if (st.pagina === 'cfg-primeros') render(); }, () => { st.ppQr = {linea, error: true}; });
+    crmApi('GET', `/crm/primeros-pasos/qr?linea=${encodeURIComponent(linea)}`).then(d => { st.ppQr = {linea, svg: d.svg, enlace: d.enlace}; pintarModal(); }, () => { st.ppQr = {linea, error: true}; });
   }
 
+  // La página de antes (Ajustes del CRM › Primeros pasos) ahora abre el modal sobre la bandeja.
   const paginaCfgAntes = paginaCfg;
   paginaCfg = function(k){
     if (k !== 'primeros') return paginaCfgAntes.apply(this, arguments);
-    // Entrar desde Ajustes del CRM los vuelve a mostrar.
-    if (cfgPP().oculto) { cfgPP().oculto = false; crmSincronizar(); }
-    return pagina();
+    setTimeout(() => { irA('inbox'); abrirModal(); }, 0);
+    return '';
   };
 
   /* ── 4 · La barra lateral y la bandeja vacía ── */
@@ -113,8 +144,7 @@
     if (!caja) { caja = document.createElement('div'); caja.id = 'pp-barra'; const top = nav.querySelector('.topbar'); (top || nav.firstElementChild).after(caja); }
     if (caja.dataset.html !== html) { caja.dataset.html = html; caja.replaceChildren(); caja.insertAdjacentHTML('beforeend', html); }
     const ul = document.getElementById('principal');
-    if (ul && !document.getElementById('pp-item')) ul.insertAdjacentHTML('afterbegin', `<li id="pp-item"><button type="button" data-nav="cfg-primeros" aria-current="${st.pagina === 'cfg-primeros'}">${IC.flag}<span class="t">Primeros pasos</span></button></li>`);
-    const it = document.querySelector('#pp-item button'); if (it) it.setAttribute('aria-current', String(st.pagina === 'cfg-primeros'));
+    if (ul && !document.getElementById('pp-item')) ul.insertAdjacentHTML('afterbegin', `<li id="pp-item"><button type="button" data-pp-nav="1">${IC.flag}<span class="t">Primeros pasos</span></button></li>`);
   }
   function bandejaVacia(){
     if (st.pagina || !visible() || terminado() || CONV.length) return;
@@ -172,39 +202,45 @@
   /* ── Clics ── */
   document.addEventListener('click', e => {
     const t = e.target instanceof Element ? e.target : null; if (!t) return;
-    if (t.closest('[data-pp-nav]')) { e.stopPropagation(); st.ppAbierto = null; irA('cfg-primeros'); return; }
-    if (t.closest('[data-pp-empezar]')) { ls('pp-bienvenida:' + yoId(), '1'); cerrarOv(); irA('cfg-primeros'); return; }
+    if (t.closest('[data-pp-nav]')) { e.stopPropagation(); abrirModal(); return; }
+    if (t.closest('[data-pp-empezar]')) { ls('pp-bienvenida:' + yoId(), '1'); cerrarOv(); abrirModal(); return; }
     if (t.closest('[data-pp-luego]')) { ls('pp-bienvenida:' + yoId(), '1'); cerrarOv(); return; }
     if (t.closest('[data-pp-fin]')) { cerrarOv(); irA('inbox'); return; }
-    if (st.pagina !== 'cfg-primeros') return;
+    if (!t.closest('#ppm-ov')) return;
+    if (t.id === 'ppm-ov') { cerrarModal(); return; }
     const g = (attr, fn) => { const b = t.closest(`[${attr}]`); if (!b) return false; e.stopPropagation(); fn(b.getAttribute(attr)); return true; };
-    if (g('data-pp-menu', () => { st.ppMenu = !st.ppMenu; render(); })) return;
-    if (g('data-pp-ocultar', () => { cfgPP().oculto = true; st.ppMenu = false; crmSincronizar(); irA('inbox'); toast('Primeros pasos ocultos. Vuelven desde Ajustes del CRM.'); })) return;
-    if (g('data-pp-abrir', v => { st.ppAbierto = +v; render(); })) return;
-    if (g('data-pp-inveq', v => { st.ppInv.eq = v; render(); })) return;
+    if (g('data-pp-cerrar', () => cerrarModal())) return;
+    if (g('data-pp-menu', () => { st.ppMenu = !st.ppMenu; pintarModal(); })) return;
+    if (g('data-pp-ocultar', () => { cfgPP().oculto = true; crmSincronizar(); cerrarModal(); render(); toast('Primeros pasos ocultos. Vuelven desde Ajustes del CRM.'); })) return;
+    if (st.ppMenu && !t.closest('.tp-menu')) { st.ppMenu = false; pintarModal(); }
+    if (g('data-pp-sel', v => { st.ppSel = +v; pintarModal(); })) return;
+    if (g('data-pp-inveq', v => { st.ppInv.eq = v; pintarModal(); })) return;
+    if (g('data-pp-idea', v => { cerrarModal(); irA('plantillas'); if (typeof tnNueva === 'function') { const n = tnNueva(); const idea = IDEAS[+v]; if (idea) Object.assign(n, {nombre: idea[0], body: idea[1]}); st.tplNueva = n; render(); } })) return;
     if (g('data-pp-invitar', () => {
       const inv = st.ppInv, nombre = (document.getElementById('pp-inv-n') || {}).value || '', email = ((document.getElementById('pp-inv-e') || {}).value || '').trim().toLowerCase();
       inv.nombre = nombre; inv.email = email;
       if (nombre.trim().length < 2) { toast('Escribe el nombre de la persona'); return; }
       if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(email)) { toast('Ese correo no parece completo'); return; }
       if (!inv.eq) { toast('Elige su equipo'); return; }
-      inv.enviando = true; render();
+      inv.enviando = true; pintarModal();
       crmApi('POST', '/crm/personas/invitar', {nombre: nombre.trim(), email, telefono: ''})
-        .then(p => { if (typeof PERSONAS_EXTRA === 'object') PERSONAS_EXTRA[p.id] = {...(PERSONAS_EXTRA[p.id] || {}), nombre: p.nombre, rol: p.rol, foto: p.foto || null}; if (typeof eqrMembresias === 'function') eqrMembresias(p.id, [inv.eq]); st.ppInv = {nombre: '', email: '', eq: inv.eq, ok: p.nombre || nombre}; render(); })
-        .catch(err => { inv.enviando = false; render(); toast(err.message || 'No se pudo invitar'); });
+        .then(p => { if (typeof PERSONAS_EXTRA === 'object') PERSONAS_EXTRA[p.id] = {...(PERSONAS_EXTRA[p.id] || {}), nombre: p.nombre, rol: p.rol, foto: p.foto || null}; if (typeof eqrMembresias === 'function') eqrMembresias(p.id, [inv.eq]); st.ppInv = {nombre: '', email: '', eq: inv.eq, ok: p.nombre || nombre}; pintarModal(); render(); })
+        .catch(err => { inv.enviando = false; pintarModal(); toast(err.message || 'No se pudo invitar'); });
     })) return;
     if (g('data-pp-ir', k => {
+      cerrarModal();
       if (k === 'wa') { irA('cfg-lineas'); if (typeof abrirConexion === 'function') setTimeout(() => abrirConexion((EQUIPOS[0] || {}).n || 'Ventas'), 50); return; }
       if (k === 'rep') { cfgPP().reparto = true; crmSincronizar(); irA('cfg-reparto'); return; }
       if (k === 'tpl') { irA('plantillas'); if (typeof tnNueva === 'function') { st.tplNueva = tnNueva(); render(); } return; }
-      if (k === 'flow') { const f = flujoBienvenida(); if (f) { f.on = true; crmSincronizar(); render(); toast(`«${f.n}» activa`); } else irA('flujos'); return; }
+      if (k === 'flow') { const f = flujoBienvenida(); if (f) { f.on = true; crmSincronizar(); render(); toast(`«${f.n}» activa`); abrirModal(); } else irA('flujos'); return; }
       if (k === 'team') { irA('ajustes'); return; }
       if (k === 'msg') { irA('inbox'); return; }
     })) return;
   }, true);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && modalAbierto()) cerrarModal(); });
   document.addEventListener('input', e => { if (e.target && (e.target.id === 'pp-inv-n' || e.target.id === 'pp-inv-e') && st.ppInv) st.ppInv[e.target.id === 'pp-inv-n' ? 'nombre' : 'email'] = e.target.value; });
   // Llegó el primer mensaje (u otro cambio): la página y la barra se ponen al día solas.
-  document.addEventListener('crm:evento', e => { const d = e.detail; if (!d) return; if (st.pagina === 'cfg-primeros' && ['conv', 'msg', 'lineas', 'linea', 'usuarios', 'plantillas', 'ajuste'].includes(d.tipo)) render(); else { try { barra(); } catch { /* nada */ } } });
+  document.addEventListener('crm:evento', e => { const d = e.detail; if (!d) return; try { barra(); if (modalAbierto() && ['conv', 'msg', 'lineas', 'linea', 'usuarios', 'plantillas', 'ajuste'].includes(d.tipo)) pintarModal(); } catch { /* nada */ } });
 
   document.head.insertAdjacentHTML('beforeend', `<style>
 .pp-iso{width:40px;height:40px;display:block}
@@ -300,6 +336,64 @@
 @keyframes pp-subir{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 .pp-res b{display:block;font-size:20px;font-weight:800}
 .pp-res small{font-size:12px;color:var(--ink3)}
+.ppm-ov{position:fixed;inset:0;z-index:290;background:rgba(10,10,14,.5);display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(2px)}
+.ppm-md{width:min(920px,100%);max-height:min(640px,100%);background:#fff;border-radius:20px;box-shadow:0 40px 80px -24px rgba(10,10,14,.5);display:flex;flex-direction:column;overflow:hidden}
+.ppm-ov.entra .ppm-md{animation:ppm-in .6s cubic-bezier(.16,1,.3,1) both}
+@keyframes ppm-in{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+.ppm-h{display:flex;align-items:center;gap:14px;padding:18px 20px;border-bottom:1px solid var(--line)}
+.ppm-ht{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
+.ppm-hic{width:40px;height:40px;border-radius:12px;background:#FFD21F;display:grid;place-items:center;color:#0b0b10;flex:none}.ppm-hic svg{width:20px;height:20px}
+.ppm-h h2{margin:0;font-size:18px;font-weight:700;letter-spacing:-.01em}.ppm-ht p{margin:2px 0 0;font-size:13px;color:var(--ink3)}
+.ppm-p{display:flex;align-items:center;gap:10px;padding:5px 14px 5px 5px;border:1px solid var(--line);border-radius:999px;flex:none}
+.ppm-prog{position:relative;width:44px;height:44px;display:grid;place-items:center}
+.ppm-prog b{position:absolute;font-size:12px;font-weight:800;line-height:1;text-box:trim-both cap alphabetic}
+.ppm-anillo{width:44px;height:44px;transform:rotate(-90deg)}
+.ppm-anillo circle{fill:none;stroke-width:5}.ppm-anillo .pista{stroke:#eef1f5}.ppm-anillo .lleno{stroke:#FFD21F;stroke-linecap:round;transition:stroke-dashoffset .8s cubic-bezier(.16,1,.3,1)}
+.ppm-ov.entra .ppm-anillo .lleno{animation:ppm-llenar 1.1s cubic-bezier(.16,1,.3,1) .15s both}
+@keyframes ppm-llenar{from{stroke-dashoffset:var(--c)}}
+.ppm-pt b{display:block;font-size:13px}.ppm-pt small{font-size:12px;color:var(--ink3)}
+.ppm-ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:var(--ink3);flex:none;border:0;background:none;cursor:pointer}
+.ppm-ic:hover{background:var(--bg3)}.ppm-ic svg{width:18px;height:18px}.ppm-x{color:#dc2626}.ppm-x:hover{background:#fee2e2}
+.ppm-b{display:grid;grid-template-columns:290px 1fr;min-height:0;flex:1}
+.ppm-l{border-right:1px solid var(--line);padding:12px;display:flex;flex-direction:column;gap:4px;background:#fbfbfc;overflow-y:auto}
+.ppm-it{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;text-align:left;width:100%;border:0;background:none;font:inherit;color:inherit;cursor:pointer}
+.ppm-ov.entra .ppm-it{animation:ppm-subir .5s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(.12s + var(--i) * .05s)}
+@keyframes ppm-subir{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.ppm-it:hover{background:#fff}
+.ppm-it.sel{background:#fff;box-shadow:0 0 0 1px var(--line),0 6px 16px -10px rgba(15,23,42,.25)}
+.ppm-it > svg{width:16px;height:16px;color:var(--ink4);margin-left:auto}
+.ppm-st{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:11.5px;font-weight:700;color:var(--ink3);line-height:1;text-box:trim-both cap alphabetic;flex:none;background:#fff;box-sizing:border-box}
+.ppm-st.on{background:#FFD21F;border-color:#FFD21F;color:#0b0b10}.ppm-st.hecho{background:#0b0b10;border-color:#0b0b10;color:#fff}.ppm-st.hecho svg{width:13px;height:13px;stroke-width:3}
+.ppm-itx{display:grid;min-width:0}.ppm-itx b{font-size:13.5px;font-weight:600}.ppm-itx small{font-size:12px;color:var(--ink3)}
+.ppm-it.hecho .ppm-itx b{color:var(--ink3)}
+.ppm-pie{margin-top:auto;padding:12px 10px 4px;display:grid;gap:8px}.ppm-pie small{font-size:12px;color:var(--ink3)}
+.ppm-bar{background:#eef1f5}
+.ppm-r{padding:26px 30px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;animation:ppm-subir .45s cubic-bezier(.16,1,.3,1) both}
+.ppm-dc{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ppm-dic{width:48px;height:48px;border-radius:14px;background:#FFD21F;display:grid;place-items:center;color:#0b0b10;flex:none}.ppm-dic svg{width:24px;height:24px}
+.ppm-dic.wa{background:#25D366;color:#fff}.ppm-dic.wa svg{fill:#fff}
+.ppm-chip{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;color:var(--ink3);background:#f1f5f9}
+.ppm-chip svg{width:13px;height:13px;stroke-width:2.6}.ppm-chip.ok{background:#dcfce7;color:#15803d}
+.ppm-r h3{margin:0;font-size:22px;font-weight:700;letter-spacing:-.02em}.ppm-d{margin:0;font-size:14px;color:var(--ink2);max-width:52ch}
+.ppm-r .btn svg{width:16px;height:16px}
+.ppm-frm{display:grid;gap:12px;padding:16px;border:1px solid var(--line);border-radius:14px}
+.ppm-f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ppm-cmp{display:grid;gap:6px;align-content:end}.ppm-cmp > span:first-child{font-size:12.5px;font-weight:600;color:var(--ink2)}
+.ppm-cmp input{height:40px;border:1px solid var(--line);border-radius:10px;padding:0 12px;font:inherit;font-size:14px;background:#fff}
+.ppm-cmp input:focus{outline:0;border-color:#0b0b10;box-shadow:0 0 0 3px rgba(11,11,16,.08)}
+.ppm-cb .btn{height:40px;width:100%;justify-content:center}
+.ppm-inv{display:grid;gap:4px}.ppm-inv > small,.ppm-ideas > small{font-size:11.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em}
+.ppm-invl{display:flex;align-items:center;gap:10px;padding:8px 0}.ppm-invl > div{flex:1;min-width:0}.ppm-invl b{display:block;font-size:13.5px}.ppm-invl small{font-size:12px;color:var(--ink3)}
+.ppm-av{width:32px;height:32px;border-radius:50%;color:#fff;display:grid;place-items:center;font-size:11.5px;font-weight:700;flex:none;background:#9ca3af}
+.ppm-qrbox{display:flex;gap:20px;align-items:center;padding:18px;border:1px solid var(--line);border-radius:14px}
+.ppm-qrt{display:grid;gap:4px}.ppm-qrt b{font-size:15px}.ppm-qrt small{font-size:13px;color:var(--ink3)}.ppm-qrt .pp-esperando,.ppm-qrt .pp-ok{margin-top:8px}
+.ppm-ideas{display:grid;gap:8px}
+.ppm-idea{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;text-align:left;background:#fff;font:inherit;color:inherit;cursor:pointer}
+.ppm-idea:hover{border-color:#0b0b10}
+.ppm-idea b{font-size:13.5px}.ppm-idea span{grid-column:1;font-size:12.5px;color:var(--ink3)}.ppm-idea svg{grid-row:1/3;grid-column:2;align-self:center;width:16px;height:16px;color:var(--ink4)}
+.ppm-idea.vacia{border-style:dashed}
+@media (max-width:760px){.ppm-ov{padding:0;align-items:flex-end}.ppm-md{max-height:92vh;border-radius:20px 20px 0 0}.ppm-b{grid-template-columns:1fr}.ppm-l{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line)}.ppm-it{flex:none;width:auto}.ppm-itx small,.ppm-pie{display:none}.ppm-pt{display:none}.ppm-f2{grid-template-columns:1fr}.ppm-r{padding:20px}.ppm-qrbox{flex-direction:column;align-items:flex-start}}
+@media (prefers-reduced-motion:reduce){.ppm-ov.entra .ppm-md,.ppm-ov.entra .ppm-it,.ppm-r,.ppm-ov.entra .ppm-anillo .lleno{animation:none}.ppm-anillo .lleno{transition:none}}
 @media (prefers-reduced-motion:reduce){.pp-bien,.pp-confeti i,.pp-chk,.pp-trazo,.pp-res div,.pp-pulso,.pp-bar i{animation:none;opacity:1;stroke-dashoffset:0;transition:none}.pp-confeti{display:none}}
 @media (max-width:760px){.pp-cab{flex-direction:column;align-items:flex-start}.pp-dx{padding-left:14px;flex-wrap:wrap}.pp-bien{padding:26px 20px 20px}.pp-res{grid-template-columns:repeat(2,1fr)}}
 </style>`);
