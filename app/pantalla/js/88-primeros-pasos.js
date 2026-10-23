@@ -143,8 +143,8 @@
     const html = `<button type="button" class="pp-sb" data-pp-nav="1"><span class="pp-sbh"><b>Primeros pasos</b><span>${e.n} de ${e.total}</span></span><span class="pp-bar"><i style="width:${Math.round(e.n / e.total * 100)}%"></i></span><small>Siguiente: ${esc(p.sig)}</small></button>`;
     if (!caja) { caja = document.createElement('div'); caja.id = 'pp-barra'; const top = nav.querySelector('.topbar'); (top || nav.firstElementChild).after(caja); }
     if (caja.dataset.html !== html) { caja.dataset.html = html; caja.replaceChildren(); caja.insertAdjacentHTML('beforeend', html); }
-    const ul = document.getElementById('principal');
-    if (ul && !document.getElementById('pp-item')) ul.insertAdjacentHTML('afterbegin', `<li id="pp-item"><button type="button" data-pp-nav="1">${IC.flag}<span class="t">Primeros pasos</span></button></li>`);
+    // Una sola entrada: la tarjeta de progreso bajo el espacio de trabajo (23-oct). Ya no va también como ítem del menú.
+    const it = document.getElementById('pp-item'); if (it) it.remove();
   }
   function bandejaVacia(){
     if (st.pagina || !visible() || terminado() || CONV.length) return;
