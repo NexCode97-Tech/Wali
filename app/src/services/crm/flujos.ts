@@ -78,6 +78,10 @@ interface Flujo {
   on: boolean
   cuando?: string
   canales?: string[]
+  /** Equipos donde corre (maqueta aprobada «FlujosEquipo»): solo en conversaciones de esos equipos. Sin el campo, todos. */
+  equipos?: string[]
+  /** Por dónde corre: cada línea (`wa:<id>`), cuenta conectada (`cx:<id>`) o canal sin cuenta (`web`). Sin el campo, `canales`. */
+  vias?: string[]
   saltarConocidos?: boolean
   espera?: number | string
   pasos: Paso[]
@@ -907,9 +911,12 @@ async function viaDelVinculo(_k: CrmContacto, _externoId: string): Promise<'tele
   return 'representante'
 }
 
-/** Qué flujo corre: los de un «Cuándo» específico que se cumple primero; si no, el del primer mensaje. En cada grupo, el de arriba. */
+/** Qué flujo corre: de los del equipo de la conversación y de su línea o cuenta, los de un «Cuándo» específico que se cumple primero; si no, el del primer mensaje. En cada grupo, el de arriba. */
 async function elegirFlujo(flujos: Flujo[], conv: ConvConContacto): Promise<Flujo | null> {
-  const activos = flujos.filter(f => f.on === true && f.pasos.length && (Array.isArray(f.canales) ? f.canales.includes(conv.canal) : conv.canal === 'wa'))
+  const via = conv.canal === 'wa' ? `wa:${conv.lineaId ?? ''}` : conv.conexionId ? `cx:${conv.conexionId}` : conv.canal
+  const porDonde = (f: Flujo) => Array.isArray(f.vias) ? f.vias.includes(via) : Array.isArray(f.canales) ? f.canales.includes(conv.canal) : conv.canal === 'wa'
+  const deEquipo = (f: Flujo) => !Array.isArray(f.equipos) || !f.equipos.length || f.equipos.includes(conv.equipo || 'Ventas')
+  const activos = flujos.filter(f => f.on === true && f.pasos.length && porDonde(f) && deEquipo(f))
   const tipo = (f: Flujo) => {
     const c = plano(f.cuando || CUANDO_PRIMER)
     if (c.includes('anuncio')) return 'anuncio'

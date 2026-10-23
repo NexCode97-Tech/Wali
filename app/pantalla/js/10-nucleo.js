@@ -1787,7 +1787,7 @@ function paginaFlujos(){
       ${p.validar !== 'Texto libre' ? `<label class="fld">Si la respuesta no sirve, pregunta de nuevo<input data-fl-reint="${i}" value="${esc(p.reintento || '')}"></label>` : ''}`;
     if (p.t === 'botones') return `<textarea data-fl-txt="${i}">${esc(p.txt)}</textarea><div class="ops">${p.ops.map((o, j) => `<input data-fl-op="${i}|${j}" value="${esc(o)}"><button type="button" class="btn ic" data-fl-opdel="${i}|${j}" aria-label="Quitar opción" style="width:28px;height:28px;padding:0">${I('x')}</button>`).join('')}${p.ops.length < 3 ? `<button type="button" class="btn" data-fl-opadd="${i}">${I('plus')}Opción</button>` : ''}</div><p class="muted" style="margin:0">WhatsApp permite hasta 3 botones por mensaje.</p>`;
     if (p.t === 'etiqueta') return `<div class="fld">Etiqueta${ddSel('data-fl-tag', ETIQS.map(([n]) => [`${i}|${n}`, n]), `${i}|${p.tag || ''}`)}</div>`;
-    if (p.t === 'asignar') return `<div class="fld">A quién${ddSel('data-fl-asig', ['Reparto automático · equipo Ventas', 'Reparto automático · equipo Recuperación de ventas', ...ASESORES].map(x => [`${i}|${x}`, x]), `${i}|${esc(p.a)}`)}</div><p class="muted" style="margin:0">Aquí termina el flujo: el asesor recibe la conversación con lo que se respondió.</p>`;
+    if (p.t === 'asignar') return `<div class="fld">A quién${ddSel('data-fl-asig', [...EQUIPOS.map(e => 'Reparto automático · equipo ' + e.n), ...ASESORES].map(x => [`${i}|${x}`, x]), `${i}|${esc(p.a)}`)}</div><p class="muted" style="margin:0">Aquí termina el flujo: el asesor recibe la conversación con lo que se respondió.</p>`;
     return '';
   };
   const nombreTipo = t => ({ramas:'Pregunta que reparte por área'})[t] || (TIPOS_PASO.find(x => x[0] === t) || [, t])[1];
