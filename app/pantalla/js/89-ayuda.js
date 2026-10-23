@@ -15,13 +15,15 @@
   const IC = {
     ayuda: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-2.9 2.6-2.9 4"/><path d="M12 17.5h.01" stroke-width="2.6"/></svg>',
     x: SV('<path d="M6 6l12 12M18 6 6 18"/>'), buscar: SV('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>'), enviar: SV('<path d="M4 12h15M13 6l6 6-6 6"/>'),
-    chev: SV('<path d="m9 6 6 6-6 6"/>'), flecha: SV('<path d="M7 17 17 7M9 7h8v8"/>'), atras: SV('<path d="m15 6-6 6 6 6"/>'),
+    chev: SV('<path d="m9 6 6 6-6 6"/>'), reloj: SV('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'), mas: SV('<path d="M12 5v14M5 12h14"/>'), flecha: SV('<path d="M7 17 17 7M9 7h8v8"/>'), atras: SV('<path d="m15 6-6 6 6 6"/>'),
     si: SV('<path d="M7 11v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3Zm0 0 4-7a2 2 0 0 1 2 2v4h5a2 2 0 0 1 2 2.3l-1.2 6A2 2 0 0 1 16.8 20H7"/>'),
     no: SV('<path d="M17 13V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-3Zm0 0-4 7a2 2 0 0 1-2-2v-4H6a2 2 0 0 1-2-2.3l1.2-6A2 2 0 0 1 7.2 4H17"/>'),
     persona: SV('<circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-3.5 3.8-5.5 7-5.5s6 2 7 5.5"/>'), correo: SV('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>'),
     libro: SV('<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5v-15Z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/>'), rep: SV('<path d="M16 3h5v5M21 3l-7 7M8 21H3v-5M3 21l7-7"/>'),
   };
-  const ISO = '<img src="img/wali-512.png" alt="" class="ay-isoimg">';
+  // La cara del astronauta del inicio de sesión, plana y con su parpadeo (maqueta aprobada «astronauta, volver e historial»).
+  const ASTRO = '<svg class="ay-astro" viewBox="92 4 216 216" aria-hidden="true"><g stroke="#14142a" stroke-width="8" stroke-linejoin="round"><path d="M238 52 L256 24" fill="none" stroke-linecap="round"/><circle class="antena" cx="258" cy="21" r="10" fill="#FFD21F"/><circle cx="116" cy="132" r="16" fill="#7c3aed"/><circle cx="284" cy="132" r="16" fill="#7c3aed"/><circle cx="200" cy="128" r="84" fill="#fff"/><rect x="134" y="88" width="132" height="90" rx="42" fill="#1e1b4b"/><g class="ojos" stroke="none"><rect x="170" y="119" width="16" height="26" rx="8" fill="#FFD21F"/><rect x="214" y="119" width="16" height="26" rx="8" fill="#FFD21F"/></g><path d="M150 112 Q166 97 190 94" fill="none" stroke="#FFD21F" stroke-width="7" stroke-linecap="round"/></g></svg>';
+  const ISO = `<span class="ay-ast">${ASTRO}</span>`;
 
   /* ── El motor ── */
   const norm = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9ñ\s]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -164,7 +166,17 @@
   const guia = id => AYUDA_GUIAS.find(g => g.id === id);
 
   /* ── La conversación del panel ── */
-  const A = {abierto: false, msgs: [], vista: 'inicio', tema: null};
+  const A = {abierto: false, items: [], vista: 'inicio', tema: null, escribiendo: false, hist: null, conv: null};
+  /* Cada parte: {y: pregunta} | {g: guía, e: entendió, o: [otras]} | {c: charla (se vuelve a contestar igual)} |
+     {n: pregunta sin respuesta, o: [opciones]} | {s: soporte}. Así se guardan en el historial sin HTML. */
+  function parteHTML(p){
+    if (p.y !== undefined) return yoBurbuja(p.y);
+    if (p.g) { const g = guia(p.g); return g ? tarjeta(g, !!p.e, (p.o || []).map(guia).filter(Boolean)) : ''; }
+    if (p.c !== undefined) return conversar(p.c) || '';
+    if (p.n !== undefined) return noEntendio(p.n, {lista: (p.o || []).map(guia).filter(Boolean).map(g => ({g}))});
+    if (p.s !== undefined) return `<div class="ay-msj bot"><span class="ay-iso pq">${ISO}</span><div class="ay-msj-c">${soporteHTML(p.s)}</div></div>`;
+    return '';
+  }
   const pasosHTML = p => p.map(x => `<li>${esc(x).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')}</li>`).join('');
   function relacionadas(g){
     const r = buscar(`${g.t} ${(g.q || []).join(' ')}`).lista.filter(x => x.g.id !== g.id && x.g.a === g.a).slice(0, 2);
@@ -194,6 +206,7 @@
     const nombre = String((typeof yo === 'string' && yo) || '').trim().split(/\s+/)[0];
     return `<div class="ay-hola"><h3>Hola${nombre ? ', ' + esc(nombre) : ''} 👋</h3><p>Pregúntame cómo hacer cualquier cosa en Wali.</p></div>
       ${sug.length ? `<div class="ay-sec"><small>${NOMBRE_PAG[pag] ? 'Estás en ' + esc(NOMBRE_PAG[pag]) : 'Para empezar'}</small><div class="ay-sug">${sug.map(g => `<button type="button" data-ay-guia="${g.id}">${esc(g.t)}${IC.chev}</button>`).join('')}</div></div>` : ''}
+      ${(A.hist || []).length && !A.items.length ? (() => { const c = A.hist[0], [g, h] = cuandoHist(c.en); return `<div class="ay-sec"><small>Sigue donde ibas</small><div class="ay-sug"><button type="button" class="ay-sigue" data-ay-conv="${esc(c.id)}">${IC.reloj}<em>${esc(c.t)}<small>${g}, ${esc(h)}</small></em>${IC.chev}</button></div></div>`; })() : ''}
       <div class="ay-sec"><small>Lo más buscado</small><div class="ay-temas">${temas.map(([id, ic, t]) => `<button type="button" data-ay-guia="${id}"><i class="ay-pic${id === 'conectar-wa' ? ' wa' : ''}">${ic}</i>${t}</button>`).join('')}<button type="button" data-ay-todas="1"><i class="ay-pic">${IC.libro}</i>Todas las guías</button></div></div>`;
   }
   function todas(){
@@ -203,15 +216,42 @@
   }
   function cuerpo(){
     if (A.vista === 'todas') return todas();
-    if (!A.msgs.length) return inicio();
-    return A.msgs.join('');
+    if (A.vista === 'historial') return historial();
+    if (!A.items.length || A.vista === 'inicio') return inicio();
+    return A.items.map(parteHTML).join('') + (A.escribiendo ? `<div class="ay-msj bot ay-escribe"><span class="ay-iso pq">${ISO}</span><div class="ay-escr"><i></i><i></i><i></i></div></div>` : '');
+  }
+  /* ── Historial: las últimas 20 conversaciones de la persona, guardadas en su cuenta (GET/PUT /crm/ayuda/historial) ── */
+  const titulo = items => { const y = items.find(p => p.y !== undefined); return y ? y.y : 'Conversación'; };
+  function cargarHist(){
+    if (A.hist) return Promise.resolve(A.hist);
+    return crmApi('GET', '/crm/ayuda/historial').then(d => (A.hist = Array.isArray(d && d.convs) ? d.convs : []), () => (A.hist = []));
+  }
+  let guardarT = null;
+  function guardarConv(){
+    if (!A.items.length) return;
+    if (!A.conv) A.conv = {id: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), en: new Date().toISOString()};
+    A.conv.items = A.items.slice(-40); A.conv.t = titulo(A.items).slice(0, 80); A.conv.en = new Date().toISOString();
+    const lista = (A.hist || []).filter(c => c.id !== A.conv.id); lista.unshift({...A.conv}); A.hist = lista.slice(0, 20);
+    clearTimeout(guardarT); guardarT = setTimeout(() => crmApi('PUT', '/crm/ayuda/historial', {convs: A.hist}).catch(() => { /* se reintenta con el próximo mensaje */ }), 800);
+  }
+  const cuandoHist = iso => { const d = new Date(iso), h = d.toLocaleTimeString('es-CO', {hour: 'numeric', minute: '2-digit'}), dias = Math.floor((new Date().setHours(0, 0, 0, 0) - new Date(iso).setHours(0, 0, 0, 0)) / 864e5);
+    return dias <= 0 ? ['Hoy', h] : dias === 1 ? ['Ayer', h] : dias < 7 ? ['Esta semana', d.toLocaleDateString('es-CO', {weekday: 'long'})] : ['Antes', d.toLocaleDateString('es-CO', {day: 'numeric', month: 'short'})]; };
+  function historial(){
+    if (!A.hist) { cargarHist().then(() => { if (A.vista === 'historial') pintar(); }); return '<p class="ay-cargando">Cargando…</p>'; }
+    const grupos = new Map();
+    for (const c of A.hist) { const [g, h] = cuandoHist(c.en); if (!grupos.has(g)) grupos.set(g, []); grupos.get(g).push([c, h]); }
+    const n = c => (c.items || []).filter(p => p.y !== undefined).length;
+    return `<div class="ay-sec"><div class="ay-hcab"><h4 class="ay-h">Tus conversaciones</h4><button type="button" class="ay-hnueva" data-ay-nueva="1">${IC.mas}Nueva</button></div>
+      ${A.hist.length ? [...grupos].map(([g, cs]) => `<small>${g}</small><div class="ay-hl">${cs.map(([c, h]) => `<button type="button" class="ay-hi${A.conv && A.conv.id === c.id ? ' on' : ''}" data-ay-conv="${esc(c.id)}"><i>${IC.reloj}</i><em>${esc(c.t)}<small>${esc(h)} · ${n(c)} ${n(c) === 1 ? 'pregunta' : 'preguntas'}</small></em>${IC.chev}</button>`).join('')}</div>`).join('') : '<p class="ay-vacio">Todavía no tienes conversaciones. Pregúntame algo y queda aquí.</p>'}</div>
+      <p class="ay-hnota">Se guardan en tu cuenta las últimas 20, también en el celular.</p>`;
   }
   function pintar(){
     let p = document.getElementById('ay-panel');
     if (!A.abierto) { if (p) p.remove(); pintarFab(); return; }
     if (!p) {
       document.body.insertAdjacentHTML('beforeend', `<div class="ay" id="ay-panel" role="dialog" aria-label="Ayuda de Wali">
-        <div class="ay-cab"><span class="ay-iso">${ISO}</span><div><b>Ayuda de Wali</b><small><span class="ay-vivo"></span>Responde al instante</small></div><button type="button" class="ay-x" data-ay-cerrar="1" aria-label="Cerrar">${IC.x}</button></div>
+        <div class="ay-cab"><button type="button" class="ay-ic" id="ay-atras" data-ay-inicio="1" aria-label="Volver al inicio" hidden>${IC.atras}</button><span class="ay-iso">${ISO}</span><div><b>Ayuda de Wali</b><small><span class="ay-vivo"></span>Responde al instante</small></div>
+          <button type="button" class="ay-ic" id="ay-hbtn" data-ay-hist="1" aria-label="Historial" aria-pressed="false">${IC.reloj}</button><button type="button" class="ay-ic" data-ay-nueva="1" aria-label="Conversación nueva">${IC.mas}</button><button type="button" class="ay-x" data-ay-cerrar="1" aria-label="Cerrar">${IC.x}</button></div>
         <div class="ay-cuerpo" id="ay-cuerpo"></div>
         <form class="ay-in" id="ay-form"><label class="ay-campo">${IC.buscar}<input id="ay-q" placeholder="¿En qué te ayudo?" autocomplete="off" maxlength="200" aria-label="Escribe tu pregunta"></label><button type="submit" class="ay-env" aria-label="Enviar">${IC.enviar}</button></form></div>`);
       p = document.getElementById('ay-panel');
@@ -221,14 +261,16 @@
     // En la conversación, la última pregunta queda arriba y su respuesta debajo.
     const ult = A.vista === 'chat' ? [...c.querySelectorAll('.ay-msj.yo')].pop() : null;
     c.scrollTop = ult ? Math.max(0, ult.offsetTop - 12) : 0;
-    const q = document.getElementById('ay-q'); if (q) q.placeholder = A.msgs.length ? 'Escribe otra pregunta' : '¿En qué te ayudo?';
+    const q = document.getElementById('ay-q'); if (q) q.placeholder = A.vista === 'chat' && A.items.length ? 'Escribe otra pregunta' : '¿En qué te ayudo?';
+    const at = document.getElementById('ay-atras'); if (at) at.hidden = A.vista === 'inicio';
+    const hb = document.getElementById('ay-hbtn'); if (hb) hb.setAttribute('aria-pressed', String(A.vista === 'historial'));
     pintarFab();
   }
   function pintarFab(){
     let f = document.getElementById('ay-fab');
-    if (!f) { document.body.insertAdjacentHTML('beforeend', `<button type="button" class="ay-fab" id="ay-fab" data-ay-fab="1" aria-label="Ayuda de Wali" aria-expanded="false">${IC.ayuda}</button>`); f = document.getElementById('ay-fab'); }
+    if (!f) { document.body.insertAdjacentHTML('beforeend', `<button type="button" class="ay-fab" id="ay-fab" data-ay-fab="1" aria-label="Ayuda de Wali" aria-expanded="false"></button>`); f = document.getElementById('ay-fab'); }
     f.classList.toggle('abierta', A.abierto); f.setAttribute('aria-expanded', String(A.abierto));
-    f.replaceChildren(); f.insertAdjacentHTML('beforeend', A.abierto ? IC.x : IC.ayuda);
+    f.replaceChildren(); f.insertAdjacentHTML('beforeend', A.abierto ? IC.x : ASTRO);
   }
   const yoBurbuja = t => `<div class="ay-msj yo"><p>${esc(t)}</p></div>`;
   /* Charla: saludos, gracias, quién es y despedidas no son preguntas de guías; se contestan como persona. Una pregunta
@@ -278,7 +320,7 @@
   }
   function preguntar(texto){
     const q = texto.trim(); if (!q) return;
-    A.vista = 'chat'; A.msgs.push(yoBurbuja(q), `<div class="ay-msj bot ay-escribe"><span class="ay-iso pq">${ISO}</span><div class="ay-escr"><i></i><i></i><i></i></div></div>`); pintar();
+    A.vista = 'chat'; A.items.push({y: q}); A.escribiendo = true; pintar();
     const charla = conversar(q);
     // Mientras se ven los puntos, el servidor busca por significado (ayudaSemantica.ts); si tarda o falla, sigue con
     // el buscador de palabras.
@@ -287,16 +329,16 @@
       new Promise(ok => setTimeout(() => ok(null), 1800)),
     ]);
     Promise.all([sem, new Promise(ok => setTimeout(ok, 380))]).then(([s]) => {
-      A.msgs.pop();
-      if (charla) { A.msgs.push(charla); pintar(); return; }
+      A.escribiendo = false;
+      if (charla) { A.items.push({c: q}); guardarConv(); pintar(); return; }
       const d = decidir(buscar(q), s);
-      if (d.nivel === 'alta') A.msgs.push(tarjeta(d.orden[0], true));
-      else if (d.nivel === 'media') A.msgs.push(tarjeta(d.orden[0], true, d.orden.slice(1, 3)));
-      else { A.msgs.push(noEntendio(q, {lista: d.orden.slice(0, 3).map(g => ({g}))})); crmApi('POST', '/crm/ayuda/sin-respuesta', {q}).catch(() => { /* no importa si no se guarda */ }); }
-      pintar();
+      if (d.nivel === 'alta') A.items.push({g: d.orden[0].id, e: 1});
+      else if (d.nivel === 'media') A.items.push({g: d.orden[0].id, e: 1, o: d.orden.slice(1, 3).map(g => g.id)});
+      else { A.items.push({n: q, o: d.orden.slice(0, 3).map(g => g.id)}); crmApi('POST', '/crm/ayuda/sin-respuesta', {q}).catch(() => { /* no importa si no se guarda */ }); }
+      guardarConv(); pintar();
     });
   }
-  function abrirGuia(id){ const g = guia(id); if (!g) return; A.vista = 'chat'; A.msgs.push(yoBurbuja(g.t), tarjeta(g, false)); pintar(); }
+  function abrirGuia(id){ const g = guia(id); if (!g) return; A.vista = 'chat'; A.items.push({y: g.t}, {g: g.id}); guardarConv(); pintar(); }
 
   /* ── «Llevarme ahí»: abre la pantalla y señala dónde tocar ── */
   function llevar(g){
@@ -326,20 +368,23 @@
   document.addEventListener('click', e => {
     const t = e.target instanceof Element ? e.target : null; if (!t) return;
     if (t.closest('#ay-foco')) { quitarFoco(); return; }
-    if (t.closest('[data-ay-fab]')) { A.abierto = !A.abierto; pintar(); return; }
+    if (t.closest('[data-ay-fab]')) { A.abierto = !A.abierto; pintar(); if (A.abierto && !A.hist) cargarHist().then(() => { if (A.abierto && A.vista === 'inicio') pintar(); }); return; }
     if (!t.closest('#ay-panel')) return;
     const g = (attr, fn) => { const b = t.closest(`[${attr}]`); if (!b) return false; fn(b.getAttribute(attr)); return true; };
     if (g('data-ay-cerrar', () => { A.abierto = false; pintar(); })) return;
     if (g('data-ay-guia', id => abrirGuia(id))) return;
     if (g('data-ay-todas', () => { A.vista = 'todas'; A.tema = null; pintar(); })) return;
     if (g('data-ay-tema', v => { A.vista = 'todas'; A.tema = v || null; pintar(); })) return;
-    if (g('data-ay-inicio', () => { A.vista = A.msgs.length ? 'chat' : 'inicio'; pintar(); })) return;
+    if (g('data-ay-inicio', () => { A.vista = A.vista === 'todas' && A.items.length ? 'chat' : 'inicio'; if (A.vista === 'inicio') { A.items = []; A.conv = null; } pintar(); })) return;
+    if (g('data-ay-nueva', () => { A.items = []; A.conv = null; A.vista = 'inicio'; pintar(); const i = document.getElementById('ay-q'); if (i) i.focus(); })) return;
+    if (g('data-ay-hist', () => { A.vista = A.vista === 'historial' ? (A.items.length ? 'chat' : 'inicio') : 'historial'; pintar(); })) return;
+    if (g('data-ay-conv', id => { const c = (A.hist || []).find(x => x.id === id); if (!c) return; A.conv = {id: c.id, en: c.en}; A.items = (c.items || []).slice(); A.vista = 'chat'; pintar(); })) return;
     if (g('data-ay-ir', id => { const x = guia(id); if (x) llevar(x); })) return;
     if (g('data-ay-util', v => {
       const [id, si] = v.split('|'), caja = t.closest('[data-ay-utilde]');
       crmApi('POST', '/crm/ayuda/util', {guia: id, util: si === '1'}).catch(() => { /* no importa */ });
       if (caja) { caja.replaceChildren(); caja.insertAdjacentHTML('beforeend', si === '1' ? '<span class="ay-gracias">¡Qué bien! Gracias por contarnos.</span>' : '<span class="ay-gracias">Gracias. Vamos a mejorar esta guía.</span>'); }
-      if (si !== '1') { A.msgs.push(`<div class="ay-msj bot"><span class="ay-iso pq">${ISO}</span><div class="ay-msj-c">${soporteHTML(guia(id) ? guia(id).t : '')}</div></div>`); pintar(); }
+      if (si !== '1') { A.items.push({s: guia(id) ? guia(id).t : ''}); guardarConv(); pintar(); }
     })) return;
   });
   document.addEventListener('submit', e => {
@@ -359,6 +404,8 @@
 .ay-fab{position:fixed;right:22px;bottom:22px;width:56px;height:56px;border-radius:50%;background:#FFD21F;color:#0b0b10;display:grid;place-items:center;box-shadow:0 8px 24px -6px rgba(11,11,16,.35);z-index:240;border:0;cursor:pointer;transition:transform .25s cubic-bezier(.16,1,.3,1)}
 .ay-fab:hover{transform:scale(1.05)}
 .ay-fab svg{width:26px;height:26px;display:block;stroke-width:1.9}
+.ay-fab:not(.abierta){overflow:hidden}
+.ay-fab:not(.abierta) .ay-astro{width:44px;height:44px;margin-top:3px}
 .ay-fab.abierta{background:#fff;color:#dc2626;border:1px solid var(--line)}
 .ay-fab.abierta svg{width:22px;height:22px}
 .ay{position:fixed;right:22px;bottom:90px;z-index:241;width:380px;max-width:calc(100vw - 32px);height:min(620px,calc(100vh - 120px));background:#fff;border-radius:20px;border:1px solid var(--line);box-shadow:0 24px 60px -18px rgba(11,11,16,.35);display:flex;flex-direction:column;overflow:hidden;animation:ay-abrir .45s cubic-bezier(.16,1,.3,1) both;transform-origin:bottom right}
@@ -368,8 +415,31 @@
 .ay-cab b{display:block;font-size:14.5px}
 .ay-cab small{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink3)}
 .ay-vivo{width:7px;height:7px;border-radius:50%;background:#22c55e}
-.ay-isoimg{width:34px;height:34px;display:block}
-.ay-iso.pq .ay-isoimg{width:26px;height:26px}
+.ay-ast{width:34px;height:34px;border-radius:50%;background:#FFD21F;display:grid;place-items:center;overflow:hidden;flex:none}
+.ay-ast .ay-astro{width:30px;height:30px;margin-top:2px}
+.ay-iso.pq .ay-ast{width:28px;height:28px}.ay-iso.pq .ay-astro{width:24px;height:24px}
+.ay-astro .ojos{transform-box:fill-box;transform-origin:center;animation:ay-parpadeo 5s cubic-bezier(.22,1,.36,1) infinite}
+@keyframes ay-parpadeo{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.12)}}
+.ay-astro .antena{animation:ay-antena 2.4s ease-in-out infinite}
+@keyframes ay-antena{0%,100%{opacity:1}50%{opacity:.55}}
+.ay-ic{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;color:var(--ink2);flex:none;border:0;background:none;cursor:pointer}
+.ay-ic:hover,.ay-ic[aria-pressed="true"]{background:var(--bg3);color:var(--ink)}
+.ay-ic[hidden]{display:none}
+.ay-ic svg{width:18px;height:18px}
+.ay-hcab{display:flex;align-items:center;justify-content:space-between}
+.ay-hnueva{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border:1px solid var(--line);border-radius:9px;background:#fff;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
+.ay-hnueva svg{width:15px;height:15px}
+.ay-hl{display:grid;gap:6px}
+.ay-hi,.ay-sigue{display:flex!important;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;font:inherit;font-size:13.5px;font-weight:500;color:var(--ink);text-align:left;cursor:pointer;width:100%}
+.ay-hi:hover,.ay-sigue:hover{border-color:#0b0b10}
+.ay-hi.on{border-color:#0b0b10;box-shadow:inset 0 0 0 1px #0b0b10}
+.ay-hi i{width:28px;height:28px;border-radius:8px;background:var(--bg3);display:grid;place-items:center;color:var(--ink2);flex:none}
+.ay-hi i svg{width:15px;height:15px}
+.ay-hi em,.ay-sigue em{flex:1;min-width:0;font-style:normal;display:grid}
+.ay-hi em small,.ay-sigue em small{font-size:11.5px;color:var(--ink3);font-weight:400;text-transform:none;letter-spacing:0}
+.ay-sigue > svg:first-child{width:16px;height:16px;color:var(--ink3)}
+.ay-hi > svg,.ay-sigue > svg:last-child{width:15px;height:15px;color:var(--ink4)}
+.ay-hnota,.ay-vacio,.ay-cargando{font-size:12px;color:var(--ink3);margin:0}
 .ay-iso.pq{flex:none;align-self:flex-start}
 .ay-x{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:#dc2626;border:0;background:none;cursor:pointer}
 .ay-x:hover{background:#fee2e2}
@@ -437,7 +507,7 @@
 .ay-tip{position:fixed;width:260px;padding:14px;border-radius:14px;background:#fff;box-shadow:0 18px 40px -12px rgba(11,11,16,.4);display:grid;gap:4px}
 .ay-tip b{font-size:14px}
 .ay-tip small{font-size:12.5px;color:var(--ink3)}
-@media (prefers-reduced-motion:reduce){.ay,.ay-escr i,.ay-hueco{animation:none}}
+@media (prefers-reduced-motion:reduce){.ay,.ay-escr i,.ay-hueco,.ay-astro .ojos,.ay-astro .antena{animation:none}}
 @media (max-width:760px){.ay-fab{right:16px;bottom:84px}.ay{right:16px;bottom:150px;height:min(560px,calc(100vh - 180px))}}
 </style>`);
 })();

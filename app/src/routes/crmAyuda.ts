@@ -56,3 +56,34 @@ rutasAyudaCrm.post('/ayuda/semantica', limiteBusqueda, asyncHandler(async (req: 
   if (q.length < 2) throw new ValidationError('Falta la pregunta')
   return ApiResponse.success(res, { guias: await buscarPorSignificado(q) })
 }))
+
+/* Historial de cada persona (maqueta aprobada «astronauta, volver e historial»): sus últimas 20 conversaciones con la
+   ayuda, en el ajuste `_ayudaHist:<persona>`. Solo partes conocidas y con tope: nada de HTML. */
+const ID_GUIA = /^[a-z0-9-]{2,60}$/
+type Parte = Record<string, unknown>
+function parteLimpia(p: unknown): Parte | null {
+  if (!p || typeof p !== 'object') return null
+  const x = p as Record<string, unknown>
+  const ids = (v: unknown) => (Array.isArray(v) ? v.filter(i => typeof i === 'string' && ID_GUIA.test(i)).slice(0, 3) : [])
+  if (typeof x.y === 'string') return { y: limpio(x.y, 200) }
+  if (typeof x.g === 'string' && ID_GUIA.test(x.g)) return { g: x.g, ...(x.e ? { e: 1 } : {}), ...(Array.isArray(x.o) ? { o: ids(x.o) } : {}) }
+  if (typeof x.c === 'string') return { c: limpio(x.c, 200) }
+  if (typeof x.n === 'string') return { n: limpio(x.n, 200), o: ids(x.o) }
+  if (typeof x.s === 'string') return { s: limpio(x.s, 200) }
+  return null
+}
+const claveHist = (req: Request) => `_ayudaHist:${req.userId ?? ''}`
+rutasAyudaCrm.get('/ayuda/historial', asyncHandler(async (req: Request, res: Response) => {
+  const v = await leerAjuste<{ convs?: unknown[] }>(claveHist(req))
+  return ApiResponse.success(res, { convs: Array.isArray(v?.convs) ? v!.convs : [] })
+}))
+rutasAyudaCrm.put('/ayuda/historial', limite, asyncHandler(async (req: Request, res: Response) => {
+  if (!req.userId) throw new ValidationError('Falta la sesión')
+  const entrada = Array.isArray(req.body?.convs) ? req.body.convs.slice(0, 20) : []
+  const convs = entrada.map((c: Record<string, unknown>) => ({
+    id: limpio(c?.id, 40), t: limpio(c?.t, 80), en: typeof c?.en === 'string' && !Number.isNaN(Date.parse(c.en)) ? c.en : new Date().toISOString(),
+    items: (Array.isArray(c?.items) ? c.items : []).slice(-40).map(parteLimpia).filter(Boolean),
+  })).filter((c: { id: string; items: unknown[] }) => c.id && c.items.length)
+  await guardarAjuste(claveHist(req), { convs }, req.userId)
+  return ApiResponse.success(res, { ok: true })
+}))
