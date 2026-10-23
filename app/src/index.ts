@@ -23,6 +23,7 @@ import crmWebRoutes from './routes/crmWeb'
 import crmPautaRoutes from './routes/crmPauta'
 import { regresoCrm, webhookCrmManychat, webhookCrmMeta, webhookCrmTelegram, webhookCrmTiktok, webhookCrmWa } from './routes/crmWhatsapp'
 import paginas from './paginas'
+import { calentarAyudaSemantica } from './services/crm/ayudaSemantica'
 
 /**
  * El servidor del CRM: el API (/api), las pantallas (/, /entrar, /app, /usuarios) y la burbuja del chat web
@@ -169,6 +170,7 @@ app.use(paginas)
 app.use(errorHandler)
 
 app.listen(PORT, () => {
+  calentarAyudaSemantica()
   logger.info(`CRM en el puerto ${PORT}`)
   // Pruebas locales (SIN_JOBS=1): solo las rutas, sin los procesos programados.
   if (process.env.SIN_JOBS === '1') return

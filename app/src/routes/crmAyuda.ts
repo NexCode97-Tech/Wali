@@ -5,6 +5,7 @@ import { ApiResponse } from '../utils/response'
 import { ValidationError } from '../utils/errors'
 import { leerAjuste, guardarAjuste } from '../services/crm/ajustes'
 import { logger } from '../utils/logger'
+import { buscarPorSignificado } from '../services/crm/ayudaSemantica'
 
 /**
  * Ayuda de Wali (maqueta aprobada «AyudaWali»): el asistente propio, sin IA, responde en el navegador con sus guías
@@ -13,6 +14,7 @@ import { logger } from '../utils/logger'
  *
  * - POST /api/crm/ayuda/sin-respuesta {q}   → la pregunta que no encontró guía
  * - POST /api/crm/ayuda/util {guia, util}    → «Sí» o «No» en una guía
+ * - POST /api/crm/ayuda/semantica {q}       → las guías más parecidas en significado (ayudaSemantica.ts)
  */
 export const rutasAyudaCrm = Router()
 
@@ -46,4 +48,11 @@ rutasAyudaCrm.post('/ayuda/util', limite, asyncHandler(async (req: Request, res:
   a.util[guia] = c
   await guardarAjuste(CLAVE, a, req.userId ?? null)
   return ApiResponse.success(res, { ok: true })
+}))
+
+const limiteBusqueda = rateLimit({ windowMs: 60_000, max: 60, standardHeaders: true, legacyHeaders: false })
+rutasAyudaCrm.post('/ayuda/semantica', limiteBusqueda, asyncHandler(async (req: Request, res: Response) => {
+  const q = limpio(req.body?.q, 200)
+  if (q.length < 2) throw new ValidationError('Falta la pregunta')
+  return ApiResponse.success(res, { guias: await buscarPorSignificado(q) })
 }))

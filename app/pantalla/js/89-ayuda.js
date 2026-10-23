@@ -259,19 +259,42 @@
     if (!palabras(resto || t).length) return bot('Claro, te ayudo. ¿Qué quieres hacer? Escríbelo con tus palabras, por ejemplo «conectar WhatsApp» o «crear una plantilla».', sugs());
     return null;
   }
+  /* Fusión de los dos buscadores por su puesto (RRF, k = 5): cada guía suma 1/(5 + puesto) en cada uno. El de
+     significado no decide solo si es una pregunta de Wali (a todo le da puntajes parecidos); lo hace cuando está muy
+     seguro (0,90 o más y con ventaja), y si no, deciden las palabras. */
+  function decidir(r, sem){
+    const permitidas = (sem || []).filter(([id]) => { const g = guia(id); return g && permitida(g); });
+    const puntos = new Map(), suma = (id, i) => puntos.set(id, (puntos.get(id) || 0) + 1 / (5 + i + 1));
+    r.lista.slice(0, 12).forEach((x, i) => suma(x.g.id, i));
+    permitidas.forEach(([id], i) => suma(id, i));
+    const orden = [...puntos].sort((a, b) => b[1] - a[1]).map(([id]) => guia(id)).filter(Boolean);
+    const s0 = permitidas[0], s1 = permitidas[1];
+    const semSeguro = s0 && s0[1] >= .9 && (!s1 || s0[1] - s1[1] >= .03);
+    if (!orden.length) return {nivel: 'baja', orden};
+    if (entendio(r) && orden[0].id === r.lista[0].g.id) return {nivel: 'alta', orden};
+    if (semSeguro && orden[0].id === s0[0]) return {nivel: entendio(r) || probable(r) ? 'alta' : 'media', orden};
+    if (entendio(r) || probable(r) || (r.cubre >= .5 && r.lista.slice(0, 3).some(x => x.g.id === orden[0].id))) return {nivel: 'media', orden};
+    return {nivel: 'baja', orden};
+  }
   function preguntar(texto){
     const q = texto.trim(); if (!q) return;
     A.vista = 'chat'; A.msgs.push(yoBurbuja(q), `<div class="ay-msj bot ay-escribe"><span class="ay-iso pq">${ISO}</span><div class="ay-escr"><i></i><i></i><i></i></div></div>`); pintar();
-    setTimeout(() => {
+    const charla = conversar(q);
+    // Mientras se ven los puntos, el servidor busca por significado (ayudaSemantica.ts); si tarda o falla, sigue con
+    // el buscador de palabras.
+    const sem = charla ? Promise.resolve(null) : Promise.race([
+      crmApi('POST', '/crm/ayuda/semantica', {q}).then(d => (d && Array.isArray(d.guias) ? d.guias : null), () => null),
+      new Promise(ok => setTimeout(() => ok(null), 1800)),
+    ]);
+    Promise.all([sem, new Promise(ok => setTimeout(ok, 380))]).then(([s]) => {
       A.msgs.pop();
-      const charla = conversar(q);
       if (charla) { A.msgs.push(charla); pintar(); return; }
-      const r = buscar(q);
-      if (entendio(r)) A.msgs.push(tarjeta(r.lista[0].g, true));
-      else if (probable(r)) A.msgs.push(tarjeta(r.lista[0].g, true, r.lista.slice(1, 3).map(x => x.g)));
-      else { A.msgs.push(noEntendio(q, r)); crmApi('POST', '/crm/ayuda/sin-respuesta', {q}).catch(() => { /* no importa si no se guarda */ }); }
+      const d = decidir(buscar(q), s);
+      if (d.nivel === 'alta') A.msgs.push(tarjeta(d.orden[0], true));
+      else if (d.nivel === 'media') A.msgs.push(tarjeta(d.orden[0], true, d.orden.slice(1, 3)));
+      else { A.msgs.push(noEntendio(q, {lista: d.orden.slice(0, 3).map(g => ({g}))})); crmApi('POST', '/crm/ayuda/sin-respuesta', {q}).catch(() => { /* no importa si no se guarda */ }); }
       pintar();
-    }, 380);
+    });
   }
   function abrirGuia(id){ const g = guia(id); if (!g) return; A.vista = 'chat'; A.msgs.push(yoBurbuja(g.t), tarjeta(g, false)); pintar(); }
 
@@ -329,7 +352,8 @@
   const arrancar = () => { if (document.body) pintarFab(); else setTimeout(arrancar, 200); };
   setTimeout(arrancar, 400);
   // Para la prueba de guías (y para quien la quiera usar desde la consola).
-  window.ayudaBuscar = q => { const r = buscar(q); return {entendio: !!entendio(r) || !!probable(r), seguro: !!entendio(r), top: r.lista.slice(0, 3).map(x => [x.g.id, +x.s.toFixed(2), +x.cubre.toFixed(2)])}; };
+  window.ayudaDecidir = (q, sem) => { const d = decidir(buscar(q), sem); return {nivel: d.nivel, top: d.orden.slice(0, 3).map(g => g.id)}; };
+  window.ayudaBuscar = q => { const r = buscar(q); return {entendio: !!entendio(r) || !!probable(r), seguro: !!entendio(r), todo: r.lista.slice(0, 12).map(x => [x.g.id, +x.s.toFixed(2)]), top: r.lista.slice(0, 3).map(x => [x.g.id, +x.s.toFixed(2), +x.cubre.toFixed(2)])}; };
 
   document.head.insertAdjacentHTML('beforeend', `<style>
 .ay-fab{position:fixed;right:22px;bottom:22px;width:56px;height:56px;border-radius:50%;background:#FFD21F;color:#0b0b10;display:grid;place-items:center;box-shadow:0 8px 24px -6px rgba(11,11,16,.35);z-index:240;border:0;cursor:pointer;transition:transform .25s cubic-bezier(.16,1,.3,1)}
