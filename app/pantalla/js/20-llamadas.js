@@ -312,8 +312,9 @@ function cajaCuentasMeta(){
     const est = c.estado === 'conectada' ? `<span class="ln-chip ok">${I('check')}${c.modo === 'meta' ? 'Conectada con Facebook' : 'Conectada con los datos de la app'}</span>`
       : c.estado === 'error' ? `<span class="ln-chip mal">${LN_IC.alerta}Con un problema</span>` : `<span class="ln-chip ambar">${LN_IC.reloj}Pendiente</span>`;
     const manualPendiente = c.modo === 'manual' && c.webhookUrl && (c.estado === 'error' || (!c.verificado && !c.ultimoAviso && c.webhookApp !== 'otro' && c.webhookApp !== 'plataforma'));
-    return `<div class="ln-cta"><span class="fic">${logoMeta()}</span><div class="ctx"><b>${esc(cxNombre(c))}</b><small>${n} ${n === 1 ? 'número' : 'números'} · ${avisos}</small></div>
-      ${est}
+    const nums = cxNumeros(c);
+    return `<div class="ln-cta"><span class="fic">${logoMeta()}</span><div class="ctx"><b>${esc(cxNombre(c))}</b><small>${nums.length ? esc(nums.join(' · ')) : `${n} ${n === 1 ? 'número' : 'números'}`} · ${avisos}</small></div>
+      ${nums.length ? cxChipModo(cxCoex(c)) : ''}${est}
       <div class="acc"><button type="button" class="btn" data-cxm-revisar="${c.id}">${I('swap')}Revisar</button><button type="button" class="btn" data-cxm-quitar="${c.id}">${I('x')}Desconectar</button></div></div>
       ${lnFilaMarketing(c)}
       ${c.error ? `<div class="ln-nota">${LN_IC.alerta}<span>${esc(c.error)}</span></div>` : ''}
@@ -371,17 +372,17 @@ function tarjetaLinea(l, lim){
   const nueva = on && c.desde && Date.now() - Date.parse(c.desde) < 7 * 864e5;
   return `<article class="ln-card ${est[0] === 'mal' ? 'mal' : ''}">
     <div class="ln-card-cab"><span class="ln-wa">${LOGO.wa}</span><div class="ln-nom"><b>${esc(l.n)}</b><span>${esc(l.tel)}${cx ? ` · ${esc(cxNombre(cx))}` : ''}</span></div>
-      <span class="ln-est ${est[0]}"><i></i>${est[1]}</span>
+      ${cx && cx.tipo === 'whatsapp' ? cxChipModo(lnCoex(l)) : ''}<span class="ln-est ${est[0]}"><i></i>${est[1]}</span>
       <button type="button" class="ln-mas" data-ln-menu="${l.id}" aria-haspopup="menu" aria-expanded="${st.lnMenu === l.id}" aria-label="Más acciones de ${esc(l.n)}">${I('more')}</button>
       <div class="ln-menu" role="menu" ${st.lnMenu === l.id ? '' : 'hidden'}><button type="button" role="menuitem" data-ln-ver="${l.id}">${I('inbox')}Ver sus conversaciones</button><button type="button" role="menuitem" data-cx-copiar="${esc(l.tel)}">${LN_IC.copiar}Copiar el número</button>${puedeConfigurarCrm() ? `<button type="button" role="menuitem" class="ln-peligro" data-ln-quitar="${l.id}">${I('x')}Quitar del CRM</button>` : ''}</div></div>
     <div class="ln-f"><span class="fic">${LN_IC.equipo}</span><div class="ftx"><b>Equipo que la atiende</b><small>Le llegan sus conversaciones nuevas</small></div><div class="ctl">${ddSel('data-cfg-lineq', EQUIPOS.map(e => [`${i}|${e.n}`, e.n]), `${i}|${x.eq}`)}</div></div>
     <div class="ln-f"><span class="fic">${LN_IC.senal}</span><div class="ftx"><b>Calidad según Meta</b><small>Si baja, Meta limita cuántos mensajes envías</small></div><div class="ctl"><span class="ln-senal ${cal[0]}" aria-hidden="true"><i></i><i></i><i></i></span>${cal[1]}</div></div>
     <div class="ln-f"><span class="fic">${LN_IC.escalera}</span><div class="ftx"><b>Límite de Meta</b><small>${niv < 0 ? 'Meta todavía no lo ha informado' : `Nivel ${niv + 1} de 5${niv < 4 ? `, el siguiente es ${fmtLimite(LN_NIVELES[niv + 1])}` : ''}`}</small></div>
       <div class="ctl"><span class="ln-esc" aria-hidden="true">${LN_NIVELES.map((_, n) => `<i class="${n <= niv ? 'on' : ''}"></i>`).join('')}</span><span>${ln == null ? 'Sin dato' : `${fmtLimite(ln)} al día`}</span></div></div>
-    <div class="ln-f"><span class="fic">${I('phone')}</span><div class="ftx"><b>Llamadas por WhatsApp</b><small>${!meta ? 'Meta todavía no las activa en esta línea' : on ? 'Tus clientes ven el botón de llamar' : 'Apagadas en esta línea'}</small></div>
+    ${lnCoex(l) ? `<div class="ln-f"><span class="fic">${CX_CEL}</span><div class="ftx"><b>Llamadas por WhatsApp</b><small>No disponibles: este número también está en la app del celular. Meta no deja llamar desde Wali en ese modo.</small></div><div class="ctl"><span class="ln-nd">No disponible</span></div></div>` : `<div class="ln-f"><span class="fic">${I('phone')}</span><div class="ftx"><b>Llamadas por WhatsApp</b><small>${!meta ? 'Meta todavía no las activa en esta línea' : on ? 'Tus clientes ven el botón de llamar' : 'Apagadas en esta línea'}</small></div>
       <div class="ctl">${puede ? `${on ? `<button type="button" class="ln-lnk" data-ln-abrir="${l.id}|aj" aria-expanded="${ab === 'aj'}">Ajustes${I('chev')}</button>` : ''}<button type="button" class="tg" role="switch" data-ll-on="${l.id}" aria-checked="${on}" aria-label="Llamadas por WhatsApp en ${esc(l.n)}"></button>`
-        : `<button type="button" class="ln-lnk" data-ln-abrir="${l.id}|req" aria-expanded="${ab === 'req'}">Ver requisitos${I('chev')}</button>`}</div></div>
-    ${ab === 'req' && !puede ? `<div class="ln-sub">
+        : `<button type="button" class="ln-lnk" data-ln-abrir="${l.id}|req" aria-expanded="${ab === 'req'}">Ver requisitos${I('chev')}</button>`}</div></div>`}
+    ${ab === 'req' && !puede && !lnCoex(l) ? `<div class="ln-sub">
       <div class="ln-req ${lim != null && lim >= 2000 ? 'listo' : 'falta'}">${lim != null && lim >= 2000 ? I('check') : LN_IC.reloj}Límite de 2.000 conversaciones al día<em>${lim == null ? 'Sin dato de Meta' : lim >= 2000 ? 'Listo' : `${fmtLimite(lim)} de 2.000`}</em></div>
       <div class="ln-req falta">${LN_IC.reloj}Método de pago en la cuenta de WhatsApp<a href="https://business.facebook.com/wa/manage/" target="_blank" rel="noopener noreferrer">Revisar en Meta</a></div>
       <div class="ln-req ${meta ? 'listo' : 'falta'}">${meta ? I('check') : LN_IC.reloj}Meta activa las llamadas en la línea<em>${meta ? 'Listo' : 'Pendiente'}</em></div>
@@ -474,7 +475,15 @@ function buscarNumeros(x){
     .finally(() => { x.cargando = false; if (st.cx === x && (x.paso === 2 || x.paso === 3) && !document.getElementById('ov-x').hidden) pintarConexion(); });
 }
 const numeroSel = x => x.numeros.find(n => n.phoneNumberId === x.sel) || {};
-const cxNombre = c => c.modo === 'meta' ? 'WhatsApp conectado con Meta' : c.nombre;
+// El nombre de Meta (portafolio o cuenta, conexiones.ts); las de antes, mientras la revisión diaria lo trae, el genérico.
+const cxNombre = c => c.modo === 'meta' && (!c.nombre || c.nombre === 'WhatsApp con Meta') ? 'WhatsApp conectado con Meta' : c.nombre;
+/* Solo en Wali o En tu celular y en Wali (maqueta aprobada «ConectarWhatsApp»): un número en coexistencia sigue en la
+   app del celular. La conexión guarda cuáles (`coex`, conexiones.ts). */
+const CX_CEL = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>';
+const lnCoex = l => { const c = conexionesWa().find(x => x.id === l.conexionId); return !!(c && Array.isArray(c.coex) && c.coex.includes(l.phoneNumberId)); };
+const cxCoex = c => LINEAS.some(l => l.conexionId === c.id && lnCoex(l));
+const cxChipModo = coex => coex ? `<span class="cx-cm coex">${CX_CEL}En tu celular y en Wali</span>` : '<span class="cx-cm solo">Solo en Wali</span>';
+const cxNumeros = c => LINEAS.filter(l => l.conexionId === c.id).map(l => l.tel).filter(Boolean);
 const cxDetalle = c => [c.modo === 'meta' ? 'Con el botón de Meta' : `App de Meta ${c.appId || ''}`.trim(), `${c.cuentas} ${c.cuentas === 1 ? 'cuenta' : 'cuentas'} de WhatsApp`, c.lineas ? `${c.lineas} ${c.lineas === 1 ? 'línea' : 'líneas'} en el CRM` : ''].filter(Boolean).join(' · ');
 const datoCopiable = (etq, v) => `<div class="cx-dato"><span>${etq}</span><code>${esc(v)}</code><button type="button" class="btn ic" data-cx-copiar="${esc(v)}" aria-label="Copiar ${etq}">${I('share')}</button></div>`;
 function cxCarga(titulo, sub){
@@ -486,8 +495,10 @@ function cxCarga(titulo, sub){
 function pasoCuenta(x){
   const usables = conexionesWa().filter(cxUsable);
   if (!x.nueva && usables.length) return `<p>Elige la cuenta de Meta del número que vas a conectar.</p>
-    <div class="cx-list">${usables.map(c => `<button type="button" class="cx-op" role="radio" aria-checked="${x.conexionId === c.id}" data-cx-cuenta="${c.id}"><span class="rd"></span><span><b>${esc(cxNombre(c))}</b><small>${esc(cxDetalle(c))}${c.estado === 'error' ? ' · con un problema: revísala en Líneas de WhatsApp' : ''}</small></span></button>`).join('')}
-      <button type="button" class="cx-op" data-cx-nueva="1"><span class="rd"></span><span><b>Conectar otra cuenta de Meta</b><small>Otra cuenta de WhatsApp Business o la de otra app</small></span></button></div>`;
+    <div class="cx-list">${usables.map(c => { const nums = cxNumeros(c), n = lnLineasDe(c);
+      const det = [c.modo === 'meta' ? (c.portafolio ? `Portafolio ${c.portafolio}` : 'Con el botón de Meta') : `App de Meta ${c.appId || ''}`.trim(), `${n} ${n === 1 ? 'número' : 'números'} en Wali`].join(' · ');
+      return `<button type="button" class="cx-op cx-cuenta" role="radio" aria-checked="${x.conexionId === c.id}" data-cx-cuenta="${c.id}"><span class="rd"></span><span class="cx-fic">${logoMeta()}</span><span class="cx-ot"><b>${esc(cxNombre(c))}</b>${nums.length ? `<small>${esc(nums.join(' · '))}</small>` : ''}<small class="det">${esc(det)}${c.estado === 'error' ? ' · con un problema: revísala en Líneas de WhatsApp' : ''}</small></span>${c.tipo === 'whatsapp' ? cxChipModo(cxCoex(c)) : ''}</button>`; }).join('')}
+      <button type="button" class="cx-op cx-cuenta" data-cx-nueva="1"><span class="rd"></span><span class="cx-fic mas">+</span><span class="cx-ot"><b>Conectar otra cuenta de Meta</b><small class="det">Otra cuenta de WhatsApp Business o la de otra app</small></span></button></div>`;
   if (x.avisoCx) { const c = x.avisoCx; return `<div class="ll-nota">${esc(c.error || 'Las claves están bien, pero falta configurar el aviso de mensajes.')}</div>
     <p>Configúralo a mano en tu app de Meta: en WhatsApp, Configuración, Webhook, pega esta dirección y este código, y suscríbete al campo «messages».</p>
     ${datoCopiable('Dirección', c.webhookUrl || '')}${datoCopiable('Código de verificación', c.verifyToken || '')}
@@ -496,11 +507,15 @@ function pasoCuenta(x){
   if (x.fbCargando) return x.fbFase === 'crm' ? cxCarga('Conectando tu cuenta con Wali…', 'Meta ya respondió; el CRM está guardando el acceso')
     : cxCarga('Termina en la ventana de Meta', 'Cuando oprimas Finalizar allá, seguimos aquí');
   if (x.enviandoCx) return cxCarga('Conectando tu cuenta de Meta…', 'Revisando la app y sus permisos');
-  if (!x.manual) return `<p>Elige cómo conectar la cuenta de WhatsApp Business de tu empresa.</p>
+  const pros = (si, no) => `<span class="cx-pros">${si.map(t => `<span class="ok">${I('check')}${t}</span>`).join('')}${no.map(t => `<span class="no">${I('x')}${t}</span>`).join('')}</span>`;
+  const pronto = prov == null ? '' : '<span class="etq-pronto">No disponible todavía</span>';
+  if (!x.manual) return `<p>¿Cómo quieres conectar tu número?</p>
     <div class="cx-list">
-      <button type="button" class="opc" data-cx-fb="1" ${fbListo && !x.fbCargando ? '' : 'disabled'}><span class="marca fb">${LOGO.fb}</span><span class="tx"><b>${x.fbCargando ? 'Abriendo Facebook…' : 'Continuar con Facebook'}${fbListo ? '<span class="etq-rec">Recomendado</span>' : prov == null ? '' : '<span class="etq-pronto">No disponible todavía</span>'}</b><small>${prov == null ? 'Revisando…' : fbListo ? 'Inicias sesión con Facebook, eliges o creas el número y listo.' : 'Se activa cuando Meta apruebe este CRM. Mientras tanto, usa los datos de tu app.'}</small></span>${fbListo ? I('chev', 'i ch') : ''}</button>
-      <button type="button" class="opc" data-cx-coex="1" ${fbListo && !x.fbCargando ? '' : 'disabled'}><span class="marca wa">${I('wa')}</span><span class="tx"><b>${x.fbCargando && x.coex ? 'Abriendo Meta…' : 'Con tu app de WhatsApp Business'}${fbListo ? '<span class="etq-rec">Escaneas un QR</span>' : prov == null ? '' : '<span class="etq-pronto">No disponible todavía</span>'}</b><small>${prov == null ? 'Revisando…' : fbListo ? 'El número sigue funcionando en tu celular y también en el CRM. Escaneas un QR desde la app.' : 'Se activa cuando Meta apruebe este CRM.'}</small></span>${fbListo ? I('chev', 'i ch') : ''}</button>
-      <button type="button" class="opc" data-cx-manual="1"><span class="marca neutra">${LOGO.llave}</span><span class="tx"><b>Con los datos de tu app de Meta</b><small>Si ya tienes una app en developers.facebook.com: pegas su identificador, su clave secreta y un token.</small></span>${I('chev', 'i ch')}</button>
+      <button type="button" class="opc cx-forma rec" data-cx-fb="1" ${fbListo && !x.fbCargando ? '' : 'disabled'}><span class="marca fb cx-fb">${LOGO.fb.replace('#0866FF', '#fff')}</span><span class="tx"><b>${x.fbCargando && !x.coex ? 'Abriendo Facebook…' : 'Solo en Wali'}${fbListo ? '<span class="etq-rec cx-amarilla">Recomendado</span>' : pronto}</b><small>${prov == null ? 'Revisando…' : fbListo ? 'Inicias sesión con Facebook y eliges o creas el número. Desde ese momento se atiende solo en Wali.' : 'Se activa cuando Meta apruebe este CRM. Mientras tanto, usa los datos de tu app.'}</small>
+        ${fbListo ? pros(['Llamadas de WhatsApp desde Wali', 'Envíos rápidos para difusiones', 'Todas las funciones'], ['El número sale de la app del celular']) : ''}</span>${fbListo ? I('chev', 'i ch') : ''}</button>
+      <button type="button" class="opc cx-forma" data-cx-coex="1" ${fbListo && !x.fbCargando ? '' : 'disabled'}><span class="marca wa">${I('wa')}</span><span class="tx"><b>${x.fbCargando && x.coex ? 'Abriendo Meta…' : 'En tu celular y en Wali'}${fbListo ? '<span class="etq-rec">Coexistencia</span>' : pronto}</b><small>${prov == null ? 'Revisando…' : fbListo ? 'Sigues usando tu app de WhatsApp Business. Inicias sesión con Facebook y confirmas en el celular.' : 'Se activa cuando Meta apruebe este CRM.'}</small>
+        ${fbListo ? pros(['El número sigue en tu celular', 'Lo que respondas allá queda en Wali'], ['Sin llamadas desde Wali', 'Envíos más lentos (20 por segundo)', 'Los grupos no entran a Wali']) : ''}</span>${fbListo ? I('chev', 'i ch') : ''}</button>
+      <button type="button" class="opc cx-forma" data-cx-manual="1"><span class="marca neutra">${LOGO.llave}</span><span class="tx"><b>Con los datos de tu app de Meta</b><small>Si ya tienes una app en developers.facebook.com: pegas su identificador, su clave y un token.</small>${pros(['Para equipos técnicos'], [])}</span>${I('chev', 'i ch')}</button>
     </div>${x.errorCx ? `<div class="ll-nota">${esc(x.errorCx)}</div>` : ''}`;
   const a = x.app;
   return `<div class="cx-f">
@@ -833,3 +848,31 @@ document.addEventListener('click', e => {
   if (llamadasActivas(c.linea) && PD.rneOn && c.rne && !c.aut) { abrirDialogo(`<h3>No se puede llamar a ${esc(c.n)}</h3><p>Su número está en el Registro de Números Excluidos de la CRC y no ha autorizado a la empresa. No se le puede llamar ni incluir en difusiones.</p><p class="muted">Como escribió primero, sí le puedes responder por el chat. Si autoriza sus datos, se le puede llamar.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Entendido</button><button type="button" class="btn pri" data-ll-aut="1">${I('send')}Pedirle autorización</button></div>`); return; }
   abrirDialogo(`<h3>Llamar a ${esc(c.n)}</h3><p>${esc(motivoSinLlamar(c))} Mientras tanto, escríbele por el chat.</p>${st.rol === 'l' ? '<p class="muted">Las llamadas de cada línea se ven en Ajustes del CRM, Líneas de WhatsApp.</p>' : ''}<div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Entendido</button></div>`);
 }, true);
+
+document.head.insertAdjacentHTML('beforeend', `<style>
+.cx-cm{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border:1px solid var(--line);border-radius:10px;font-size:12px;font-weight:600;white-space:nowrap;background:#fff;flex:none}
+.cx-cm svg{width:14px;height:14px}
+.cx-cm.solo{color:#15803d}
+.cx-cm.coex{color:#7a5a00;background:#fffbe6;border-color:#f3e3a1}
+.cx-cuenta{gap:12px;padding:12px 14px;border-radius:12px}
+.cx-fic{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);display:grid;place-items:center;flex:none;background:#fff}
+.cx-fic svg{width:22px;height:22px}
+.cx-fic.mas{font-size:20px;color:var(--ink3);line-height:1}
+.cx-ot{flex:1;min-width:0;display:grid;gap:1px}
+.cx-ot b{font-size:14.5px;font-weight:600}
+.cx-ot small{display:block;font-size:12.5px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.cx-ot small.det{color:var(--ink3)}
+.opc.cx-forma{align-items:flex-start}
+.opc.cx-forma > svg.ch{align-self:center}
+.opc.cx-forma.rec:not(:disabled){border-color:#0b0b10;box-shadow:inset 0 0 0 1px #0b0b10}
+.opc .etq-rec.cx-amarilla{background:#FFD21F;color:#0b0b10}
+.opc.cx-forma:not(.rec) .etq-rec{background:#f1f5f9;color:#4b5563}
+.cx-pros{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px}
+.cx-pros span{display:inline-flex;align-items:center;gap:5px;font-size:12.5px}
+.cx-pros svg{width:14px;height:14px;stroke-width:2.4}
+.cx-pros .ok{color:#15803d}
+.cx-pros .no{color:#b91c1c}
+.opc .marca.cx-fb{background:#0866FF;border-color:#0866FF}
+.ln-nd{font-size:12px;font-weight:600;color:var(--ink3);white-space:nowrap}
+@media (max-width:640px){.cx-cuenta{flex-wrap:wrap}.cx-cuenta .cx-cm{margin-left:48px}}
+</style>`);

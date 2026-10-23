@@ -48,6 +48,27 @@ export interface DatosWhatsapp {
   webhookUrl?: string
   vence?: number
   permisos?: string[]
+  /** Como la llama Meta (maqueta aprobada «ConectarWhatsApp»): el portafolio de la empresa y el nombre de la cuenta. */
+  portafolio?: string
+  cuentaNombre?: string
+}
+
+/** El nombre por defecto de las conexiones con el botón de Meta antes de traer el de Meta. */
+export const NOMBRE_META_DEFECTO = 'WhatsApp con Meta'
+
+/**
+ * El nombre de la cuenta en Meta: el del portafolio (owner_business_info) y el de la cuenta de WhatsApp. Se trae al
+ * conectar y la revisión diaria (caidas.ts) lo vuelve a mirar. Si Meta no responde, null: se deja el que había.
+ */
+export async function nombresDeMeta(wabaId: string, token: string): Promise<{ portafolio: string; cuenta: string } | null> {
+  try {
+    const r = await graph<{ name?: string; owner_business_info?: { name?: string } }>(`/${wabaId}`, { cred: { token }, query: { fields: 'name,owner_business_info' } })
+    const portafolio = String(r.owner_business_info?.name ?? '').trim().slice(0, 120), cuenta = String(r.name ?? '').trim().slice(0, 120)
+    return portafolio || cuenta ? { portafolio, cuenta } : null
+  } catch (e) {
+    logger.info(`[CRM conexiones] no se pudo leer el nombre de la cuenta ${wabaId} en Meta: ${(e as Error)?.message ?? e}`)
+    return null
+  }
 }
 
 // ─── Direcciones ─────────────────────────────────────────────────────────────
@@ -79,6 +100,8 @@ export interface ConexionFront {
   /** Solo en las manuales: lo que se pega en Meta si hubo que configurarlo a mano. */
   webhookUrl: string | null; verifyToken: string | null; webhookApp: string | null
   verificado: string | null; ultimoAviso: string | null; vence: string | null
+  /** WhatsApp: el portafolio en Meta y los números en coexistencia (también en la app del celular). */
+  portafolio?: string; coex?: string[]
 }
 
 export function conexionAFront(c: CrmConexion & { _count?: { lineas: number } }): ConexionFront {
@@ -91,6 +114,7 @@ export function conexionAFront(c: CrmConexion & { _count?: { lineas: number } })
     webhookUrl: manual ? d.webhookUrl ?? null : null, verifyToken: manual ? d.verifyToken ?? null : null, webhookApp: d.webhookApp ?? null,
     verificado: c.verificadoEn?.toISOString() ?? null, ultimoAviso: c.ultimoEventoEn?.toISOString() ?? null,
     vence: d.vence ? new Date(d.vence * 1000).toISOString() : null,
+    ...(c.tipo === 'whatsapp' ? { portafolio: d.portafolio ?? '', coex: d.coex ?? [] } : {}),
     ...(c.tipo === 'pagina' ? { pagina: { id: String(dj.pageId ?? ''), nombre: String(dj.pageNombre ?? '') } } : {}),
     ...(c.tipo === 'instagram' ? { instagram: { id: String(dj.igId ?? ''), usuario: String(dj.igUsuario ?? ''), nombre: String(dj.nombre ?? '') } } : {}),
     ...(c.tipo === 'telegram' ? { bot: { usuario: String(dj.usuario ?? ''), nombre: String(dj.nombre ?? '') } } : {}),
@@ -377,11 +401,15 @@ export async function conectarWhatsappMeta(entrada: Json, por: string | null): P
 
   const previa = (await prisma.crmConexion.findMany({ where: { tipo: 'whatsapp', modo: 'meta' } })).find(c => (obj(c.datos).wabas ?? []).includes(wabaId))
   const coexAntes = previa ? (obj(previa.datos) as DatosWhatsapp).coex ?? [] : []
-  const datos: DatosWhatsapp = { appId: p.appId, wabas: [wabaId], verifyToken: '', vence: llave.vence, ...(coexistencia || coexAntes.length ? { coex: [...new Set([...coexAntes, ...(coexistencia ? [phoneNumberId] : [])])] } : {}) }
+  // El nombre de Meta (portafolio o cuenta): así cada conexión se distingue en Líneas de WhatsApp.
+  const nm = await nombresDeMeta(wabaId, token)
+  const nombre = (nm && (nm.portafolio || nm.cuenta)) || previa?.nombre || NOMBRE_META_DEFECTO
+  const datos: DatosWhatsapp = { appId: p.appId, wabas: [wabaId], verifyToken: '', vence: llave.vence, ...(coexistencia || coexAntes.length ? { coex: [...new Set([...coexAntes, ...(coexistencia ? [phoneNumberId] : [])])] } : {}),
+    ...(nm ? { portafolio: nm.portafolio, cuentaNombre: nm.cuenta } : {}) }
   const c = previa
-    ? await prisma.crmConexion.update({ where: { id: previa.id }, data: { secretos: cifrar({ token }), datos: datos as unknown as Prisma.InputJsonValue, estado: 'conectada', error: null }, include: { _count: { select: { lineas: true } } } })
+    ? await prisma.crmConexion.update({ where: { id: previa.id }, data: { nombre, secretos: cifrar({ token }), datos: datos as unknown as Prisma.InputJsonValue, estado: 'conectada', error: null }, include: { _count: { select: { lineas: true } } } })
     : await prisma.crmConexion.create({
-      data: { tipo: 'whatsapp', modo: 'meta', nombre: 'WhatsApp con Meta', clave: azar(24), estado: 'conectada', secretos: cifrar({ token }), datos: datos as unknown as Prisma.InputJsonValue },
+      data: { tipo: 'whatsapp', modo: 'meta', nombre, clave: azar(24), estado: 'conectada', secretos: cifrar({ token }), datos: datos as unknown as Prisma.InputJsonValue },
       include: { _count: { select: { lineas: true } } },
     })
   logger.info(`[CRM conexiones] WhatsApp con el botón de Meta: cuenta ${wabaId}, por ${por}`)

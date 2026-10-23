@@ -140,6 +140,19 @@ async function avisarPorVencer(id: string, vence: number) {
  * Revisión diaria (procesos.ts, cada 10 minutos, pero cada conexión a lo sumo una vez por día): ¿Meta sigue aceptando
  * el token? Solo cuenta lo que Meta responde; si no se pudo hablar con Meta (la red), se deja para la próxima.
  */
+/** El nombre de una conexión con el botón de Meta, como lo tiene Meta hoy (el portafolio o la cuenta pueden cambiar de nombre). */
+async function refrescarNombre(id: string, token: string) {
+  const fila = await prisma.crmConexion.findUnique({ where: { id }, select: { nombre: true, datos: true } })
+  const d = obj(fila?.datos), waba = Array.isArray(d.wabas) ? String(d.wabas[0] ?? '') : ''
+  if (!fila || !waba) return
+  const { nombresDeMeta } = await import('./conexiones')
+  const nm = await nombresDeMeta(waba, token); if (!nm) return
+  const nombre = nm.portafolio || nm.cuenta
+  if (nombre === fila.nombre && d.portafolio === nm.portafolio && d.cuentaNombre === nm.cuenta) return
+  await prisma.crmConexion.update({ where: { id }, data: { nombre, datos: { ...d, portafolio: nm.portafolio, cuentaNombre: nm.cuenta } as Prisma.InputJsonValue } })
+  await (await import('./conexiones')).emitirConexiones(null)
+}
+
 export async function revisarConexionesWhatsapp(): Promise<number> {
   const filas = await prisma.crmConexion.findMany({ where: { tipo: 'whatsapp', estado: { in: ['conectada', 'error'] } } })
   let revisadas = 0
@@ -160,6 +173,7 @@ export async function revisarConexionesWhatsapp(): Promise<number> {
         if (info.vence) await avisarPorVencer(c.id, info.vence * 1000)
         // De paso, si el portafolio ya aceptó el marketing optimizado de Meta (marketingMeta.ts).
         await (await import('./marketingMeta')).revisarMarketingDeConexion(c.id)
+        if (c.modo === 'meta') await refrescarNombre(c.id, s.token)
       }
       else await marcarCaida(c.id, 'El token de Meta venció o no es válido. Genera uno que nunca venza para el usuario del sistema y vuelve a conectar WhatsApp en Ajustes › Canales', info.vence ? info.vence * 1000 : undefined)
     } catch (e) {
