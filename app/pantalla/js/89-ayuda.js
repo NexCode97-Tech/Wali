@@ -15,13 +15,14 @@
   const IC = {
     ayuda: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-2.9 2.6-2.9 4"/><path d="M12 17.5h.01" stroke-width="2.6"/></svg>',
     x: SV('<path d="M6 6l12 12M18 6 6 18"/>'), buscar: SV('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>'), enviar: SV('<path d="M4 12h15M13 6l6 6-6 6"/>'),
-    chev: SV('<path d="m9 6 6 6-6 6"/>'), reloj: SV('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'), mas: SV('<path d="M12 5v14M5 12h14"/>'), flecha: SV('<path d="M7 17 17 7M9 7h8v8"/>'), atras: SV('<path d="m15 6-6 6 6 6"/>'),
+    chev: SV('<path d="m9 6 6 6-6 6"/>'), basura: SV('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>'), reloj: SV('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'), mas: SV('<path d="M12 5v14M5 12h14"/>'), flecha: SV('<path d="M7 17 17 7M9 7h8v8"/>'), atras: SV('<path d="m15 6-6 6 6 6"/>'),
     si: SV('<path d="M7 11v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3Zm0 0 4-7a2 2 0 0 1 2 2v4h5a2 2 0 0 1 2 2.3l-1.2 6A2 2 0 0 1 16.8 20H7"/>'),
     no: SV('<path d="M17 13V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-3Zm0 0-4 7a2 2 0 0 1-2-2v-4H6a2 2 0 0 1-2-2.3l1.2-6A2 2 0 0 1 7.2 4H17"/>'),
     persona: SV('<circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-3.5 3.8-5.5 7-5.5s6 2 7 5.5"/>'), correo: SV('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>'),
     libro: SV('<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5v-15Z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/>'), rep: SV('<path d="M16 3h5v5M21 3l-7 7M8 21H3v-5M3 21l7-7"/>'),
   };
   // La cara del astronauta del inicio de sesión, plana y con su parpadeo (maqueta aprobada «astronauta, volver e historial»).
+  const GLOBO = '<svg class="ay-globo" viewBox="0 0 64 60" aria-hidden="true"><path d="M30 2h4c15.5 0 28 12.5 28 28 0 6.7-2.3 12.8-6.2 17.6L62 58l-14.3-4.1A27.8 27.8 0 0 1 34 58h-4C14.5 58 2 45.5 2 30S14.5 2 30 2Z"/></svg>';
   const ASTRO = '<svg class="ay-astro" viewBox="92 4 216 216" aria-hidden="true"><g stroke="#14142a" stroke-width="8" stroke-linejoin="round"><path d="M238 52 L256 24" fill="none" stroke-linecap="round"/><circle class="antena" cx="258" cy="21" r="10" fill="#FFD21F"/><circle cx="116" cy="132" r="16" fill="#7c3aed"/><circle cx="284" cy="132" r="16" fill="#7c3aed"/><circle cx="200" cy="128" r="84" fill="#fff"/><rect x="134" y="88" width="132" height="90" rx="42" fill="#1e1b4b"/><g class="ojos" stroke="none"><rect x="170" y="119" width="16" height="26" rx="8" fill="#FFD21F"/><rect x="214" y="119" width="16" height="26" rx="8" fill="#FFD21F"/></g><path d="M150 112 Q166 97 190 94" fill="none" stroke="#FFD21F" stroke-width="7" stroke-linecap="round"/></g></svg>';
   const ISO = `<span class="ay-ast">${ASTRO}</span>`;
 
@@ -239,14 +240,51 @@
   }
   const cuandoHist = iso => { const d = new Date(iso), h = d.toLocaleTimeString('es-CO', {hour: 'numeric', minute: '2-digit'}), dias = Math.floor((new Date().setHours(0, 0, 0, 0) - new Date(iso).setHours(0, 0, 0, 0)) / 864e5);
     return dias <= 0 ? ['Hoy', h] : dias === 1 ? ['Ayer', h] : dias < 7 ? ['Esta semana', d.toLocaleDateString('es-CO', {weekday: 'long'})] : ['Antes', d.toLocaleDateString('es-CO', {day: 'numeric', month: 'short'})]; };
+  // Borrar del historial: la fila sale con movimiento (89-movimiento.js) y queda Deshacer 5 segundos.
+  function guardarHistYa(){ clearTimeout(guardarT); return crmApi('PUT', '/crm/ayuda/historial', {convs: A.hist || []}).catch(() => toast('No se pudo guardar el cambio del historial')); }
+  const repintarMov = () => (typeof crmConMovimiento === 'function' ? crmConMovimiento(pintar) : pintar());
+  let deshacer = null;
+  function avisoPanel(html){
+    const p = document.getElementById('ay-panel'); if (!p) return;
+    const v = p.querySelector('.ay-toast'); if (v) v.remove();
+    p.insertAdjacentHTML('beforeend', `<div class="ay-toast" role="status">${html}</div>`);
+  }
+  function quitarAviso(){ const v = document.querySelector('#ay-panel .ay-toast'); if (!v) return; v.classList.add('sale'); setTimeout(() => v.remove(), 220); }
+  const OK = '<svg class="ay-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>';
+  function borrarConv(id){
+    const i = (A.hist || []).findIndex(c => c.id === id); if (i < 0) return;
+    const [c] = A.hist.splice(i, 1);
+    if (A.conv && A.conv.id === id) { A.conv = null; A.items = []; }
+    A.hBorrar = null; repintarMov(); guardarHistYa();
+    clearTimeout(deshacer && deshacer.t);
+    deshacer = {c, i, t: setTimeout(() => { deshacer = null; quitarAviso(); }, 5000)};
+    avisoPanel(`${OK}Conversación borrada<button type="button" data-ay-deshacer="1">Deshacer</button>`);
+  }
+  function deshacerBorrado(){
+    if (!deshacer) return; clearTimeout(deshacer.t);
+    const {c, i} = deshacer; deshacer = null;
+    A.hist.splice(Math.min(i, A.hist.length), 0, c); pintar(); guardarHistYa(); quitarAviso();
+    const fila = document.querySelector(`#ay-panel [data-ay-hk="${CSS.escape(c.id)}"]`);
+    if (fila && fila.animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) fila.animate([{opacity: 0, transform: 'translateY(-6px) scale(.98)'}, {opacity: 1, transform: 'none'}], {duration: 360, easing: 'cubic-bezier(.16,1,.3,1)'});
+  }
+  function borrarTodo(){
+    A.hist = []; A.hTodo = false; A.conv = null; A.items = [];
+    clearTimeout(deshacer && deshacer.t); deshacer = null;
+    repintarMov(); guardarHistYa();
+    avisoPanel(`${OK}Historial borrado`);
+    setTimeout(quitarAviso, 3000);
+  }
   function historial(){
     if (!A.hist) { cargarHist().then(() => { if (A.vista === 'historial') pintar(); }); return '<p class="ay-cargando">Cargando…</p>'; }
     const grupos = new Map();
     for (const c of A.hist) { const [g, h] = cuandoHist(c.en); if (!grupos.has(g)) grupos.set(g, []); grupos.get(g).push([c, h]); }
     const n = c => (c.items || []).filter(p => p.y !== undefined).length;
     return `<div class="ay-sec"><div class="ay-hcab"><h4 class="ay-h">Tus conversaciones</h4><button type="button" class="ay-hnueva" data-ay-nueva="1">${IC.mas}Nueva</button></div>
-      ${A.hist.length ? [...grupos].map(([g, cs]) => `<small>${g}</small><div class="ay-hl">${cs.map(([c, h]) => `<button type="button" class="ay-hi${A.conv && A.conv.id === c.id ? ' on' : ''}" data-ay-conv="${esc(c.id)}"><i>${IC.reloj}</i><em>${esc(c.t)}<small>${esc(h)} · ${n(c)} ${n(c) === 1 ? 'pregunta' : 'preguntas'}</small></em>${IC.chev}</button>`).join('')}</div>`).join('') : '<p class="ay-vacio">Todavía no tienes conversaciones. Pregúntame algo y queda aquí.</p>'}</div>
-      <p class="ay-hnota">Se guardan en tu cuenta las últimas 20, también en el celular.</p>`;
+      ${A.hist.length ? [...grupos].map(([g, cs]) => `<small>${g}</small><div class="ay-hl">${cs.map(([c, h]) => `${A.hBorrar === c.id
+        ? `<div class="ay-hi ay-hconf" data-ay-hk="${esc(c.id)}"><span>¿Borrar «${esc(c.t)}»?</span><button type="button" class="ay-hbb" data-ay-hborrarok="${esc(c.id)}">${IC.basura}Borrar</button><button type="button" class="ay-hbx" data-ay-hcancelar="1" aria-label="Cancelar">${IC.x}</button></div>`
+        : `<div class="ay-hi-w" data-ay-hk="${esc(c.id)}"><button type="button" class="ay-hi${A.conv && A.conv.id === c.id ? ' on' : ''}" data-ay-conv="${esc(c.id)}"><i>${IC.reloj}</i><em>${esc(c.t)}<small>${esc(h)} · ${n(c)} ${n(c) === 1 ? 'pregunta' : 'preguntas'}</small></em>${IC.chev}</button><button type="button" class="ay-hbt" data-ay-hborrar="${esc(c.id)}" aria-label="Borrar «${esc(c.t)}»">${IC.basura}</button></div>`}`).join('')}</div>`).join('') : '<p class="ay-vacio">Todavía no tienes conversaciones. Pregúntame algo y queda aquí.</p>'}</div>
+      <p class="ay-hnota">Se guardan en tu cuenta las últimas 20, también en el celular.</p>
+      ${A.hist.length ? (A.hTodo ? `<div class="ay-htconf"><b>¿Borrar ${A.hist.length === 1 ? 'la conversación' : `las ${A.hist.length} conversaciones`}?</b><span>No se puede deshacer.</span><div><button type="button" class="ay-hbb" data-ay-htodook="1">${IC.basura}Borrar todo</button><button type="button" class="ay-hbx" data-ay-hcancelar="1" aria-label="Cancelar">${IC.x}</button></div></div>` : '<button type="button" class="ay-htodo" data-ay-htodo="1">Borrar todo el historial</button>') : ''}`;
   }
   function pintar(){
     let p = document.getElementById('ay-panel');
@@ -273,7 +311,7 @@
     let f = document.getElementById('ay-fab');
     if (!f) { document.body.insertAdjacentHTML('beforeend', `<button type="button" class="ay-fab" id="ay-fab" data-ay-fab="1" aria-label="Ayuda de Wali" aria-expanded="false"></button>`); f = document.getElementById('ay-fab'); }
     f.classList.toggle('abierta', A.abierto); f.setAttribute('aria-expanded', String(A.abierto));
-    f.replaceChildren(); f.insertAdjacentHTML('beforeend', A.abierto ? IC.x : ASTRO);
+    f.replaceChildren(); f.insertAdjacentHTML('beforeend', A.abierto ? IC.x : `${GLOBO}${ASTRO}<span class="ay-fab-hola" aria-hidden="true">¿Te ayudo?</span>`);
   }
   const yoBurbuja = t => `<div class="ay-msj yo"><p>${esc(t)}</p></div>`;
   /* Charla: saludos, gracias, quién es y despedidas no son preguntas de guías; se contestan como persona. Una pregunta
@@ -384,6 +422,12 @@
     if (g('data-ay-inicio', () => { A.vista = A.vista === 'todas' && A.items.length ? 'chat' : 'inicio'; if (A.vista === 'inicio') { A.items = []; A.conv = null; } pintar(); })) return;
     if (g('data-ay-nueva', () => { A.items = []; A.conv = null; A.vista = 'inicio'; pintar(); const i = document.getElementById('ay-q'); if (i) i.focus(); })) return;
     if (g('data-ay-hist', () => { A.vista = A.vista === 'historial' ? (A.items.length ? 'chat' : 'inicio') : 'historial'; pintar(); })) return;
+    if (g('data-ay-hborrar', id => { A.hBorrar = id; A.hTodo = false; pintar(); const b = document.querySelector('[data-ay-hborrarok]'); if (b) b.focus(); })) return;
+    if (g('data-ay-hcancelar', () => { A.hBorrar = null; A.hTodo = false; pintar(); })) return;
+    if (g('data-ay-hborrarok', id => borrarConv(id))) return;
+    if (g('data-ay-htodo', () => { A.hTodo = true; A.hBorrar = null; pintar(); const b = document.querySelector('[data-ay-htodook]'); if (b) b.focus(); })) return;
+    if (g('data-ay-htodook', () => borrarTodo())) return;
+    if (g('data-ay-deshacer', () => deshacerBorrado())) return;
     if (g('data-ay-conv', id => { const c = (A.hist || []).find(x => x.id === id); if (!c) return; A.conv = {id: c.id, en: c.en}; A.items = (c.items || []).slice(); A.vista = 'chat'; pintar(); })) return;
     if (g('data-ay-ir', id => { const x = guia(id); if (x) llevar(x); })) return;
     if (g('data-ay-util', v => {
@@ -397,7 +441,7 @@
     if (e.target.id !== 'ay-form') return;
     e.preventDefault(); const i = document.getElementById('ay-q'); const v = i.value; i.value = ''; preguntar(v);
   });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (document.getElementById('ay-foco')) quitarFoco(); else if (A.abierto) { A.abierto = false; pintar(); } } });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (document.getElementById('ay-foco')) quitarFoco(); else if (A.abierto && (A.hBorrar || A.hTodo)) { A.hBorrar = null; A.hTodo = false; pintar(); } else if (A.abierto) { A.abierto = false; pintar(); } } });
   addEventListener('resize', quitarFoco);
   // La burbuja aparece cuando el CRM ya cargó.
   const arrancar = () => { if (document.body) pintarFab(); else setTimeout(arrancar, 200); };
@@ -408,10 +452,17 @@
 
   document.head.insertAdjacentHTML('beforeend', `<style>
 .ay-fab{position:fixed;right:22px;bottom:22px;width:56px;height:56px;border-radius:50%;background:#FFD21F;color:#0b0b10;display:grid;place-items:center;box-shadow:0 8px 24px -6px rgba(11,11,16,.35);z-index:240;border:0;cursor:pointer;transition:transform .25s cubic-bezier(.16,1,.3,1)}
-.ay-fab:hover{transform:scale(1.05)}
+.ay-fab.abierta:hover{transform:scale(1.05)}
 .ay-fab svg{width:26px;height:26px;display:block;stroke-width:1.9}
-.ay-fab:not(.abierta){overflow:hidden}
-.ay-fab:not(.abierta) .ay-astro{width:44px;height:44px;margin-top:3px}
+.ay-fab:not(.abierta){width:64px;height:60px;border-radius:0;background:none;box-shadow:none;overflow:visible;filter:drop-shadow(0 10px 16px rgba(11,11,16,.22)) drop-shadow(0 2px 3px rgba(11,11,16,.12));animation:ay-flota 3.2s cubic-bezier(.45,0,.55,1) infinite;transition:transform .3s cubic-bezier(.16,1,.3,1),filter .3s cubic-bezier(.16,1,.3,1)}
+.ay-fab .ay-globo{position:absolute;inset:0;width:64px;height:60px}
+.ay-fab .ay-globo path{fill:#FFD21F;stroke:#e6b800;stroke-width:1}
+.ay-fab:not(.abierta) .ay-astro{position:absolute;left:8px;top:2px;width:48px;height:48px;transition:transform .3s cubic-bezier(.16,1,.3,1)}
+.ay-fab-hola{position:absolute;right:calc(100% + 12px);bottom:30px;background:#0b0b10;color:#fff;font-size:13px;font-weight:600;padding:7px 12px;border-radius:999px;white-space:nowrap;box-shadow:0 8px 20px -8px rgba(11,11,16,.5);opacity:0;transform:translateX(8px);pointer-events:none;transition:opacity .2s cubic-bezier(.16,1,.3,1),transform .3s cubic-bezier(.16,1,.3,1)}
+@media (hover:hover){.ay-fab:not(.abierta):hover{animation:none;transform:translateY(-3px);filter:drop-shadow(0 14px 22px rgba(11,11,16,.28)) drop-shadow(0 2px 3px rgba(11,11,16,.12))}
+.ay-fab:not(.abierta):hover .ay-astro{transform:rotate(-6deg)}
+.ay-fab:not(.abierta):hover .ay-fab-hola{opacity:1;transform:none}}
+@keyframes ay-flota{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
 .ay-fab.abierta{background:#fff;color:#dc2626;border:1px solid var(--line)}
 .ay-fab.abierta svg{width:22px;height:22px}
 .ay{position:fixed;right:22px;bottom:90px;z-index:241;width:380px;max-width:calc(100vw - 32px);height:min(620px,calc(100vh - 120px));background:#fff;border-radius:20px;border:1px solid var(--line);box-shadow:0 24px 60px -18px rgba(11,11,16,.35);display:flex;flex-direction:column;overflow:hidden;animation:ay-abrir .45s cubic-bezier(.16,1,.3,1) both;transform-origin:bottom right}
@@ -436,6 +487,37 @@
 .ay-hnueva{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border:1px solid var(--line);border-radius:9px;background:#fff;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
 .ay-hnueva svg{width:15px;height:15px}
 .ay-hl{display:grid;gap:6px}
+.ay-hl{grid-template-columns:minmax(0,1fr)}
+.ay-hi-w{position:relative;min-width:0}
+.ay-hi.ay-hconf{min-width:0;max-width:100%}
+.ay-hi-w .ay-hi{padding-right:50px}
+.ay-hbt{position:absolute;right:9px;top:50%;width:32px;height:32px;margin-top:-16px;border:0;border-radius:9px;background:var(--bg3);color:var(--ink3);display:grid;place-items:center;cursor:pointer;opacity:0;transform:scale(.85);transition:opacity .18s cubic-bezier(.16,1,.3,1),transform .25s cubic-bezier(.16,1,.3,1),background .15s,color .15s}
+.ay-hbt svg{width:16px;height:16px}
+.ay-hi-w:hover .ay-hbt,.ay-hbt:focus-visible{opacity:1;transform:none}
+.ay-hi-w:hover .ay-hi > svg:last-child{opacity:0}
+.ay-hbt:hover,.ay-hbt:focus-visible{background:#fee2e2;color:#dc2626}
+@media (hover:none){.ay-hbt{opacity:1;transform:none}.ay-hi-w .ay-hi > svg:last-child{display:none}}
+.ay-hi.ay-hconf{border-color:#fecaca;background:#fff5f5;gap:8px;min-height:54px;cursor:default;animation:ay-conf .28s cubic-bezier(.16,1,.3,1)}
+.ay-hconf > span{flex:1;min-width:0;font-size:13.5px;font-weight:600;color:#7f1d1d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@keyframes ay-conf{from{opacity:.4;transform:scale(.98)}to{opacity:1;transform:none}}
+.ay-hbb{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border:0;border-radius:9px;background:#dc2626;color:#fff;font:inherit;font-size:13px;font-weight:600;cursor:pointer;flex:none;transition:background .15s,transform .15s}
+.ay-hbb:hover{background:#b91c1c}.ay-hbb:active{transform:scale(.97)}
+.ay-hbb svg{width:15px;height:15px}
+.ay-hbx{width:34px;height:34px;border:1px solid #fecaca;border-radius:9px;background:#fff;color:#dc2626;display:grid;place-items:center;cursor:pointer;flex:none}
+.ay-hbx svg{width:15px;height:15px}
+.ay-htodo{align-self:flex-start;margin-top:4px;border:0;background:none;padding:6px 2px;font:inherit;font-size:13px;font-weight:600;color:#b91c1c;cursor:pointer}
+.ay-htodo:hover{text-decoration:underline}
+.ay-htconf{margin-top:8px;padding:12px 14px;border:1px solid #fecaca;border-radius:12px;background:#fff5f5;display:grid;gap:2px;animation:ay-conf .28s cubic-bezier(.16,1,.3,1)}
+.ay-htconf b{font-size:13.5px;color:#7f1d1d}.ay-htconf > span{font-size:12.5px;color:#991b1b}
+.ay-htconf div{display:flex;gap:8px;margin-top:8px}
+.ay-toast{position:absolute;left:50%;bottom:86px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:9px 10px 9px 14px;border-radius:12px;background:#0b0b10;color:#fff;font-size:13px;white-space:nowrap;box-shadow:0 12px 30px -10px rgba(11,11,16,.5);z-index:5;animation:ay-toast .42s cubic-bezier(.16,1,.3,1)}
+.ay-toast.sale{animation:ay-toast-sale .22s cubic-bezier(.23,1,.32,1) forwards}
+.ay-toast button{border:0;background:none;color:#FFD21F;font:inherit;font-weight:600;padding:2px 6px;cursor:pointer;border-radius:6px}
+.ay-toast button:hover{background:rgba(255,210,31,.12)}
+.ay-ok{width:16px;height:16px;fill:none;stroke:#4ade80;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:24;stroke-dashoffset:24;animation:ay-check .45s cubic-bezier(.16,1,.3,1) .12s forwards}
+@keyframes ay-toast{from{opacity:0;transform:translate(-50%,14px) scale(.96)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes ay-toast-sale{to{opacity:0;transform:translate(-50%,8px) scale(.98)}}
+@keyframes ay-check{to{stroke-dashoffset:0}}
 .ay-hi,.ay-sigue{display:flex!important;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;font:inherit;font-size:13.5px;font-weight:500;color:var(--ink);text-align:left;cursor:pointer;width:100%}
 .ay-hi:hover,.ay-sigue:hover{border-color:#0b0b10}
 .ay-hi.on{border-color:#0b0b10;box-shadow:inset 0 0 0 1px #0b0b10}
@@ -513,7 +595,7 @@
 .ay-tip{position:fixed;width:260px;padding:14px;border-radius:14px;background:#fff;box-shadow:0 18px 40px -12px rgba(11,11,16,.4);display:grid;gap:4px}
 .ay-tip b{font-size:14px}
 .ay-tip small{font-size:12.5px;color:var(--ink3)}
-@media (prefers-reduced-motion:reduce){.ay,.ay-escr i,.ay-hueco,.ay-astro .ojos,.ay-astro .antena{animation:none}}
+@media (prefers-reduced-motion:reduce){.ay-fab:not(.abierta),.ay-fab-hola,.ay-toast,.ay-hconf,.ay-htconf,.ay-hbt,.ay-ok,.ay-escr i,.ay-hueco,.ay-astro .ojos,.ay-astro .antena{animation:none}.ay-ok{stroke-dashoffset:0}}
 @media (max-width:760px){.ay-fab{right:16px;bottom:84px}.ay{right:16px;bottom:150px;height:min(560px,calc(100vh - 180px))}}
 </style>`);
 })();
