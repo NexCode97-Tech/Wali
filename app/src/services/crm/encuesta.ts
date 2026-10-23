@@ -62,7 +62,23 @@ export interface CfgEncuesta {
   comentario: boolean
   /** «Mensaje de gracias» (vacío = no se manda). */
   gracias: string
+  /** «Texto del botón» del mensaje de invitación (flow_cta). */
+  boton: string
+  /** «Título del formulario». */
+  titulo: string
+  /** Las preguntas del formulario, en orden (maqueta aprobada «EncuestaEquipo»): de 1 a 8. */
+  preguntas: PreguntaEncuesta[]
 }
+
+/** Calificación de 1 a 5, recomendación de 0 a 10, opción única, sí o no, o respuesta libre. */
+export type TipoPregunta = 'estrellas' | 'nps' | 'opcion' | 'sino' | 'libre'
+export interface PreguntaEncuesta { t: TipoPregunta; txt: string; oblig: boolean; ops: string[] }
+export const TIPOS_PREGUNTA: TipoPregunta[] = ['estrellas', 'nps', 'opcion', 'sino', 'libre']
+/** Lugar del formulario de WhatsApp: 8 preguntas (cada una usa 4 componentes de los 50 por pantalla). */
+export const MAX_PREGUNTAS = 8
+/** Las opciones de una pregunta de opción única: de 2 a 20 (límite de Meta), de hasta 30 letras cada una. */
+export const MAX_OPCIONES = 20
+export const TOPE_OPCION = 30
 
 export const ENCUESTA_DEFECTO: CfgEncuesta = {
   on: true,
@@ -73,9 +89,38 @@ export const ENCUESTA_DEFECTO: CfgEncuesta = {
   p2: 'Del 0 al 10, ¿qué tan probable es que recomiendes {{empresa}} a un amigo?',
   comentario: true,
   gracias: '¡Gracias por responder, {{nombre}}! Nos ayuda a mejorar.',
+  boton: 'Responder encuesta',
+  titulo: 'Encuesta de atención',
+  preguntas: [],
 }
 /** Topes de cada texto (los mismos `maxlength` de Ajustes). */
-export const TOPES_ENCUESTA = { msg: 600, p1: 30, p2: 200, gracias: 300 } as const
+export const TOPES_ENCUESTA = { msg: 600, p1: 30, p2: 200, gracias: 300, boton: 20, titulo: 80, pregunta: 200 } as const
+
+/** Las preguntas de antes (atención, recomendación y el comentario opcional), para lo guardado sin `preguntas`. */
+function preguntasDeAntes(p1: string, p2: string, comentario: boolean): PreguntaEncuesta[] {
+  return [
+    { t: 'estrellas', txt: p1, oblig: true, ops: [] },
+    { t: 'nps', txt: p2, oblig: true, ops: [] },
+    ...(comentario ? [{ t: 'libre' as const, txt: '¿Quieres contarnos algo más?', oblig: false, ops: [] }] : []),
+  ]
+}
+
+function normalizarPreguntas(v: unknown): PreguntaEncuesta[] {
+  if (!Array.isArray(v)) return []
+  const out: PreguntaEncuesta[] = []
+  for (const x of v) {
+    const p = obj(x)
+    const t = TIPOS_PREGUNTA.includes(p.t as TipoPregunta) ? p.t as TipoPregunta : null
+    const texto = limpiarTexto(p.txt, TOPES_ENCUESTA.pregunta)
+    if (!t || !texto) continue
+    const ops = t === 'opcion' && Array.isArray(p.ops)
+      ? [...new Set(p.ops.map(o => limpiarTexto(o, TOPE_OPCION)).filter(Boolean))].slice(0, MAX_OPCIONES) : []
+    if (t === 'opcion' && ops.length < 2) continue
+    out.push({ t, txt: texto, oblig: p.oblig !== false, ops })
+    if (out.length === MAX_PREGUNTAS) break
+  }
+  return out
+}
 
 /** Sin caracteres de control (menos los saltos de línea), con los saltos normalizados y sin espacios a los lados. */
 function limpiarTexto(v: unknown, max: number): string {
@@ -102,12 +147,31 @@ export function normalizarEncuesta(valor: unknown, espacioId: string): CfgEncues
     comentario: v.comentario !== false,
     // Sin clave: el defecto. Vacío a propósito: no se manda gracias.
     gracias: v.gracias === undefined || v.gracias === null ? ENCUESTA_DEFECTO.gracias : limpiarTexto(v.gracias, TOPES_ENCUESTA.gracias),
+    boton: limpiarTexto(v.boton, TOPES_ENCUESTA.boton) || ENCUESTA_DEFECTO.boton,
+    titulo: limpiarTexto(v.titulo, TOPES_ENCUESTA.titulo) || ENCUESTA_DEFECTO.titulo,
+    preguntas: (() => { const p = normalizarPreguntas(v.preguntas); return p.length ? p : preguntasDeAntes(texto('p1', true), p2, v.comentario !== false) })(),
   }
 }
 
-/** La configuración de la encuesta del espacio actual, normalizada. */
+/** La configuración de la encuesta del espacio actual (la general, de antes de las encuestas por equipo), normalizada. */
 export async function cfgEncuesta(): Promise<CfgEncuesta> {
   return normalizarEncuesta(obj(await leerAjuste('cfg')).encuesta, espacioActual())
+}
+
+/**
+ * La encuesta de cada equipo (cfg.encuestas, por nombre del equipo). Un equipo sin la suya usa una copia de la de antes
+ * (cfg.encuesta), encendida igual: así nada deja de salir el día que llegan las encuestas por equipo.
+ */
+export async function cfgEncuestas(): Promise<Record<string, CfgEncuesta>> {
+  const cfg = obj(await leerAjuste('cfg'))
+  const por = obj(cfg.encuestas), espacio = espacioActual()
+  const out: Record<string, CfgEncuesta> = {}
+  for (const eq of Object.keys((await leerEquipos()).miembros)) out[eq] = normalizarEncuesta(por[eq] ?? cfg.encuesta, espacio)
+  return out
+}
+export async function cfgEncuestaDe(equipo: string): Promise<CfgEncuesta> {
+  const cfg = obj(await leerAjuste('cfg'))
+  return normalizarEncuesta(obj(cfg.encuestas)[equipo] ?? cfg.encuesta, espacioActual())
 }
 
 // ─── Variables: {{nombre}}, {{asesor}}, {{empresa}} ─────────────────────────
@@ -162,83 +226,91 @@ export function preguntaAsesor(p1: string, vars: VariablesEncuesta): string {
 // ─── El formulario (Flow JSON) ───────────────────────────────────────────────
 
 /** Sube con cada cambio del formulario: el nombre en Meta lleva la versión. */
-export const VERSION_FORMULARIO = 1
+export const VERSION_FORMULARIO = 2
 export const NOMBRE_FORMULARIO = `encuesta_al_finalizar_v${VERSION_FORMULARIO}`
 export const BOTON_FORMULARIO = 'Responder encuesta'
 const PANTALLA = 'ENCUESTA'
 
+const ESTRELLAS = [
+  { id: '5', title: '⭐⭐⭐⭐⭐ Excelente' }, { id: '4', title: '⭐⭐⭐⭐ Buena' }, { id: '3', title: '⭐⭐⭐ Regular' },
+  { id: '2', title: '⭐⭐ Mala' }, { id: '1', title: '⭐ Muy mala' },
+]
+const SI_NO = [{ id: 'si', title: 'Sí' }, { id: 'no', title: 'No' }]
+const DE_0_A_10 = [
+  { id: '10', title: '10 · Muy probable' },
+  ...[9, 8, 7, 6, 5, 4, 3, 2, 1].map(n => ({ id: String(n), title: String(n) })),
+  { id: '0', title: '0 · Nada probable' },
+]
+const OPCIONES_SCHEMA = { type: 'array', items: { type: 'object', properties: { id: { type: 'string' }, title: { type: 'string' } } } }
+
 /**
- * Tablero 1 de la maqueta: título «Encuesta de atención», la pregunta del asesor con las 5 calificaciones, la
- * recomendación de 0 a 10 en un desplegable «Elige de 0 a 10», el comentario opcional y «Enviar». WhatsApp dibuja los
- * campos con su estilo; aquí se controlan el orden, los textos y el tipo de cada campo. Flow JSON 7.3, una pantalla, sin
- * Form (opcional desde la 4.0) y sin endpoint: el Footer hace `complete` y su payload llega en el webhook (nfm_reply).
+ * Tablero «Formulario» de la maqueta EncuestaEquipo: el título y hasta 8 preguntas en una pantalla. Cada pregunta tiene
+ * cuatro lugares fijos (el texto en negrilla, una lista de opciones, el desplegable de 0 a 10 y el campo libre) y al
+ * enviar se dice cuál se ve, si es obligatoria y qué opciones lleva (texto, `visible`, `required` y `data-source` aceptan
+ * datos del mensaje según la referencia de componentes de Meta). Así agregar, quitar u ordenar preguntas no cambia el
+ * formulario publicado ni pasa por revisión. Flow JSON 7.3, sin endpoint: el Footer hace `complete` y su payload llega
+ * en el webhook (nfm_reply) con r1…r8 (opciones), d1…d8 (0 a 10) y t1…t8 (texto).
  */
+const lugares = Array.from({ length: MAX_PREGUNTAS }, (_, k) => k + 1)
 export const FORMULARIO_JSON = {
   version: '7.3',
   screens: [
     {
       id: PANTALLA,
-      title: 'Encuesta de atención',
+      title: 'Encuesta',
       terminal: true,
       success: true,
       data: {
-        pregunta_asesor: { type: 'string', __example__: '¿Cómo te atendió Laura?' },
-        pregunta_recomienda: { type: 'string', __example__: 'Del 0 al 10, ¿qué tan probable es que nos recomiendes a un amigo?' },
-        pedir_comentario: { type: 'boolean', __example__: true },
+        titulo: { type: 'string', __example__: 'Encuesta de atención' },
+        ...Object.fromEntries(lugares.flatMap(i => [
+          [`q${i}`, { type: 'string', __example__: '¿Cómo te atendió Laura?' }],
+          [`o${i}`, { ...OPCIONES_SCHEMA, __example__: ESTRELLAS }],
+          ...['vq', 'vr', 'vd', 'vt', 'rr', 'rd', 'rt'].map(k => [`${k}${i}`, { type: 'boolean', __example__: k === 'vq' || k === 'vr' }]),
+        ])),
       },
       layout: {
         type: 'SingleColumnLayout',
         children: [
-          {
-            type: 'RadioButtonsGroup',
-            name: 'atencion',
-            label: '${data.pregunta_asesor}',
-            required: true,
-            'data-source': [
-              { id: '5', title: '⭐⭐⭐⭐⭐ Excelente' },
-              { id: '4', title: '⭐⭐⭐⭐ Buena' },
-              { id: '3', title: '⭐⭐⭐ Regular' },
-              { id: '2', title: '⭐⭐ Mala' },
-              { id: '1', title: '⭐ Muy mala' },
-            ],
-          },
-          // Las preguntas que no son el label de un campo van en negrilla (font-weight de TextBody, documentado): en el
-          // tablero 1 las tres preguntas tienen el mismo peso, y WhatsApp dibuja el label del RadioButtonsGroup como rótulo.
-          { type: 'TextBody', text: '${data.pregunta_recomienda}', 'font-weight': 'bold' },
-          {
-            type: 'Dropdown',
-            name: 'recomienda',
-            label: 'Elige de 0 a 10',
-            required: true,
-            'data-source': [
-              { id: '10', title: '10 · Muy probable' },
-              ...[9, 8, 7, 6, 5, 4, 3, 2, 1].map(n => ({ id: String(n), title: String(n) })),
-              { id: '0', title: '0 · Nada probable' },
-            ],
-          },
-          { type: 'TextBody', text: '¿Quieres contarnos algo más?', 'font-weight': 'bold', visible: '${data.pedir_comentario}' },
-          {
-            type: 'TextArea',
-            name: 'comentario',
-            label: 'Tu comentario',
-            'helper-text': 'Opcional',
-            required: false,
-            'max-length': 600,
-            visible: '${data.pedir_comentario}',
-          },
+          { type: 'TextHeading', text: '${data.titulo}' },
+          ...lugares.flatMap(i => [
+            { type: 'TextBody', text: `\${data.q${i}}`, 'font-weight': 'bold', visible: `\${data.vq${i}}` },
+            { type: 'RadioButtonsGroup', name: `r${i}`, label: 'Elige una opción', 'data-source': `\${data.o${i}}`, required: `\${data.rr${i}}`, visible: `\${data.vr${i}}` },
+            { type: 'Dropdown', name: `d${i}`, label: 'Elige de 0 a 10', 'data-source': DE_0_A_10, required: `\${data.rd${i}}`, visible: `\${data.vd${i}}` },
+            { type: 'TextArea', name: `t${i}`, label: 'Tu respuesta', 'max-length': 600, required: `\${data.rt${i}}`, visible: `\${data.vt${i}}` },
+          ]),
           {
             type: 'Footer',
             label: 'Enviar',
             'on-click-action': {
               name: 'complete',
-              payload: { atencion: '${form.atencion}', recomienda: '${form.recomienda}', comentario: '${form.comentario}' },
+              payload: Object.fromEntries(lugares.flatMap(i => [[`r${i}`, `\${form.r${i}}`], [`d${i}`, `\${form.d${i}}`], [`t${i}`, `\${form.t${i}}`]])),
             },
           },
         ],
       },
     },
   ],
-} as const
+}
+
+/** Las preguntas, con las variables puestas, como van en el mensaje y como se guardan en el envío (para leer la respuesta). */
+export function preguntasDeEnvio(cfg: CfgEncuesta, vars: VariablesEncuesta): PreguntaEncuesta[] {
+  return cfg.preguntas.slice(0, MAX_PREGUNTAS).map(p => ({ ...p, txt: rellenar(p.txt, vars).slice(0, TOPES_ENCUESTA.pregunta) }))
+}
+/** Los datos del mensaje: qué se ve en cada lugar, si es obligatorio y sus opciones. */
+export function datosFormulario(titulo: string, ps: PreguntaEncuesta[]): Json {
+  const d: Json = { titulo: titulo.slice(0, TOPES_ENCUESTA.titulo) || ENCUESTA_DEFECTO.titulo }
+  for (const i of lugares) {
+    const p = ps[i - 1]
+    const lista = p?.t === 'estrellas' || p?.t === 'opcion' || p?.t === 'sino'
+    d[`q${i}`] = p?.txt || '—'
+    d[`o${i}`] = p?.t === 'estrellas' ? ESTRELLAS : p?.t === 'sino' ? SI_NO : p?.t === 'opcion' ? p.ops.map((t, k) => ({ id: String(k + 1), title: t })) : SI_NO
+    d[`vq${i}`] = !!p
+    d[`vr${i}`] = lista; d[`rr${i}`] = lista && p!.oblig
+    d[`vd${i}`] = p?.t === 'nps'; d[`rd${i}`] = p?.t === 'nps' && p.oblig
+    d[`vt${i}`] = p?.t === 'libre'; d[`rt${i}`] = p?.t === 'libre' && p.oblig
+  }
+  return d
+}
 
 // ─── Formularios por cuenta de WhatsApp (crm_ajustes `_encuestaFormularios`) ─
 
@@ -630,7 +702,7 @@ async function soltarReserva(contactoId: number, token: string, previa: string |
   }
 }
 
-interface DatosEnvio { linea: CrmLinea; destino: { to: string } | { recipient: string }; flowId: string; token: string; cuerpo: string; data: Json }
+interface DatosEnvio { linea: CrmLinea; destino: { to: string } | { recipient: string }; flowId: string; token: string; cuerpo: string; boton: string; data: Json }
 
 /** El mensaje interactivo de tipo flow: solo cuerpo y el botón «Responder encuesta» (tablero 1, sin header ni footer). */
 async function mandarFormulario(d: DatosEnvio): Promise<{ wamid: string; waIdCliente: string | null }> {
@@ -649,7 +721,7 @@ async function mandarFormulario(d: DatosEnvio): Promise<{ wamid: string; waIdCli
             flow_message_version: '3',
             flow_token: d.token,
             flow_id: d.flowId,
-            flow_cta: BOTON_FORMULARIO,
+            flow_cta: d.boton || BOTON_FORMULARIO,
             flow_action: 'navigate',
             mode: 'published',
             flow_action_payload: { screen: PANTALLA, data: d.data },
@@ -680,7 +752,7 @@ export async function enviarEncuesta(convId: number, autorId: string | null, cid
   await migrarUltimas().catch(e => logger.warn(`[CRM encuesta] migración de encuestas de antes: ${(e as Error)?.message ?? e}`))
   const c = await prisma.crmConversacion.findUnique({ where: { id: convId }, include: { contacto: true, linea: true } })
   if (!c) throw new AppError('Esa conversación ya no existe. Recarga la bandeja.', 404)
-  const cfg = await cfgEncuesta()
+  const cfg = await cfgEncuestaDe(equipoDeConv(c))
   const usuarios = await usuariosCrm()
   const asesor = c.asignadoId ? usuarios.find(u => u.id === c.asignadoId)?.nombre ?? null : null
   const ahora = new Date()
@@ -720,18 +792,17 @@ async function salir(ev: CrmMensaje, c: ConvEncuesta, cfg: CfgEncuesta, token: s
   const datos = obj(ev.datos)
   // 1. Lo de Meta: el formulario y el mensaje. Si algo falla aquí, no salió: se suelta la reserva y el evento lo dice.
   let enviado: { wamid: string; waIdCliente: string | null; flowId: string }
+  // Las preguntas que salieron, con sus textos: la respuesta se lee con ellas aunque después se cambie la encuesta.
+  let preguntas: PreguntaEncuesta[] = []
   try {
     let reg = await asegurarFormulario(linea.wabaId)
     if (reg.estado !== 'listo' || !reg.id) throw new ErrorEncuesta(`el formulario no está listo en WhatsApp (${reg.error ?? 'Meta no lo aceptó'})`)
     const vars = await variablesDe(c.contacto.nombre, asesor)
+    preguntas = preguntasDeEnvio(cfg, vars)
     const envio = (flowId: string): DatosEnvio => ({
       linea, destino: destinoWa(c.contacto), flowId, token,
-      cuerpo: rellenar(cfg.msg, vars).slice(0, 1024),
-      data: {
-        pregunta_asesor: preguntaAsesor(cfg.p1, vars),
-        pregunta_recomienda: rellenar(cfg.p2, vars).slice(0, 300),
-        pedir_comentario: cfg.comentario,
-      },
+      cuerpo: rellenar(cfg.msg, vars).slice(0, 1024), boton: cfg.boton,
+      data: datosFormulario(rellenar(cfg.titulo, vars), preguntas),
     })
     // La primera vez por cuenta, preparar el formulario puede tardar: la ventana de 24 h se mira otra vez justo antes de
     // mandar, para no intentar nunca con la ventana cerrada.
@@ -766,7 +837,7 @@ async function salir(ev: CrmMensaje, c: ConvEncuesta, cfg: CfgEncuesta, token: s
   // 2. Meta lo aceptó: al cliente ya le llegó. Desde aquí nada suelta la reserva ni dice «no salió»; si la base falla,
   // se reintenta y, si no, queda en el registro.
   const { wamid, waIdCliente, flowId } = enviado
-  const enc = { ...obj(datos.encuesta), flowId }
+  const enc = { ...obj(datos.encuesta), flowId, preguntas }
   const f = await conReintento(`guardar el envío ${wamid} en el evento ${ev.id}`, () =>
     prisma.crmMensaje.update({ where: { id: ev.id }, data: { waId: wamid, estado: 'enviado', error: null, datos: json({ ...datos, encuesta: enc }) } }))
   await conReintento(`confirmar la reserva del contacto ${c.contactoId}`, () => confirmarReserva(c.contactoId, token))
@@ -913,6 +984,26 @@ function comentarioLimpio(v: unknown): string {
 interface Avisados { personas: { id: string; nombre: string }[]; equipo: string | null }
 
 /**
+ * Las respuestas del formulario v2 con las preguntas que salieron. La atención es la primera de 1 a 5 y la
+ * recomendación la primera de 0 a 10 (alimentan Informes); el comentario, la primera respuesta libre.
+ */
+function leerRespuestas(ps: PreguntaEncuesta[], r: Json) {
+  const respuestas: { p: string; t: TipoPregunta; v: string | number }[] = []
+  let aten: number | null = null, nps: number | null = null, com = ''
+  ps.slice(0, MAX_PREGUNTAS).forEach((p, k) => {
+    const i = k + 1
+    let v: string | number | null = null
+    if (p.t === 'estrellas') { v = entero(r[`r${i}`], 1, 5); if (v !== null && aten === null) aten = v }
+    else if (p.t === 'nps') { v = entero(r[`d${i}`], 0, 10); if (v !== null && nps === null) nps = v }
+    else if (p.t === 'sino') { const x = txt(r[`r${i}`]); v = x === 'si' ? 'Sí' : x === 'no' ? 'No' : null }
+    else if (p.t === 'opcion') { const n = entero(r[`r${i}`], 1, MAX_OPCIONES); v = n !== null ? p.ops[n - 1] ?? null : null }
+    else { const t = comentarioLimpio(r[`t${i}`]); v = t || null; if (t && !com) com = t }
+    if (v !== null) respuestas.push({ p: limpiarTexto(p.txt, TOPES_ENCUESTA.pregunta), t: p.t, v })
+  })
+  return { aten, nps, com, respuestas }
+}
+
+/**
  * A quién se avisa una calificación baja: los líderes del equipo de la encuesta que ven hoy la conversación (si pasó a
  * otro equipo, el líder de antes ya no la abre ni la ve en Informes); si no queda ninguno, los administradores sin
  * equipo (no el visitante), que ven todo. Al asesor calificado no se le avisa por ser el asesor (sí si es el líder).
@@ -962,24 +1053,30 @@ export async function respuestaFormulario(linea: CrmLinea, m: MensajeFormulario,
   // context.id es el wamid del mensaje que abrió el formulario. No se exige (si Meta lo escribiera distinto se perderían
   // respuestas buenas), pero queda en el registro.
   if (m.context?.id && ev.waId && m.context.id !== ev.waId) logger.warn(`[CRM encuesta] respuesta ${m.id}: context.id ${m.context.id} no es el wamid ${ev.waId} de la encuesta`)
-  const aten = entero(r.atencion, 1, 5)
-  const nps = entero(r.recomienda, 0, 10)
-  if (aten === null || nps === null) {
+  const enc0 = obj(obj(ev.datos).encuesta)
+  // Las de antes (formulario v1) traen atencion, recomienda y comentario; las de ahora, una respuesta por pregunta.
+  const leidas = Array.isArray(enc0.preguntas) ? leerRespuestas(enc0.preguntas as PreguntaEncuesta[], r) : null
+  const aten = leidas ? leidas.aten : entero(r.atencion, 1, 5)
+  const nps = leidas ? leidas.nps : entero(r.recomienda, 0, 10)
+  if (!leidas && (aten === null || nps === null)) {
     logger.warn(`[CRM encuesta] respuesta ${m.id} con datos que no valen (atención ${String(r.atencion)}, recomienda ${String(r.recomienda)}): se ignora`)
     return true
   }
-  const com = comentarioLimpio(r.comentario)
-  const enc0 = obj(obj(ev.datos).encuesta)
+  if (leidas && !leidas.respuestas.length) {
+    logger.warn(`[CRM encuesta] respuesta ${m.id} sin ninguna respuesta que valga: se ignora`)
+    return true
+  }
+  const com = leidas ? leidas.com : comentarioLimpio(r.comentario)
   if (enc0.respondida) { logger.info(`[CRM encuesta] la encuesta ${ev.id} ya tenía respuesta: se ignora ${m.id}`); return true }
 
-  const cfg = await cfgEncuesta()
   const equipo = txt(enc0.equipo) || equipoDeConv(ev.conversacion)
+  const cfg = await cfgEncuestaDe(equipo)
   const asesorId = txt(enc0.asesorId) || null
   const asesor = txt(enc0.asesor) || null
-  const aviso: Avisados = aten <= 2 && cfg.aviso ? await destinatarios(equipo, asesorId, ev.conversacion) : { personas: [], equipo: null }
+  const aviso: Avisados = aten !== null && aten <= 2 && cfg.aviso ? await destinatarios(equipo, asesorId, ev.conversacion) : { personas: [], equipo: null }
   const csatDatos = {
     csat: {
-      asesor, asesorId, equipo, aten, nps, com, enc: ev.id, token, baja: aten <= 2,
+      asesor, asesorId, equipo, aten, nps, com, enc: ev.id, token, baja: aten !== null && aten <= 2, ...(leidas ? { respuestas: leidas.respuestas } : {}),
       avisados: aviso.personas.map(p => p.nombre), avisoEquipo: aviso.personas.length ? aviso.equipo : null, via: 'formulario',
     },
   }
@@ -1016,7 +1113,7 @@ export async function respuestaFormulario(linea: CrmLinea, m: MensajeFormulario,
   logger.info(`[CRM encuesta] respuesta de la conversación ${hecho.convId}: atención ${aten}, recomienda ${nps}`)
 
   // Calificación baja: a la campana de cada líder (o administrador sin equipo), con el enlace a la conversación.
-  if (aviso.personas.length) {
+  if (aviso.personas.length && aten !== null) {
     const k = ev.conversacion.contacto
     const quien = txt(k.nombre) || telVisible(k.telefono) || 'Un contacto'
     const texto = `Calificación baja: ${quien} le dio ${aten} de 5 a la atención de ${asesor || 'su asesor'}.`

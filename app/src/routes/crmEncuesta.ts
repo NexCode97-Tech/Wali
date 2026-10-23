@@ -6,7 +6,7 @@ import { logger } from '../utils/logger'
 import { convVisible, exigirEscritura, idNum, obj, txt } from '../controllers/crm/_comun'
 import { alcanceDe, equiposDeReq } from '../services/crm/alcance'
 import { msgAFront } from '../services/crm/formas'
-import { cfgEncuesta, contarEncuestaDeTexto, enviarEncuesta, formulariosPorLinea, informeEncuestas, migrarUltimas, prepararFormulariosEn, type FiltrosInforme } from '../services/crm/encuesta'
+import { cfgEncuesta, cfgEncuestas, contarEncuestaDeTexto, enviarEncuesta, formulariosPorLinea, informeEncuestas, migrarUltimas, prepararFormulariosEn, type FiltrosInforme } from '../services/crm/encuesta'
 
 /**
  * Encuesta al finalizar (lote 6), dentro del router del CRM (sesión, acceso y espacio): crm.ts hace
@@ -33,8 +33,8 @@ rutasEncuestaCrm.get('/inicio', (_req: Request, _res: Response, next: NextFuncti
 
 rutasEncuestaCrm.get('/encuesta', asyncHandler(async (_req: Request, res: Response) => {
   await migrarUltimas().catch(e => logger.warn(`[CRM encuesta] migración de encuestas de antes: ${(e as Error)?.message ?? e}`))
-  const [cfg, formularios] = await Promise.all([cfgEncuesta(), formulariosPorLinea()])
-  return ApiResponse.success(res, { cfg, formularios })
+  const [cfg, equipos, formularios] = await Promise.all([cfgEncuesta(), cfgEncuestas(), formulariosPorLinea()])
+  return ApiResponse.success(res, { cfg, equipos, formularios })
 }))
 
 const DIAS_INFORME = [7, 30, 90]
