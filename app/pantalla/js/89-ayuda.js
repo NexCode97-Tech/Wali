@@ -182,9 +182,13 @@
     const r = buscar(`${g.t} ${(g.q || []).join(' ')}`).lista.filter(x => x.g.id !== g.id && x.g.a === g.a).slice(0, 2);
     return r.length ? `<div class="ay-rel"><small>También te puede servir</small>${r.map(x => `<button type="button" data-ay-guia="${x.g.id}">${esc(x.g.t)}${IC.chev}</button>`).join('')}</div>` : '';
   }
+  // Una persona no responde con la guía a secas: abre con una frase corta. Se elige por la guía, así no cambia al repintar.
+  const unaDe = (lista, semilla) => { let h = 0; for (const ch of String(semilla)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return lista[h % lista.length]; };
+  const ABRE_SEGURO = ['Claro, así se hace:', 'Te cuento cómo:', 'Fácil, mira:', 'Va, son estos pasos:', 'Así lo haces:', 'Listo, te explico:'];
+  const ABRE_DUDA = ['Creo que te refieres a esto:', 'Si te entendí bien, es esto:', 'Me parece que buscas esto:'];
   function tarjeta(g, entendido, otras){
     A.ultima = g;
-    return `<div class="ay-msj bot"><span class="ay-iso pq">${ISO}</span><div class="ay-msj-c">
+    return `<div class="ay-msj bot"><span class="ay-iso pq">${ISO}</span><div class="ay-msj-c"><p>${unaDe(entendido ? ABRE_SEGURO : ABRE_DUDA, g.id)}</p>
       <div class="ay-guia"><b>${esc(g.t)}</b><ol>${pasosHTML(g.p)}</ol>${g.ir ? `<button type="button" class="btn pri" data-ay-ir="${g.id}">Llevarme ahí${IC.flecha}</button>` : ''}</div>
       <div class="ay-util" data-ay-utilde="${g.id}"><span>¿Te sirvió?</span><button type="button" data-ay-util="${g.id}|1">${IC.si}Sí</button><button type="button" data-ay-util="${g.id}|0">${IC.no}No</button></div>
       ${otras && otras.length ? `<div class="ay-rel"><small>¿O buscabas…?</small>${otras.map(o => `<button type="button" data-ay-guia="${o.id}">${esc(o.t)}${IC.chev}</button>`).join('')}</div>` : relacionadas(g)}</div></div>`;
@@ -196,7 +200,7 @@
   }
   function noEntendio(q, r){
     const ops = r.lista.slice(0, 3);
-    return `<div class="ay-msj bot"><span class="ay-iso pq">${ISO}</span><div class="ay-msj-c"><p>${ops.length ? 'No estoy seguro de qué buscas. ¿Es alguna de estas?' : 'No encontré nada sobre eso.'}</p>
+    return `<div class="ay-msj bot"><span class="ay-iso pq">${ISO}</span><div class="ay-msj-c"><p>${ops.length ? unaDe(['Mmm, no estoy seguro de haberte entendido. ¿Es alguna de estas?', 'No sé si te entendí bien. ¿Buscabas alguna de estas?'], q) : unaDe(['Uy, de eso todavía no tengo una guía.', 'Mmm, eso no lo tengo en mis guías todavía.'], q)}</p>
       ${ops.length ? `<div class="ay-sug">${ops.map(x => `<button type="button" data-ay-guia="${x.g.id}">${esc(x.g.t)}${IC.chev}</button>`).join('')}</div>` : ''}${soporteHTML(q)}</div></div>`;
   }
   function inicio(){
@@ -280,27 +284,27 @@
   const ADIOS = /^(chao|adios|hasta luego|nos vemos|bye)(?![a-z])/;
   function conversar(q){
     const t = norm(q), nombre = String((typeof yo === 'string' && yo) || '').trim().split(/\s+/)[0];
-    const bot = (txt, extra = '') => `<div class="ay-msj bot"><span class="ay-iso pq">${ISO}</span><div class="ay-msj-c"><p>${txt}</p>${extra}</div></div>`;
+    const bot = (txt, extra = '') => { if (Array.isArray(txt)) txt = unaDe(txt, t + A.items.length); return `<div class="ay-msj bot"><span class="ay-iso pq">${ISO}</span><div class="ay-msj-c"><p>${txt}</p>${extra}</div></div>`; };
     const sugs = () => { const pag = paginaActual(), ids = (SUG[pag] || ['primeros-pasos', 'conectar-wa', 'invitar']); const gs = ids.map(guia).filter(g => g && permitida(g)); return gs.length ? `<div class="ay-sug">${gs.map(g => `<button type="button" data-ay-guia="${g.id}">${esc(g.t)}${IC.chev}</button>`).join('')}</div>` : ''; };
     const resto = t.replace(SALUDO, '').replace(/^\s*(como (estas|vas|va todo)|que tal)\s*/, '').trim();
     if (SALUDO.test(t) && !palabras(resto).length) return bot(`¡Hola${nombre ? ', ' + esc(nombre) : ''}! 👋 Cuéntame qué quieres hacer en Wali y te digo cómo. Por ejemplo:`, sugs());
-    if (GRACIAS.test(t) && palabras(t.replace(GRACIAS, '')).length === 0) return bot('¡Con gusto! Si necesitas algo más, aquí estoy.');
-    if (QUIEN.test(t)) return bot('Soy la ayuda de Wali: respondo al instante con las guías del CRM. No soy una persona; si no encuentro lo que buscas, te paso con el equipo de soporte.');
-    if (ADIOS.test(t)) return bot('¡Hasta luego! Cuando me necesites, toca la burbuja amarilla.');
+    if (GRACIAS.test(t) && palabras(t.replace(GRACIAS, '')).length === 0) return bot(['¡Con gusto! Aquí estoy si necesitas algo más.', '¡De nada! Cualquier cosa me escribes.', 'Con mucho gusto 😊 ¿Algo más?']);
+    if (QUIEN.test(t)) return bot('Soy el asistente de Wali. Te explico cómo hacer las cosas en el CRM y te llevo a la pantalla. No soy una persona, pero si algo se me escapa te paso con el equipo de soporte.');
+    if (ADIOS.test(t)) return bot(['¡Hasta luego! Aquí estaré cuando me necesites.', '¡Chao! Que te vaya muy bien.', '¡Nos vemos! Cualquier cosa, toca la burbuja amarilla.']);
     // Más charla: lo que la gente escribe y no es una guía.
     // Anuncia una pregunta sin decirla todavía («tengo otra duda», «una pregunta»): se le pide que la cuente.
-    if (/^(hola )?(tengo|tendria|me (surgio|quedo)|quiero hacer(te)?|te (hago|tengo)|una|otra|ultima) ?(otra|una|mas de una|varias|unas|la ultima)? ?(duda|dudas|pregunta|preguntas|consulta|consultas|inquietud|cosa|cosita)( mas)?( para ti)?$|^(puedo|te puedo|quiero) (hacer(te)?|preguntar(te)?)( una| otra)?( pregunta| cosa| algo)?$|^(necesito|quiero) (ayuda|preguntar(te)? algo|saber algo)$|^otra cosa$/.test(t)) return bot('¡Claro! Cuéntame tu duda con tus palabras y te digo cómo hacerlo.');
-    if (/^(si|no|ok|okey|okay|vale|dale|listo|bueno|bien|perfecto|entendido|ya|aja|claro|de una|super|genial)( gracias)?$/.test(t)) return bot('Listo. ¿Hay algo más en lo que te ayude?', sugs());
-    if (/(que (puedes|sabes) hacer|en que (me )?(ayudas|puedes ayudar)|para que sirves|que temas)/.test(t)) return bot('Te explico cómo hacer cualquier cosa en Wali: conectar WhatsApp, crear plantillas y difusiones, armar equipos y el reparto, flujos, agentes IA, informes, pagos y más. También te llevo a la pantalla y te señalo dónde tocar. Prueba con:', sugs());
-    if (/(hablar|comunicar|contactar|escribir).*(persona|humano|asesor|alguien|soporte|agente real)|quiero (un|una) (persona|humano)|atencion humana|servicio al cliente/.test(t)) return bot('Claro. Escríbele al equipo de soporte de Wali y te responde una persona en horario hábil.', soporteHTML(''));
-    if (/(estoy perdid|no entiendo nada|no se (nada|como|que hacer)|me perdi|esto es dificil|que es esto|ayuda+$|socorro|auxilio)/.test(t)) return bot('Tranquilo, vamos paso a paso. Lo más fácil es empezar por aquí:', sugs());
-    if (/(urgente|emergencia|ya mismo|rapido por favor|se cayo todo|no funciona nada)/.test(t)) return bot('Entiendo que es urgente. Mira primero si arriba hay una franja roja de WhatsApp desconectado; si no es eso, escríbele a soporte con lo que pasa y lo revisamos de una.', soporteHTML(q));
-    if (/(tonto|estupido|inutil|no sirves|no sirve para nada|malo|pesimo|basura)/.test(t)) return bot('Lamento no haberte ayudado bien. Dime con otras palabras qué quieres hacer, o escríbele a una persona de soporte:', soporteHTML(q));
-    if (/(clima|futbol|partido|chiste|receta|noticias|horoscopo|bitcoin|dolar)/.test(t)) return bot('Eso se me escapa: solo sé de Wali. Pregúntame cualquier cosa del CRM y te digo cómo.', sugs());
-    if (/(te quiero|eres (lo maximo|genial|el mejor|la mejor)|me encantas|buen trabajo)/.test(t)) return bot('¡Gracias! 💛 Aquí sigo para lo que necesites.');
-    if (/(como estas|como te va|que tal estas)/.test(t)) return bot('¡Muy bien, gracias! ¿En qué te ayudo con Wali?', sugs());
-    if (/(quien te (hizo|creo|programo)|de donde eres)/.test(t)) return bot('Me hizo el equipo de Wali para ayudarte a sacarle el máximo al CRM.');
-    if (!palabras(resto || t).length) return bot('Claro, te ayudo. ¿Qué quieres hacer? Escríbelo con tus palabras, por ejemplo «conectar WhatsApp» o «crear una plantilla».', sugs());
+    if (/^(hola )?(tengo|tendria|me (surgio|quedo)|quiero hacer(te)?|te (hago|tengo)|una|otra|ultima) ?(otra|una|mas de una|varias|unas|la ultima)? ?(duda|dudas|pregunta|preguntas|consulta|consultas|inquietud|cosa|cosita)( mas)?( para ti)?$|^(puedo|te puedo|quiero) (hacer(te)?|preguntar(te)?)( una| otra)?( pregunta| cosa| algo)?$|^(necesito|quiero) (ayuda|preguntar(te)? algo|saber algo)$|^otra cosa$/.test(t)) return bot(['¡Claro! Cuéntame, ¿qué necesitas?', 'Dale, dime tu duda.', '¡Claro que sí! ¿Qué quieres saber?']);
+    if (/^(si|no|ok|okey|okay|vale|dale|listo|bueno|bien|perfecto|entendido|ya|aja|claro|de una|super|genial)( gracias)?$/.test(t)) return bot(['¡Listo! ¿Te ayudo con algo más?', 'Perfecto. ¿Algo más?', 'Bien 👍 Si te queda otra duda, me dices.']);
+    if (/(que (puedes|sabes) hacer|en que (me )?(ayudas|puedes ayudar)|para que sirves|que temas)/.test(t)) return bot('Te ayudo con casi todo en Wali: conectar WhatsApp, plantillas, difusiones, equipos, el reparto de chats, flujos, agentes IA, informes y pagos. Y si quieres, te llevo a la pantalla y te muestro dónde tocar. Por ejemplo:', sugs());
+    if (/(hablar|comunicar|contactar|escribir).*(persona|humano|asesor|alguien|soporte|agente real)|quiero (un|una) (persona|humano)|atencion humana|servicio al cliente/.test(t)) return bot('Claro. Escríbele al equipo de soporte y te atiende una persona en horario hábil:', soporteHTML(''));
+    if (/(estoy perdid|no entiendo nada|no se (nada|como|que hacer)|me perdi|esto es dificil|que es esto|ayuda+$|socorro|auxilio)/.test(t)) return bot(['Tranqui, vamos paso a paso. Empieza por aquí:', 'No te preocupes, lo vemos juntos. Arranca por aquí:'], sugs());
+    if (/(urgente|emergencia|ya mismo|rapido por favor|se cayo todo|no funciona nada)/.test(t)) return bot('Entiendo, vamos rápido. Mira si arriba sale una franja roja de WhatsApp desconectado; si no es eso, escríbele a soporte contando qué pasa y lo revisamos de una.', soporteHTML(q));
+    if (/(tonto|estupido|inutil|no sirves|no sirve para nada|malo|pesimo|basura)/.test(t)) return bot('Perdón, no te ayudé bien. ¿Me lo dices con otras palabras? O, si prefieres, escríbele a una persona de soporte:', soporteHTML(q));
+    if (/(clima|futbol|partido|chiste|receta|noticias|horoscopo|bitcoin|dolar)/.test(t)) return bot(['Jaja, eso se me escapa: yo solo sé de Wali. ¿Te ayudo con algo del CRM?', 'De eso no sé, lo mío es Wali 😅 ¿Qué necesitas del CRM?'], sugs());
+    if (/(te quiero|eres (lo maximo|genial|el mejor|la mejor)|me encantas|buen trabajo)/.test(t)) return bot(['¡Ay, gracias! 💛 Aquí sigo para lo que necesites.', '¡Qué bien leer eso! 💛 ¿Te ayudo con algo más?']);
+    if (/(como estas|como te va|que tal estas)/.test(t)) return bot(['¡Muy bien, gracias por preguntar! ¿Y tú? ¿En qué te ayudo?', '¡Todo bien por acá! ¿Qué necesitas hoy?'], sugs());
+    if (/(quien te (hizo|creo|programo)|de donde eres)/.test(t)) return bot('Me hizo el equipo de Wali, para que le saques todo el jugo al CRM.');
+    if (!palabras(resto || t).length) return bot('Claro, te ayudo. Cuéntame con tus palabras qué quieres hacer, por ejemplo «conectar WhatsApp» o «crear una plantilla».', sugs());
     return null;
   }
   /* Fusión de los dos buscadores por su puesto (RRF, k = 5): cada guía suma 1/(5 + puesto) en cada uno. El de
