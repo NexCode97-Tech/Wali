@@ -13,6 +13,75 @@ rolIntegrantesDe = () => 'Miembro';
 const Q_ICONOS = ['users', 'cart', 'chat', 'star', 'flame', 'phone', 'shield-ok', 'bolt', 'megaphone', 'cap', 'mail', 'calendar'];
 const Q_MET_IC = {turnos: 'swap', menos: 'users', lider: 'user'};
 const Q_SVG_MAX = 30 * 1024;
+/* Color del equipo (maqueta aprobada «EquipoColor»): los colores de fábrica, el propio como un círculo más y el +
+   que abre la paleta (tono, cuadro y código). Mientras se mueve, el logo y el círculo de la paleta cambian en vivo;
+   si el ícono blanco no se lee sobre el color, el aviso pasa a rojo y ofrece una versión más oscura. */
+const qHexAHsv = hex => {
+  const n = parseInt(hex.slice(1), 16), r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255;
+  const mx = Math.max(r, g, b), d = mx - Math.min(r, g, b);
+  const h = !d ? 0 : mx === r ? ((g - b) / d + 6) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return {h: h * 60, s: mx ? d / mx : 0, v: mx};
+};
+const qHsvAHex = ({h, s, v}) => {
+  const f = k => { const m = (k + h / 60) % 6; return v - v * s * Math.max(0, Math.min(m, 4 - m, 1)); };
+  return '#' + [f(5), f(3), f(1)].map(c => Math.round(c * 255).toString(16).padStart(2, '0')).join('').toUpperCase();
+};
+// Contraste del blanco sobre el color (WCAG): con 3 o más el ícono se lee.
+const qContraste = hex => {
+  const n = parseInt(hex.slice(1), 16), l = [n >> 16 & 255, n >> 8 & 255, n & 255].map(c => { c /= 255; return c <= .03928 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4; });
+  return 1.05 / (.2126 * l[0] + .7152 * l[1] + .0722 * l[2] + .05);
+};
+const qOscurecer = hex => { const c = qHexAHsv(hex); while (c.v > .05 && qContraste(qHsvAHex(c)) < 3) c.v -= .02; return qHsvAHex(c); };
+// Los dos avisos van en la paleta y se muestra el que toca (así se cambia en vivo sin rearmar nada).
+const qCpAviso = hex => { const bien = qContraste(hex) >= 3; return `<div class="cp-ok" data-q-av="bien"${bien ? '' : ' hidden'}><span class="ic">${I('check')}</span>El ícono blanco se lee bien sobre este color</div>
+      <div class="cp-ok mal" data-q-av="mal"${bien ? ' hidden' : ''}><span class="ic">${I('x')}</span><span>El ícono blanco casi no se lee. <button type="button" class="cp-osc" data-q-cp-osc="1">Usar uno más oscuro</button></span></div>`; };
+function qColorHTML(x) {
+  const color = x.color || COLORES_EQ[0][0];
+  const propio = !COLORES_EQ.some(([c]) => c.toLowerCase() === color.toLowerCase()) ? color : '';
+  const cp = st.qCp && st.qCp.x === x ? st.qCp : null;
+  if (cp && (!cp.hsv || qHsvAHex(cp.hsv) !== color.toUpperCase())) cp.hsv = qHexAHsv(color);
+  const hsv = cp && cp.hsv;
+  return `<div class="qe-colr" role="group" aria-label="Color del equipo"><span class="qe-col-t">Color:</span><div class="qe-sw">${COLORES_EQ.map(([c, cn]) => `<button type="button" style="background:${c}" data-eq-color="${c}" aria-pressed="${color === c}" aria-label="${cn}"></button>`).join('')}${propio ? `<button type="button" style="background:${esc(propio)}" data-eq-color="${esc(propio)}" aria-pressed="true" aria-label="Color personalizado ${esc(propio.slice(1))}"></button>` : ''}<button type="button" class="qe-mas" data-q-cp="1" aria-label="Color personalizado" aria-expanded="${!!cp}">${I('plus')}</button></div>
+    ${cp ? `<div class="cp" role="dialog" aria-label="Color personalizado"><div class="cp-h"><b>Color personalizado</b><button type="button" class="cp-x" data-q-cp-no="1" aria-label="Cerrar">${I('x')}</button></div>
+      <div class="cp-sv" data-q-sv="1" style="background:linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,hsl(${Math.round(hsv.h)},100%,50%))"><span class="cp-pt" style="left:${hsv.s * 100}%;top:${(1 - hsv.v) * 100}%;background:${esc(color)}"></span></div>
+      <div class="cp-hue" data-q-hue="1"><span class="cp-pt2" style="left:${hsv.h / 3.6}%"></span></div>
+      <div class="cp-fila"><span class="cp-prev" style="background:${esc(color)}">${qIconoHTML(x.ic || 'users', 18)}</span><label class="cp-hex"><span>#</span><input id="q-cp-hex" value="${esc(color.slice(1).toUpperCase())}" aria-label="Código del color" maxlength="6" autocomplete="off" spellcheck="false"></label></div>
+      ${qCpAviso(color)}
+      <div class="cp-pie"><button type="button" class="btn" data-q-cp-no="1">Cancelar</button><button type="button" class="btn pri" data-q-cp-ok="1">Usar este color</button></div></div>` : ''}</div>`;
+}
+// Pinta el color en vivo sin volver a armar la página (así no se corta el arrastre).
+function qCpPintar(hsv) {
+  const x = st.eqDraft, cp = st.qCp; if (!x || !cp) return;
+  cp.hsv = hsv; x.color = qHsvAHex(hsv);
+  const pg = document.getElementById('page'), $ = q => pg.querySelector(q);
+  for (const el of pg.querySelectorAll('.qe-logo,.cp-prev')) el.style.background = x.color;
+  const pt = $('.cp-pt'); if (pt) { pt.style.left = hsv.s * 100 + '%'; pt.style.top = (1 - hsv.v) * 100 + '%'; pt.style.background = x.color; }
+  const pt2 = $('.cp-pt2'); if (pt2) pt2.style.left = hsv.h / 3.6 + '%';
+  const sv = $('.cp-sv'); if (sv) sv.style.background = `linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,hsl(${Math.round(hsv.h)},100%,50%))`;
+  const hx = document.getElementById('q-cp-hex'); if (hx && document.activeElement !== hx) hx.value = x.color.slice(1);
+  const bien = qContraste(x.color) >= 3, b = $('[data-q-av="bien"]'), m = $('[data-q-av="mal"]');
+  if (b) b.hidden = !bien; if (m) m.hidden = bien;
+}
+document.getElementById('page').addEventListener('pointerdown', e => {
+  if (st.pagina !== 'cfg-reparto' || !st.qCp || !st.eqDraft) return;
+  const zona = e.target.closest('[data-q-sv],[data-q-hue]'); if (!zona) return;
+  e.preventDefault();
+  const esSv = !!zona.dataset.qSv, mover = ev => {
+    const r = zona.getBoundingClientRect(), fx = Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width)), fy = Math.min(1, Math.max(0, (ev.clientY - r.top) / r.height));
+    const hsv = {...(st.qCp.hsv || qHexAHsv(st.eqDraft.color || COLORES_EQ[0][0]))};
+    if (esSv) { hsv.s = fx; hsv.v = 1 - fy; } else hsv.h = Math.min(359.9, fx * 360);
+    qCpPintar(hsv);
+  };
+  mover(e);
+  const fin = () => { removeEventListener('pointermove', mover); removeEventListener('pointerup', fin); };
+  addEventListener('pointermove', mover); addEventListener('pointerup', fin);
+});
+document.getElementById('page').addEventListener('input', e => {
+  if (st.pagina !== 'cfg-reparto' || !st.qCp || e.target.id !== 'q-cp-hex') return;
+  const v = e.target.value.replace(/[^0-9a-f]/gi, '').slice(0, 6);
+  if (v !== e.target.value) e.target.value = v;
+  if (v.length === 6) qCpPintar(qHexAHsv('#' + v));
+});
 const qIconoDe = eq => { const v = EQ_CFG.iconos[eq]; return typeof v === 'string' && v ? v : 'users'; };
 const qIconoHTML = (ic, tam) => /^data:image\/svg\+xml;base64,/.test(ic) ? `<img src="${esc(ic)}" alt="" style="width:${tam}px;height:${tam}px">` : `<svg class="i" style="width:${tam}px;height:${tam}px"><use href="#i-${esc(ic)}"/></svg>`;
 // Disponible: «En línea», con el CRM abierto y recibiendo reparto (lo mismo que mira el reparto automático).
@@ -102,7 +171,7 @@ editorEquipo = function(){
     <div class="qe-cab"><span class="q-sq qe-logo" style="background:${color}">${qIconoHTML(icAct, 28)}</span><div class="qe-t">
       ${todo ? `<input class="qe-nom" id="eq-nombre" value="${esc(x.n)}" placeholder="Nombre del equipo" maxlength="80" autocomplete="off" aria-label="Nombre del equipo">` : `<h1 class="qe-nom-t">${esc(x.orig)}</h1>`}
       <div class="qe-look"><div class="qe-icos" role="group" aria-label="Ícono del equipo">${Q_ICONOS.map(ic => `<button type="button" data-q-ic="${ic}" aria-pressed="${!esSvg && icAct === ic}" aria-label="Ícono ${ic}">${I(ic)}</button>`).join('')}<label class="qe-svg${esSvg ? ' on' : ''}" title="Sube un ícono en SVG de máximo 30 KB"><input type="file" accept=".svg,image/svg+xml" hidden data-q-svg="1">${I('download')}${esSvg ? 'SVG subido' : 'Subir SVG'}</label></div>
-        <div class="qe-sw" role="group" aria-label="Color del equipo">${COLORES_EQ.map(([c, cn]) => `<button type="button" style="background:${c}" data-eq-color="${c}" aria-pressed="${x.color === c}" aria-label="${cn}"></button>`).join('')}</div></div></div></div>
+        ${qColorHTML(x)}</div></div></div>
     <div class="qe-grid">
       <div class="qe-col">
         <section class="qe-s" aria-label="Personas del equipo"><div class="qe-h"><h3>Personas</h3><span class="qe-c">${personas.length ? `${con} de ${personas.length} disponibles` : ''}</span></div>${per}
@@ -149,7 +218,11 @@ document.getElementById('page').addEventListener('click', e => {
   }
   const x = st.eqDraft; if (!x) return;
   if (t.closest('[data-q-cola-d]')) { x.cola = !x.cola; render(); return; }
-  const ic = t.closest('[data-q-ic]'); if (ic) { x.ic = ic.dataset.qIc; render(); }
+  const ic = t.closest('[data-q-ic]'); if (ic) { x.ic = ic.dataset.qIc; render(); return; }
+  if (t.closest('[data-q-cp]')) { if (st.qCp) x.color = st.qCp.antes; st.qCp = st.qCp ? null : {antes: x.color, x}; render(); return; }
+  if (t.closest('[data-q-cp-no]')) { if (st.qCp) x.color = st.qCp.antes; st.qCp = null; render(); return; }
+  if (t.closest('[data-q-cp-ok]')) { st.qCp = null; render(); return; }
+  if (t.closest('[data-q-cp-osc]')) { qCpPintar(qHexAHsv(qOscurecer(x.color))); return; }
 });
 document.getElementById('page').addEventListener('change', e => {
   if (st.pagina !== 'cfg-reparto' || !e.target.matches || !e.target.matches('[data-q-svg]')) return;
@@ -210,8 +283,33 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .qe-nom{font:inherit;font-size:24px;font-weight:650;border:1.5px solid transparent;border-radius:9px;padding:2px 8px;margin-left:-9px;background:none;width:100%;max-width:420px;color:inherit}
 .qe-nom:hover{border-color:#e5e9f0}.qe-nom:focus{outline:0;border-color:#0b0b10;background:#fff}
 .qe-nom-t{margin:0;font-size:24px;font-weight:650}
-.qe-look{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.qe-look{display:flex;align-items:center;gap:16px;margin-top:6px;flex-wrap:wrap}
 .qe-icos{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.qe-colr{position:relative;margin-left:auto;display:flex;align-items:center;gap:10px;padding-left:16px;border-left:1px solid #eef1f5;height:32px;flex:none}
+.qe-col-t{font-size:12.5px;font-weight:600;color:#4b5563}
+.qe-sw .qe-mas{border:1.5px dashed #cbd5e1;background:#fff;color:#4b5563;display:grid;place-items:center}
+.qe-sw .qe-mas[aria-expanded="true"]{border-style:solid;border-color:#0b0b10;color:#0b0b10}
+.qe-mas svg{width:12px;height:12px;stroke-width:2.4}
+.cp{position:absolute;right:0;top:44px;z-index:30;width:280px;background:#fff;border:1px solid #e5e9f0;border-radius:14px;padding:14px;box-shadow:0 18px 40px -16px rgba(15,23,42,.35);display:grid;gap:12px;cursor:default}
+.cp-h{display:flex;align-items:center;justify-content:space-between}.cp-h b{font-size:13.5px;font-weight:600}
+.cp-x{width:28px;height:28px;border:0;background:none;border-radius:8px;display:grid;place-items:center;color:#dc2626;cursor:pointer}.cp-x:hover{background:#fee2e2}.cp-x svg{width:15px;height:15px}
+.cp-sv{position:relative;height:150px;border-radius:10px;cursor:crosshair;touch-action:none}
+.cp-pt{position:absolute;width:18px;height:18px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px rgba(15,23,42,.25),0 2px 6px rgba(15,23,42,.3);transform:translate(-50%,-50%);pointer-events:none}
+.cp-hue{position:relative;height:12px;border-radius:999px;background:linear-gradient(to right,#f00 0%,#ff0 17%,#0f0 33%,#0ff 50%,#00f 67%,#f0f 83%,#f00 100%);cursor:pointer;touch-action:none}
+.cp-pt2{position:absolute;top:50%;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 0 0 1px rgba(15,23,42,.25),0 2px 6px rgba(15,23,42,.3);transform:translate(-50%,-50%);pointer-events:none}
+.cp-fila{display:flex;align-items:center;gap:10px}
+.cp-prev{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:#fff;flex:none}
+.cp-hex{flex:1;display:flex;align-items:center;gap:4px;height:38px;border:1px solid #e5e9f0;border-radius:10px;padding:0 12px;font-size:14px;cursor:text}
+.cp-hex:focus-within{border-color:#0b0b10;box-shadow:0 0 0 3px rgba(11,11,16,.08)}
+.cp-hex span{color:#9ca3af;font-weight:500}
+.cp-hex input{border:0;outline:0;font:inherit;font-weight:500;letter-spacing:.04em;width:100%;text-transform:uppercase;background:none;padding:0}
+.cp-ok{display:flex;align-items:center;gap:8px;font-size:12px;color:#4b5563}
+.cp-ok[hidden]{display:none}
+.cp-ok .ic{width:18px;height:18px;border-radius:50%;background:#e8f8ee;color:#15803d;display:grid;place-items:center;flex:none}
+.cp-ok .ic svg{width:11px;height:11px;stroke-width:3}
+.cp-ok.mal{color:#b91c1c}.cp-ok.mal .ic{background:#fee2e2;color:#dc2626}
+.cp-osc{border:0;background:none;padding:0;font:inherit;font-weight:600;color:#b91c1c;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.cp-pie{display:flex;justify-content:flex-end;gap:8px;padding-top:12px;border-top:1px solid #eef1f5}
 .qe-icos button{width:32px;height:32px;border-radius:50%;border:1px solid #e5e9f0;background:#fff;display:grid;place-items:center;cursor:pointer;color:#0b0b10}
 .qe-icos button svg{width:15px;height:15px}
 .qe-icos button[aria-pressed="true"],.qe-svg.on{background:#FFD21F;border-color:#FFD21F;color:#0b0b10}
