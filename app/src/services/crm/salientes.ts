@@ -226,6 +226,12 @@ export function validarDesdePantalla(crudo: unknown): Json {
       out.out = d.out === undefined || d.out === null ? '' : texto(d.out, 'texto', 4096)
       partesDeEnvio(d, out)
       if (d.encuesta !== undefined && d.encuesta !== null) out.encuesta = { asesor: textoOpc(objeto(d.encuesta, 'encuesta').asesor, 'encuesta.asesor', 120) }
+      // Responde a un mensaje de la conversación: sale citado en WhatsApp (whatsapp.ts pone el context de Meta).
+      if (d.cita !== undefined && d.cita !== null && d.cita !== '') {
+        const cita = texto(d.cita, 'cita', 64, false)
+        if (!/^[\w-]+$/.test(cita)) throw malo('«cita» tiene caracteres inválidos')
+        out.cita = cita
+      }
       if (!String(out.out).trim() && !out.file && !out.audio && !out.link && !out.plantilla) throw new ValidationError('El mensaje está vacío. Escribe el texto que debe salir.')
       break
     case 'prog':

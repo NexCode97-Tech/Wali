@@ -14,7 +14,7 @@ import { convAFront, contactoAFront, lineaAFront, mapaNombres, msgAFront, cargar
 import { usuariosCrm, idDeNombre, nombreDe } from '../../services/crm/usuarios'
 import { leerAjuste, leerPreferencias } from '../../services/crm/ajustes'
 import { emitirConv, emitirCrm, emitirMsg } from '../../services/crm/tiempoReal'
-import { waConfigurado } from '../../services/crm/whatsapp'
+import { reaccionarEnWhatsapp, waConfigurado } from '../../services/crm/whatsapp'
 import { listarConexiones, canalesConectados } from '../../services/crm/conexiones'
 import { avisarMencionesAlRecibir, guardarMensaje, motivoNoContactar, tipoDe, validarDesdePantalla } from '../../services/crm/salientes'
 import { contactoVisible, convVigente, convVisible, exigirContactoCompleto, exigirEscritura, exigirLiderDeConv, exigirVerConv, idNum, mensajeReservado, mezclaProfunda, obj, txt, type Json } from './_comun'
@@ -789,5 +789,22 @@ export async function transcribirNota(req: Request, res: Response) {
     return ApiResponse.success(res, { trans: await transcribirMensaje(m) })
   } catch (e) {
     throw new ValidationError(`No se pudo transcribir: ${(e as Error).message}`)
+  }
+}
+
+/** POST /crm/conversaciones/:id/mensajes/:msgId/reaccion {emoji}: la reacción de WhatsApp a un mensaje; vacía la quita. */
+const EMOJI = /^(\p{Extended_Pictographic}|\p{Emoji_Presentation})(\p{Emoji_Modifier}|\uFE0F|\u200D(\p{Extended_Pictographic}|\p{Emoji_Presentation}))*$/u
+export async function reaccionar(req: Request, res: Response) {
+  exigirEscritura(req)
+  const convId = idNum(req.params.id)
+  await convVisible(req, convId)
+  const emoji = typeof req.body?.emoji === 'string' ? req.body.emoji.trim() : ''
+  if (emoji && (emoji.length > 16 || !EMOJI.test(emoji))) throw new ValidationError('Esa reacción no es un emoji')
+  try {
+    const m = await reaccionarEnWhatsapp(convId, String(req.params.msgId), emoji)
+    emitirMsg(convId, m as never, req.userId ?? null)
+    return ApiResponse.success(res, msgAFront(m as never))
+  } catch (e) {
+    throw new ValidationError(`No se pudo reaccionar: ${(e as Error).message}`)
   }
 }

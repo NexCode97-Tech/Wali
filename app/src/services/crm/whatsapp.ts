@@ -653,6 +653,26 @@ async function armarCuerpo(m: MsgConTodo, cred: CredMeta): Promise<Json> {
   return { type: 'text', text: { body: cuerpo, preview_url: /https?:\/\//i.test(cuerpo) } }
 }
 
+/**
+ * La reacción de la persona a un mensaje (maqueta aprobada «Responder y reaccionar»): sale como reacción de WhatsApp
+ * (type reaction) y queda en el mensaje (datos.reac.yo). Un emoji vacío la quita. Solo mensajes de WhatsApp con wamid.
+ */
+export async function reaccionarEnWhatsapp(convId: number, msgId: string, emoji: string): Promise<Record<string, unknown>> {
+  const m = await prisma.crmMensaje.findFirst({ where: { id: msgId, conversacionId: convId }, include: { conversacion: { include: { contacto: true, linea: true } } } })
+  if (!m) throw new ErrorEnvio('Ese mensaje ya no existe')
+  if (m.conversacion.canal !== 'wa' || !m.conversacion.linea) throw new ErrorEnvio('Las reacciones salen solo por WhatsApp')
+  if (!m.waId) throw new ErrorEnvio('Ese mensaje todavía no tiene confirmación de WhatsApp')
+  const cred = await credDeLinea(m.conversacion.linea)
+  await graph(`/${m.conversacion.linea.phoneNumberId}/messages`, { cred, method: 'POST', body: {
+    messaging_product: 'whatsapp', recipient_type: 'individual', ...destinoWa(m.conversacion.contacto),
+    type: 'reaction', reaction: { message_id: m.waId, emoji },
+  } })
+  const datos = obj(m.datos), reac = { ...obj(datos.reac) }
+  if (emoji) reac.yo = emoji; else delete reac.yo
+  const f = await prisma.crmMensaje.update({ where: { id: m.id }, data: { datos: { ...datos, reac } as Prisma.InputJsonValue } })
+  return f as unknown as Record<string, unknown>
+}
+
 /** Envía por WhatsApp un CrmMensaje de salida ya guardado. Nunca lanza: deja el estado en la fila. */
 /** Marca como leído en WhatsApp el último mensaje del cliente en la conversación. Si falla, no pasa nada. */
 async function marcarLeidoEnWhatsapp(convId: number, phoneNumberId: string, cred: CredMeta) {
@@ -720,7 +740,10 @@ export async function enviarPorWhatsapp(msgId: string): Promise<void> {
     const cred = await credDeLinea(m.conversacion.linea)
     const cuerpo = await armarCuerpo(m, cred)
     const marketing = porMarketing.delete(msgId)
-    const envio = { messaging_product: 'whatsapp', recipient_type: 'individual', ...destinoWa(m.conversacion.contacto), ...cuerpo }
+    // Responde citando (context de Meta): el wamid del mensaje citado, si es de esta conversación y ya tiene uno.
+    const citaId = txt(obj(m.datos).cita)
+    const citado = citaId ? await prisma.crmMensaje.findFirst({ where: { id: citaId, conversacionId: m.conversacionId, waId: { not: null } }, select: { waId: true } }) : null
+    const envio = { messaging_product: 'whatsapp', recipient_type: 'individual', ...destinoWa(m.conversacion.contacto), ...cuerpo, ...(citado?.waId ? { context: { message_id: citado.waId } } : {}) }
     const pnid = m.conversacion.linea.phoneNumberId
     type RespEnvio = { messages?: { id?: string }[]; contacts?: { wa_id?: string }[] }
     let r: RespEnvio

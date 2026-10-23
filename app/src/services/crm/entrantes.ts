@@ -54,6 +54,8 @@ export interface WaMensaje {
   }
   /** El mensaje al que responde (en un nfm_reply, el que abrió el formulario). */
   context?: { from?: string; id?: string }
+  /** La reacción del cliente a un mensaje (emoji vacío: la quitó). */
+  reaction?: { message_id?: string; emoji?: string }
   contacts?: { name?: { formatted_name?: string; first_name?: string }; phones?: { phone?: string; wa_id?: string }[] }[]
   referral?: { source_url?: string; source_id?: string; source_type?: string; headline?: string; body?: string; media_type?: string; ctwa_clid?: string }
 }
@@ -425,8 +427,21 @@ async function respuestaEncuesta(contactoId: number, donde: Prisma.CrmConversaci
 
 // ─── Mensaje entrante ────────────────────────────────────────────────────────
 
+/** El cliente reaccionó a un mensaje (maqueta «Responder y reaccionar»): queda en ese mensaje como datos.reac.cli. */
+async function reaccionCliente(linea: CrmLinea, m: WaMensaje): Promise<void> {
+  const wamid = txt(m.reaction?.message_id)
+  if (!wamid) return
+  const f = await prisma.crmMensaje.findFirst({ where: { waId: wamid, conversacion: { lineaId: linea.id } } })
+  if (!f) return
+  const emoji = txt(m.reaction?.emoji).slice(0, 16)
+  const datos = obj(f.datos), reac = { ...obj(datos.reac) }
+  if (emoji) reac.cli = emoji; else delete reac.cli
+  emitirMsg(f.conversacionId, await prisma.crmMensaje.update({ where: { id: f.id }, data: { datos: json({ ...datos, reac }) } }))
+}
+
 export async function procesarEntrante(linea: CrmLinea, m: WaMensaje, perfiles: WaContacto[] = []): Promise<void> {
-  if (!m?.id || m.type === 'reaction') return
+  if (m?.type === 'reaction') { await reaccionCliente(linea, m); return }
+  if (!m?.id) return
   // Quien adoptó un @usuario de WhatsApp puede escribir sin que Meta mande su número (13-oct): llega su BSUID
   // (`from_user_id`, o el `user_id` de su contacto) y el número vacío. Antes ese mensaje se perdía.
   const tel = telDigitos(m.from) || ''
@@ -440,6 +455,9 @@ export async function procesarEntrante(linea: CrmLinea, m: WaMensaje, perfiles: 
     if (m.type === 'interactive' && m.interactive?.type === 'nfm_reply' && await respuestaFormulario(linea, m, tel, cuando, uid)) return
     const nombre = txt(perfil?.profile?.name) || txt(perfiles[0]?.profile?.name)
     const datos = await armarDatos(m, linea)
+    // Responde citando un mensaje de la conversación: la burbuja muestra la cita.
+    const citado = m.context?.id ? await prisma.crmMensaje.findFirst({ where: { waId: m.context.id, conversacion: { lineaId: linea.id } }, select: { id: true } }) : null
+    if (citado) (datos as Record<string, unknown>).cita = citado.id
     const k = await contactoDe({ tel, uid, usuario: txt(perfil?.profile?.username) }, nombre, m.referral)
     await entrar(k, { linea }, [datos], m.id, cuando, `WA ${linea.nombre}`)
   })
