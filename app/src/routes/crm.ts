@@ -8,6 +8,7 @@ import { ForbiddenError } from '../utils/errors'
 import { rutasWaCrm } from './crmWhatsapp'
 import { rutasIaCrm } from './crmIa'
 import { rutasEncuestaCrm } from './crmEncuesta'
+import { rutasAyudaCrm } from './crmAyuda'
 import * as conv from '../controllers/crm/conversaciones.controller'
 import * as contactos from '../controllers/crm/contactos.controller'
 import * as spam from '../controllers/crm/spam.controller'
@@ -109,6 +110,7 @@ router.use(rutasIaCrm)
 // Encuesta al finalizar con el formulario de WhatsApp (lote 6, crmEncuesta.ts): antes de la bandeja, porque atiende el
 // evento de la encuesta que llega por POST /conversaciones/:id/mensajes y el guardado de Ajustes (PUT /ajustes/cfg).
 router.use(rutasEncuestaCrm)
+router.use(rutasAyudaCrm)
 
 const MB = 1024 * 1024
 /** multer en memoria con su tope; el error sale como 400 con un texto que dice qué hacer. */
