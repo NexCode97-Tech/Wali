@@ -189,11 +189,31 @@
     f.replaceChildren(); f.insertAdjacentHTML('beforeend', A.abierto ? IC.x : IC.ayuda);
   }
   const yoBurbuja = t => `<div class="ay-msj yo"><p>${esc(t)}</p></div>`;
+  /* Charla: saludos, gracias, quién es y despedidas no son preguntas de guías; se contestan como persona. Una pregunta
+     sin ninguna palabra útil («ayuda», «tengo una duda») pide más detalle con sugerencias, sin decir «no encontré». */
+  const SALUDO = /^(hola+|holi|buen[oa]s?( dias| tardes| noches)?|hey|ey|que (mas|tal|hubo)|q hubo|saludos|alo|epa|buenas)(?![a-z])/;
+  const GRACIAS = /^(gracias|muchas gracias|mil gracias|ok gracias|listo gracias|perfecto|genial|excelente|super|vale|ok|listo|dale|bueno)(?![a-z])/;
+  const QUIEN = /(quien eres|que eres|eres (un )?(bot|robot|persona|humano|ia)|como te llamas|con quien hablo)/;
+  const ADIOS = /^(chao|adios|hasta luego|nos vemos|bye)(?![a-z])/;
+  function conversar(q){
+    const t = norm(q), nombre = String((typeof yo === 'string' && yo) || '').trim().split(/\s+/)[0];
+    const bot = (txt, extra = '') => `<div class="ay-msj bot"><span class="ay-iso pq">${ISO}</span><div class="ay-msj-c"><p>${txt}</p>${extra}</div></div>`;
+    const sugs = () => { const pag = paginaActual(), ids = (SUG[pag] || ['primeros-pasos', 'conectar-wa', 'invitar']); const gs = ids.map(guia).filter(g => g && permitida(g)); return gs.length ? `<div class="ay-sug">${gs.map(g => `<button type="button" data-ay-guia="${g.id}">${esc(g.t)}${IC.chev}</button>`).join('')}</div>` : ''; };
+    const resto = t.replace(SALUDO, '').replace(/^\s*(como (estas|vas|va todo)|que tal)\s*/, '').trim();
+    if (SALUDO.test(t) && !palabras(resto).length) return bot(`¡Hola${nombre ? ', ' + esc(nombre) : ''}! 👋 Cuéntame qué quieres hacer en Wali y te digo cómo. Por ejemplo:`, sugs());
+    if (GRACIAS.test(t) && palabras(t.replace(GRACIAS, '')).length === 0) return bot('¡Con gusto! Si necesitas algo más, aquí estoy.');
+    if (QUIEN.test(t)) return bot('Soy la ayuda de Wali: respondo al instante con las guías del CRM. No soy una persona; si no encuentro lo que buscas, te paso con el equipo de soporte.');
+    if (ADIOS.test(t)) return bot('¡Hasta luego! Cuando me necesites, toca la burbuja amarilla.');
+    if (!palabras(resto || t).length) return bot('Claro, te ayudo. ¿Qué quieres hacer? Escríbelo con tus palabras, por ejemplo «conectar WhatsApp» o «crear una plantilla».', sugs());
+    return null;
+  }
   function preguntar(texto){
     const q = texto.trim(); if (!q) return;
     A.vista = 'chat'; A.msgs.push(yoBurbuja(q), `<div class="ay-msj bot ay-escribe"><span class="ay-iso pq">${ISO}</span><div class="ay-escr"><i></i><i></i><i></i></div></div>`); pintar();
     setTimeout(() => {
       A.msgs.pop();
+      const charla = conversar(q);
+      if (charla) { A.msgs.push(charla); pintar(); return; }
       const r = buscar(q);
       if (entendio(r)) A.msgs.push(tarjeta(r.lista[0].g, true));
       else { A.msgs.push(noEntendio(q, r)); crmApi('POST', '/crm/ayuda/sin-respuesta', {q}).catch(() => { /* no importa si no se guarda */ }); }
