@@ -800,7 +800,7 @@ async function crmPlantillas(){
   const d = await crmApi('GET', '/crm/plantillas');
   const lista = Array.isArray(d) ? d : (d && d.plantillas) || [];
   PLANTILLAS.splice(0, PLANTILLAS.length, ...lista, ...(AJ.borradores || []).filter(b => !lista.some(p => p.n === b.n)));
-  TPL.splice(0, TPL.length, ...lista.filter(p => p.e === 'ok').map(p => ({n: p.n, x: p.b || p.x || '', c: p.c, boton: p.btnTxt || p.boton || '', lineas: p.lineas || null})));
+  TPL.splice(0, TPL.length, ...lista.filter(p => p.e === 'ok').map(p => ({n: p.n, x: p.b || p.x || '', c: p.c, boton: p.btnTxt || p.boton || '', equipos: p.equipos || null})));
 }
 /* Avisos de la campana de la plataforma (services/notificaciones.ts): ?conv=<id> abre la conversación y ?ir=<página>
    una página del CRM. Al cargar se lee la dirección; con el CRM ya abierto, la página de la plataforma (crm/page.tsx)

@@ -5,7 +5,7 @@ import { AppError } from '../../utils/errors'
 import { emitirMsg } from './tiempoReal'
 import { nombreDe } from './usuarios'
 import { telDigitos } from './formas'
-import { buscarPlantilla, plantillaEnLinea, variablesDe, type PlantillaMeta } from './plantillas'
+import { buscarPlantilla, plantillaEnEquipo, variablesDe, type PlantillaMeta } from './plantillas'
 import { credDeLinea, hayWhatsapp, type CredMeta } from './credenciales'
 import { leerAjuste } from './ajustes'
 
@@ -478,7 +478,7 @@ export function opcionesLista(lista: Json): OpcionLista[] {
 }
 
 type MsgConTodo = CrmMensaje & {
-  conversacion: { id: number; canal: string; asignadoId: string | null; ultimoEntranteAt: Date | null; contactoId: number; lineaId: string | null
+  conversacion: { id: number; canal: string; asignadoId: string | null; ultimoEntranteAt: Date | null; contactoId: number; lineaId: string | null; equipo: string | null
     contacto: { nombre: string | null; telefono: string | null; waUid: string | null; campos: unknown }
     linea: { phoneNumberId: string; wabaId: string; conexionId: string | null } | null }
 }
@@ -604,7 +604,7 @@ async function armarCuerpo(m: MsgConTodo, cred: CredMeta): Promise<Json> {
     const p = await buscarPlantilla(c.linea.wabaId, plantilla, txt(datos.idioma) || undefined)
     if (!p) throw new ErrorEnvio(`La plantilla «${plantilla}» no existe en Meta para esta línea`)
     if (p.status !== 'APPROVED') throw new ErrorEnvio(`La plantilla «${plantilla}» no está aprobada por Meta todavía`)
-    if (c.lineaId && !(await plantillaEnLinea(p.name, c.lineaId))) throw new ErrorEnvio(`La plantilla «${plantilla}» no está habilitada para esta línea`)
+    if (!(await plantillaEnEquipo(p.name, c.equipo || 'Ventas'))) throw new ErrorEnvio(`La plantilla «${plantilla}» no es del equipo ${c.equipo || 'Ventas'}`)
     return cuerpoPlantilla(m, datos, p, cred)
   }
 

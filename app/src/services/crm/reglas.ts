@@ -14,7 +14,7 @@ import { configReparto, miembrosDe, repartirA } from './reparto'
 import { equipoDeConv, leerEquipos } from './equipos'
 import { alcanceDePersona } from './alcance'
 import { fichaDeContacto } from './fichaExterna'
-import { buscarPlantilla, plantillaEnLinea, variablesDe } from './plantillas'
+import { buscarPlantilla, plantillaEnEquipo, variablesDe } from './plantillas'
 import { waConfigurado } from './whatsapp'
 import { agenteIniciar } from './agenteIA'
 import type { CtxEntrante } from './automatizaciones'
@@ -742,7 +742,7 @@ async function accionPlantilla(ctx: Ctx, c: Conv, nombre: string): Promise<Resul
   let p
   try { p = await buscarPlantilla(c.linea!.wabaId, nombre) } catch (e) { return { aviso: `no envió ${que}: Meta no respondió al buscarla (${(e as Error).message})` } }
   if (!p) return { aviso: `no envió ${que}: no existe en Meta para la línea ${c.linea!.nombre}` }
-  if (!(await plantillaEnLinea(p.name, c.linea!.id))) return { aviso: `no envió ${que}: no está habilitada para la línea ${c.linea!.nombre}` }
+  if (!(await plantillaEnEquipo(p.name, c.equipo || 'Ventas'))) return { aviso: `no envió ${que}: no es del equipo ${c.equipo || 'Ventas'}` }
   if (p.status !== 'APPROVED') return { aviso: `no envió ${que}: Meta todavía no la aprueba (estado ${p.status.toLowerCase().replace(/_/g, ' ')})` }
   const valores = await valoresDe(ctx, c)
   const faltan = new Set<string>()

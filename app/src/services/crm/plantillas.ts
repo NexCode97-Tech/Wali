@@ -5,14 +5,17 @@ import { leerAjuste, guardarAjuste } from './ajustes'
 import { emitirCrm } from './tiempoReal'
 import { archivoPermitido, baseGraph, graph, waConfigurado } from './whatsapp'
 import { credDeWaba, type CredMeta } from './credenciales'
+import { leerEquipos } from './equipos'
 
 /**
  * Plantillas de WhatsApp del CRM (26-sep-2026): se leen y se crean en Meta,
  * en la cuenta (WABA) de cada línea conectada. Meta pide el nombre en
  * minúsculas y sin tildes («aviso_de_cuota»); el nombre con tildes que se
  * muestra en la pantalla se guarda en el ajuste `plantillasNombres`.
- * Cada plantilla es de unas líneas (20-oct, ajuste `plantillasLineas`, por slug): solo se envía desde ellas. Sin
- * entrada en el ajuste (las creadas directo en Meta o antes de esto) sirve en todas las líneas de su cuenta.
+ * Cada plantilla es de unos equipos (maqueta aprobada «PlantillasEquipo», ajuste `plantillasEquipos`, por slug): solo
+ * la envían las personas de esos equipos, en sus conversaciones y difusiones. Se crea en las cuentas de Meta de las
+ * líneas de esos equipos. Las que ya tenían líneas (`plantillasLineas`, 20-oct) quedan para los equipos de esas
+ * líneas; sin ninguna de las dos (las creadas directo en Meta) sirve para todos los equipos.
  */
 
 type Json = Record<string, any>
@@ -30,8 +33,8 @@ export interface PlantillaFront {
   media?: 'imagen' | 'video' | 'gif' | 'documento'
   /** El archivo guardado del encabezado (plantillas con archivo creadas desde el CRM): sale con la plantilla. */
   mediaUrl?: string; mediaN?: string; mediaPeso?: number | null
-  /** Las líneas donde se usa; null = todas las de su cuenta. */
-  lineas: string[] | null
+  /** Los equipos que la usan; null = todos. */
+  equipos: string[] | null
   /** Las cuentas de Meta donde existe (una plantilla de líneas de cuentas distintas vive en cada una). */
   wabas: string[]
   /** Estado tal cual lo da Meta, el motivo del rechazo y lo demás que el formulario necesita para editarla. */
@@ -150,15 +153,45 @@ async function lineasDePlantillas(): Promise<Record<string, string[]>> {
   return v && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, string[]> : {}
 }
 
-/** ¿La plantilla se puede enviar desde esa línea? Sin líneas guardadas, sí (sirve en toda su cuenta). */
-export async function plantillaEnLinea(slug: string, lineaId: string): Promise<boolean> {
-  const l = (await lineasDePlantillas())[slug]
-  return !Array.isArray(l) || !l.length || l.includes(lineaId)
+async function equiposGuardados(): Promise<Record<string, string[]>> {
+  const v = await leerAjuste<unknown>('plantillasEquipos')
+  return v && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, string[]> : {}
+}
+
+type Json2 = Record<string, unknown>
+const obj = (v: unknown): Json2 => (v && typeof v === 'object' && !Array.isArray(v) ? v as Json2 : {})
+
+/** El equipo de cada línea: el de Ajustes del CRM (`cfg.lineas[].eq`), el de sus ajustes o, si no tiene, Ventas. */
+export async function equiposDeLineas(): Promise<Map<string, string>> {
+  const cfg = obj(await leerAjuste('cfg'))
+  const enCfg = new Map((Array.isArray(cfg.lineas) ? cfg.lineas : []).map(l => [String(obj(l).id ?? ''), String(obj(l).eq ?? '').trim()]))
+  const filas = await prisma.crmLinea.findMany({ select: { id: true, ajustes: true } })
+  return new Map(filas.map(f => [f.id, enCfg.get(f.id) || String(obj(f.ajustes).equipo ?? '').trim() || 'Ventas']))
+}
+
+/** Los equipos de cada plantilla: los guardados o, en las de antes, los de sus líneas. Sin entrada, null (todos). */
+async function equiposDePlantillas(): Promise<Record<string, string[]>> {
+  const [eqs, lineas] = await Promise.all([equiposGuardados(), lineasDePlantillas()])
+  const out: Record<string, string[]> = {}
+  const deLinea = Object.keys(lineas).some(s => !eqs[s]) ? await equiposDeLineas() : new Map<string, string>()
+  for (const [slug, ids] of Object.entries(lineas)) {
+    if (!Array.isArray(ids) || !ids.length) continue
+    const e = [...new Set(ids.map(id => deLinea.get(id)).filter((x): x is string => !!x))]
+    if (e.length) out[slug] = e
+  }
+  for (const [slug, e] of Object.entries(eqs)) if (Array.isArray(e) && e.length) out[slug] = e
+  return out
+}
+
+/** ¿La puede enviar ese equipo? Sin equipos guardados, sí (sirve para todos). */
+export async function plantillaEnEquipo(slug: string, equipo: string | null): Promise<boolean> {
+  const e = (await equiposDePlantillas())[slug]
+  return !e || !equipo || e.includes(equipo)
 }
 
 const TIPO_BOTON: Record<string, PlantillaFront['btn']> = { QUICK_REPLY: 'Respuesta rápida', URL: 'Enlace', PHONE_NUMBER: 'Llamar' }
 
-function aFront(p: PlantillaMeta, nombres: Record<string, string>, u: Map<string, number>, guardados: Record<string, { url: string; n?: string; peso?: number | null }> = {}, lineas: Record<string, string[]> = {}, vigencias: Record<string, number> = {}): PlantillaFront | null {
+function aFront(p: PlantillaMeta, nombres: Record<string, string>, u: Map<string, number>, guardados: Record<string, { url: string; n?: string; peso?: number | null }> = {}, equipos: Record<string, string[]> = {}, vigencias: Record<string, number> = {}): PlantillaFront | null {
   const n = nombres[p.name] ?? humanizar(p.name)
   const cuerpo = String((p.components ?? []).find(c => String(c.type).toUpperCase() === 'BODY')?.text ?? '')
   let e: PlantillaFront['e']; let x: string
@@ -181,7 +214,7 @@ function aFront(p: PlantillaMeta, nombres: Record<string, string>, u: Map<string
     idioma: p.language, id: p.id, waba: p.waba, vars: variablesDe(cuerpo),
     ...(media ? { media } : {}),
     ...(media && guardados[p.name]?.url ? { mediaUrl: guardados[p.name].url, mediaN: guardados[p.name].n ?? '', mediaPeso: guardados[p.name].peso ?? null } : {}),
-    lineas: Array.isArray(lineas[p.name]) && lineas[p.name].length ? lineas[p.name] : null, wabas: [p.waba],
+    equipos: Array.isArray(equipos[p.name]) && equipos[p.name].length ? equipos[p.name] : null, wabas: [p.waba],
     estadoMeta: p.status, motivo: p.status === 'REJECTED' ? (MOTIVO[p.rejected_reason ?? 'NONE'] ?? String(p.rejected_reason).toLowerCase().replace(/_/g, ' ')) : '',
     headTipo: media ?? (formato === 'TEXT' ? 'texto' : ''), head: formato === 'TEXT' ? String(cabecera?.text ?? '') : '', foot: String(pie?.text ?? ''),
     vigencia: p.category === 'MARKETING' && vigencias[p.name] ? vigencias[p.name] : null,
@@ -199,12 +232,12 @@ export async function listarPlantillas(): Promise<PlantillaFront[]> {
   if (!(await waConfigurado())) return []
   const wabas = await wabasConectadas()
   if (!wabas.length) return []
-  const [nombres, u, guardados, lineas, vigencias] = await Promise.all([nombresVisibles(), usos(), mediaDePlantillas(), lineasDePlantillas(), vigenciasDePlantillas()])
+  const [nombres, u, guardados, equipos, vigencias] = await Promise.all([nombresVisibles(), usos(), mediaDePlantillas(), equiposDePlantillas(), vigenciasDePlantillas()])
   // Una plantilla de líneas de cuentas distintas existe en cada cuenta: sale una sola vez, con todas sus cuentas.
   const porSlug = new Map<string, PlantillaFront>()
   for (const waba of wabas) {
     for (const p of await plantillasDeWaba(waba, true)) {
-      const f = aFront(p, nombres, u, guardados, lineas, vigencias)
+      const f = aFront(p, nombres, u, guardados, equipos, vigencias)
       if (!f) continue
       const ya = porSlug.get(f.slug + '|' + f.idioma)
       if (ya) ya.wabas.push(waba); else porSlug.set(f.slug + '|' + f.idioma, f)
@@ -240,7 +273,7 @@ async function muestraEnMeta(cred: CredMeta, m: Muestra): Promise<string> {
   return j.h
 }
 
-type EntradaPlantilla = { n?: unknown; c?: unknown; b?: unknown; head?: unknown; foot?: unknown; btn?: unknown; btnTxt?: unknown; btnUrl?: unknown; btnTel?: unknown; video?: unknown; media?: unknown; vigencia?: unknown; lineas?: unknown }
+type EntradaPlantilla = { n?: unknown; c?: unknown; b?: unknown; head?: unknown; foot?: unknown; btn?: unknown; btnTxt?: unknown; btnUrl?: unknown; btnTel?: unknown; video?: unknown; media?: unknown; vigencia?: unknown; equipos?: unknown }
 /** El archivo de muestra del encabezado, ya bajado de la Nube. */
 type Muestra = { tipo: TipoArchivo; buf: Buffer; mime: string; nombre: string }
 
@@ -352,27 +385,36 @@ async function guardarExtras(slug: string, media: { url: string; n: string } | n
   await guardarAjuste('plantillasVigencia', vigencias, por)
 }
 
-/** Las líneas elegidas en el formulario y sus cuentas de Meta. Sin el campo (llamadas viejas), null: todas. */
-async function lineasElegidas(valor: unknown): Promise<{ ids: string[]; wabas: string[] } | null> {
+/**
+ * Los equipos elegidos en el formulario y las cuentas de Meta de sus líneas. Un equipo sin línea propia no suma
+ * cuentas; si ninguno tiene, la plantilla se crea en todas las cuentas conectadas. Sin el campo, null: todos.
+ */
+async function equiposElegidos(valor: unknown): Promise<{ nombres: string[]; wabas: string[] } | null> {
   if (valor === undefined || valor === null) return null
-  const ids = Array.isArray(valor) ? [...new Set(valor.map(v => String(v ?? '').trim()).filter(Boolean))] : []
-  if (!ids.length) throw new ValidationError('Elige al menos una línea donde se use la plantilla')
-  const filas = await prisma.crmLinea.findMany({ where: { id: { in: ids } }, select: { id: true, wabaId: true } })
-  if (filas.length !== ids.length) throw new ValidationError('Una de las líneas elegidas ya no está conectada: recarga y elige otra vez')
-  return { ids, wabas: [...new Set(filas.map(f => f.wabaId))] }
+  const nombres = Array.isArray(valor) ? [...new Set(valor.map(v => String(v ?? '').trim()).filter(Boolean))] : []
+  if (!nombres.length) throw new ValidationError('Elige al menos un equipo que use la plantilla')
+  const existen = Object.keys((await leerEquipos()).miembros)
+  if (nombres.some(n => !existen.includes(n))) throw new ValidationError('Uno de los equipos elegidos ya no existe: recarga y elige otra vez')
+  const deLinea = await equiposDeLineas()
+  const ids = [...deLinea].filter(([, e]) => nombres.includes(e)).map(([id]) => id)
+  const filas = ids.length ? await prisma.crmLinea.findMany({ where: { id: { in: ids } }, select: { wabaId: true } }) : []
+  return { nombres, wabas: filas.length ? [...new Set(filas.map(f => f.wabaId))] : await wabasConectadas() }
 }
 
-async function guardarLineas(slug: string, ids: string[] | null, por: string | null) {
-  const todas = await lineasDePlantillas()
-  if (ids) todas[slug] = ids; else delete todas[slug]
-  await guardarAjuste('plantillasLineas', todas, por)
+/** Guarda los equipos de la plantilla; las líneas de antes (`plantillasLineas`) ya no cuentan para ella. */
+async function guardarEquipos(slug: string, nombres: string[] | null, por: string | null) {
+  const todos = await equiposGuardados()
+  if (nombres) todos[slug] = nombres; else delete todos[slug]
+  await guardarAjuste('plantillasEquipos', todos, por)
+  const lineas = await lineasDePlantillas()
+  if (lineas[slug]) { delete lineas[slug]; await guardarAjuste('plantillasLineas', lineas, por) }
 }
 
 /** Crea la plantilla en Meta, en la cuenta de cada línea elegida. Solo líderes. */
 export async function crearPlantilla(entrada: EntradaPlantilla, por: string | null): Promise<PlantillaFront> {
   if (!(await waConfigurado())) throw new AppError('Primero conecta WhatsApp en Ajustes del CRM, Canales', 409)
   const { n, slug, categoria, b, vars, media, vigencia, armar } = armarPlantilla(entrada)
-  const elegidas = await lineasElegidas(entrada.lineas)
+  const elegidas = await equiposElegidos(entrada.equipos)
   const wabas = elegidas ? elegidas.wabas : await wabasConectadas()
   if (!wabas.length) throw new ValidationError('Primero conecta una línea de WhatsApp: la plantilla se crea en la cuenta de esa línea')
   // El archivo de muestra se baja una vez de la Nube y se sube a Meta con el token de cada cuenta.
@@ -387,7 +429,7 @@ export async function crearPlantilla(entrada: EntradaPlantilla, por: string | nu
   }
   const nombres = await nombresVisibles()
   await guardarAjuste('plantillasNombres', { ...nombres, [slug]: n }, por)
-  if (elegidas) await guardarLineas(slug, elegidas.ids, por)
+  if (elegidas) await guardarEquipos(slug, elegidas.nombres, por)
   // El archivo de la plantilla queda guardado: sale con ella cada vez que se envía (whatsapp.ts lo toma de aquí).
   if (media || vigencia) await guardarExtras(slug, media, muestra, vigencia, por)
   olvidarPlantillas()
@@ -395,10 +437,10 @@ export async function crearPlantilla(entrada: EntradaPlantilla, por: string | nu
   const f = aFront({
     id: creada.id ?? '', name: slug, language: 'es', status: creada.status ?? 'PENDING', category: creada.category ?? categoria,
     parameter_format: 'NAMED', components: cuerpo.components, waba: wabas[0],
-  }, { ...nombres, [slug]: n }, new Map(), media && muestra ? { [slug]: { url: media.url, n: media.n, peso: muestra.buf.length } } : {}, elegidas ? { [slug]: elegidas.ids } : {}, vigencia ? { [slug]: vigencia } : {})
+  }, { ...nombres, [slug]: n }, new Map(), media && muestra ? { [slug]: { url: media.url, n: media.n, peso: muestra.buf.length } } : {}, elegidas ? { [slug]: elegidas.nombres } : {}, vigencia ? { [slug]: vigencia } : {})
   if (f) f.wabas = wabas
   return f ?? { n, slug, c: CATEGORIA[categoria], e: 'w', x: 'En revisión en Meta', u: 0, b, idioma: 'es', id: creada.id ?? '', waba: wabas[0], vars,
-    lineas: elegidas?.ids ?? null, wabas, estadoMeta: 'PENDING', motivo: '', headTipo: '', head: '', foot: '', vigencia, btn: '', btnTxt: '', btnUrl: '', btnTel: '' }
+    equipos: elegidas?.nombres ?? null, wabas, estadoMeta: 'PENDING', motivo: '', headTipo: '', head: '', foot: '', vigencia, btn: '', btnTxt: '', btnUrl: '', btnTel: '' }
 }
 
 /** Lo que Meta compara de una plantilla: sin los ejemplos ni el archivo de muestra. */
@@ -410,9 +452,9 @@ function firma(componentes: Json[] | undefined): string {
 }
 
 /**
- * Edita una plantilla (20-oct). Cambiar solo el nombre o las líneas es del CRM y no pasa por Meta. Cambiar el texto
+ * Edita una plantilla (20-oct). Cambiar solo el nombre o los equipos es del CRM y no pasa por Meta. Cambiar el texto
  * la manda otra vez a revisión de Meta en cada cuenta donde exista (Meta deja editar una aprobada una vez al día y 10
- * veces al mes, y no deja cambiarle la categoría). Si se agregan líneas de otra cuenta, se crea también allá.
+ * veces al mes, y no deja cambiarle la categoría). Si un equipo nuevo tiene líneas de otra cuenta, se crea también allá.
  */
 export async function editarPlantilla(slug: string, entrada: EntradaPlantilla, por: string | null): Promise<PlantillaFront> {
   if (!(await waConfigurado())) throw new AppError('Primero conecta WhatsApp en Ajustes del CRM, Canales', 409)
@@ -422,14 +464,14 @@ export async function editarPlantilla(slug: string, entrada: EntradaPlantilla, p
   const { n, categoria, media, vigencia, armar } = armarPlantilla(entrada, slug)
   const aprobada = existentes.some(p => p.status === 'APPROVED')
   if (aprobada && categoria !== existentes[0].category) throw new ValidationError('A una plantilla aprobada no se le puede cambiar la categoría: crea una nueva con la otra categoría')
-  const elegidas = await lineasElegidas(entrada.lineas)
+  const elegidas = await equiposElegidos(entrada.equipos)
   const guardados = await mediaDePlantillas()
   const vigenciaAntes = (await vigenciasDePlantillas())[slug] ?? null
   const cambioArchivo = !!media && guardados[slug]?.url !== media.url
   const cambioVigencia = vigenciaAntes !== vigencia
   const cambioTexto = cambioArchivo || cambioVigencia || firma(existentes[0].components) !== firma(armar(media ? 'x' : null).components)
   if (cambioTexto && existentes.some(p => !['APPROVED', 'REJECTED', 'PAUSED'].includes(p.status))) {
-    throw new ValidationError('Meta no deja cambiar el texto mientras la plantilla está en revisión o deshabilitada. Puedes cambiar el nombre y las líneas.')
+    throw new ValidationError('Meta no deja cambiar el texto mientras la plantilla está en revisión o deshabilitada. Puedes cambiar el nombre y los equipos.')
   }
   const muestra = media && (cambioTexto || elegidas) ? await muestraDeNube({ ...media, url: media.url || guardados[slug]?.url || '' }) : null
   if (cambioTexto) {
@@ -443,13 +485,13 @@ export async function editarPlantilla(slug: string, entrada: EntradaPlantilla, p
       } })
     }
   }
-  // Líneas de una cuenta donde la plantilla no existe todavía: se crea allá con el texto nuevo.
+  // Cuentas de los equipos donde la plantilla no existe todavía: se crea allá con el texto nuevo.
   for (const waba of (elegidas?.wabas ?? []).filter(w => !existentes.some(p => p.waba === w))) {
     const cred = await credDeWaba(waba)
     await graph(`/${encodeURIComponent(waba)}/message_templates`, { cred, method: 'POST', body: armar(muestra ? await muestraEnMeta(cred, muestra) : null) })
   }
   await guardarAjuste('plantillasNombres', { ...(await nombresVisibles()), [slug]: n }, por)
-  if (elegidas) await guardarLineas(slug, elegidas.ids, por)
+  if (elegidas) await guardarEquipos(slug, elegidas.nombres, por)
   if (cambioArchivo || (!media && guardados[slug]) || cambioVigencia) await guardarExtras(slug, media, cambioArchivo ? muestra : null, vigencia, por)
   olvidarPlantillas()
   emitirCrm({ tipo: 'plantillas' }, por)
@@ -472,7 +514,7 @@ export async function eliminarPlantilla(slug: string, por: string | null): Promi
   if (!borradas) throw new NotFoundError('Esa plantilla ya no existe en Meta')
   const nombres = await nombresVisibles(); delete nombres[slug]
   await guardarAjuste('plantillasNombres', nombres, por)
-  await guardarLineas(slug, null, por)
+  await guardarEquipos(slug, null, por)
   const media = await mediaDePlantillas()
   if (media[slug]) { delete media[slug]; await guardarAjuste('plantillasMedia', media, por) }
   const vigencias = await vigenciasDePlantillas()

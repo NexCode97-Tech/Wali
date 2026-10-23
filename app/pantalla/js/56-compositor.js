@@ -187,7 +187,7 @@ document.getElementById('matp').addEventListener('input', e => { if (e.target.id
 
 /* ── Plantillas aprobadas (tablero 3): al elegir una pasa lo mismo que antes (manejador de #tplp en 10-nucleo.js) ── */
 function cmTplLista(f){
-  const cv = CONV.find(x => x.id === st.sel), ok = PLANTILLAS.filter(x => x.e === 'ok' && tplEnLinea(x, cv && cv.linea)), q = norm(f || ''), L = ok.filter(x => !q || norm(`${x.n} ${x.c || ''} ${x.b || ''}`).includes(q));
+  const cv = CONV.find(x => x.id === st.sel), ok = PLANTILLAS.filter(x => x.e === 'ok' && tplEnEquipo(x, cv && (cv.equipo || 'Ventas'))), q = norm(f || ''), L = ok.filter(x => !q || norm(`${x.n} ${x.c || ''} ${x.b || ''}`).includes(q));
   if (!L.length) return cmVacio(ok.length ? 'Nada coincide.' : 'Todavía no hay plantillas aprobadas por Meta.');
   const med = {imagen: CM_SVG.imagen, video: CM_SVG.play, gif: CM_SVG.play, documento: CM_SVG.doc};
   return `<div class="cm-lst">${L.map((x, k) => `<button type="button" class="cm-it cm-tpi${k ? '' : ' cm-sel'}" data-usar-tpl="${esc(x.n)}"><span class="r1"><b>${esc(x.n)}</b>${x.c ? `<span class="cat">${esc(x.c)}</span>` : ''}</span><span class="pv">${esc(x.b || '')}</span>${med[x.media] ? `<span class="med">${med[x.media]}Con ${x.media}</span>` : ''}</button>`).join('')}</div>`;

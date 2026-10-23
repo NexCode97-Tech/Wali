@@ -108,6 +108,11 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .tn-op[aria-checked="true"] .tn-cb{background:#0b0b10;border-color:#0b0b10}
 .tn-cb svg{width:12px;height:12px;stroke-width:3}
 .tn-op .tp-cara{border:0}
+.tn-elige.tres{grid-template-columns:repeat(3,minmax(0,1fr))}
+.tp-cara.eq svg,.tp-cara.eq img{width:14px!important;height:14px!important;transform:none}
+.tp-cara.eq.grande{width:30px;height:30px}
+@media (max-width:900px){.tn-elige.tres{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.tn-elige.tres{grid-template-columns:minmax(0,1fr)}}
 .tn-op b{display:block;font-size:13.5px;font-weight:500}
 .tn-op small{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink3);font-variant-numeric:tabular-nums}
 .tn-op small i{width:7px;height:7px;border-radius:50%;flex:none}
@@ -234,12 +239,18 @@ const TP_CAT_COL = {Marketing:'#7c3aed', Utilidad:'#0284c7'};
 // Los mismos datos de ejemplo con los que Meta revisa la plantilla (plantillas.ts, EJEMPLOS).
 const TP_EJ = {nombre:'Valentina', asesor:'Sara', producto:'Calendario G 2026', enlace:'walicrm.com', fecha:'5 de octubre', valor:'$150.000', curso:'Plan anual', hora:'4:00 p. m.'};
 const TP_VARS = ['nombre', 'producto', 'fecha', 'asesor', 'enlace'];
-st.tp = st.tp || {estado:'', linea:'', q:'', menu:null};
+st.tp = st.tp || {estado:'', eq:'', q:'', menu:null};
 
-/** ¿Se puede enviar desde esa línea? Sin líneas guardadas, sirve en todas (las creadas en Meta). */
-const tplEnLinea = (p, lineaId) => !p || !Array.isArray(p.lineas) || !p.lineas.length || !lineaId || p.lineas.includes(lineaId);
+/* Plantillas por equipo (maqueta aprobada «PlantillasEquipo»): cada una es de unos equipos y solo la envían sus
+   personas, en sus conversaciones y difusiones. Sin equipos guardados sirve para todos (las creadas en Meta). */
+const tplEnEquipo = (p, eq) => !p || !Array.isArray(p.equipos) || !p.equipos.length || !eq || p.equipos.includes(eq);
 const tpClave = p => p.borrador ? 'b:' + p.n : p.slug;
 const tpEquipo = id => (CFG.lineas.find(x => x.id === id) || {}).eq || '';
+// Desde una línea (difusiones y mensaje nuevo): cuenta el equipo de esa línea.
+const tplEnLinea = (p, lineaId) => tplEnEquipo(p, lineaId ? tpEquipo(lineaId) || 'Ventas' : '');
+const tpEqCara = (eq, cls = '') => `<span class="tp-cara eq${cls}" style="background:${colorEquipo(eq)}">${typeof qIconoHTML === 'function' ? qIconoHTML(typeof qIconoDe === 'function' ? qIconoDe(eq) : 'users', 14) : I('users')}</span>`;
+const tpEqLineas = eq => LINEAS.filter(l => tpEquipo(l.id) === eq).length;
+const tpEqPersonas = eq => (typeof idsDe === 'function' ? idsDe(eq) : []).length;
 const tpCaras = n => Array.from({length: Math.max(1, Math.min(3, n))}, () => `<span class="tp-cara">${LOGO.wa}</span>`).join('');
 const tpCuerpo = b => esc(b || '').replace(/\{\{\s*(\w+)\s*\}\}/g, '<span class="tp-var">$1</span>');
 function tpEstado(p){
@@ -249,22 +260,20 @@ function tpEstado(p){
   if (p.e === 'b') return ['b', p.estadoMeta === 'DISABLED' ? 'Deshabilitada' : 'Rechazada'];
   return ['g', String(p.x || 'Pausada').split(':')[0]];
 }
-function tpLineasCelda(p){
-  if (!Array.isArray(p.lineas) || !p.lineas.length) {
-    const k = LINEAS.filter(l => !p.wabas || !l.wabaId || p.wabas.includes(l.wabaId)).length || LINEAS.length;
-    return `<div class="tp-lnc"><span class="tp-caras">${tpCaras(Math.min(2, k))}</span><span class="tp-lnt"><b>Todas las líneas</b><small>${k} ${k === 1 ? 'línea' : 'líneas'}</small></span></div>`;
-  }
-  const ls = p.lineas.map(id => LINEAS.find(l => l.id === id)).filter(Boolean);
-  if (!ls.length) return '<span class="muted" style="font-size:12.5px">Su línea ya no está conectada</span>';
-  const eqs = [...new Set(ls.map(l => tpEquipo(l.id)).filter(Boolean))];
-  return `<div class="tp-lnc"><span class="tp-caras">${tpCaras(ls.length)}</span><span class="tp-lnt"><b>${esc(ls[0].n)}${ls.length > 1 ? `<em>+${ls.length - 1}</em>` : ''}</b><small>${eqs.map(e => `<i style="background:${colorEquipo(e)}"></i>${esc(e)}`).join(' ')}</small></span></div>`;
+function tpEquiposCelda(p){
+  const todos = !Array.isArray(p.equipos) || !p.equipos.length;
+  const eqs = todos ? EQUIPOS.map(e => e.n) : p.equipos.filter(n => EQUIPOS.some(e => e.n === n));
+  if (!eqs.length) return '<span class="muted" style="font-size:12.5px">Su equipo ya no existe</span>';
+  const caras = eqs.slice(0, 3).map(e => tpEqCara(e)).join('');
+  if (todos) return `<div class="tp-lnc"><span class="tp-caras">${caras}</span><span class="tp-lnt"><b>Todos los equipos</b><small>${eqs.length} ${eqs.length === 1 ? 'equipo' : 'equipos'}</small></span></div>`;
+  return `<div class="tp-lnc"><span class="tp-caras">${caras}</span><span class="tp-lnt"><b>${esc(eqs[0])}${eqs.length > 1 ? `<em>+${eqs.length - 1}</em>` : ''}</b><small>${eqs.length > 1 ? esc(eqs.slice(1).join(' · ')) : 'Solo este equipo'}</small></span></div>`;
 }
 function tpCuentas(){
   const c = {todas: PLANTILLAS.length, ok: 0, w: 0, b: 0};
   PLANTILLAS.forEach(p => { if (!p.borrador && c[p.e] != null) c[p.e]++; });
   return c;
 }
-const tpVisible = p => (!st.tp.estado || (!p.borrador && p.e === st.tp.estado)) && (!st.tp.linea || tplEnLinea(p, st.tp.linea));
+const tpVisible = p => (!st.tp.estado || (!p.borrador && p.e === st.tp.estado)) && (!st.tp.eq || (Array.isArray(p.equipos) && p.equipos.length ? p.equipos.includes(st.tp.eq) : true));
 const tpBusca = p => norm(`${p.n} ${p.b || ''} ${p.c || ''}`);
 // Las plantillas las crean, editan y borran los líderes (las rutas del servidor son solo para ellos).
 const puedeEditarTpl = () => st.rol === 'l';
@@ -277,17 +286,17 @@ function paginaPlantillas(){
       <div class="tp-demo"><div class="b2">Hola, <span class="tp-var">nombre</span>. Te recordamos tu cita de mañana a las 10:00 a. m.<small>${esc(ESPACIO.nombre || 'Tu empresa')}</small></div><div class="bt">Confirmar</div></div>
       <h3>Crea tu primera plantilla</h3>
       <p>Con una plantilla le escribes primero a un cliente, o le respondes cuando ya pasaron 24 horas desde su último mensaje.</p>
-      <div class="tp-pasos"><div class="tp-paso"><span class="n on">1</span><div><b>Escribe el mensaje</b><small>Y elige desde qué líneas se envía</small></div></div>
+      <div class="tp-pasos"><div class="tp-paso"><span class="n on">1</span><div><b>Escribe el mensaje</b><small>Y elige qué equipos la usan</small></div></div>
         <div class="tp-paso"><span class="n">2</span><div><b>Meta la revisa</b><small>Casi siempre en minutos, a veces unas horas</small></div></div>
         <div class="tp-paso"><span class="n">3</span><div><b>Úsala</b><small>En difusiones y al escribirle a un cliente</small></div></div></div>
       ${puedeEditarTpl() ? nueva('grande') : ''}
       <p class="nota">Utilidad: 0,0008 USD por envío · Marketing: 0,0125 USD por envío (precios de Meta en Colombia).</p></div>`;
   const c = tpCuentas(), tab = (k, t, n) => `<button type="button" data-tp-estado="${k}" aria-pressed="${st.tp.estado === k}">${t} <span>${n}</span></button>`;
-  if (st.tp.linea && !LINEAS.some(l => l.id === st.tp.linea)) st.tp.linea = '';
+  if (st.tp.eq && !EQUIPOS.some(e => e.n === st.tp.eq)) st.tp.eq = '';
   const barra = `<div class="tp-barra">
       <label class="tp-buscar">${TP_IC.buscar}<input id="tp-q" value="${esc(st.tp.q)}" placeholder="Buscar plantilla" aria-label="Buscar plantilla" autocomplete="off"></label>
       <div class="tp-tabs" role="group" aria-label="Filtrar por estado">${tab('', 'Todas', c.todas)}${tab('ok', 'Aprobadas', c.ok)}${tab('w', 'En revisión', c.w)}${tab('b', 'Rechazadas', c.b)}</div>
-      ${LINEAS.length > 1 ? ddSel('data-tp-linea', [['', 'Línea: Todas'], ...LINEAS.map(l => [l.id, 'Línea: ' + l.n])], st.tp.linea).replace('class="dd dsel"', 'class="dd dsel tp-linea"') : ''}
+      ${EQUIPOS.length > 1 ? ddSel('data-tp-eq', [['', 'Equipo: Todos'], ...EQUIPOS.map(e => [e.n, 'Equipo: ' + e.n])], st.tp.eq).replace('class="dd dsel"', 'class="dd dsel tp-linea"') : ''}
       ${puedeEditarTpl() ? nueva() : ''}</div>`;
   const q = norm(st.tp.q), lista = PLANTILLAS.filter(tpVisible);
   const filas = lista.map(p => {
@@ -295,7 +304,7 @@ function paginaPlantillas(){
     return `<div class="tp-fila" data-tp-q="${esc(tpBusca(p))}"${q && !tpBusca(p).includes(q) ? ' hidden' : ''}>
       <div class="tp-nom"><b>${esc(p.n)}</b><small>${p.c ? `<i style="background:${TP_CAT_COL[p.c] || '#9ca3af'}"></i>${esc(p.c)}` : ''}${p.borrador ? ' · Solo tú lo ves' : ' · Español'}</small></div>
       <div class="tp-chat"><div class="tp-burb">${tpCuerpo(p.b) || '<span class="muted">Sin texto todavía</span>'}</div></div>
-      ${tpLineasCelda(p)}
+      ${tpEquiposCelda(p)}
       <span><span class="tp-est ${e}"><i></i>${esc(et)}</span></span>
       <div class="tp-num">${p.u ? p.u.toLocaleString('es-CO') : '—'}</div>
       <div class="tp-acc">${puedeEditarTpl() ? `<button type="button" class="tp-mas" data-tp-menu="${esc(k)}" aria-haspopup="menu" aria-expanded="${ab}" aria-label="Más acciones de ${esc(p.n)}">${I('more')}</button>
@@ -303,22 +312,21 @@ function paginaPlantillas(){
       ${p.e === 'b' && p.motivo ? `<div class="tp-motivo">${TP_IC.alerta}<span><b>Por qué la rechazó Meta:</b> ${esc(p.motivo)}.</span></div>` : ''}
     </div>`;
   }).join('');
-  return `${cab}${barra}<div class="tp-lista"><div class="tp-fila th"><span>Plantilla</span><span>Así la recibe el cliente</span><span>Líneas</span><span>Estado</span><span>Envíos</span><span></span></div>
+  return `${cab}${barra}<div class="tp-lista"><div class="tp-fila th"><span>Plantilla</span><span>Así la recibe el cliente</span><span>Equipos</span><span>Estado</span><span>Envíos</span><span></span></div>
     ${filas || '<div class="tp-nada">Ninguna plantilla coincide con estos filtros.</div>'}</div>`;
 }
 
 /* ── El formulario ── */
 function tplDesde(p){
-  const lineas = Array.isArray(p.lineas) && p.lineas.length ? p.lineas.filter(id => LINEAS.some(l => l.id === id))
-    : LINEAS.filter(l => !p.wabas || !l.wabaId || p.wabas.includes(l.wabaId)).map(l => l.id);
-  return {nombre:p.n, cat:p.c === 'Marketing' ? 'Marketing' : 'Utilidad', lineas:new Set(lineas), headTipo:p.headTipo || (p.head ? 'texto' : ''), head:p.head || '', body:p.b || '', foot:p.foot || '',
+  const equipos = Array.isArray(p.equipos) && p.equipos.length ? p.equipos.filter(n => EQUIPOS.some(e => e.n === n)) : EQUIPOS.map(e => e.n);
+  return {nombre:p.n, cat:p.c === 'Marketing' ? 'Marketing' : 'Utilidad', equipos:new Set(equipos), headTipo:p.headTipo || (p.head ? 'texto' : ''), head:p.head || '', body:p.b || '', foot:p.foot || '',
     btn:p.btn || '', btnTxt:p.btnTxt || '', btnUrl:p.btnUrl || '', btnTel:p.btnTel || '',
     media:TN_ARCHIVO[p.headTipo] && p.mediaUrl ? {tipo:p.headTipo, n:p.mediaN || 'archivo', url:p.mediaUrl, peso:p.mediaPeso || null} : null, vigencia:p.vigencia || 2592000,
     editar:p.borrador ? null : p.slug, borradorDe:p.borrador ? p.n : null, aprobada:!p.borrador && p.estadoMeta === 'APPROVED',
     soloLineas:!p.borrador && !['APPROVED', 'REJECTED', 'PAUSED'].includes(p.estadoMeta)};
 }
 function tnNueva(){
-  return {nombre:'', cat:'Utilidad', lineas:new Set(LINEAS.length === 1 ? [LINEAS[0].id] : []), headTipo:'', head:'', body:'Hola, {{nombre}}. ', foot:ESPACIO.nombre || '',
+  return {nombre:'', cat:'Utilidad', equipos:new Set(EQUIPOS.length === 1 ? [EQUIPOS[0].n] : []), headTipo:'', head:'', body:'Hola, {{nombre}}. ', foot:ESPACIO.nombre || '',
     btn:'', btnTxt:'', btnUrl:'', btnTel:'', media:null, vigencia:2592000, editar:null, borradorDe:null, aprobada:false};
 }
 /* Encabezados con archivo (maqueta aprobada 21-oct, límites de Meta; el documento, hasta lo que sube la Nube del CRM). */
@@ -375,18 +383,18 @@ function tnCampoArchivo(t){
 function plantillaNueva(){
   const t = st.tplNueva, el = document.getElementById('page');
   const marca = (ESPACIO.nombre || 'Tu empresa').trim(), ini = marca.charAt(0).toUpperCase();
-  const linea = l => { const eq = tpEquipo(l.id); return `<button type="button" class="tn-op" role="checkbox" aria-checked="${t.lineas.has(l.id)}" data-tn-linea="${esc(l.id)}"><span class="tn-cb">${TP_IC.chulo}</span><span class="tp-cara">${LOGO.wa}</span><span style="min-width:0"><b>${esc(l.n)}</b><small>${esc(l.tel || '')}${eq ? ` · <i style="background:${colorEquipo(eq)}"></i>${esc(eq)}` : ''}</small></span></button>`; };
+  const equipo = e => { const nl = tpEqLineas(e.n), np = tpEqPersonas(e.n); return `<button type="button" class="tn-op" role="checkbox" aria-checked="${t.equipos.has(e.n)}" data-tn-eq="${esc(e.n)}"><span class="tn-cb">${TP_IC.chulo}</span>${tpEqCara(e.n, ' grande')}<span style="min-width:0"><b>${esc(e.n)}</b><small>${nl ? `${nl} ${nl === 1 ? 'línea' : 'líneas'}` : 'Sin línea propia'} · ${np} ${np === 1 ? 'persona' : 'personas'}</small></span></button>`; };
   const cat = (k, precio, d) => `<button type="button" class="tn-op cat" role="radio" aria-checked="${t.cat === k}" data-tn-cat="${k}" ${(t.aprobada || t.soloLineas) && t.cat !== k ? 'disabled' : ''}><span class="tn-rd"></span><span><b>${k} · ${precio}</b><small>${d}</small></span></button>`;
   const seg = (attr, ops, val) => ops.map(([v, txt, ic]) => `<button type="button" ${attr}="${v}" aria-pressed="${val === v}">${ic || ''}${txt}</button>`).join('');
-  el.innerHTML = `<div class="pg-h"><div><h2>${t.editar ? 'Editar plantilla' : 'Nueva plantilla'}</h2><p class="sub">Escribe el mensaje, elige sus líneas y mándalo a Meta para aprobación.</p></div><button type="button" class="btn" id="t-x">${I('back')}Volver a plantillas</button></div>
+  el.innerHTML = `<div class="pg-h"><div><h2>${t.editar ? 'Editar plantilla' : 'Nueva plantilla'}</h2><p class="sub">Escribe el mensaje, elige sus equipos y mándalo a Meta para aprobación.</p></div><button type="button" class="btn" id="t-x">${I('back')}Volver a plantillas</button></div>
     <div class="tn"><div class="tn-frm">
-      ${t.soloLineas ? `<div class="tn-aviso">${TP_IC.alerta}<span>Meta no deja cambiar el texto mientras la plantilla está en revisión o deshabilitada. Por ahora puedes cambiar el nombre y las líneas.</span></div>` : ''}
-      ${t.aprobada ? `<div class="tn-aviso">${TP_IC.alerta}<span>Si cambias el texto, vuelve a revisión de Meta y no se puede enviar hasta que la apruebe. Meta deja editar una plantilla aprobada una vez al día y hasta 10 veces al mes. Cambiar solo el nombre o las líneas no pasa por Meta.</span></div>` : ''}
+      ${t.soloLineas ? `<div class="tn-aviso">${TP_IC.alerta}<span>Meta no deja cambiar el texto mientras la plantilla está en revisión o deshabilitada. Por ahora puedes cambiar el nombre y los equipos.</span></div>` : ''}
+      ${t.aprobada ? `<div class="tn-aviso">${TP_IC.alerta}<span>Si cambias el texto, vuelve a revisión de Meta y no se puede enviar hasta que la apruebe. Meta deja editar una plantilla aprobada una vez al día y hasta 10 veces al mes. Cambiar solo el nombre o los equipos no pasa por Meta.</span></div>` : ''}
       <section class="tn-sec"><h3>Datos</h3>
         <div class="tn-campo"><label for="t-n">Nombre interno <em>· solo lo ve tu equipo</em></label><input id="t-n" value="${esc(t.nombre)}" placeholder="Ej. Recordatorio de pago" autocomplete="off"></div>
-        <div class="tn-campo"><span>Líneas donde se usa</span>
-          ${LINEAS.length ? `<div class="tn-elige" role="group" aria-label="Líneas donde se usa">${LINEAS.map(linea).join('')}</div><span class="tn-ayuda">Solo se podrá enviar desde estas líneas, en difusiones y al escribirle a un cliente.</span>`
-            : '<span class="tn-ayuda">Primero conecta una línea de WhatsApp en Ajustes del CRM, Líneas de WhatsApp.</span>'}</div>
+        <div class="tn-campo"><span>Equipos que la usan</span>
+          ${EQUIPOS.length ? `<div class="tn-elige tres" role="group" aria-label="Equipos que la usan">${EQUIPOS.map(equipo).join('')}</div><span class="tn-ayuda">Solo la podrán enviar las personas de estos equipos, en sus conversaciones y en difusiones.</span>`
+            : '<span class="tn-ayuda">Primero crea un equipo en Ajustes del CRM, Equipos y reparto.</span>'}</div>
         <div class="tn-campo"><span>Categoría${t.aprobada ? ' <em>· fija: Meta no deja cambiarla en una aprobada</em>' : ''}</span>
           <div class="tn-elige" role="radiogroup" aria-label="Categoría">${cat('Utilidad', '0,0008 USD', 'Avisos de algo que el cliente ya pidió: citas, pagos, pedidos')}${cat('Marketing', '0,0125 USD', 'Promociones, ofertas y mensajes para volver a escribir')}</div></div>
       </section>
@@ -437,7 +445,7 @@ document.getElementById('page').addEventListener('click', e => {
   if (!t) {
     if (x.closest('[data-tp-nueva]')) { st.tplNueva = tnNueva(); st.tp.menu = null; render(); return; }
     const es = x.closest('[data-tp-estado]'); if (es) { st.tp.estado = es.dataset.tpEstado; render(); return; }
-    const li = x.closest('[data-tp-linea]'); if (li) { st.tp.linea = li.dataset.tpLinea; render(); return; }
+    const li = x.closest('[data-tp-eq]'); if (li) { st.tp.eq = li.dataset.tpEq; render(); return; }
     const mn = x.closest('[data-tp-menu]'); if (mn) { st.tp.menu = st.tp.menu === mn.dataset.tpMenu ? null : mn.dataset.tpMenu; render(); return; }
     const ed = x.closest('[data-tp-editar]'); if (ed) { const p = PLANTILLAS.find(q => tpClave(q) === ed.dataset.tpEditar); st.tp.menu = null; if (p) { st.tplNueva = tplDesde(p); render(); } return; }
     const br = x.closest('[data-tp-borrar]'); if (br) { const p = PLANTILLAS.find(q => tpClave(q) === br.dataset.tpBorrar); st.tp.menu = null; render(); if (p) tpConfirmarBorrar(p); return; }
@@ -445,7 +453,7 @@ document.getElementById('page').addEventListener('click', e => {
     return;
   }
   if (x.closest('#t-x')) { st.tplNueva = null; render(); return; }
-  const ln = x.closest('[data-tn-linea]'); if (ln) { const id = ln.dataset.tnLinea; t.lineas.has(id) ? t.lineas.delete(id) : t.lineas.add(id); ln.setAttribute('aria-checked', String(t.lineas.has(id))); return; }
+  const ln = x.closest('[data-tn-eq]'); if (ln) { const n = ln.dataset.tnEq; t.equipos.has(n) ? t.equipos.delete(n) : t.equipos.add(n); ln.setAttribute('aria-checked', String(t.equipos.has(n))); return; }
   const ct = x.closest('[data-tn-cat]'); if (ct && !ct.disabled) { t.cat = ct.dataset.tnCat; if (t.cat !== 'Marketing' && t.headTipo === 'gif') { t.headTipo = ''; t.media = null; toast('El GIF es solo para marketing: se quitó'); } render(); return; }
   const hd = x.closest('[data-tn-head]'); if (hd && !hd.disabled) { t.headTipo = hd.dataset.tnHead; if (t.media && t.media.tipo !== t.headTipo) t.media = null; render(); return; }
   const vg = x.closest('[data-tn-vig]'); if (vg) { t.vigencia = +vg.dataset.tnVig; render(); return; }
@@ -471,17 +479,17 @@ function tnElegirArchivo(t){
 }
 // Los borradores son de cada persona (quedan en sus preferencias, AJ.borradores).
 function tnBorrador(t){
-  const b = {n: t.nombre.trim() || 'Plantilla sin nombre', c: t.cat, e:'g', x:'Borrador', u:0, b: t.body, headTipo: t.headTipo, head: t.head, foot: t.foot, btn: t.btn, btnTxt: t.btnTxt, btnUrl: t.btnUrl, btnTel: t.btnTel, vigencia: t.vigencia, lineas:[...t.lineas], borrador:true};
+  const b = {n: t.nombre.trim() || 'Plantilla sin nombre', c: t.cat, e:'g', x:'Borrador', u:0, b: t.body, headTipo: t.headTipo, head: t.head, foot: t.foot, btn: t.btn, btnTxt: t.btnTxt, btnUrl: t.btnUrl, btnTel: t.btnTel, vigencia: t.vigencia, equipos:[...t.equipos], borrador:true};
   AJ.borradores = [b, ...(AJ.borradores || []).filter(x => x.n !== b.n && x.n !== t.borradorDe)];
   crmPlantillas().catch(() => {}).finally(() => { st.tplNueva = null; render(); toast('Plantilla guardada como borrador'); });
 }
 async function tnEnviar(t, bt){
   if (!t.nombre.trim() || !t.body.trim()) { toast('Ponle nombre y cuerpo a la plantilla'); return; }
-  if (LINEAS.length && !t.lineas.size) { toast('Elige al menos una línea donde se use la plantilla'); return; }
+  if (EQUIPOS.length && !t.equipos.size) { toast('Elige al menos un equipo que use la plantilla'); return; }
   const a = TN_ARCHIVO[t.headTipo], m = a && t.media && t.media.tipo === t.headTipo ? t.media : null;
   if (a && (!m || !m.url)) { toast(m ? `Espera a que termine de subir ${a.nombre}` : `Agrega ${a.nombre} del encabezado`); return; }
   const datos = {n: t.nombre.trim(), c: t.cat, b: t.body, head: t.headTipo === 'texto' ? t.head : '', foot: t.foot || '', btn: t.btn || '', btnTxt: t.btn ? (t.btnTxt || tnTextoBoton(t)) : '', btnUrl: t.btnUrl || '', btnTel: t.btnTel || '',
-    lineas: [...t.lineas], ...(m ? {media: {tipo: m.tipo, url: m.url, n: m.n, peso: m.peso, mime: m.mime || ''}} : {}), ...(t.cat === 'Marketing' ? {vigencia: t.vigencia || 2592000} : {})};
+    equipos: [...t.equipos], ...(m ? {media: {tipo: m.tipo, url: m.url, n: m.n, peso: m.peso, mime: m.mime || ''}} : {}), ...(t.cat === 'Marketing' ? {vigencia: t.vigencia || 2592000} : {})};
   bt.disabled = true;
   try {
     if (t.editar) await crmApi('PUT', `/crm/plantillas/${encodeURIComponent(t.editar)}`, datos);
