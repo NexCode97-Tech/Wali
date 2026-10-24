@@ -59,10 +59,14 @@ function semanaMeta(filas: unknown[]): { day_of_week: string; open_time: string;
   return out
 }
 
-/** Festivos de Colombia de este año y el siguiente, cerrados todo el día. */
+/**
+ * Los próximos festivos de Colombia, cerrados. En holiday_schedule las horas son las de ABIERTO ese día y Meta no tiene
+ * forma de decir «cerrado todo el día»: se deja abierto un solo minuto (00:00 a 00:01). Meta acepta máximo 20 y ninguno
+ * pasado; como se vuelve a mandar con cada cambio de ajustes, los siguientes entran solos.
+ */
 function festivosMeta(): { date: string; start_time: string; end_time: string }[] {
-  const y = new Date().getUTCFullYear(), hoy = new Date().toISOString().slice(0, 10)
-  return [...festivosCO(y), ...festivosCO(y + 1)].filter(d => d >= hoy).map(date => ({ date, start_time: '0000', end_time: '2359' }))
+  const y = new Date().getUTCFullYear(), hoy = new Date(Date.now() - 5 * 3600_000).toISOString().slice(0, 10)
+  return [...festivosCO(y), ...festivosCO(y + 1)].filter(d => d > hoy).slice(0, 20).map(date => ({ date, start_time: '0000', end_time: '0001' }))
 }
 
 /** Lo que Meta devuelve en `calling` → nuestros ajustes. */
