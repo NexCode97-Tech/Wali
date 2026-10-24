@@ -379,6 +379,12 @@ rutasWaCrm.put('/lineas/:id/llamadas', soloLideres, asyncHandler(async (req: Req
   const cambios = Object.fromEntries(Object.entries(entrada).filter(([k]) => (LLAVES_LLAMADAS as readonly string[]).includes(k)))
   for (const k of ['activas', 'boton', 'devolver', 'buzon']) if (k in cambios && typeof cambios[k] !== 'boolean') throw new ValidationError(`«${k}» debe ser sí o no`)
   if ('horario' in cambios && cambios.horario !== 'atencion' && cambios.horario !== 'propio') throw new ValidationError('El horario de llamadas es el de atención o uno propio')
+  if ('horarioPropio' in cambios) {
+    const f = cambios.horarioPropio
+    const hora = (v: unknown) => typeof v === 'string' && /^\d{1,2}:\d{2}$/.test(v)
+    if (!Array.isArray(f) || f.length !== 7 || !f.every(d => Array.isArray(d) && typeof d[0] === 'string' && hora(d[1]) && hora(d[2]) && typeof d[3] === 'boolean')) throw new ValidationError('El horario propio debe traer los 7 días con su hora de inicio y fin')
+    cambios.horarioPropio = f.map(d => [String(d[0]).slice(0, 20), d[1], d[2], d[3]])
+  }
   if ('timbre' in cambios) cambios.timbre = Number(cambios.timbre)
   if ('saludoMediaId' in cambios && !/^\d{1,30}$/.test(String(cambios.saludoMediaId))) throw new ValidationError('El saludo del buzón no es válido')
   if (!Object.keys(cambios).length) throw new ValidationError('No hay nada que cambiar')

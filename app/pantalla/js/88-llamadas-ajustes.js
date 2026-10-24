@@ -45,7 +45,7 @@ function lwLinea(l, lim, ab){
   const sm = meta ? 'Activadas · tus clientes ya pueden llamarte' : lim != null && lim >= 2000 ? 'Listas para activar' : 'Falta un requisito de Meta';
   const ctl = meta
     ? `<button type="button" class="ln-lnk" data-ln-abrir="${l.id}|aj" aria-expanded="${ab === 'aj'}">Ajustes${I('chev')}</button>${lwTg(true, `Llamadas por WhatsApp en ${esc(l.n)}`, `data-lw-apagar="${l.id}"`)}`
-    : `<button type="button" class="ln-lnk" data-ln-abrir="${l.id}|req" aria-expanded="${ab === 'req'}">Ver requisitos${I('chev')}</button>`;
+    : `<button type="button" class="ln-lnk" data-ln-abrir="${l.id}|req" aria-expanded="${ab === 'req'}">Ver requisitos${I('chev')}</button>${lwTg(false, `Llamadas por WhatsApp en ${esc(l.n)}`, `data-lw-encender="${l.id}" ${lim != null && lim >= 2000 && !x.guardando ? '' : 'disabled title="Falta un requisito de Meta"'}`)}`;
   const filaLl = `<div class="ln-f"><span class="fic">${I('phone')}</span><div class="ftx"><b>Llamadas por WhatsApp</b><small>${sm}</small></div><div class="ctl">${ctl}</div></div>`;
   if (!meta && ab === 'req') return filaLl + lwRequisitos(l, lim, x);
   if (meta && ab === 'aj') { lwCargar(l.id); return filaLl + lwAjustes(l, x); }
@@ -82,7 +82,7 @@ function lwAjustes(l, x){
       ${lwFila('Buzón de voz', 'Si nadie contesta o se rechaza, suena tu saludo y el cliente deja un mensaje que llega a su conversación. Necesita un saludo grabado (menos de 1 minuto)', lwTg(a.buzon, 'Buzón de voz', `data-lw-tg="${l.id}|buzon"`))}
       <div class="lw-sub">${saludo}</div>
       ${lwFila('Horario para recibir llamadas', 'Fuera de este horario el botón de llamar se oculta y el cliente ve cuándo puede llamar', lwSeg(`data-lw-horario="${l.id}" data-v`, [['atencion', 'Igual que la atención'], ['propio', 'Propio']], a.horario))}
-      <div class="lw-sub lw-hor">${tramos.length ? tramos.map(t => `<span><b>${t.desde === t.hasta ? dias[t.desde] : `${dias[t.desde]} a ${dias[t.hasta].toLowerCase()}`}</b> ${esc(horaCfg(t.f[1]))} – ${esc(horaCfg(t.f[2]))}</span>`).join('') : '<span>Sin horario de atención: se reciben llamadas a toda hora</span>'}<span><b>Festivos de Colombia</b> cerrado, se cargan solos</span></div>`)}
+      ${a.horario === 'propio' ? `<div class="lw-sub">${lwHorPropio(l.id, a)}</div>` : `<div class="lw-sub lw-hor">${tramos.length ? tramos.map(t => `<span><b>${t.desde === t.hasta ? dias[t.desde] : `${dias[t.desde]} a ${dias[t.hasta].toLowerCase()}`}</b> ${esc(horaCfg(t.f[1]))} – ${esc(horaCfg(t.f[2]))}</span>`).join('') : '<span>Sin horario de atención: se reciben llamadas a toda hora</span>'}<span><b>Festivos de Colombia</b> cerrado, se cargan solos</span></div>`}`)}
     ${lwGrupo('En el WhatsApp del cliente', `
       ${lwFila('Botón de llamar en el chat', 'El ícono de teléfono arriba en la conversación con tu empresa', lwTg(a.boton, 'Botón de llamar', `data-lw-tg="${l.id}|boton"`))}
       ${lwFila('Pedir permiso para devolver la llamada', 'Si llama y no le contestan, WhatsApp le pregunta si podemos llamarlo después', lwTg(a.devolver, 'Permiso para devolver la llamada', `data-lw-tg="${l.id}|devolver"`))}`)}
@@ -97,6 +97,25 @@ function lwAjustes(l, x){
       : `<button type="button" class="lw-desact" data-lw-des="${l.id}">Desactivar llamadas en esta línea</button>`}</div>
   </div>`;
 }
+/* Horario propio (maqueta «Horario propio de llamadas», dirección A): un día por fila con su interruptor y su franja. */
+const lwFilasPropio = a => Array.isArray(a.horarioPropio) && a.horarioPropio.length === 7 ? a.horarioPropio.map(f => [...f]) : (CFG.horario || []).map(f => [...f]);
+const LW_HORAS = Array.from({length: 48}, (_, i) => `${Math.floor(i / 2)}:${i % 2 ? '30' : '00'}`).concat('23:59');
+function lwHora(id, d, k, v){
+  const min = s => { const m = String(s).match(/^(\d{1,2}):(\d{2})$/); return m ? +m[1] * 60 + +m[2] : 0; };
+  const ops = LW_HORAS.includes(v) ? LW_HORAS : [...LW_HORAS, v].sort((x, y) => min(x) - min(y));
+  return `<label class="hp-h"><select data-lw-hora="${id}|${d}|${k}" aria-label="${k === 1 ? 'Desde' : 'Hasta'}">${ops.map(h => `<option value="${h}"${h === v ? ' selected' : ''}>${esc(horaCfg(h))}</option>`).join('')}</select><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></label>`;
+}
+function lwHorPropio(id, a){
+  return `<div class="hp">${lwFilasPropio(a).map(([d, de, ha, on], i) => `<div class="hp-fila${on ? '' : ' cerrado'}"><span class="hp-d">${esc(d)}</span>${lwTg(on, `Recibir llamadas el ${esc(d)}`, `data-lw-dia="${id}|${i}"`)}${on ? `<span class="hp-r">${lwHora(id, i, 1, de)}<i>a</i>${lwHora(id, i, 2, ha)}</span>` : '<span class="hp-c">No recibe llamadas</span>'}</div>`).join('')}
+    <div class="hp-pie"><button type="button" class="hp-lnk" data-lw-copiarhor="${id}">Copiar el horario de atención</button><span><b>Festivos de Colombia</b> cerrado, se cargan solos</span></div></div>`;
+}
+function lwGuardarPropio(id, filas, ok){ return lwCambiar(id, {horario: 'propio', horarioPropio: filas}, ok); }
+document.getElementById('page').addEventListener('change', e => {
+  const s = e.target.closest && e.target.closest('[data-lw-hora]'); if (!s || st.pagina !== 'cfg-lineas') return;
+  const [id, d, k] = s.dataset.lwHora.split('|'), x = LW[id]; if (!x || !x.ajustes) return;
+  const filas = lwFilasPropio(x.ajustes); filas[+d][+k] = s.value;
+  lwGuardarPropio(id, filas, 'Horario de llamadas guardado en Meta');
+});
 const lwBotonesSaludo = (id, x) => x.grabando
   ? `<button type="button" class="lw-mini rec" data-lw-parar="${id}">${LW_IC.mic}Detener · <span data-lw-seg>0:00</span></button>`
   : x.subiendo ? '<span class="lw-fijo">Subiendo el saludo…</span>'
@@ -137,7 +156,7 @@ let lwAudio = null;
 
 document.getElementById('page').addEventListener('click', e => {
   if (st.pagina !== 'cfg-lineas') return; const t = e.target;
-  const ac = t.closest('[data-lw-activar]'); if (ac && !ac.disabled) { lwCambiar(ac.dataset.lwActivar, {activas: true}, 'Llamadas activadas en Meta').then(() => { if (metaLlamadas(lineaDe(ac.dataset.lwActivar))) st.lnAbierto[ac.dataset.lwActivar] = 'aj'; render(); }); return; }
+  const ac = t.closest('[data-lw-activar], [data-lw-encender]'); if (ac && !ac.disabled) { const id = ac.dataset.lwActivar || ac.dataset.lwEncender; lwCambiar(id, {activas: true}, 'Llamadas activadas en Meta').then(() => { if (metaLlamadas(lineaDe(id))) st.lnAbierto[id] = 'aj'; render(); }); return; }
   const rl = t.closest('[data-lw-releer]'); if (rl) { lwCargar(rl.dataset.lwReleer, true); render(); return; }
   const ap = t.closest('[data-lw-apagar]'); if (ap) { const id = ap.dataset.lwApagar; st.lnAbierto[id] = 'aj'; (LW[id] || (LW[id] = {})).desactivar = true; render(); setTimeout(() => { const f = document.querySelector('.lw-fin'); if (f) f.scrollIntoView({block: 'center', behavior: 'smooth'}); }, 50); return; }
   const de = t.closest('[data-lw-des]'); if (de) { (LW[de.dataset.lwDes] || (LW[de.dataset.lwDes] = {})).desactivar = true; render(); return; }
@@ -145,7 +164,13 @@ document.getElementById('page').addEventListener('click', e => {
   const dk = t.closest('[data-lw-desok]'); if (dk) { const id = dk.dataset.lwDesok; LW[id].desactivar = false; lwCambiar(id, {activas: false}, 'Llamadas desactivadas en la línea').then(() => { st.lnAbierto[id] = ''; render(); }); return; }
   const tg = t.closest('[data-lw-tg]'); if (tg) { const [id, k] = tg.dataset.lwTg.split('|'), a = (LW[id] || {}).ajustes || {}; lwCambiar(id, {[k]: !a[k]}, !a[k] ? 'Activado en Meta' : 'Apagado en Meta'); return; }
   const tm = t.closest('[data-lw-timbre]'); if (tm) { lwCambiar(tm.dataset.lwTimbre, {timbre: Number(tm.dataset.v)}, `Timbra ${tm.dataset.v} segundos antes del buzón`); return; }
-  const ho = t.closest('[data-lw-horario]'); if (ho) { lwCambiar(ho.dataset.lwHorario, {horario: ho.dataset.v}, 'Horario de llamadas guardado en Meta'); return; }
+  const ho = t.closest('[data-lw-horario]'); if (ho) { const id = ho.dataset.lwHorario, a = (LW[id] || {}).ajustes || {};
+    if (ho.dataset.v === a.horario) return;
+    if (ho.dataset.v === 'propio') lwGuardarPropio(id, lwFilasPropio(a), 'Horario propio: ajústalo día por día');
+    else lwCambiar(id, {horario: 'atencion'}, 'Las llamadas siguen el horario de atención');
+    return; }
+  const dia = t.closest('[data-lw-dia]'); if (dia) { const [id, d] = dia.dataset.lwDia.split('|'), x = LW[id]; const filas = lwFilasPropio(x.ajustes); filas[+d][3] = !filas[+d][3]; lwGuardarPropio(id, filas, filas[+d][3] ? `${filas[+d][0]}: recibe llamadas` : `${filas[+d][0]}: no recibe llamadas`); return; }
+  const cp = t.closest('[data-lw-copiarhor]'); if (cp) { lwGuardarPropio(cp.dataset.lwCopiarhor, (CFG.horario || []).map(f => [...f]), 'Se copió el horario de atención'); return; }
   const gr = t.closest('[data-lw-grabar]'); if (gr) { const id = gr.dataset.lwGrabar; ajLinea(id); LLAM.lineas[id].grabar = LLAM.lineas[id].grabar === false; render(); toast(LLAM.lineas[id].grabar ? 'Las llamadas se graban' : 'Las llamadas ya no se graban'); return; }
   const gs = t.closest('[data-lw-grabarsaludo]'); if (gs) { lwGrabarSaludo(gs.dataset.lwGrabarsaludo); return; }
   const pa = t.closest('[data-lw-parar]'); if (pa) { const r = (LW[pa.dataset.lwParar] || {}).grabando; if (r && r.state === 'recording') r.stop(); return; }
@@ -205,6 +230,23 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .lw-desact{border:0;background:none;padding:4px 0;font:inherit;font-size:13px;font-weight:600;color:#b91c1c;cursor:pointer}
 .lw-desact:hover{text-decoration:underline}
 .btn.lw-rojo{background:#dc2626;border-color:#dc2626;color:#fff}
+/* Horario propio, un día por fila */
+.hp{display:grid;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;animation:lw-in .35s cubic-bezier(.16,1,.3,1)}
+.hp svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.hp-fila{display:flex;align-items:center;gap:12px;padding:8px 12px;border-top:1px solid var(--line2)}
+.hp-fila:first-child{border-top:0}
+.hp-d{width:86px;font-size:13px;font-weight:600}
+.hp-r{display:flex;align-items:center;gap:6px;margin-left:auto}.hp-r i{font-style:normal;font-size:12.5px;color:var(--ink3)}
+.hp-h{position:relative;display:inline-flex;align-items:center;height:30px;border:1px solid var(--line);border-radius:8px;background:#fff;white-space:nowrap}
+.hp-h select{appearance:none;-webkit-appearance:none;border:0;background:none;height:100%;padding:0 28px 0 10px;font:inherit;font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--ink);cursor:pointer}
+.hp-h select:focus-visible{outline:2px solid #FFD21F;outline-offset:1px;border-radius:7px}
+.hp-h svg{position:absolute;right:8px;pointer-events:none;color:var(--ink3)}
+.hp-c{margin-left:auto;font-size:12.5px;color:var(--ink3)}
+.hp-fila.cerrado .hp-d{color:var(--ink3)}
+.hp-pie{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:9px 12px;background:#fbfbfc;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink2)}
+.hp-pie b{font-weight:600;color:var(--ink)}
+.hp-lnk{border:0;background:none;padding:0;font:inherit;font-size:12.5px;font-weight:600;color:var(--blue-ink);cursor:pointer}
+@media (max-width:600px){.hp-fila{flex-wrap:wrap}.hp-r{margin-left:0;width:100%}}
 @media (max-width:600px){.lw{padding-left:16px}.lw-f{flex-wrap:wrap}.lw-ctl{width:100%}}
 @media (prefers-reduced-motion:reduce){.lw{animation:none}}
 </style>`);
