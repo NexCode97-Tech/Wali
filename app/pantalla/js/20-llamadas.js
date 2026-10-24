@@ -81,9 +81,11 @@ function limiteNum(v){
   if (v == null || v === '') return null;
   if (typeof v === 'number') return v;
   const s = String(v).toUpperCase();
-  if (/UNLIMITED|ILIMITADO/.test(s)) return Infinity;
-  const m = s.match(/(\d+(?:[.,]\d+)?)\s*([KM])?/); if (!m) return null;
-  return parseFloat(m[1].replace(',', '.')) * (m[2] === 'M' ? 1e6 : m[2] === 'K' ? 1e3 : 1);
+  if (/UNLIMITED|ILIMITADO|SIN L[IÍ]MITE/.test(s)) return Infinity;
+  // El servidor lo manda con separador de miles de Colombia («2.000 por día», «10.000 por día»): el punto no es decimal.
+  const m = s.match(/(\d{1,3}(?:[.,]\d{3})+|\d+(?:[.,]\d+)?)\s*([KM])?/); if (!m) return null;
+  const n = /^\d{1,3}(?:[.,]\d{3})+$/.test(m[1]) ? Number(m[1].replace(/[.,]/g, '')) : parseFloat(m[1].replace(',', '.'));
+  return n * (m[2] === 'M' ? 1e6 : m[2] === 'K' ? 1e3 : 1);
 }
 const fmtLimite = n => n === Infinity ? 'Sin límite' : n.toLocaleString('es-CO');
 const CALIDAD_META = {GREEN:['Alta', 'ok2'], HIGH:['Alta', 'ok2'], YELLOW:['Media', 'll-med'], MEDIUM:['Media', 'll-med'], RED:['Baja', 'll-baja'], LOW:['Baja', 'll-baja']};
