@@ -20,6 +20,7 @@ import { perfilDe, tokenDePagina } from './paginas'
 import { bajarDeTelegram, contestarBoton } from './telegram'
 import { bajarDeTiktok } from './tiktok'
 import { encuestaNoLlego, respuestaFormulario } from './encuesta'
+import { leerLlamadas } from './llamadas'
 
 /**
  * Lo que llega por el webhook de WhatsApp Cloud API del CRM (26-sep-2026):
@@ -1252,6 +1253,11 @@ export async function procesarWebhookCrm(cuerpo: Json, conexionId: string | null
               await prisma.crmLinea.updateMany({ where: { wabaId }, data: { limite } })
               for (const l of await prisma.crmLinea.findMany({ where: { wabaId } })) emitirCrm({ tipo: 'linea', linea: lineaAFront(l) })
             }
+          } else if (cambio?.field === 'account_settings_update') {
+            // Cambiaron los ajustes de llamadas del número (desde el CRM o desde WhatsApp Manager): se vuelve a leer la copia.
+            const pnid = String(obj(v.phone_number_settings).phone_number_id ?? '')
+            const linea = pnid ? await prisma.crmLinea.findUnique({ where: { phoneNumberId: pnid } }) : null
+            if (linea) { const r = await leerLlamadas(linea); emitirCrm({ tipo: 'linea', linea: lineaAFront(r.linea) }) }
           } else if (cambio?.field === 'account_update' && ['MM_LITE_TERMS_SIGNED', 'AD_ACCOUNT_LINKED'].includes(String(v.event))) {
             // Ya se atendió arriba (marketing optimizado).
           } else {

@@ -30,6 +30,7 @@ import { recibirManychat } from '../services/crm/manychat'
 import { emitirConexiones as emitirConexionesDe } from '../services/crm/conexiones'
 import { LLAVES_MARKETING, revisarMarketingDeConexion } from '../services/crm/marketingMeta'
 import QRCode from 'qrcode'
+import { cambiarLlamadas, leerLlamadas, subirSaludo } from '../services/crm/llamadas'
 
 /**
  * WhatsApp Cloud API del CRM (26-sep-2026). Todo se conecta desde el CRM, sin variables del
@@ -358,6 +359,44 @@ rutasWaCrm.patch('/lineas/:id', soloLideres, asyncHandler(async (req: Request, r
   const front = lineaAFront(linea)
   emitirCrm({ tipo: 'linea', linea: front }, req.userId ?? null)
   return ApiResponse.success(res, front)
+}))
+
+/**
+ * Llamadas por WhatsApp de la línea (Calling API): se leen y se cambian en Meta, y la línea guarda la copia.
+ * Solo líderes. El saludo del buzón se sube aparte (audio/ogg Opus, menos de 1 minuto).
+ */
+const LLAVES_LLAMADAS = ['activas', 'boton', 'devolver', 'horario', 'horarioPropio', 'buzon', 'timbre', 'saludoMediaId'] as const
+rutasWaCrm.get('/lineas/:id/llamadas', soloLideres, asyncHandler(async (req: Request, res: Response) => {
+  const l = await prisma.crmLinea.findUnique({ where: { id: req.params.id } })
+  if (!l) throw new NotFoundError('Esa línea no existe')
+  const { linea, ajustes } = await leerLlamadas(l)
+  return ApiResponse.success(res, { linea: lineaAFront(linea), ajustes })
+}))
+rutasWaCrm.put('/lineas/:id/llamadas', soloLideres, asyncHandler(async (req: Request, res: Response) => {
+  const l = await prisma.crmLinea.findUnique({ where: { id: req.params.id } })
+  if (!l) throw new NotFoundError('Esa línea no existe')
+  const entrada = (req.body?.cambios ?? {}) as Json
+  const cambios = Object.fromEntries(Object.entries(entrada).filter(([k]) => (LLAVES_LLAMADAS as readonly string[]).includes(k)))
+  for (const k of ['activas', 'boton', 'devolver', 'buzon']) if (k in cambios && typeof cambios[k] !== 'boolean') throw new ValidationError(`«${k}» debe ser sí o no`)
+  if ('horario' in cambios && cambios.horario !== 'atencion' && cambios.horario !== 'propio') throw new ValidationError('El horario de llamadas es el de atención o uno propio')
+  if ('timbre' in cambios) cambios.timbre = Number(cambios.timbre)
+  if ('saludoMediaId' in cambios && !/^\d{1,30}$/.test(String(cambios.saludoMediaId))) throw new ValidationError('El saludo del buzón no es válido')
+  if (!Object.keys(cambios).length) throw new ValidationError('No hay nada que cambiar')
+  const { linea, ajustes } = await cambiarLlamadas(l, cambios)
+  const front = lineaAFront(linea)
+  emitirCrm({ tipo: 'linea', linea: front }, req.userId ?? null)
+  return ApiResponse.success(res, { linea: front, ajustes })
+}))
+rutasWaCrm.post('/lineas/:id/llamadas/saludo', soloLideres, asyncHandler(async (req: Request, res: Response) => {
+  const l = await prisma.crmLinea.findUnique({ where: { id: req.params.id } })
+  if (!l) throw new NotFoundError('Esa línea no existe')
+  const b64 = String(req.body?.audio ?? '').replace(/^data:[^,]*,/, '')
+  if (!b64 || b64.length > 1_400_000) throw new ValidationError('El saludo debe ser un audio de menos de 1 minuto')
+  const audio = Buffer.from(b64, 'base64')
+  // OggS: Meta solo acepta audio/ogg con Opus para el buzón.
+  if (audio.subarray(0, 4).toString('latin1') !== 'OggS') throw new ValidationError('El saludo debe ser un audio .ogg (Opus)')
+  const id = await subirSaludo(l, audio)
+  return ApiResponse.created(res, { saludoMediaId: id })
 }))
 
 rutasWaCrm.delete('/lineas/:id', soloLideres, asyncHandler(async (req: Request, res: Response) => {

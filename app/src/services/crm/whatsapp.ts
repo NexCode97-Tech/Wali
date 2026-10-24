@@ -150,8 +150,9 @@ export async function graph<T = Json>(ruta: string, op: OpcionesGraph): Promise<
     try {
       res = await fetch(url, {
         method: op.method ?? 'GET',
-        headers: { Authorization: `Bearer ${op.cred.token}`, ...(op.body !== undefined ? { 'Content-Type': 'application/json' } : {}) },
-        body: op.body !== undefined ? JSON.stringify(op.body) : undefined,
+        // Un archivo (FormData, p. ej. el saludo del buzón) va tal cual: fetch le pone su propio Content-Type.
+        headers: { Authorization: `Bearer ${op.cred.token}`, ...(op.body !== undefined && !(op.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}) },
+        body: op.body instanceof FormData ? op.body : op.body !== undefined ? JSON.stringify(op.body) : undefined,
         signal: AbortSignal.timeout(op.timeoutMs ?? 30_000),
       })
       break

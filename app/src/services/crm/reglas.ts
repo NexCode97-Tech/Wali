@@ -187,7 +187,7 @@ export function horarioLegal(ahora = ahoraCalendario()): Legal {
 const HORARIO_DEFECTO = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map(d => [d, '7:00', '22:00', true])
 
 /** '7:00', '22:00', '7 a. m.', '10:30 p. m.' → minutos del día (null si no se entiende). */
-function aMinutos(t: unknown): number | null {
+export function aMinutos(t: unknown): number | null {
   const m = String(t ?? '').toLowerCase().match(/^\s*(\d{1,2})(?:[:.](\d{2}))?\s*(a|p)?\.?\s*(?:m\.?)?\s*$/)
   if (!m) return null
   let h = Number(m[1]); const mm = Number(m[2] ?? 0)
