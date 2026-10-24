@@ -367,6 +367,9 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .lcd-bt{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .lcd-bt.uno{grid-template-columns:1fr}
 .lcd-b{display:flex;align-items:center;justify-content:center;gap:8px;height:42px;border:0;border-radius:11px;color:#fff;font:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:transform .15s cubic-bezier(.16,1,.3,1)}
+/* Rechazar y Contestar: el ícono arriba y el texto debajo (24-oct). */
+.lcd.suena .lcd-b{flex-direction:column;gap:5px;height:58px;border-radius:12px;font-size:12.5px;line-height:1}
+.lcd.suena .lcd-b .i{width:20px;height:20px}
 .lcd-b:active{transform:scale(.94)}
 .lcd-b:disabled{opacity:.5;cursor:default}
 .lcd-b.verde{background:#16a34a;animation:lcd-lat 1.4s cubic-bezier(.16,1,.3,1) infinite}.lcd-b.rojo{background:#dc2626}
