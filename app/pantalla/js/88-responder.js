@@ -165,7 +165,12 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && !rrMenu.hidden) { const b = rrMenuBoton; rrCerrarMenu(); if (b) b.focus(); e.stopPropagation(); }
   else if (e.key === 'Escape' && rrCita && document.activeElement === ta) { rrCita = null; rrPintarBarra(); }
 }, true);
-['msgs', 'ec-msgs'].map(id => document.getElementById(id)).filter(Boolean).forEach(caja => caja.addEventListener('scroll', rrCerrarMenu, {passive: true}));
+// Se cierra cuando la persona mueve el chat (rueda, dedo o la barra), no con el scroll que hace el CRM al repintar: cada
+// aviso en tiempo real repinta el chat y devuelve la posición, y eso cerraba el menú apenas se abría (24-oct).
+['msgs', 'ec-msgs'].map(id => document.getElementById(id)).filter(Boolean).forEach(caja => ['wheel', 'touchmove', 'pointerdown'].forEach(ev => caja.addEventListener(ev, e => { if (ev !== 'pointerdown' || e.target === caja) rrCerrarMenu(); }, {passive: true})));
+// Si el chat se repinta con el menú abierto, el ⋯ nuevo de ese mensaje queda como el dueño del menú.
+const rrChatMenu = chat;
+chat = function(){ const r = rrChatMenu.apply(this, arguments); if (rrMenuDe) { const b = document.querySelector(`[data-rr-menu="${CSS.escape(rrMenuDe)}"]`); if (b) { rrMenuBoton = b; b.setAttribute('aria-expanded', 'true'); } } return r; };
 addEventListener('resize', rrCerrarMenu);
 
 document.head.insertAdjacentHTML('beforeend', `<style>
