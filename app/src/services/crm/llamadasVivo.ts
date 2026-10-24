@@ -225,7 +225,7 @@ export async function respuestaPermiso(convId: number, contactoId: number, nombr
   if (r.de) {
     const sol = await prisma.crmMensaje.findFirst({ where: { waId: r.de, conversacionId: convId } })
     if (sol) {
-      const f = await prisma.crmMensaje.update({ where: { id: sol.id }, data: { datos: { ...obj(sol.datos), permisoResp: r.acepta ? 'acepto' : 'rechazo' } as Prisma.InputJsonValue } })
+      const f = await prisma.crmMensaje.update({ where: { id: sol.id }, data: { datos: { ...obj(sol.datos), permisoResp: r.acepta ? (r.permanente ? 'siempre' : 'acepto') : 'rechazo' } as Prisma.InputJsonValue } })
       emitirMsg(convId, f)
     }
   }

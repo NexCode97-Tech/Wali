@@ -202,6 +202,11 @@ async function lvLlamar(c){
   lvDialogoPermiso(c, p);
 }
 
+/** La tarjeta de permiso tal como la muestra WhatsApp (captura real, 24-oct): «¿Puede llamarte …?» y «Seleccionar preferencia». */
+const lvTarjetaWa = (empresa, pie) => `<div class="wa-perm"><div class="wa-perm-c"><span class="wa-perm-ic">${LV_IC.tel}</span><div><b>¿Puede llamarte ${esc(empresa)}?</b><small>Puedes actualizar tus preferencias en el perfil de empresa en cualquier momento.</small></div></div>
+  ${pie || '<span class="wa-perm-b">Seleccionar preferencia<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span>'}</div>`;
+const lvEmpresa = () => ((typeof espActual === 'function' && espActual()) || {}).n || 'Tu empresa';
+
 /* ── Pedir permiso (maqueta «Pedir permiso para llamar») ── */
 function lvDialogoPermiso(c, p){
   const pila = nombrePila(c), empresa = ((typeof espActual === 'function' && espActual()) || {}).n || 'Tu empresa';
@@ -215,7 +220,8 @@ function lvDialogoPermiso(c, p){
         <li>${LV_IC.info}<span>Sale gratis. WhatsApp solo deja mandarla si te escribió en las <b>últimas 24 horas</b>.</span></li></ul>
       ${bloqueo ? `<div class="ll-nota" style="margin-top:12px">${esc(bloqueo)}</div>` : ''}</div>
       <div class="pm-tel"><small>Así le llega</small><div class="pm-wa"><div class="pm-bur"><span id="pm-v">${esc(texto)}</span><span class="pm-h1">${esc(new Date().toLocaleTimeString('es-CO', {hour: 'numeric', minute: '2-digit'}))}</span></div>
-        <div class="pm-perm"><span class="pm-pic">${LV_IC.tel}</span><b>${esc(empresa)} quiere llamarte</b><small>Puedes cambiarlo cuando quieras</small><span class="pm-op">Permitir llamadas</span><span class="pm-op">Ahora no</span></div></div></div></div>
+        ${lvTarjetaWa(empresa)}</div>
+        <small class="pm-sub">Al tocar «Seleccionar preferencia» elige</small><div class="pm-ops"><span>Permitir llamadas</span><span>Permitir temporalmente las llamadas</span><span>Ahora no</span></div></div></div>
     <div class="pm-f"><button type="button" class="pm-cancel" data-cerrar-dlg="1">Cancelar</button><button type="button" class="pm-send" data-lv-pedir="${c.id}" ${bloqueo ? 'disabled' : ''}>${LV_IC.tel}Enviar solicitud</button></div></div>`, 'pm-dlg');
 }
 document.getElementById('ov-x').addEventListener('input', e => {
@@ -327,10 +333,11 @@ const lvOutSin = chBloqueOut;
 chBloqueOut = function(m, ult){
   if (!m.permisoLlamada || m._estado === 'fallido') return lvOutSin.apply(this, arguments);
   const vencida = !m.permisoResp && m._t && Date.now() - new Date(m._t).getTime() > 7 * 86400e3;
-  const est = m.permisoResp === 'acepto' ? `${LV_IC.ok}Aceptó` : m.permisoResp === 'rechazo' ? `${LV_IC.no}No aceptó` : vencida ? `${LV_IC.reloj}Venció sin respuesta` : `${LV_IC.reloj}Esperando respuesta · vence en 7 días`;
-  // Los botones que le pone WhatsApp, como en las plantillas; el que eligió queda marcado.
-  const boton = (t, ic, k) => `<span class="${m.permisoResp ? (m.permisoResp === k ? `elegido ${k}` : 'otro') : ''}">${m.permisoResp === k ? LV_IC.ok : ic}${t}</span>`;
-  return `<div class="ch-b out pr${ult ? ' ult' : ''}"><span class="pr-cab">${LV_IC.tel}Solicitud para llamar</span>${esc(m.out || '')}<div class="ch-tb pr-bts">${boton('Permitir llamadas', LV_IC.tel, 'acepto')}${boton('Ahora no', '', 'rechazo')}</div><span class="pr-est">${est}</span></div>`;
+  const est = m.permisoResp === 'siempre' ? `${LV_IC.ok}Aceptó para siempre` : m.permisoResp === 'acepto' ? `${LV_IC.ok}Aceptó por 7 días` : m.permisoResp === 'rechazo' ? `${LV_IC.no}No aceptó` : vencida ? `${LV_IC.reloj}Venció sin respuesta` : `${LV_IC.reloj}Esperando respuesta · vence en 7 días`;
+  // La tarjeta como la ve el cliente en WhatsApp; cuando responde, en vez de «Seleccionar preferencia» queda lo que eligió.
+  const elegida = {siempre: 'Permitir llamadas', acepto: 'Permitir temporalmente las llamadas', rechazo: 'Ahora no'}[m.permisoResp];
+  const pie = elegida ? `<span class="wa-perm-r ${m.permisoResp === 'rechazo' ? 'no' : 'si'}">${LV_IC.ok}${elegida}</span>` : '';
+  return `<div class="ch-b out pr${ult ? ' ult' : ''}"><span class="pr-cab">${LV_IC.tel}Solicitud para llamar</span>${esc(m.out || '')}${lvTarjetaWa(lvEmpresa(), pie)}<span class="pr-est">${est}</span></div>`;
 };
 
 document.head.insertAdjacentHTML('beforeend', `<style>
@@ -411,10 +418,23 @@ body:has(.lcd) .ay-fab:not(.abierta){opacity:0;pointer-events:none}
 .pr-cab{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#15803d}.pr-cab .i{width:15px;height:15px}
 .pr-est{display:flex;align-items:center;gap:6px;padding-top:7px;margin-top:2px;border-top:1px solid rgba(11,11,16,.12);font-size:12px;color:#5b5130}.pr-est .i{width:14px;height:14px}
 .pr .i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.ch-tb.pr-bts{margin:4px -6px 0}
-.ch-tb.pr-bts span.elegido.acepto{background:#ecfdf3;color:#15803d}
-.ch-tb.pr-bts span.elegido.rechazo{background:#fff;color:#374151}
-.ch-tb.pr-bts span.otro{opacity:.45}
+/* La tarjeta de permiso como en WhatsApp (en el diálogo y en la solicitud del chat) */
+.wa-perm{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px .5px rgba(11,20,26,.13);white-space:normal}
+.wa-perm-c{display:flex;gap:10px;align-items:flex-start;margin:6px;padding:10px;border-radius:9px;background:#f0f2f5}
+.wa-perm-ic{width:34px;height:34px;border-radius:50%;background:#fff;color:#111b21;display:grid;place-items:center;flex:none}
+.wa-perm-ic svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.wa-perm-c b{display:block;font-size:13px;font-weight:700;color:#111b21;line-height:1.3}
+.wa-perm .wa-perm-c small{display:block;margin:2px 0 0;font-size:11.5px;line-height:1.35;color:#667781;text-transform:none;letter-spacing:0;font-weight:400}
+.wa-perm-b,.wa-perm-r{display:flex;align-items:center;justify-content:center;gap:5px;padding:9px 10px;border-top:1px solid #e9edef;font-size:13px;font-weight:600;color:#008069}
+.wa-perm-b svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.wa-perm-r svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.wa-perm-r.no{color:#374151}
+.ch-b.pr .wa-perm{margin:4px -4px 0;font-size:13px}
+.pm-sub{display:block;margin:12px 0 6px!important}
+.pm-ops{display:grid;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.pm-ops span{display:flex;align-items:center;gap:10px;padding:9px 12px;font-size:12.5px;color:#111b21;border-top:1px solid #eef1f5}
+.pm-ops span:first-child{border-top:0}
+.pm-ops span::before{content:"";width:14px;height:14px;border-radius:50%;border:1.6px solid #8696a0;flex:none}
 .ch-ev.pr-ok{color:#15803d;background:#ecfdf3;border:1px solid #bbf7d0;border-radius:999px;padding:6px 12px}
 .ch-ev.pr-ok .i{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .ch-ev.pr-ok b{font-weight:600}
