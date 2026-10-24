@@ -282,15 +282,7 @@ function paginaPlantillas(){
   const costos = `<div class="tp-costos"><span class="tp-costo"><i style="background:${TP_CAT_COL.Marketing}"></i>Marketing <b>0,0125 USD</b> por envío</span><span class="tp-costo"><i style="background:${TP_CAT_COL.Utilidad}"></i>Utilidad <b>0,0008 USD</b> por envío</span><span class="tp-costo">Precios de Meta en Colombia</span></div>`;
   const cab = `<div class="pg-h tp-cab"><div><h2>Plantillas de WhatsApp</h2><p class="sub">Los mensajes con los que tu empresa puede escribir primero. Meta las revisa antes de usarlas, casi siempre en minutos.</p>${PLANTILLAS.length ? costos : ''}</div></div>`;
   const nueva = cls => `<button type="button" class="tp-nueva${cls ? ' ' + cls : ''}" data-tp-nueva="1">${I('plus')}Nueva plantilla</button>`;
-  if (!PLANTILLAS.length) return `${cab}<div class="tp-vacio">
-      <div class="tp-demo"><div class="b2">Hola, <span class="tp-var">nombre</span>. Te recordamos tu cita de mañana a las 10:00 a. m.<small>${esc(ESPACIO.nombre || 'Tu empresa')}</small></div><div class="bt">Confirmar</div></div>
-      <h3>Crea tu primera plantilla</h3>
-      <p>Con una plantilla le escribes primero a un cliente, o le respondes cuando ya pasaron 24 horas desde su último mensaje.</p>
-      <div class="tp-pasos"><div class="tp-paso"><span class="n on">1</span><div><b>Escribe el mensaje</b><small>Y elige qué equipos la usan</small></div></div>
-        <div class="tp-paso"><span class="n">2</span><div><b>Meta la revisa</b><small>Casi siempre en minutos, a veces unas horas</small></div></div>
-        <div class="tp-paso"><span class="n">3</span><div><b>Úsala</b><small>En difusiones y al escribirle a un cliente</small></div></div></div>
-      ${puedeEditarTpl() ? nueva('grande') : ''}
-      <p class="nota">Utilidad: 0,0008 USD por envío · Marketing: 0,0125 USD por envío (precios de Meta en Colombia).</p></div>`;
+  if (!PLANTILLAS.length) return `${cab}${tpPrimeraVez()}`;
   const c = tpCuentas(), tab = (k, t, n) => `<button type="button" data-tp-estado="${k}" aria-pressed="${st.tp.estado === k}">${t} <span>${n}</span></button>`;
   if (st.tp.eq && !EQUIPOS.some(e => e.n === st.tp.eq)) st.tp.eq = '';
   const barra = `<div class="tp-barra">
@@ -516,3 +508,104 @@ document.getElementById('ov-x').addEventListener('click', async e => {
   try { await crmApi('DELETE', `/crm/plantillas/${encodeURIComponent(p.slug)}`); cerrarDialogo(); await crmPlantillas(); render(); toast('Plantilla eliminada'); }
   catch (err) { b.disabled = false; toast(err.message || 'No se pudo eliminar'); }
 });
+
+/* ── Plantillas por primera vez (maqueta aprobada «Plantillas · Dirección A», 24-oct) ──
+   Texto a la izquierda con los 3 pasos (el 2 se pone verde cuando «llega» el mensaje), Nueva plantilla y 3 ideas que abren
+   el editor ya lleno; a la derecha el mismo teléfono del editor (.tn-*). Quien no es líder solo ve el texto. */
+const TP_IDEAS = [
+  {k:'cita', ic:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/>', n:'Recordatorio de cita', cat:'Utilidad',
+    head:'Recordatorio de tu cita', body:'Hola, {{nombre}}. Te esperamos {{fecha}}. ¿Nos confirmas?', btn:'Respuesta rápida', btnTxt:'Confirmar'},
+  {k:'retomar', ic:'<path d="M21 12a8 8 0 0 1-11.7 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/>', n:'Retomar la conversación', cat:'Marketing',
+    head:'', body:'¡Hola, {{nombre}}! Quedamos pendientes con lo que hablamos. ¿Te ayudo a terminar tu pedido?', btn:'Respuesta rápida', btnTxt:'Sí, sigamos'},
+  {k:'pago', ic:'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>', n:'Pago confirmado', cat:'Utilidad',
+    head:'Pago recibido', body:'Listo, {{nombre}}. Recibimos tu pago de {{producto}}. Ya lo estamos preparando.', btn:'', btnTxt:''},
+];
+const tpSv = (p, c = 'i') => `<svg class="${c}" viewBox="0 0 24 24" aria-hidden="true">${p}</svg>`;
+function tpPrimeraVez(){
+  const lider = puedeEditarTpl(), emp = esc(ESPACIO.nombre || 'Tu empresa'), ini2 = esc(ini(ESPACIO.nombre || 'Tu empresa'));
+  const ok = tpSv('<path d="m5 12 5 5L20 7"/>'), flecha = tpSv('<path d="M5 12h14M13 6l6 6-6 6"/>');
+  const pasos = `<ol class="v2-pasos"><li style="--i:0"><span class="v2-st on">1</span><div><b>Escribe el mensaje</b><small>Y elige qué equipos lo usan</small></div></li>
+    <li style="--i:1"><span class="v2-st v2-rev"><em>2</em>${ok}</span><div><b>Meta lo revisa<span class="v2-aprob">Aprobada · 2 min</span></b><small>Casi siempre en minutos</small></div></li>
+    <li style="--i:2"><span class="v2-st">3</span><div><b>Úsalo cuando quieras</b><small>En difusiones y al escribirle a un cliente</small></div></li></ol>`;
+  const ideas = `<div class="v2-sec"><small>O empieza con una idea</small><div class="v2-ideas">${TP_IDEAS.map((x, i) => `<button type="button" style="--i:${i}" data-tp-idea="${x.k}"><span class="v2-iic">${tpSv(x.ic)}</span><span class="v2-itx"><b>${x.n}</b><small>${x.cat}</small></span>${flecha}</button>`).join('')}</div></div>`;
+  const tel = `<div class="v2-tel" aria-hidden="true"><div class="tn-tel"><div class="tn-pant"><span class="tn-isla"></span><div class="tn-estado"><span>9:41</span><span class="der">●●● ▮</span></div>
+    <div class="tn-wcab"><span class="atras">${tpSv('<path d="m15 18-6-6 6-6"/>')}</span><span class="ava">${ini2}</span><div class="q"><b>${emp}</b><small>Cuenta de empresa</small></div></div>
+    <div class="tn-fondo"><span class="tn-dia">Hoy</span><div class="v2-escribe"><i></i><i></i><i></i></div>
+      <div class="tn-msj v2-msj"><div class="tn-bur"><div class="h">Recordatorio de tu cita</div>Hola, <span class="v2-var">Valentina</span>. Te esperamos mañana a las <span class="v2-var">10:00 a. m.</span> ¿Nos confirmas?<div class="f">${emp}</div><div class="t">9:41</div></div>
+      <div class="tn-boton">Confirmar</div><div class="tn-boton">Cambiar la hora</div></div></div>
+    <div class="tn-escribir"><span class="campo2"></span></div><span class="tn-barrita"></span></div></div></div>`;
+  return `<div class="v2"><div class="v2-izq"><h3>Escríbele primero a tus clientes</h3>
+    <p>Una plantilla es un mensaje que Meta aprueba una vez y tu equipo usa siempre: para escribir primero o retomar un chat cuando ya pasaron 24 horas.</p>
+    ${pasos}
+    ${lider ? `<div class="v2-acc"><button type="button" class="v2-nueva" data-tp-nueva="1">${I('plus')}Nueva plantilla</button></div>${ideas}` : '<p class="v2-lider">Pídele a tu líder que cree la primera plantilla.</p>'}
+    <p class="v2-costos">Cada envío cuesta <b>0,0008 USD</b> si es de utilidad y <b>0,0125 USD</b> si es de marketing (precios de Meta en Colombia).</p></div>${tel}</div>`;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-tp-idea]'); if (!b || !puedeEditarTpl()) return;
+  const x = TP_IDEAS.find(i => i.k === b.dataset.tpIdea); if (!x) return;
+  st.tplNueva = Object.assign(tnNueva(), {nombre:x.n, cat:x.cat, headTipo:x.head ? 'texto' : '', head:x.head, body:x.body, btn:x.btn, btnTxt:x.btnTxt});
+  st.tp.menu = null; render();
+});
+document.head.insertAdjacentHTML('beforeend', `<style>
+/* Plantillas por primera vez (maqueta aprobada «Plantillas · Dirección A», 24-oct) */
+.v2{margin-top:22px;border:1px solid var(--line);border-radius:20px;background:#fff;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);align-items:center;gap:40px;padding:44px 48px;overflow:hidden;position:relative}
+.v2-izq{display:flex;flex-direction:column;align-items:flex-start;gap:0;max-width:540px}
+.v2 h3{margin:0;font-size:30px;line-height:1.15;font-weight:800;letter-spacing:-.025em;color:var(--ink)}
+.v2-izq > p{margin:10px 0 0;font-size:15px;color:var(--ink2);max-width:46ch}
+.v2-pasos{list-style:none;margin:24px 0 0;padding:0;display:grid;gap:0;position:relative}
+.v2-pasos li{display:flex;gap:14px;align-items:flex-start;position:relative;padding-bottom:16px;animation:v2-sube .6s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(.15s + var(--i) * .09s)}
+.v2-pasos li:last-child{padding-bottom:0}
+.v2-pasos li:not(:last-child)::after{content:"";position:absolute;left:13px;top:30px;bottom:2px;width:2px;border-radius:2px;background:var(--line)}
+.v2-st{width:28px;height:28px;border-radius:50%;border:2px solid var(--line);background:#fff;display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--ink3);flex:none;line-height:1}
+.v2-st.on{background:#FFD21F;border-color:#FFD21F;color:#0b0b10;box-shadow:0 0 0 5px rgba(255,210,31,.22)}
+.v2-pasos b{display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600;color:var(--ink);margin-top:3px}
+.v2-pasos small{display:block;font-size:13px;color:var(--ink3)}
+.v2-acc{margin-top:26px;display:flex;gap:10px}
+.v2-nueva{display:inline-flex!important;align-items:center;gap:8px;height:46px;padding:0 20px!important;border-radius:12px!important;background:#FFD21F!important;color:#0b0b10!important;font-weight:700!important;font-size:15px!important;box-shadow:0 10px 24px -12px rgba(230,184,0,.9);transition:transform .2s cubic-bezier(.16,1,.3,1),box-shadow .2s}
+.v2-nueva:hover{transform:translateY(-1px);box-shadow:0 14px 28px -12px rgba(230,184,0,1)}
+.v2-sec{margin-top:26px;width:100%;display:grid;gap:10px}
+.v2-sec > small{font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+.v2-ideas{display:grid;gap:8px}
+.v2-ideas button{display:flex!important;align-items:center;gap:12px;padding:10px 14px 10px 10px!important;border:1px solid var(--line)!important;border-radius:14px!important;background:#fff!important;text-align:left;transition:border-color .15s,transform .2s cubic-bezier(.16,1,.3,1),box-shadow .2s;animation:v2-sube .6s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(.45s + var(--i) * .07s)}
+.v2-ideas button:hover{border-color:#0b0b10!important;transform:translateX(2px);box-shadow:0 8px 20px -14px rgba(15,23,42,.4)}
+.v2-iic{width:36px;height:36px;border-radius:10px;background:#fff7d1;color:#8a6d00;display:grid;place-items:center;flex:none}
+.v2-iic svg{width:18px;height:18px}
+.v2-itx{flex:1;min-width:0;display:grid}.v2-itx b{font-size:14px;font-weight:600}
+.v2-itx small{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink3)}.v2-itx i{width:7px;height:7px;border-radius:50%}
+.v2-ideas button > svg{width:16px;height:16px;color:var(--ink4)}
+.v2-izq > p.v2-costos{margin:22px 0 0;font-size:12.5px;color:var(--ink3);max-width:52ch}
+.v2-costos span{display:inline-flex;align-items:center;gap:6px}.v2-costos i{width:7px;height:7px;border-radius:50%}.v2-costos b{color:var(--ink);font-weight:600}
+.v2-costos em{font-style:normal}
+/* El teléfono real del editor, más pequeño, con un halo suave detrás */
+.v2-tel{position:relative;justify-self:center;width:262px;height:560px;animation:v2-tel .8s cubic-bezier(.16,1,.3,1) both}
+.v2-tel::before{content:"";position:absolute;inset:40px -60px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,210,31,.35),rgba(255,210,31,0));z-index:0}
+.v2-tel .tn-tel{position:absolute;top:0;left:0;transform:scale(.6225);transform-origin:top left;z-index:1}
+.v2-var{background:#fff3b0;border-radius:4px;padding:0 3px}
+.v2-escribe{align-self:flex-start;display:flex;gap:4px;padding:12px 14px;background:#fff;border-radius:0 10px 10px 10px;box-shadow:0 1px .5px rgba(11,20,26,.13);animation:v2-escribe 6s infinite}
+.v2-escribe i{width:7px;height:7px;border-radius:50%;background:#8696a0;animation:v2-punto 1s infinite}
+.v2-escribe i:nth-child(2){animation-delay:.15s}.v2-escribe i:nth-child(3){animation-delay:.3s}
+.v2-msj{animation:v2-llega 6s infinite;transform-origin:top left}
+.v2-ok{position:absolute;z-index:2;right:-34px;top:300px;display:flex;align-items:center;gap:10px;padding:10px 14px 10px 10px;border-radius:14px;background:#fff;box-shadow:0 18px 40px -16px rgba(15,23,42,.45),0 0 0 1px rgba(15,23,42,.06);animation:v2-sello 6s infinite}
+.v2-ok > span{width:30px;height:30px;border-radius:50%;background:#16a34a;color:#fff;display:grid;place-items:center}
+.v2-ok > span svg{width:16px;height:16px;stroke-width:2.6}
+.v2-ok b{display:block;font-size:13px}.v2-ok small{font-size:12px;color:var(--ink3)}
+.v2-rev{position:relative;overflow:hidden;animation:v2-rev 6s infinite}
+.v2-rev em{font-style:normal;animation:v2-num 6s infinite}
+.v2-rev svg{position:absolute;width:14px;height:14px;stroke-width:3;color:#fff;animation:v2-chk 6s infinite}
+.v2-aprob{font-size:12px;font-weight:600;color:#15803d;animation:v2-aprob 6s infinite}
+@keyframes v2-rev{0%,36%{background:#fff;border-color:var(--line)}42%,92%{background:#16a34a;border-color:#16a34a}100%{background:#fff;border-color:var(--line)}}
+@keyframes v2-num{0%,36%{opacity:1}40%,94%{opacity:0}100%{opacity:1}}
+@keyframes v2-chk{0%,38%{opacity:0;transform:scale(.4)}44%{opacity:1;transform:scale(1.15)}48%,92%{opacity:1;transform:none}100%{opacity:0}}
+@keyframes v2-aprob{0%,40%{opacity:0;transform:translateX(-4px)}48%,92%{opacity:1;transform:none}100%{opacity:0}}
+@keyframes v2-sube{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes v2-tel{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes v2-punto{0%,60%,100%{opacity:.35;transform:none}30%{opacity:1;transform:translateY(-2px)}}
+@keyframes v2-escribe{0%,8%{opacity:0;height:auto}10%,22%{opacity:1}24%,100%{opacity:0;display:none}}
+@keyframes v2-llega{0%,24%{opacity:0;transform:translateY(8px) scale(.96)}30%,92%{opacity:1;transform:none}100%{opacity:0}}
+@keyframes v2-sello{0%,36%{opacity:0;transform:scale(.6) rotate(-6deg)}42%{opacity:1;transform:scale(1.06) rotate(1deg)}46%,92%{opacity:1;transform:none}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.v2-pasos li,.v2-ideas button,.v2-tel,.v2-escribe,.v2-escribe i,.v2-msj,.v2-rev,.v2-rev em,.v2-rev svg,.v2-aprob{animation:none}.v2-escribe{display:none}}
+.v2-lider{margin:24px 0 0;font-size:14px;color:var(--ink2)}
+/* Celular y tableta: centrado, el teléfono arriba más pequeño (estándar de héroes ≤960 px). */
+@media (max-width:960px){.v2{grid-template-columns:1fr;padding:28px 20px;gap:24px;text-align:center}.v2-izq{align-items:center;max-width:none;order:2}.v2-izq > p{margin-left:auto;margin-right:auto}
+  .v2-pasos{text-align:left}.v2-sec{text-align:left}.v2-tel{order:1;transform:scale(.8);transform-origin:top center;margin-bottom:-112px}.v2 h3{font-size:24px}}
+</style>`);
