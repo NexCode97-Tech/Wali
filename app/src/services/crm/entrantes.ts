@@ -1222,6 +1222,9 @@ async function procesarEcoWhatsapp(linea: { id: string }, e: Json): Promise<void
 async function avisoLlamada(linea: CrmLinea, c: Json, perfiles: WaContacto[]): Promise<void> {
   const id = txt(c.id), sdp = txt(obj(c.session).sdp)
   if (!id) return
+  // Para revisar llamadas que fallan: qué avisó Meta (sin el SDP completo).
+  const setup = sdp.match(/a=setup:\w+/)?.[0] ?? ''
+  logger.info(`[CRM llamadas] aviso ${String(c.event)} ${String(c.direction ?? '')} ${id.slice(0, 40)}${c.status ? ' ' + String(c.status) : ''}${c.duration ? ' dur=' + String(c.duration) : ''}${sdp ? ` sdp=${String(obj(c.session).sdp_type)} ${sdp.length}b ${setup}` : ''}${Array.isArray(c.errors) && c.errors.length ? ' errores=' + JSON.stringify(c.errors).slice(0, 300) : ''}`)
   if (c.event === 'connect' && c.direction === 'USER_INITIATED') {
     if (!sdp) return
     const tel = telDigitos(c.from) || '', uid = txt(c.from_user_id)
@@ -1295,7 +1298,7 @@ export async function procesarWebhookCrm(cuerpo: Json, conexionId: string | null
             const linea = pnid ? await prisma.crmLinea.findUnique({ where: { phoneNumberId: pnid } }) : null
             if (!linea) { logger.info(`[CRM WA] ${pnid} fuera del CRM: aviso de llamada`); continue }
             for (const c of v.calls ?? []) await avisoLlamada(linea, c, v.contacts ?? []).catch(e => { fallas.push(`llamada ${c?.id}: ${(e as Error).message}`) })
-            for (const s of v.statuses ?? []) if (s?.type === 'call' && s.id) estadoSaliente(String(s.id), String(s.status ?? ''))
+            for (const s of v.statuses ?? []) if (s?.type === 'call' && s.id) { logger.info(`[CRM llamadas] estado ${String(s.status)} ${String(s.id).slice(0, 40)}`); estadoSaliente(String(s.id), String(s.status ?? '')) }
           } else if (cambio?.field === 'account_settings_update') {
             // Cambiaron los ajustes de llamadas del número (desde el CRM o desde WhatsApp Manager): se vuelve a leer la copia.
             const pnid = String(obj(v.phone_number_settings).phone_number_id ?? '')

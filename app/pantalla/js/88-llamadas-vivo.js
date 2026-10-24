@@ -99,7 +99,7 @@ function lvConexion(mic){
   for (const t of mic.getTracks()) pc.addTrack(t, mic);
   const audio = new Audio(); audio.autoplay = true;
   pc.ontrack = e => { audio.srcObject = e.streams[0] || new MediaStream([e.track]); if (LV && LV.pc === pc) { LV.remoto = audio.srcObject; lvGrabar(); } };
-  pc.onconnectionstatechange = () => { if (pc.connectionState === 'failed' && LV && LV.pc === pc) { toast('Se perdió el audio de la llamada'); lvColgar(); } };
+  pc.onconnectionstatechange = () => { if (pc.connectionState === 'failed' && LV && LV.pc === pc) { toast('Se perdió el audio de la llamada'); lvColgar('la conexión de audio falló (ICE)'); } };
   return {pc, audio};
 }
 /** Espera a que el navegador junte sus rutas de red: Meta recibe el SDP completo, sin candidatos sueltos. */
@@ -168,10 +168,11 @@ function lvRechazar(id){
   lvSonar(false); LV_SUENAN.delete(id); lvPintar(true);
   crmApi('POST', `/crm/llamadas/${encodeURIComponent(id)}/rechazar`).catch(e => toast(e.message));
 }
-function lvColgar(){
+/** `motivo`: por qué colgó el CRM y no la persona (queda en el registro del servidor para revisarlo). */
+function lvColgar(motivo){
   if (!LV) return;
   const x = LV; LV = null; lvPintar(true); lvCerrar(x);
-  if (x.id) crmApi('POST', `/crm/llamadas/${encodeURIComponent(x.id)}/colgar`).catch(() => {});
+  if (x.id) crmApi('POST', `/crm/llamadas/${encodeURIComponent(x.id)}/colgar`, typeof motivo === 'string' ? {motivo} : undefined).catch(() => {});
 }
 /** Llamar al cliente (ya con permiso). */
 async function lvIniciar(c){
@@ -273,7 +274,12 @@ document.addEventListener('crm:evento', e => {
   if (d.fase === 'llamando' && LV && !LV.id && k.por === yo && k.convId === LV.convId) { LV.id = k.id; return; }
   if (d.fase === 'timbra' && LV && LV.id === k.id) { LV.timbra = true; lvPintar(); return; }
   if (d.fase === 'respuesta' && LV && LV.id === k.id && LV.pc && d.sdp) {
-    LV.pc.setRemoteDescription({type: 'answer', sdp: d.sdp}).catch(() => { toast('No se pudo conectar el audio'); lvColgar(); });
+    // La respuesta de Meta se aplica una sola vez: si llega repetida, la conexión ya está armada y no se cuelga por eso.
+    const pc = LV.pc; if (pc.signalingState !== 'have-local-offer') return;
+    pc.setRemoteDescription({type: 'answer', sdp: d.sdp}).catch(e => {
+      if (pc.signalingState !== 'have-local-offer') return;
+      toast('No se pudo conectar el audio de la llamada'); lvColgar(`respuesta de Meta: ${e && e.message || e}`);
+    });
     return;
   }
   if (d.fase === 'contesto' && LV && LV.id === k.id && LV.fase !== 'en') { LV.fase = 'en'; LV.desde = Date.now(); LV.entra = true; lvGrabar(); lvPintar(); return; }

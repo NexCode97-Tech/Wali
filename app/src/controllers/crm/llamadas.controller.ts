@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express'
 import { ApiResponse } from '../../utils/response'
 import { ValidationError } from '../../utils/errors'
+import { logger } from '../../utils/logger'
 import { msgAFront } from '../../services/crm/formas'
 import { cierre, colgar, contestar, llamadasEnCurso, llamar, pedirPermiso, permiso, rechazar } from '../../services/crm/llamadasVivo'
 import { convVisible, exigirEscritura, idNum } from './_comun'
@@ -47,6 +48,9 @@ export async function rechazarLlamada(req: Request, res: Response) {
 
 /** POST /crm/llamadas/:id/colgar */
 export async function colgarLlamada(req: Request, res: Response) {
+  // Si colgó el CRM y no la persona (falló el audio), el motivo queda en el registro para revisarlo.
+  const motivo = typeof req.body?.motivo === 'string' ? req.body.motivo.slice(0, 300) : ''
+  if (motivo) logger.warn(`[CRM llamadas] el navegador colgó ${String(req.params.id).slice(0, 40)}: ${motivo}`)
   await colgar(idLlamada(req.params.id))
   return ApiResponse.success(res, { ok: true })
 }
