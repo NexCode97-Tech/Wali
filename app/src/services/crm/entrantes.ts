@@ -1237,8 +1237,6 @@ async function avisoLlamada(linea: CrmLinea, c: Json, perfiles: WaContacto[]): P
     await emitirConv(conv.id)
     entrante(linea, id, conv.id, sdp, cuando)
   } else if (c.event === 'connect') {
-    // Diagnóstico temporal (24-oct): la respuesta de Meta completa, para ver por qué el navegador no la acepta.
-    if (sdp) logger.info(`[CRM llamadas] SDP de Meta ${id.slice(0, 40)}:\n${sdp}`)
     if (sdp) respuesta(id, sdp)
   } else if (c.event === 'terminate') {
     const e = Array.isArray(c.errors) ? obj(c.errors[0]) : null

@@ -70,10 +70,7 @@ export async function llamarCliente(req: Request, res: Response) {
   exigirEscritura(req)
   const convId = idNum(req.params.id)
   await convVisible(req, convId)
-  const sdp = sdpDe(req.body?.sdp)
-  // Diagnóstico temporal (24-oct): la oferta del navegador completa, para compararla con la respuesta de Meta.
-  logger.info(`[CRM llamadas] SDP del navegador (conv ${convId}):\n${sdp}`)
-  return ApiResponse.success(res, await llamar(convId, req.userId!, sdp))
+  return ApiResponse.success(res, await llamar(convId, req.userId!, sdpDe(req.body?.sdp)))
 }
 
 /** GET /crm/conversaciones/:id/permiso-llamada: si el cliente dio permiso y si se le puede pedir. */
