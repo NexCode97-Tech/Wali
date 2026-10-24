@@ -205,13 +205,13 @@ async function lvLlamar(c){
 function lvDialogoPermiso(c, p){
   const pila = nombrePila(c), empresa = ((typeof espActual === 'function' && espActual()) || {}).n || 'Tu empresa';
   const texto = `Hola${pila ? ' ' + pila : ''}, ¿te podemos llamar por WhatsApp para atenderte mejor?`;
-  const bloqueo = !p.ventana ? 'Pasaron más de 24 horas desde su último mensaje: por ahora la solicitud solo sale si te escribe de nuevo.'
+  const bloqueo = !p.ventana ? 'Pasaron más de 24 horas desde su último mensaje. Cuando te vuelva a escribir, le puedes mandar la solicitud.'
     : !p.puedePedir ? 'WhatsApp deja mandar 1 solicitud al día y 2 por semana a cada persona, y ya se mandaron. Intenta más adelante.' : '';
   abrirDialogo(`<div class="pm"><div class="pm-h"><span class="pm-ic">${LV_IC.tel}</span><div><h3>Pedir permiso para llamar a ${esc(pila || c.n)}</h3><p>WhatsApp solo deja llamar a quien lo autoriza. Le llega este mensaje y elige.</p></div></div>
     <div class="pm-b"><div class="pm-izq"><label class="pm-lb">Mensaje<textarea id="pm-t" maxlength="1024">${esc(texto)}</textarea></label><small class="pm-cnt" id="pm-n">${texto.length} / 1024</small>
       <ul class="pm-info"><li>${LV_IC.ok}<span>Si acepta, le puedes llamar <b>7 días</b>, o siempre si lo elige.</span></li>
         <li>${LV_IC.reloj}<span>Máximo <b>1 solicitud al día</b> y <b>2 por semana</b>. Se reinicia con cualquier llamada contestada.</span></li>
-        <li>${LV_IC.info}<span>Sale gratis porque te escribió en las últimas 24 horas. Después de ese tiempo solo se puede pedir con una plantilla, que Meta cobra.</span></li></ul>
+        <li>${LV_IC.info}<span>Sale gratis. WhatsApp solo deja mandarla si te escribió en las <b>últimas 24 horas</b>.</span></li></ul>
       ${bloqueo ? `<div class="ll-nota" style="margin-top:12px">${esc(bloqueo)}</div>` : ''}</div>
       <div class="pm-tel"><small>Así le llega</small><div class="pm-wa"><div class="pm-bur"><span id="pm-v">${esc(texto)}</span><span class="pm-h1">${esc(new Date().toLocaleTimeString('es-CO', {hour: 'numeric', minute: '2-digit'}))}</span></div>
         <div class="pm-perm"><span class="pm-pic">${LV_IC.tel}</span><b>${esc(empresa)} quiere llamarte</b><small>Puedes cambiarlo cuando quieras</small><span class="pm-op">Permitir llamadas</span><span class="pm-op">Ahora no</span></div></div></div></div>
@@ -322,7 +322,9 @@ chBloqueOut = function(m, ult){
   if (!m.permisoLlamada || m._estado === 'fallido') return lvOutSin.apply(this, arguments);
   const vencida = !m.permisoResp && m._t && Date.now() - new Date(m._t).getTime() > 7 * 86400e3;
   const est = m.permisoResp === 'acepto' ? `${LV_IC.ok}Aceptó` : m.permisoResp === 'rechazo' ? `${LV_IC.no}No aceptó` : vencida ? `${LV_IC.reloj}Venció sin respuesta` : `${LV_IC.reloj}Esperando respuesta · vence en 7 días`;
-  return `<div class="ch-b out pr${ult ? ' ult' : ''}"><span class="pr-cab">${LV_IC.tel}Solicitud para llamar</span>${esc(m.out || '')}<span class="pr-est">${est}</span></div>`;
+  // Los botones que le pone WhatsApp, como en las plantillas; el que eligió queda marcado.
+  const boton = (t, ic, k) => `<span class="${m.permisoResp ? (m.permisoResp === k ? `elegido ${k}` : 'otro') : ''}">${m.permisoResp === k ? LV_IC.ok : ic}${t}</span>`;
+  return `<div class="ch-b out pr${ult ? ' ult' : ''}"><span class="pr-cab">${LV_IC.tel}Solicitud para llamar</span>${esc(m.out || '')}<div class="ch-tb pr-bts">${boton('Permitir llamadas', LV_IC.tel, 'acepto')}${boton('Ahora no', '', 'rechazo')}</div><span class="pr-est">${est}</span></div>`;
 };
 
 document.head.insertAdjacentHTML('beforeend', `<style>
@@ -403,6 +405,10 @@ body:has(.lcd) .ay-fab:not(.abierta){opacity:0;pointer-events:none}
 .pr-cab{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#15803d}.pr-cab .i{width:15px;height:15px}
 .pr-est{display:flex;align-items:center;gap:6px;padding-top:7px;margin-top:2px;border-top:1px solid rgba(11,11,16,.12);font-size:12px;color:#5b5130}.pr-est .i{width:14px;height:14px}
 .pr .i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ch-tb.pr-bts{margin:4px -6px 0}
+.ch-tb.pr-bts span.elegido.acepto{background:#ecfdf3;color:#15803d}
+.ch-tb.pr-bts span.elegido.rechazo{background:#fff;color:#374151}
+.ch-tb.pr-bts span.otro{opacity:.45}
 .ch-ev.pr-ok{color:#15803d;background:#ecfdf3;border:1px solid #bbf7d0;border-radius:999px;padding:6px 12px}
 .ch-ev.pr-ok .i{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .ch-ev.pr-ok b{font-weight:600}

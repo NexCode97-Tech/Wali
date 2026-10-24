@@ -85,7 +85,8 @@ export async function pedirPermisoLlamada(req: Request, res: Response) {
   if (texto.length > 1024) throw new ValidationError('El mensaje de la solicitud pasa de 1.024 caracteres')
   const p = await permiso(convId)
   if (p.estado === 'permanent') throw new ValidationError('Ya te dio permiso para llamarle siempre: no hace falta pedirlo otra vez')
-  if (!p.ventana) throw new ValidationError('Pasaron más de 24 horas desde su último mensaje: la solicitud solo sale como plantilla «Permiso para llamar», y la línea todavía no la tiene aprobada')
+  // Sin plantillas (24-oct): fuera de la ventana de 24 h WhatsApp no deja mandar la solicitud libre; sale cuando vuelva a escribir.
+  if (!p.ventana) throw new ValidationError('Pasaron más de 24 horas desde su último mensaje: la solicitud solo sale cuando te vuelva a escribir')
   if (!p.puedePedir) throw new ValidationError('WhatsApp deja mandar 1 solicitud al día y 2 por semana a cada persona. Ya se mandaron: intenta más adelante')
   return ApiResponse.success(res, msgAFront(await pedirPermiso(convId, req.userId!, texto)))
 }
