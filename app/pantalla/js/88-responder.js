@@ -48,12 +48,19 @@ function rrReacHTML(c, m){
   }
   return pills.length ? `<div class="rr-reacs">${pills.join('')}</div>` : '';
 }
-/** Envuelve lo que pinta un mensaje: la cita adentro de la burbuja, el ⋯ y las reacciones debajo. */
+/**
+ * Envuelve lo que pinta un mensaje: la cita adentro de la burbuja, la barra flotante y las reacciones debajo a la
+ * izquierda. Barra flotante (maqueta aprobada «Mensajes rediseñados», dirección B, 24-oct): al pasar el mouse sale
+ * encima del mensaje con 5 reacciones, Responder y Más (el menú de siempre); se reacciona con un clic.
+ */
 function rrEnvolver(m, html, lado){
   const c = rrConv(); if (!c || !m || !m._id) return html;
   const cita = rrCitaHTML(c, m);
   if (cita) html = /<div class="ch-b [^"]*">/.test(html) ? html.replace(/(<div class="ch-b [^"]*">)/, `$1${cita}`) : cita + html;
-  return `<div class="rr-m ${lado}" data-rr="${esc(m._id)}">${html}<button type="button" class="rr-pts-b" data-rr-menu="${esc(m._id)}" aria-label="Más opciones del mensaje" aria-haspopup="menu">${RR_IC.mas}</button>${rrReacHTML(c, m)}</div>`;
+  const yoR = m.reac && m.reac.yo, id = esc(m._id);
+  const emos = rrReacciona(c, m) ? ['👍', '❤️', '😂', '😮', '🙏'].map((e, i) => `<button type="button" class="rr-be${e === yoR ? ' on' : ''}" style="--i:${i}" data-rr-rapido="${e}" aria-label="Reaccionar ${e}">${e}</button>`).join('') + '<i class="rr-bsep"></i>' : '';
+  const barra = `<div class="rr-bf" role="toolbar" aria-label="Acciones del mensaje">${emos}<button type="button" class="rr-be ic" style="--i:5" data-rr-resprapido aria-label="Responder">${RR_IC.resp}</button><button type="button" class="rr-be ic" style="--i:6" data-rr-menu="${id}" aria-label="Más opciones del mensaje" aria-haspopup="menu">${RR_IC.mas}</button></div>`;
+  return `<div class="rr-m ${lado}" data-rr="${id}">${html}${barra}${rrReacHTML(c, m)}</div>`;
 }
 const rrInSin = chBloqueIn, rrOutSin = chBloqueOut;
 chBloqueIn = function(c, m, ult){ return rrEnvolver(m, rrInSin.apply(this, arguments), 'in'); };
@@ -142,6 +149,10 @@ document.addEventListener('click', e => {
     else if (t.closest('[data-rr-reenv]')) { nmAbrir(); const x = document.getElementById('nm-txt'); if (x) x.value = rrTexto(m); toast('Elige a quién reenviarlo'); }
     return;
   }
+  const rp = t.closest('[data-rr-rapido]');
+  if (rp) { const w = rp.closest('.rr-m'); if (w) { rp.classList.add('elegido'); rrReaccionar(w.dataset.rr, rp.dataset.rrRapido); } return; }
+  const rs = t.closest('[data-rr-resprapido]');
+  if (rs) { const w = rs.closest('.rr-m'); if (w) rrResponder(w.dataset.rr); return; }
   const q = t.closest('[data-rr-quitar]');
   if (q) { const c = rrConv(), m = rrMsg(c, q.dataset.rrQuitar); if (m && m.reac && m.reac.yo) rrReaccionar(m._id, m.reac.yo); return; }
   if (t.closest('[data-rr-quitarcita]')) { rrCita = null; rrPintarBarra(); ta.focus(); return; }
@@ -177,17 +188,22 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .rr-m{position:relative;display:flex;flex-direction:column;gap:3px;max-width:100%;min-width:0}
 .rr-m.in{align-items:flex-start;align-self:flex-start}
 .rr-m.out{align-items:flex-end;align-self:flex-end}
-.rr-pts-b{position:absolute;top:50%;width:30px;height:30px;margin-top:-15px;border-radius:50%;border:1px solid #e5e9f0;background:#fff;color:#4b5563;display:grid;place-items:center;cursor:pointer;padding:0;box-shadow:0 2px 6px rgba(15,23,42,.12);opacity:0;pointer-events:none;transform:scale(.85);transition:opacity .18s cubic-bezier(.16,1,.3,1) .25s,transform .18s cubic-bezier(.16,1,.3,1) .25s}
-.rr-m.in .rr-pts-b{right:-34px}
-.rr-m.out .rr-pts-b{left:-34px}
-/* Puente invisible entre el mensaje y el ⋯: al llevar el cursor al botón no se pierde el «encima» y no se esconde. */
-.rr-m::after{content:"";position:absolute;top:0;bottom:0;width:40px}
-.rr-m.in::after{left:100%}
-.rr-m.out::after{right:100%}
-.rr-m:has(.rr-reacs) .rr-pts-b{margin-top:-28px}
-.rr-pts-b .rr-pts{width:16px;height:16px;fill:currentColor;stroke:none}
-.rr-m:hover .rr-pts-b,.rr-pts-b:focus-visible,.rr-pts-b[aria-expanded="true"]{opacity:1;pointer-events:auto;transform:none;transition-delay:0s}
-.rr-pts-b:hover{background:#f6f7f9;color:#0b0b10}
+/* Barra flotante encima del mensaje (dirección B): aparece al pasar el mouse, los botones entran uno tras otro. */
+.rr-bf{position:absolute;bottom:calc(100% + 6px);z-index:3;display:flex;align-items:center;gap:2px;padding:4px;border-radius:999px;background:#fff;border:1px solid #e5e9f0;box-shadow:0 12px 28px -14px rgba(15,23,42,.4);opacity:0;visibility:hidden;pointer-events:none;transform:translateY(6px) scale(.96);transition:opacity .2s cubic-bezier(.16,1,.3,1) .2s,transform .25s cubic-bezier(.16,1,.3,1) .2s,visibility 0s linear .45s}
+.rr-m.in .rr-bf{left:0;transform-origin:bottom left}
+.rr-m.out .rr-bf{right:0;transform-origin:bottom right}
+/* Puente invisible entre el mensaje y la barra: al subir el cursor no se pierde el «encima». */
+.rr-m::after{content:"";position:absolute;left:0;right:0;bottom:100%;height:8px}
+.rr-m:hover .rr-bf,.rr-bf:focus-within,.rr-m:has([data-rr-menu][aria-expanded="true"]) .rr-bf{opacity:1;visibility:visible;pointer-events:auto;transform:none;transition-delay:0s}
+.rr-be{width:30px;height:30px;border:0;border-radius:50%;background:none;display:grid;place-items:center;font-size:18px;line-height:1;padding:0;cursor:pointer;color:#4b5563;opacity:0;transform:translateY(5px) scale(.8);transition:opacity .2s cubic-bezier(.16,1,.3,1),transform .25s cubic-bezier(.16,1,.3,1),background .15s}
+.rr-m:hover .rr-be,.rr-bf:focus-within .rr-be,.rr-m:has([data-rr-menu][aria-expanded="true"]) .rr-be{opacity:1;transform:none;transition-delay:calc(var(--i) * 35ms)}
+.rr-be:hover{background:#f1f5f9;transform:scale(1.2) translateY(-2px)!important}
+.rr-be.ic:hover{transform:none!important;color:#0b0b10}
+.rr-be.on{background:#fff3b0}
+.rr-be.elegido{transform:scale(.85)!important}
+.rr-be svg{width:16px;height:16px}
+.rr-be .rr-pts{fill:currentColor;stroke:none}
+.rr-bsep{width:1px;height:18px;background:#e5e9f0;margin:0 2px}
 .rr-cita{all:unset;box-sizing:border-box;display:grid;gap:1px;position:relative;margin-bottom:6px;padding:7px 10px 7px 14px;border-radius:10px;background:rgba(11,11,16,.06);font-size:13px;line-height:1.35;cursor:pointer;max-width:100%;min-width:0;white-space:normal}
 .rr-cita::before{content:"";position:absolute;left:5px;top:7px;bottom:7px;width:3px;border-radius:2px;background:var(--rr-c)}
 .rr-cita b{font-size:12.5px;font-weight:600;color:var(--rr-c)}
@@ -195,7 +211,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .rr-cita:hover{background:rgba(11,11,16,.09)}
 .rr-cita:focus-visible{outline:2px solid #0b0b10;outline-offset:2px}
 .ch-b.out .rr-cita{background:rgba(11,11,16,.07)}
-.rr-reacs{display:flex;gap:4px;margin-top:-9px;padding:0 10px;z-index:1}
+.rr-reacs{display:flex;gap:4px;margin-top:-9px;padding:0 10px;z-index:1;align-self:flex-start}
 .rr-reac{display:inline-flex;align-items:center;gap:3px;height:26px;padding:0 8px;border-radius:999px;background:#fff;border:1px solid #e5e9f0;font:inherit;font-size:14px;line-height:1;box-shadow:0 1px 3px rgba(15,23,42,.1);animation:rr-pop .32s cubic-bezier(.16,1,.3,1)}
 button.rr-reac{cursor:pointer}
 .rr-reac.mia{border-color:#FFD21F;background:#fffbe6}
@@ -228,6 +244,6 @@ button.rr-reac{cursor:pointer}
 .rr-x{width:28px;height:28px;border:0;border-radius:8px;background:none;display:grid;place-items:center;color:#dc2626;cursor:pointer;padding:0;flex:none}
 .rr-x:hover{background:#fee2e2}
 .rr-x svg{width:15px;height:15px}
-@media (hover:none){.rr-pts-b{display:none}}
-@media (prefers-reduced-motion:reduce){.rr-reac,.rr-menu,.rr-barra{animation:none}.rr-pts-b,.rr-emo button,.rr-emo2 button{transition:none}}
+@media (hover:none){.rr-bf{display:none}}
+@media (prefers-reduced-motion:reduce){.rr-reac,.rr-menu,.rr-barra{animation:none}.rr-bf,.rr-be,.rr-emo button,.rr-emo2 button{transition:none}}
 </style>`);

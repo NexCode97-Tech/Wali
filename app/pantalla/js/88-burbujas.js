@@ -1,6 +1,6 @@
-/* Burbujas como WhatsApp (maqueta aprobada «Burbujas como WhatsApp», 24-oct): el nombre de quien envía va arriba,
-   dentro de la primera burbuja, y el estado (Entregado / Leído), la hora y los chulitos abajo, dentro de la última,
-   alineados a la izquierda. Lo que no se entregó y las filas sin burbuja de texto (solo foto o archivo) quedan como estaban.
+/* Burbujas como WhatsApp (maqueta aprobada «Burbujas como WhatsApp», 24-oct, y «Mensajes rediseñados»): el nombre de
+   quien envía va arriba, dentro de la primera burbuja, y la hora y los chulitos abajo a la derecha, dentro de la última
+   (sin el estado en palabras). Lo que no se entregó y las filas sin burbuja de texto (solo foto o archivo) quedan como estaban.
    Se aplica sobre lo que arma pintarChat (ya escapado), así vale igual en la bandeja, en el cajón del embudo y en el celular.
    Se lee con DOMParser: un documento aparte e inerte, nada se ejecuta. */
 const wbPintarSin = pintarChat;
@@ -26,7 +26,8 @@ pintarChat = function(c){
     const pie = doc.createElement('span');
     pie.className = 'wb-t' + (est && est.classList.contains('leido') ? ' leido' : '');
     const parte = (cls, tx) => { const s = doc.createElement('span'); if (cls) s.className = cls; s.textContent = tx; pie.append(s); };
-    if (estado.trim()) { parte('st', estado.trim()); parte('', '·'); }
+    // Sin «Enviado / Entregado / Leído» en palabras (24-oct): los chulitos lo dicen; queda como texto para lectores de pantalla.
+    if (estado.trim() && est) est.setAttribute('aria-label', estado.trim());
     if (rq) { parte('rq', rq.textContent); parte('', '·'); }
     if (hora) parte('', hora);
     if (est) pie.append(est);
@@ -40,7 +41,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ch-b.in .wb-n{color:var(--wb-c,#db2777)}
 .ch-b.out .wb-n{color:#8a6d00}
 .ch-b.ia .wb-n{color:#6d4fc2}
-.wb-t{display:flex;justify-content:flex-start;align-items:center;gap:5px;margin:5px 0 -2px;font-size:11px;line-height:1;color:#6b7280;white-space:nowrap;font-variant-numeric:tabular-nums}
+.wb-t{display:flex;justify-content:flex-end;align-items:center;gap:5px;margin:5px 0 -2px;font-size:11px;line-height:1;color:#6b7280;white-space:nowrap;font-variant-numeric:tabular-nums}
 .ch-b.out .wb-t{color:#7a6a2c}
 .wb-t .est{display:inline-flex}
 .wb-t .est svg{width:16px;height:11px;stroke-width:1.6}
