@@ -80,6 +80,8 @@
     'empezar arranco arrancar empiezo empezar comienzo comenzar inicio',
     'factura facturas recibo recibos comprobante',
     'equivocado equivocada mal incorrecto incorrecta error',
+    // «agregar», «añadir» y «crear» algo nuevo son lo mismo (23-oct: «cómo agrego una plantilla» caía en instalar la app).
+    'crear agregar añadir anadir adicionar generar',
   ].map(g => g.split(' '));
   const GRUPO = new Map(); for (const g of GRUPOS) for (const w of g) GRUPO.set(w, g[0]);
   const palabras = t => norm(t).split(' ').filter(Boolean).map(w => SINONIMOS[w] || w).map(w => GRUPO.get(w) || w).filter(w => !VACIAS.has(w)).map(raiz);
