@@ -1220,7 +1220,8 @@ async function procesarEcoWhatsapp(linea: { id: string }, e: Json): Promise<void
  * respuesta), y terminate. La entrante cae en la conversación del cliente en esa línea, como un mensaje suyo.
  */
 async function avisoLlamada(linea: CrmLinea, c: Json, perfiles: WaContacto[]): Promise<void> {
-  const id = txt(c.id), sdp = txt(obj(c.session).sdp)
+  // El SDP va tal cual (sin trim): su última línea necesita el salto final o el navegador lo rechaza.
+  const id = txt(c.id), sdpCrudo = obj(c.session).sdp, sdp = typeof sdpCrudo === 'string' && sdpCrudo.trim() ? sdpCrudo : ''
   if (!id) return
   // Para revisar llamadas que fallan: qué avisó Meta (sin el SDP completo).
   const setup = sdp.match(/a=setup:\w+/)?.[0] ?? ''

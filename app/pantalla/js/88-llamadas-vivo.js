@@ -102,6 +102,11 @@ function lvConexion(mic){
   pc.onconnectionstatechange = () => { if (pc.connectionState === 'failed' && LV && LV.pc === pc) { toast('Se perdió el audio de la llamada'); lvColgar('la conexión de audio falló (ICE)'); } };
   return {pc, audio};
 }
+/**
+ * El SDP con cada línea terminada en CRLF, también la última: así lo exige el navegador. El de Meta puede llegar sin el
+ * salto final (o con \n solos) y el navegador lo rechazaba con «Invalid SDP line» y la llamada se caía (24-oct).
+ */
+const lvSdp = s => String(s || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean).join('\r\n') + '\r\n';
 /** Espera a que el navegador junte sus rutas de red: Meta recibe el SDP completo, sin candidatos sueltos. */
 function lvRutas(pc){
   if (pc.iceGatheringState === 'complete') return Promise.resolve();
@@ -154,7 +159,7 @@ async function lvContestar(id){
   try {
     LV.mic = await lvMicrofono();
     const {pc, audio} = lvConexion(LV.mic); LV.pc = pc; LV.audio = audio;
-    await pc.setRemoteDescription({type: 'offer', sdp: s.oferta});
+    await pc.setRemoteDescription({type: 'offer', sdp: lvSdp(s.oferta)});
     await pc.setLocalDescription(await pc.createAnswer());
     await lvRutas(pc);
     await crmApi('POST', `/crm/llamadas/${encodeURIComponent(id)}/contestar`, {sdp: pc.localDescription.sdp});
@@ -282,7 +287,7 @@ document.addEventListener('crm:evento', e => {
   if (d.fase === 'respuesta' && LV && LV.id === k.id && LV.pc && d.sdp) {
     // La respuesta de Meta se aplica una sola vez: si llega repetida, la conexión ya está armada y no se cuelga por eso.
     const pc = LV.pc; if (pc.signalingState !== 'have-local-offer') return;
-    pc.setRemoteDescription({type: 'answer', sdp: d.sdp}).catch(e => {
+    pc.setRemoteDescription({type: 'answer', sdp: lvSdp(d.sdp)}).catch(e => {
       if (pc.signalingState !== 'have-local-offer') return;
       toast('No se pudo conectar el audio de la llamada'); lvColgar(`respuesta de Meta: ${e && e.message || e}`);
     });
