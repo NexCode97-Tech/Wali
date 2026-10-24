@@ -85,6 +85,28 @@ const EXPLICACION: Record<number, string> = {
   133015: 'El número se borró hace poco de otra cuenta. Espera unos minutos y vuelve a intentar',
   133016: 'Se pasó el límite de registros de este número. Espera 72 horas o escribe al soporte de Meta',
   135000: 'Meta tuvo un error genérico con los datos del mensaje',
+  // Llamadas por WhatsApp (Calling API, «Troubleshooting»).
+  131044: 'La llamada no entró porque la cuenta de WhatsApp no tiene un método de pago válido. Agrégalo en el administrador de WhatsApp de Meta',
+  138000: 'Las llamadas no están activadas en esta línea. Actívalas en Ajustes del CRM, Líneas de WhatsApp',
+  138001: 'No se puede llamar a esta persona: no tiene WhatsApp, no aceptó los términos nuevos o usa una versión que no recibe llamadas',
+  138002: 'La línea llegó al máximo de llamadas al mismo tiempo',
+  138003: 'Ya hay una llamada en curso con esta persona',
+  138004: 'No se pudo conectar la llamada. Intenta de nuevo',
+  138005: 'La línea llegó al límite de llamadas que puede hacer. Espera un rato',
+  138006: 'La persona todavía no te dio permiso para llamarla. Pídele permiso primero',
+  138007: 'La llamada no alcanzó a conectar a tiempo. Intenta de nuevo',
+  138009: 'Ya se mandaron las solicitudes de permiso que WhatsApp deja a esta persona: 1 al día y 2 por semana',
+  138012: 'La línea llegó al máximo de 100 llamadas contestadas en 24 horas',
+  138013: 'Esta línea no puede hacer llamadas a clientes, solo recibirlas',
+  138014: 'Meta apagó las llamadas de esta línea por baja calidad, hasta que levante la restricción',
+  138015: 'Meta no deja activar las llamadas: la línea necesita un límite de al menos 2.000 conversaciones al día',
+  138017: 'La persona ya dio permiso para siempre: no hace falta pedírselo otra vez',
+  138018: 'Falta un requisito técnico para las llamadas: la suscripción al aviso «calls» del webhook en la app de Meta',
+  138019: 'WhatsApp no pudo armar la llamada en el celular de la persona',
+  138020: 'El celular de la persona no se pudo conectar al servidor de la llamada',
+  138021: 'La llamada se cortó porque no llegó audio por mucho tiempo',
+  138022: 'La llamada se cortó porque no salió audio por mucho tiempo',
+  138023: 'La llamada se contestó pero se cortó sin conectar el audio',
 }
 
 /** Subcódigos (sobre todo al crear plantillas). */
@@ -615,6 +637,12 @@ async function armarCuerpo(m: MsgConTodo, cred: CredMeta): Promise<Json> {
   if (!entrante || Date.now() - entrante > VEINTICUATRO_H) throw new ErrorEnvio(VENTANA_24H)
 
   const texto = txt(datos.out) || txt(datos.bot) || txt(datos.ia) || txt(datos.recepcion)
+
+  // Solicitud de permiso para llamar (Calling API, «User call permissions»): solo el texto se personaliza.
+  if (datos.permisoLlamada) {
+    if (texto.length > 1024) throw new ErrorEnvio('El mensaje de la solicitud pasa de 1.024 caracteres')
+    return { type: 'interactive', interactive: { type: 'call_permission_request', action: { name: 'call_permission_request' }, ...(texto ? { body: { text: texto } } : {}) } }
+  }
 
   // Botones o lista de WhatsApp (flujos y agentes): {bot, botones:[…]} o {bot, lista:{boton, ops}}.
   if (Array.isArray(datos.botones) && datos.botones.length) return cuerpoBotones(texto, datos.botones)

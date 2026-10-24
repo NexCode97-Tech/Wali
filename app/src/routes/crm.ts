@@ -10,6 +10,7 @@ import { rutasIaCrm } from './crmIa'
 import { rutasEncuestaCrm } from './crmEncuesta'
 import { rutasAyudaCrm } from './crmAyuda'
 import * as conv from '../controllers/crm/conversaciones.controller'
+import * as llamadas from '../controllers/crm/llamadas.controller'
 import * as contactos from '../controllers/crm/contactos.controller'
 import * as spam from '../controllers/crm/spam.controller'
 import * as ajustes from '../controllers/crm/ajustes.controller'
@@ -164,6 +165,15 @@ router.post('/conversaciones/:id/mensajes', asyncHandler(conv.enviarMensaje))
 router.delete('/conversaciones/:id/mensajes/:msgId', asyncHandler(conv.borrarMensaje))
 router.post('/conversaciones/:id/mensajes/:msgId/transcripcion', asyncHandler(conv.transcribirNota))
 router.post('/conversaciones/:id/mensajes/:msgId/reaccion', asyncHandler(conv.reaccionar))
+// Llamadas por WhatsApp en vivo (llamadasVivo.ts).
+router.get('/llamadas', asyncHandler(llamadas.enCurso))
+router.post('/llamadas/:id/contestar', asyncHandler(llamadas.contestarLlamada))
+router.post('/llamadas/:id/rechazar', asyncHandler(llamadas.rechazarLlamada))
+router.post('/llamadas/:id/colgar', asyncHandler(llamadas.colgarLlamada))
+router.post('/llamadas/:id/cierre', asyncHandler(llamadas.cierreLlamada))
+router.post('/conversaciones/:id/llamar', asyncHandler(llamadas.llamarCliente))
+router.get('/conversaciones/:id/permiso-llamada', asyncHandler(llamadas.permisoLlamada))
+router.post('/conversaciones/:id/permiso-llamada', asyncHandler(llamadas.pedirPermisoLlamada))
 router.patch('/conversaciones/:id', asyncHandler(conv.editarConversacion))
 router.post('/conversaciones/:id/leer', asyncHandler(conv.marcarLeida))
 router.post('/conversaciones/:id/spam', asyncHandler(spam.marcarSpam))

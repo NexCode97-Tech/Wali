@@ -163,6 +163,8 @@ export function lineaAFront(l: CrmLinea) {
   return {
     id: l.id, n: l.nombre, tel: l.telefono, estado: l.estado, calidad: l.calidad, limite: l.limite,
     phoneNumberId: l.phoneNumberId, conexionId: l.conexionId, wabaId: l.wabaId, ajustes: obj(l.ajustes),
+    // Meta tiene las llamadas encendidas en el número (última copia leída de Meta, llamadas.ts).
+    llamadas: obj(obj(l.ajustes).llamadasMeta).activas === true,
   }
 }
 

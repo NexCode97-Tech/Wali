@@ -92,9 +92,10 @@ const CALIDAD_META = {GREEN:['Alta', 'ok2'], HIGH:['Alta', 'ok2'], YELLOW:['Medi
 const calidadHTML = v => { const c = CALIDAD_META[String(v || '').toUpperCase()]; return c ? `<span class="${c[1]}">${c[0]}</span>` : '<span class="muted">Sin dato de Meta</span>'; };
 const ESTADO_LINEA = {conectada:['Conectada', 'ok2'], error:['Con error', 'll-baja'], desconectada:['Desconectada', 'll-baja']};
 const estadoLineaHTML = l => { const e = ESTADO_LINEA[l.estado] || [l.estado || 'Sin estado', 'pill']; return `<span class="${e[1]}" style="margin-left:auto">${esc(e[0])}</span>`; };
-// Meta activó las llamadas en la línea y el CRM tiene con qué llamar: lo dice el API en la línea. En esta etapa no pasa.
+// Meta tiene las llamadas encendidas en la línea (lineaAFront `llamadas`, la última copia leída de Meta). Desde el
+// 24-oct el CRM llama y contesta desde el navegador (88-llamadas-vivo.js), así que con eso basta.
 const metaLlamadas = l => !!(l && l.llamadas === true);
-const llamadasActivas = id => metaLlamadas(LINEAS.find(l => l.id === id)) && !!(LLAM.lineas[id] || {}).on;
+const llamadasActivas = id => metaLlamadas(LINEAS.find(l => l.id === id));
 // Cada línea tiene su fila en CFG.lineas (mensajes) y en LLAM.lineas (llamadas); si falta, se crea con los valores de siempre.
 function ajLinea(id, eq = 'Ventas'){
   if (!CFG.lineas.some(x => x.id === id)) CFG.lineas.push({id, eq, recepcion:false});
@@ -836,9 +837,7 @@ burbuja = function(m){
 function motivoSinLlamar(c){
   const l = LINEAS.find(x => x.id === c.linea);
   if (!l) return 'Esta conversación no tiene una línea de WhatsApp conectada.';
-  if (!metaLlamadas(l)) return `Las llamadas por WhatsApp todavía no están activadas en Meta para la línea ${l.n}.`;
-  if (!(LLAM.lineas[l.id] || {}).on) return `Las llamadas están apagadas en la línea ${l.n}.`;
-  return 'El CRM todavía no tiene con qué hacer la llamada desde el navegador.';
+  return `Las llamadas por WhatsApp no están activadas en la línea ${l.n}. Se activan en Ajustes del CRM, Líneas de WhatsApp.`;
 }
 document.addEventListener('click', e => {
   if (!e.target.closest('#b-call')) return;
@@ -848,6 +847,7 @@ document.addEventListener('click', e => {
   const hl = horarioLegal();
   if (llamadasActivas(c.linea) && !hl.ok) { abrirDialogo(`<h3>Ahora no se puede llamar a ${esc(c.n)}</h3><p>${esc(hl.motivo)} La Ley 2300 solo permite llamadas de venta de lunes a viernes de 7 a. m. a 7 p. m. y los sábados de 8 a. m. a 3 p. m., nunca domingos ni festivos.</p><p class="muted">Si el cliente te llama, sí puedes contestar: esa restricción es solo para las llamadas que hace el asesor.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cerrar</button><button type="button" class="btn pri" data-ll-recordar="${esc(hl.siguiente)}" data-para="${hl.para || ''}">${I('bell')}Recordarme ${esc(hl.siguiente)}</button></div>`); return; }
   if (llamadasActivas(c.linea) && PD.rneOn && c.rne && !c.aut) { abrirDialogo(`<h3>No se puede llamar a ${esc(c.n)}</h3><p>Su número está en el Registro de Números Excluidos de la CRC y no ha autorizado a la empresa. No se le puede llamar ni incluir en difusiones.</p><p class="muted">Como escribió primero, sí le puedes responder por el chat. Si autoriza sus datos, se le puede llamar.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Entendido</button><button type="button" class="btn pri" data-ll-aut="1">${I('send')}Pedirle autorización</button></div>`); return; }
+  if (llamadasActivas(c.linea)) { lvLlamar(c); return; }
   abrirDialogo(`<h3>Llamar a ${esc(c.n)}</h3><p>${esc(motivoSinLlamar(c))} Mientras tanto, escríbele por el chat.</p>${st.rol === 'l' ? '<p class="muted">Las llamadas de cada línea se ven en Ajustes del CRM, Líneas de WhatsApp.</p>' : ''}<div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Entendido</button></div>`);
 }, true);
 

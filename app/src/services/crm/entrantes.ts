@@ -21,6 +21,7 @@ import { bajarDeTelegram, contestarBoton } from './telegram'
 import { bajarDeTiktok } from './tiktok'
 import { encuestaNoLlego, respuestaFormulario } from './encuesta'
 import { leerLlamadas } from './llamadas'
+import { entrante, estadoSaliente, respuesta, respuestaPermiso, terminada } from './llamadasVivo'
 
 /**
  * Lo que llega por el webhook de WhatsApp Cloud API del CRM (26-sep-2026):
@@ -52,6 +53,8 @@ export interface WaMensaje {
     type?: string; button_reply?: { id?: string; title?: string }; list_reply?: { id?: string; title?: string }
     /** Respuesta de un formulario de WhatsApp (Flows): `response_json` trae el flow_token y lo que llenó (encuesta.ts). */
     nfm_reply?: { name?: string; body?: string; response_json?: string }
+    /** Respuesta a la solicitud de permiso para llamar (llamadasVivo.ts). */
+    call_permission_reply?: { response?: string; is_permanent?: boolean; expiration_timestamp?: string | number; response_source?: string }
   }
   /** El mensaje al que responde (en un nfm_reply, el que abrió el formulario). */
   context?: { from?: string; id?: string }
@@ -455,6 +458,15 @@ export async function procesarEntrante(linea: CrmLinea, m: WaMensaje, perfiles: 
     // La respuesta del formulario de la encuesta al finalizar (lote 6): tarjeta en su conversación, sin reabrirla.
     if (m.type === 'interactive' && m.interactive?.type === 'nfm_reply' && await respuestaFormulario(linea, m, tel, cuando, uid)) return
     const nombre = txt(perfil?.profile?.name) || txt(perfiles[0]?.profile?.name)
+    // Aceptó o no las llamadas: aviso en su conversación, sin abrirla ni repartirla (no escribió nada).
+    const cpr = m.type === 'interactive' && m.interactive?.type === 'call_permission_reply' ? m.interactive.call_permission_reply : null
+    if (cpr) {
+      const k = await contactoDe({ tel, uid, usuario: txt(perfil?.profile?.username) }, nombre, undefined)
+      const { conv } = await conversacionEnLugar(k, { linea }, cuando)
+      const vence = Number(cpr.expiration_timestamp ?? 0) || null
+      await respuestaPermiso(conv.id, k.id, k.nombre || nombre, { acepta: cpr.response === 'accept', permanente: !!cpr.is_permanent, vence, de: m.context?.id ?? null, waId: m.id }, cuando)
+      return
+    }
     const datos = await armarDatos(m, linea)
     // Responde citando un mensaje de la conversación: la burbuja muestra la cita.
     const citado = m.context?.id ? await prisma.crmMensaje.findFirst({ where: { waId: m.context.id, conversacion: { lineaId: linea.id } }, select: { id: true } }) : null
@@ -1203,6 +1215,31 @@ async function procesarEcoWhatsapp(linea: { id: string }, e: Json): Promise<void
   } catch (err) { if (!(err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002')) throw err }
 }
 
+/**
+ * Un aviso de llamada (campo `calls`): connect de una entrante (trae la oferta del cliente) o de una saliente (trae su
+ * respuesta), y terminate. La entrante cae en la conversación del cliente en esa línea, como un mensaje suyo.
+ */
+async function avisoLlamada(linea: CrmLinea, c: Json, perfiles: WaContacto[]): Promise<void> {
+  const id = txt(c.id), sdp = txt(obj(c.session).sdp)
+  if (!id) return
+  if (c.event === 'connect' && c.direction === 'USER_INITIATED') {
+    if (!sdp) return
+    const tel = telDigitos(c.from) || '', uid = txt(c.from_user_id)
+    const perfil = perfiles.find(p => (tel && telDigitos(p.wa_id) === tel) || (uid && p.user_id === uid)) ?? perfiles[0]
+    const cuando = Number(c.timestamp) > 0 ? new Date(Number(c.timestamp) * 1000) : new Date()
+    const k = await contactoDe({ tel, uid, usuario: txt(perfil?.profile?.username) }, txt(perfil?.profile?.name), undefined)
+    const { conv, nueva } = await conversacionPara(k, { linea }, cuando)
+    if (nueva) await repartir(conv.id).catch(e => logger.error(`[CRM llamada] repartir ${conv.id}: ${(e as Error).message}`))
+    await emitirConv(conv.id)
+    entrante(linea, id, conv.id, sdp, cuando)
+  } else if (c.event === 'connect') {
+    if (sdp) respuesta(id, sdp)
+  } else if (c.event === 'terminate') {
+    const e = Array.isArray(c.errors) ? obj(c.errors[0]) : null
+    await terminada(id, { duracion: Number(c.duration) > 0 ? Number(c.duration) : null, error: e ? explicarErrorMeta(e) : null })
+  }
+}
+
 export async function procesarWebhookCrm(cuerpo: Json, conexionId: string | null = null): Promise<void> {
   const fallas: string[] = []
   for (const entrada of Array.isArray(cuerpo?.entry) ? cuerpo.entry : []) {
@@ -1253,6 +1290,12 @@ export async function procesarWebhookCrm(cuerpo: Json, conexionId: string | null
               await prisma.crmLinea.updateMany({ where: { wabaId }, data: { limite } })
               for (const l of await prisma.crmLinea.findMany({ where: { wabaId } })) emitirCrm({ tipo: 'linea', linea: lineaAFront(l) })
             }
+          } else if (cambio?.field === 'calls') {
+            const pnid = String(v.metadata?.phone_number_id ?? '')
+            const linea = pnid ? await prisma.crmLinea.findUnique({ where: { phoneNumberId: pnid } }) : null
+            if (!linea) { logger.info(`[CRM WA] ${pnid} fuera del CRM: aviso de llamada`); continue }
+            for (const c of v.calls ?? []) await avisoLlamada(linea, c, v.contacts ?? []).catch(e => { fallas.push(`llamada ${c?.id}: ${(e as Error).message}`) })
+            for (const s of v.statuses ?? []) if (s?.type === 'call' && s.id) estadoSaliente(String(s.id), String(s.status ?? ''))
           } else if (cambio?.field === 'account_settings_update') {
             // Cambiaron los ajustes de llamadas del número (desde el CRM o desde WhatsApp Manager): se vuelve a leer la copia.
             const pnid = String(obj(v.phone_number_settings).phone_number_id ?? '')
