@@ -1,7 +1,7 @@
 import type { CrmLinea, Prisma } from '@prisma/client'
 import { prisma } from './bd'
 import { credDeLinea } from './credenciales'
-import { graph } from './whatsapp'
+import { archivoPermitido, graph, notaDeVozOgg } from './whatsapp'
 import { aMinutos, festivosCO } from './reglas'
 import { leerAjuste } from './ajustes'
 import { ValidationError } from '../../utils/errors'
@@ -31,6 +31,10 @@ export interface AjustesLlamadas {
   timbre: number
   /** Id del saludo del buzón ya subido a Meta. */
   saludoMediaId?: string
+  /** El mismo saludo en la Nube (ogg), para oírlo en el CRM: Meta no deja descargarlo. */
+  saludoUrl?: string
+  /** Duración del saludo en segundos. */
+  saludoSeg?: number
   /** Restricciones que Meta tenga puestas (p. ej. por baja tasa de contestadas). */
   restricciones?: { tipo: string; motivo: string; vence: number }[]
   sincronizado?: string
@@ -129,6 +133,32 @@ export async function subirSaludo(l: CrmLinea, audio: Buffer, nombre = 'saludo.o
   const r = await graph<Json>(`/${l.phoneNumberId}/media`, { cred, method: 'POST', body: form })
   if (!r.id) throw new ValidationError('Meta no devolvió el saludo subido')
   return String(r.id)
+}
+
+/**
+ * Saludo del buzón desde un audio de la Nube (grabado en el navegador o subido): Cloudinary lo da en ogg con Opus,
+ * que es lo único que Meta acepta, se sube a Meta y queda en la línea. Si el buzón ya está prendido, Meta lo usa de una.
+ */
+export async function saludoDesdeNube(l: CrmLinea, url: string, seg: number | null): Promise<{ linea: CrmLinea; ajustes: AjustesLlamadas }> {
+  const ogg = notaDeVozOgg(url)
+  if (!ogg || !archivoPermitido(url)) throw new ValidationError('El saludo debe estar en la Nube del CRM')
+  if (seg !== null && seg >= 60) throw new ValidationError('El saludo debe durar menos de 1 minuto')
+  const r = await fetch(ogg, { signal: AbortSignal.timeout(30_000) })
+  if (!r.ok) throw new ValidationError('No se pudo preparar el audio del saludo. Intenta de nuevo')
+  const audio = Buffer.from(await r.arrayBuffer())
+  if (audio.subarray(0, 4).toString('latin1') !== 'OggS') throw new ValidationError('No se pudo convertir el saludo a un audio que Meta acepte')
+  const id = await subirSaludo(l, audio)
+  const a: AjustesLlamadas = { ...guardados(l), saludoMediaId: id, saludoUrl: ogg, ...(seg !== null ? { saludoSeg: Math.round(seg) } : {}) }
+  const linea = await guardarEnLinea(l, a)
+  return a.buzon ? cambiarLlamadas(linea, {}) : { linea, ajustes: a }
+}
+
+/** Llamadas a clientes contestadas en las últimas 24 h por la línea (Meta deja 100). */
+export async function cupoLlamadas(l: CrmLinea): Promise<number> {
+  return prisma.crmMensaje.count({ where: {
+    tipo: 'call', createdAt: { gte: new Date(Date.now() - 86_400_000) },
+    AND: [{ datos: { path: ['call', 'linea'], equals: l.id } }, { datos: { path: ['call', 'dir'], equals: 'out' } }, { datos: { path: ['call', 'estado'], equals: 'ok' } }],
+  } })
 }
 
 export { POR_DEFECTO as LLAMADAS_POR_DEFECTO }

@@ -367,12 +367,10 @@ const lnCopiable = (etq, v) => `<div class="ln-copiable"><small>${etq}</small><d
 /* Una línea: encabezado con su estado y menú, y las filas de equipo, calidad, límite y llamadas. */
 function tarjetaLinea(l, lim){
   const i = CFG.lineas.findIndex(x => x.id === l.id), x = CFG.lineas[i] || {id:l.id, eq:'Ventas'};
-  const c = LLAM.lineas[l.id] || {on:false, icono:true, eq:'Ventas', buzon:true, grabar:true}, cx = lnCuentaDe(l);
-  const meta = metaLlamadas(l), puede = meta && lim != null && lim >= 2000, on = meta && !!c.on;
+  const cx = lnCuentaDe(l);
   const est = l.estado !== 'conectada' ? ['mal', l.estado === 'desconectada' ? 'Desconectada' : 'Sin conexión'] : cx && cx.estado === 'error' ? ['mal', 'Desconectada'] : cx && !cx.ultimoAviso ? ['espera', 'Esperando mensajes'] : ['ok', 'Conectada'];
   const cal = lnCalidad(l.calidad), ln = limiteNum(l.limite), niv = lnNivel(ln);
   const ab = st.lnAbierto[l.id] || '';
-  const nueva = on && c.desde && Date.now() - Date.parse(c.desde) < 7 * 864e5;
   return `<article class="ln-card ${est[0] === 'mal' ? 'mal' : ''}">
     <div class="ln-card-cab"><span class="ln-wa">${LOGO.wa}</span><div class="ln-nom"><b>${esc(l.n)}</b><span>${esc(l.tel)}${cx ? ` · ${esc(cxNombre(cx))}` : ''}</span></div>
       ${cx && cx.tipo === 'whatsapp' ? cxChipModo(lnCoex(l)) : ''}<span class="ln-est ${est[0]}"><i></i>${est[1]}</span>
@@ -382,22 +380,7 @@ function tarjetaLinea(l, lim){
     <div class="ln-f"><span class="fic">${LN_IC.senal}</span><div class="ftx"><b>Calidad según Meta</b><small>Si baja, Meta limita cuántos mensajes envías</small></div><div class="ctl"><span class="ln-senal ${cal[0]}" aria-hidden="true"><i></i><i></i><i></i></span>${cal[1]}</div></div>
     <div class="ln-f"><span class="fic">${LN_IC.escalera}</span><div class="ftx"><b>Límite de Meta</b><small>${niv < 0 ? 'Meta todavía no lo ha informado' : `Nivel ${niv + 1} de 5${niv < 4 ? `, el siguiente es ${fmtLimite(LN_NIVELES[niv + 1])}` : ''}`}</small></div>
       <div class="ctl"><span class="ln-esc" aria-hidden="true">${LN_NIVELES.map((_, n) => `<i class="${n <= niv ? 'on' : ''}"></i>`).join('')}</span><span>${ln == null ? 'Sin dato' : `${fmtLimite(ln)} al día`}</span></div></div>
-    ${lnCoex(l) ? `<div class="ln-f"><span class="fic">${CX_CEL}</span><div class="ftx"><b>Llamadas por WhatsApp</b><small>No disponibles: este número también está en la app del celular. Meta no deja llamar desde Wali en ese modo.</small></div><div class="ctl"><span class="ln-nd">No disponible</span></div></div>` : `<div class="ln-f"><span class="fic">${I('phone')}</span><div class="ftx"><b>Llamadas por WhatsApp</b><small>${!meta ? 'Meta todavía no las activa en esta línea' : on ? 'Tus clientes ven el botón de llamar' : 'Apagadas en esta línea'}</small></div>
-      <div class="ctl">${puede ? `${on ? `<button type="button" class="ln-lnk" data-ln-abrir="${l.id}|aj" aria-expanded="${ab === 'aj'}">Ajustes${I('chev')}</button>` : ''}<button type="button" class="tg" role="switch" data-ll-on="${l.id}" aria-checked="${on}" aria-label="Llamadas por WhatsApp en ${esc(l.n)}"></button>`
-        : `<button type="button" class="ln-lnk" data-ln-abrir="${l.id}|req" aria-expanded="${ab === 'req'}">Ver requisitos${I('chev')}</button>`}</div></div>`}
-    ${ab === 'req' && !puede && !lnCoex(l) ? `<div class="ln-sub">
-      <div class="ln-req ${lim != null && lim >= 2000 ? 'listo' : 'falta'}">${lim != null && lim >= 2000 ? I('check') : LN_IC.reloj}Límite de 2.000 conversaciones al día<em>${lim == null ? 'Sin dato de Meta' : lim >= 2000 ? 'Listo' : `${fmtLimite(lim)} de 2.000`}</em></div>
-      <div class="ln-req falta">${LN_IC.reloj}Método de pago en la cuenta de WhatsApp<a href="https://business.facebook.com/wa/manage/" target="_blank" rel="noopener noreferrer">Revisar en Meta</a></div>
-      <div class="ln-req ${meta ? 'listo' : 'falta'}">${meta ? I('check') : LN_IC.reloj}Meta activa las llamadas en la línea<em>${meta ? 'Listo' : 'Pendiente'}</em></div>
-      <div class="ln-sub-pie"><span>Grabaciones, buzón de voz y horario de llamadas</span><button type="button" class="ln-lnk" data-ir="cfg-llamadas">Ir a Llamadas${I('chev')}</button></div></div>` : ''}
-    ${ab === 'aj' && on ? `<div class="ln-sub">
-      ${nueva ? '<div class="ll-nota">Activadas hace poco. Meta puede tardar hasta 7 días en mostrar el botón de llamar en los teléfonos.</div>' : ''}
-      ${fila('Mostrar el botón de llamar en WhatsApp', 'Si se oculta, el cliente solo puede llamar desde un botón que le mande el asesor', `<button type="button" class="tg" role="switch" data-ll-tg="${l.id}|icono" aria-checked="${c.icono}" aria-label="Mostrar el botón de llamar"></button>`)}
-      ${fila('Quién contesta', 'Suena a los asesores conectados de ese equipo; el primero que contesta se la queda', ddSel('data-ll-eq', EQUIPOS.map(e => [`${l.id}|${e.n}`, e.n]), `${l.id}|${c.eq}`))}
-      ${fila('Horario para recibir llamadas', 'El mismo horario de atención del CRM', `<button type="button" class="btn" data-ir="cfg-horario">Cambiar</button>`)}
-      ${fila('Horario para llamar a clientes', 'Lunes a viernes de 7 a. m. a 7 p. m. y sábados de 8 a. m. a 3 p. m.; nunca domingos ni festivos (Ley 2300)', `<span class="ll-ok">${I('lock')}Fijo por ley</span>`)}
-      ${fila('Buzón de voz si nadie contesta en 30 segundos', 'El mensaje de voz llega a la conversación, transcrito', `<button type="button" class="tg" role="switch" data-ll-tg="${l.id}|buzon" aria-checked="${c.buzon}" aria-label="Buzón de voz"></button>`)}
-      ${fila('Grabar y transcribir las llamadas', 'Solo si el contacto autorizó sus datos', `<button type="button" class="tg" role="switch" data-ll-tg="${l.id}|grabar" aria-checked="${c.grabar}" aria-label="Grabar y transcribir"></button>`)}</div>` : ''}
+    ${lnCoex(l) ? `<div class="ln-f"><span class="fic">${CX_CEL}</span><div class="ftx"><b>Llamadas por WhatsApp</b><small>No disponibles: este número también está en la app del celular. Meta no deja llamar desde Wali en ese modo.</small></div><div class="ctl"><span class="ln-nd">No disponible</span></div></div>` : lwLinea(l, ln, ab)}
   </article>`;
 }
 
@@ -440,9 +423,7 @@ document.getElementById('page').addEventListener('click', e => {
     abrirDialogo(`<h3>Quitar ${esc(l.n)} del CRM</h3><p>El CRM deja de recibir y enviar mensajes por ${esc(l.tel)}. Las conversaciones que ya hay se quedan. En Meta no se toca nada: la puedes volver a conectar cuando quieras.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626" data-ln-quitarok="${l.id}">${I('x')}Quitar</button></div>`); return; }
   const qt = t.closest('[data-cxm-quitar]'); if (qt) { const c = CONEXIONES.find(x => x.id === qt.dataset.cxmQuitar); if (!c) return;
     abrirDialogo(`<h3>Desconectar ${esc(cxNombre(c))}</h3><p>Sus ${c.lineas} ${c.lineas === 1 ? 'línea sale' : 'líneas salen'} del CRM y dejan de llegar sus mensajes. Las conversaciones que ya hay se quedan.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626" data-cxm-quitarok="${c.id}">${I('x')}Desconectar</button></div>`); return; }
-  const on = t.closest('[data-ll-on]'); if (on && !on.disabled) { const id = on.dataset.llOn, c = LLAM.lineas[id]; c.on = !c.on; c.desde = c.on ? new Date().toISOString() : null; st.lnAbierto[id] = c.on ? 'aj' : ''; render(); toast(c.on ? 'Llamadas activadas en ' + lineaDe(id).n : 'Llamadas apagadas en ' + lineaDe(id).n); return; }
-  const tg = t.closest('[data-ll-tg]'); if (tg) { const [id, k] = tg.dataset.llTg.split('|'); LLAM.lineas[id][k] = !LLAM.lineas[id][k]; render(); toast(LLAM.lineas[id][k] ? 'Activado' : 'Apagado'); return; }
-  const eq = t.closest('[data-ll-eq]'); if (eq) { const [id, n] = eq.dataset.llEq.split('|'); LLAM.lineas[id].eq = n; render(); toast(`Las llamadas de ${lineaDe(id).n} suenan a ${n}`); return; }
+  // Los controles de llamadas de cada línea viven en 88-llamadas-ajustes.js (maqueta «Configurar llamadas en la línea»).
 });
 
 document.getElementById('page').addEventListener('input', e => { if (['cfg-lineas', 'cfg-llamadas'].includes(st.pagina) && e.target.dataset.llIn === 'proposito') { const c = document.getElementById('ll-prop-c'); if (c) c.textContent = `${e.target.value.length}/250`; } });

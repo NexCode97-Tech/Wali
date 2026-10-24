@@ -30,7 +30,7 @@ import { recibirManychat } from '../services/crm/manychat'
 import { emitirConexiones as emitirConexionesDe } from '../services/crm/conexiones'
 import { LLAVES_MARKETING, revisarMarketingDeConexion } from '../services/crm/marketingMeta'
 import QRCode from 'qrcode'
-import { cambiarLlamadas, leerLlamadas, subirSaludo } from '../services/crm/llamadas'
+import { cambiarLlamadas, cupoLlamadas, leerLlamadas, saludoDesdeNube, subirSaludo } from '../services/crm/llamadas'
 
 /**
  * WhatsApp Cloud API del CRM (26-sep-2026). Todo se conecta desde el CRM, sin variables del
@@ -370,7 +370,7 @@ rutasWaCrm.get('/lineas/:id/llamadas', soloLideres, asyncHandler(async (req: Req
   const l = await prisma.crmLinea.findUnique({ where: { id: req.params.id } })
   if (!l) throw new NotFoundError('Esa línea no existe')
   const { linea, ajustes } = await leerLlamadas(l)
-  return ApiResponse.success(res, { linea: lineaAFront(linea), ajustes })
+  return ApiResponse.success(res, { linea: lineaAFront(linea), ajustes, cupo: await cupoLlamadas(linea) })
 }))
 rutasWaCrm.put('/lineas/:id/llamadas', soloLideres, asyncHandler(async (req: Request, res: Response) => {
   const l = await prisma.crmLinea.findUnique({ where: { id: req.params.id } })
@@ -390,6 +390,14 @@ rutasWaCrm.put('/lineas/:id/llamadas', soloLideres, asyncHandler(async (req: Req
 rutasWaCrm.post('/lineas/:id/llamadas/saludo', soloLideres, asyncHandler(async (req: Request, res: Response) => {
   const l = await prisma.crmLinea.findUnique({ where: { id: req.params.id } })
   if (!l) throw new NotFoundError('Esa línea no existe')
+  // Grabado en el navegador o subido: ya está en la Nube y Cloudinary lo da en ogg (llamadas.ts).
+  if (typeof req.body?.url === 'string') {
+    const seg = Number(req.body.seg)
+    const { linea, ajustes } = await saludoDesdeNube(l, req.body.url, Number.isFinite(seg) && seg > 0 ? seg : null)
+    const front = lineaAFront(linea)
+    emitirCrm({ tipo: 'linea', linea: front }, req.userId ?? null)
+    return ApiResponse.created(res, { linea: front, ajustes })
+  }
   const b64 = String(req.body?.audio ?? '').replace(/^data:[^,]*,/, '')
   if (!b64 || b64.length > 1_400_000) throw new ValidationError('El saludo debe ser un audio de menos de 1 minuto')
   const audio = Buffer.from(b64, 'base64')
