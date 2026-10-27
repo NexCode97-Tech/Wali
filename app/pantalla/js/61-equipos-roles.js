@@ -666,6 +666,35 @@ guardarPersona = async function(){
   st.peDlg = null; cerrarDialogo(); render();
   toast(Object.keys(cambios).length || topeCambio || eqCambio ? 'Cambios guardados' : 'Sin cambios');
 };
+/* Rol al agregar o invitar (27-oct): por cada equipo elegido, «Integrante» (con el nombre que el líder le dio, p. ej.
+   «Asesor») o «Líder». Antes entraba siempre como integrante y había que volver a la página del equipo a cambiarlo. */
+function paEquiposHTML(eqs, roles, attrEq, attrRol){
+  return `<div class="fld">Equipos y rol<div class="pa-eqs">${equiposAdministrables().map(n => {
+    const on = eqs.includes(n), r = roles[n] === 'lider' ? 'lider' : 'integrante';
+    return `<div class="pa-eqf${on ? ' on' : ''}"><button type="button" class="cx-op eq-op" role="checkbox" aria-checked="${on}" ${attrEq}="${esc(n)}"><span class="eq-caja">${I('check')}</span><span class="eq-nom">${esc(n)}</span></button>${on ? `<div class="pa-rol" role="radiogroup" aria-label="Rol en ${esc(n)}"><button type="button" role="radio" aria-checked="${r === 'integrante'}" ${attrRol}="${esc(n)}|integrante">${esc(rolIntegrantesDe(n))}</button><button type="button" role="radio" aria-checked="${r === 'lider'}" ${attrRol}="${esc(n)}|lider">Líder</button></div>` : ''}</div>`;
+  }).join('')}</div></div>`;
+}
+/** Qué va a ver con el rol elegido. */
+function paRolTexto(eqs, roles){
+  const lidera = eqs.filter(n => roles[n] === 'lider');
+  return lidera.length ? `Como líder de ${unirNombres(lidera)} ve todas las conversaciones de ${lidera.length === 1 ? 'ese equipo' : 'esos equipos'} y ${lidera.length === 1 ? 'lo' : 'los'} administra.` : `Como ${(eqs[0] ? rolIntegrantesDe(eqs[0]) : 'integrante').toLowerCase()} ve solo lo que le asignen.`;
+}
+/** Deja el rol de la persona en cada equipo elegido (líderes del ajuste `equipos`, que 80-datos.js guarda). */
+function paAplicarRoles(id, eqs, roles){
+  for (const eq of eqs) {
+    const l = (Array.isArray(EQ_CFG.lideres[eq]) ? EQ_CFG.lideres[eq] : []).filter(x => x !== id);
+    if (roles[eq] === 'lider') l.push(id);
+    EQ_CFG.lideres[eq] = l;
+  }
+}
+document.getElementById('ov-x').addEventListener('click', e => {
+  const A = st.pa; if (!A) return;
+  const b = e.target.closest('[data-pa-rol], [data-pa-inv-rol]'); if (!b) return;
+  const [eq, r] = (b.dataset.paRol || b.dataset.paInvRol).split('|'), dueno = b.dataset.paInvRol ? A.inv : A;
+  if (!dueno) return;
+  if (b.dataset.paInvRol) A.inv.telefono = valorTel('pa-inv-t'); else leerPa();
+  dueno.roles = {...(dueno.roles || {}), [eq]: r}; pintarPa();
+});
 dlgAgregarPersona = function(){
   const A = st.pa, p = A.sel, d = A.datos, f = A.form || {};
   const lista = A.cargando && !A.res.length ? '<p class="muted" style="margin:0;padding:12px">Cargando…</p>'
@@ -679,12 +708,12 @@ dlgAgregarPersona = function(){
       <div class="fld">Teléfono de contacto${campoTel('pa-t', f.telefono ?? (d.telefono || ''), {deshabilitado: !d.editable || !d.conTelefono, placeholder: d.conTelefono ? '300 123 4567' : 'No tiene ficha de asesor ni de marketing'})}</div></div>
     ${d.editable ? '' : '<p class="muted" style="margin:0">Solo un administrador puede cambiar los datos de esta persona.</p>'}`;
   const puede = p && (A.eqs || []).length && !A.guardando;
-  return `<h3>Agregar persona</h3><p>Elige a alguien de la plataforma, revisa sus datos y elige sus equipos. Entra como integrante: ve solo lo que le asignen.</p>
+  return `<h3>Agregar persona</h3><p>Elige a alguien de la plataforma, revisa sus datos y elige sus equipos y su rol en cada uno.</p>
     ${!p ? `<label class="cn-q" style="margin:0">${I('search')}<input id="pa-q" value="${esc(A.q)}" placeholder="Buscar por nombre o correo" autocomplete="off" aria-label="Buscar una persona de la plataforma"></label>
       <div class="cx-list" style="max-height:320px;overflow-y:auto">${lista}</div>`
     : `<div class="rq-m">${avPer(p)}<span class="tx"><b class="per-n">${esc(p.nombre)}</b><small>${esc([p.rolNombre || ROL_NOMBRE[p.rol] || p.rol, p.cargo].filter(Boolean).join(' · '))}</small></span><button type="button" class="btn" data-pa-cambiar="1">Cambiar</button></div>
       ${datos}
-      <div class="fld">Equipos<div class="cx-list">${equiposAdministrables().map(n => `<button type="button" class="cx-op eq-op" role="checkbox" aria-checked="${(A.eqs || []).includes(n)}" data-pa-eq="${esc(n)}"><span class="eq-caja">${I('check')}</span><span class="eq-nom">${esc(n)}</span></button>`).join('')}</div></div>
+      ${paEquiposHTML(A.eqs || [], A.roles || {}, 'data-pa-eq', 'data-pa-rol')}
       <div class="cx-f"><label>Máximo de conversaciones abiertas<input id="pa-tope" inputmode="numeric" value="${esc(f.tope ?? (EQ_CFG.topes[p.id] || ''))}" placeholder="${CFG.reparto.tope}, el general" autocomplete="off"></label></div>`}
     <div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" data-pa-guardar="1" ${puede ? '' : 'disabled'}>${I('plus')}${A.guardando ? 'Agregando…' : 'Agregar'}</button></div>`;
 };
@@ -692,6 +721,7 @@ elegirPa = function(id){
   const A = st.pa, p = A.res.find(x => x.id === id); if (!p) return;
   if (!ALCANCE.todo && eqrEsAdmin(p)) { toast(EQR_SOLO_ADMIN); return; }
   A.sel = p; A.datos = null; A.form = {}; A.cargandoDatos = true; A.errorDatos = ''; A.eqs = equiposDePersona(id).filter(puedeAdministrarEquipo); delete TEL_PAIS['pa-t'];
+  A.roles = Object.fromEntries(A.eqs.map(eq => [eq, rolEnEquipo(id, eq) === 'lider' ? 'lider' : 'integrante']));
   pintarPa();
   crmApi('GET', `/crm/personas/${encodeURIComponent(id)}`)
     .then(d => { if (st.pa === A && A.sel === p) A.datos = d; })
@@ -722,6 +752,7 @@ guardarAgregar = async function(){
   }
   PERSONAS_EXTRA[p.id] = {...(PERSONAS_EXTRA[p.id] || {}), nombre: p.nombre, rol: p.rol, foto: p.foto || null};
   eqrMembresias(p.id, elegidos);
+  paAplicarRoles(p.id, elegidos, A.roles || {});
   if (tope) EQ_CFG.topes[p.id] = Math.round(+tope);
   st.pa = null; cerrarDialogo(); render();
   toast(`${p.nombre} quedó en ${unirNombres(elegidos)}`);
@@ -734,13 +765,13 @@ const dlgAgregarSinInvitar = dlgAgregarPersona;
 dlgAgregarPersona = function(){
   const h = dlgAgregarSinInvitar(), A = st.pa;
   const sinPie = () => h.slice(0, h.lastIndexOf('<div class="ft2">'));
-  if (A.sel) return h.replace('<div class="ft2">', `<p class="muted" style="margin:0;font-size:12.5px">Al agregarla a un equipo le llega un correo con el enlace para entrar${A.sel.nueva ? ' y crear su contraseña' : ''}.</p><div class="ft2">`);
+  if (A.sel) return h.replace('<div class="ft2">', `<p class="muted" style="margin:0;font-size:12.5px">Al agregarla a un equipo le llega un correo con el enlace para entrar${A.sel.nueva ? ' y crear su contraseña' : ''}. ${paRolTexto(A.eqs || [], A.roles || {})}</p><div class="ft2">`);
   const v = A.inv || {};
   const caja = A.inv
     ? `<div class="pa-inv"><b>Invitar por correo</b><div class="cx-f" style="margin:0"><label>Nombre completo<input id="pa-inv-n" value="${esc(v.nombre || '')}" autocomplete="off"></label><label>Correo<input id="pa-inv-c" type="email" value="${esc(v.email || '')}" autocomplete="off" placeholder="nombre@empresa.com"></label>
         <div class="fld">Teléfono (opcional)${campoTel('pa-inv-t', v.telefono || '', {placeholder: '300 123 4567'})}</div></div>
-        <div class="fld">Equipos<div class="cx-list">${equiposAdministrables().map(n => `<button type="button" class="cx-op eq-op" role="checkbox" aria-checked="${(v.eqs || []).includes(n)}" data-pa-inv-eq="${esc(n)}"><span class="eq-caja">${I('check')}</span><span class="eq-nom">${esc(n)}</span></button>`).join('')}</div></div>
-        <p class="muted" style="margin:0;font-size:12.5px">Le llega un correo con el enlace para crear su contraseña y entrar. Entra como integrante: ve solo lo que le asignen.</p></div>`
+        ${paEquiposHTML(v.eqs || [], v.roles || {}, 'data-pa-inv-eq', 'data-pa-inv-rol')}
+        <p class="muted" style="margin:0;font-size:12.5px">Le llega un correo con el enlace para crear su contraseña y entrar. ${paRolTexto(v.eqs || [], v.roles || {})}</p></div>`
     : `<button type="button" class="pa-inv-abrir" data-pa-inv-abrir="1">${I('plus')}¿No está en la lista? Invitar por correo</button>`;
   if (A.inv) return sinPie().replace(/<label class="cn-q"[\s\S]*$/, '') + `${caja}<div class="ft2"><button type="button" class="btn" data-pa-inv-cerrar="1">Cancelar</button><button type="button" class="btn pri" data-pa-invitar="1"${v.enviando ? ' disabled' : ''}>${I('send')}${v.enviando ? 'Enviando…' : 'Enviar invitación'}</button></div>`;
   return sinPie() + caja;
@@ -751,6 +782,14 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .pa-inv-abrir svg{width:16px;height:16px}
 .pa-inv{display:flex;flex-direction:column;gap:10px;padding:14px;border:1px solid #e5e9f0;border-radius:12px;background:#f8fafc}
 .pa-inv > b{font-size:13.5px}
+/* Equipos y rol: el rol aparece al lado del equipo marcado */
+.pa-eqs{display:grid;gap:8px;margin-top:6px}
+.pa-eqf{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;background:#fff;padding-right:6px;transition:border-color .2s}
+.pa-eqf.on{border-color:#0b0b10}
+.pa-eqf .eq-op{flex:1;border:0;background:none;box-shadow:none!important;min-width:0}
+.pa-rol{display:inline-flex;padding:3px;border-radius:9px;background:#f1f5f9;gap:2px;flex:none;animation:lw-in .3s cubic-bezier(.16,1,.3,1)}
+.pa-rol button{height:28px;padding:0 11px;border:0;border-radius:7px;background:none;font:inherit;font-size:12.5px;color:var(--ink3);cursor:pointer;white-space:nowrap}
+.pa-rol button[aria-checked="true"]{background:#fff;color:var(--ink);font-weight:600;box-shadow:0 1px 2px rgba(15,23,42,.12)}
 </style>`);
 document.getElementById('ov-x').addEventListener('input', e => {
   const A = st.pa; if (!A || !A.inv) return;
@@ -773,7 +812,7 @@ document.getElementById('ov-x').addEventListener('click', e => {
   A.inv.enviando = true; pintarPa();
   // Al quedar en un equipo le llega el correo de invitación (invitaciones.ts, al guardar los equipos).
   crmApi('POST', '/crm/personas/invitar', {nombre, email, telefono: telefono.replace(/[^\d+]/g, '')})
-    .then(p => { if (st.pa !== A) return; PERSONAS_EXTRA[p.id] = {...(PERSONAS_EXTRA[p.id] || {}), nombre: p.nombre, rol: p.rol, foto: p.foto || null}; eqrMembresias(p.id, eqs); st.pa = null; cerrarDialogo(); render(); toast(`Le enviamos la invitación a ${p.nombre} (${email})`); })
+    .then(p => { if (st.pa !== A) return; PERSONAS_EXTRA[p.id] = {...(PERSONAS_EXTRA[p.id] || {}), nombre: p.nombre, rol: p.rol, foto: p.foto || null}; eqrMembresias(p.id, eqs); paAplicarRoles(p.id, eqs, A.inv.roles || {}); st.pa = null; cerrarDialogo(); render(); toast(`Le enviamos la invitación a ${p.nombre} (${email})`); })
     .catch(err => { if (st.pa !== A) return; A.inv.enviando = false; pintarPa(); toast(err.message || 'No se pudo invitar'); });
 });
 
