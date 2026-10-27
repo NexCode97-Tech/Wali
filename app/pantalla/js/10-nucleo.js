@@ -716,12 +716,8 @@ function pagina(){
   } else if (st.pagina === 'difusiones') {
 
     if (st.dif) { difusion(); return; }
-    el.innerHTML = `<div class="pg-h"><div><h2>Difusiones</h2><p class="sub">Envíos masivos por WhatsApp con plantillas aprobadas. Cada envío queda como conversación y se reparte a los asesores cuando el cliente responde.</p></div><button type="button" class="btn pri" id="b-dif">${I('plus')}Nueva difusión</button></div>
-      <table class="tb2"><thead><tr><th>Difusión</th><th>Plantilla</th><th>Audiencia</th><th>Enviados</th><th>Entregados</th><th>Leídos</th><th>Respondieron</th><th>Fecha</th><th>Estado</th></tr></thead><tbody>
-      ${DIFUSIONES.length ? '' : '<tr><td colspan="9" class="muted" style="padding:18px 10px">Todavía no hay difusiones. Crea la primera con «Nueva difusión».</td></tr>'}${DIFUSIONES.map(d => { const v = difVista(d), num = x => x.toLocaleString('es-CO'), pct = x => v.ent ? ' · ' + Math.round(x / v.ent * 100) + ' %' : '';
-        return `<tr><td><b style="font-weight:500">${esc(d.n)}</b></td><td>${esc(d.t)}</td><td style="color:var(--ink3)">${esc(d.a)}</td><td>${v.env || v.curso ? num(v.env) + (v.curso && v.total ? ' de ' + num(v.total) : '') : '—'}${v.fal ? `<div class="muted" style="font-size:12px">${num(v.fal)} ${v.fal === 1 ? 'fallido' : 'fallidos'}</div>` : ''}</td><td>${v.ent ? num(v.ent) : '—'}</td><td>${v.le ? num(v.le) + pct(v.le) : '—'}</td><td>${v.resp ? num(v.resp) + pct(v.resp) : '—'}</td><td style="color:var(--ink3)">${esc(d.f || '—')}</td><td><span class="est ${v.est}"${v.motivo ? ` title="${esc(v.motivo)}"` : ''}>${esc(v.e)}</span></td></tr>`; }).join('')}
-      </tbody></table>`;
-    document.getElementById('b-dif').addEventListener('click', () => { if (st.rol !== 'l') { toast('Las difusiones las envía el líder de Ventas'); return; } st.dif = {paso:1, aud:new Set(['En seguimiento','Sin respuesta']), tpl:(TPL[0] || {}).n || '', linea:(LINEAS[0] || {}).id || null, cuando:'ahora'}; render(); });
+    // Lista rediseñada (maqueta A del 27-oct): 78-difusiones.js.
+    paginaDifusiones(el);
   } else if (st.pagina === 'plantillas') {
     if (st.tplNueva) { plantillaNueva(); return; }
 

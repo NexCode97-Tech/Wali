@@ -11,6 +11,7 @@ import { rutasEncuestaCrm } from './crmEncuesta'
 import { rutasAyudaCrm } from './crmAyuda'
 import * as conv from '../controllers/crm/conversaciones.controller'
 import * as llamadas from '../controllers/crm/llamadas.controller'
+import * as difusiones from '../controllers/crm/difusiones.controller'
 import * as contactos from '../controllers/crm/contactos.controller'
 import * as spam from '../controllers/crm/spam.controller'
 import * as ajustes from '../controllers/crm/ajustes.controller'
@@ -166,6 +167,7 @@ router.delete('/conversaciones/:id/mensajes/:msgId', asyncHandler(conv.borrarMen
 router.post('/conversaciones/:id/mensajes/:msgId/transcripcion', asyncHandler(conv.transcribirNota))
 router.post('/conversaciones/:id/mensajes/:msgId/reaccion', asyncHandler(conv.reaccionar))
 // Llamadas por WhatsApp en vivo (llamadasVivo.ts).
+router.get('/difusiones/:id/respondieron', asyncHandler(difusiones.respondieron))
 router.get('/llamadas', asyncHandler(llamadas.enCurso))
 router.post('/llamadas/:id/contestar', asyncHandler(llamadas.contestarLlamada))
 router.post('/llamadas/:id/rechazar', asyncHandler(llamadas.rechazarLlamada))

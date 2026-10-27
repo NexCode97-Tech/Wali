@@ -84,6 +84,8 @@ type Estados = Record<string, EstadoDifusion>
 interface Difusion {
   id: string; n?: string; t?: string; contactoIds?: unknown; linea?: string | null
   ritmo?: unknown; para?: string; por?: string; total?: unknown
+  /** Quien la pausó desde la pantalla (Difusiones, maqueta A del 27-oct); sin esto sigue sola. */
+  pausa?: string
 }
 
 const TERMINAL = new Set<EstadoNombre>(['terminada', 'error'])
@@ -399,6 +401,11 @@ async function avanzar(d: Difusion, todo: Estados, ctx: Contexto): Promise<numbe
   let e = todo[d.id]
   if (e && TERMINAL.has(e.estado)) return 0
   if (!e) e = todo[d.id] = nuevo(d)
+  if (txt(d.pausa)) {
+    // En cola se queda en cola (todavía no tiene audiencia armada); si ya estaba saliendo, se pausa donde iba.
+    if (e.estado !== 'cola') pausar(e, `la pausó ${txt(d.pausa)}. Sigue cuando la reanuden`, null)
+    return 0
+  }
   const para = paraDe(d, ahora)
   if (para > ahora.getTime()) { e.estado = 'cola'; return 0 }
 
@@ -595,4 +602,31 @@ export async function procesarDifusiones(ahora = new Date()): Promise<number> {
   } finally {
     corriendo = false
   }
+}
+
+// ─── Quién respondió ─────────────────────────────────────────────────────────
+
+export interface Respuesta { convId: number; contactoId: number; nombre: string; datos: unknown; en: Date }
+
+/**
+ * La primera respuesta de cada contacto que escribió en esa línea después de recibir la difusión (la misma regla
+ * que `respondieron` en actualizarCifras). Las más recientes primero, con tope; quién ve cuál lo decide el controlador.
+ */
+export async function respondieronDifusion(id: string, tope = 200): Promise<Respuesta[]> {
+  return prisma.$queryRaw<Respuesta[]>`
+    SELECT * FROM (
+      SELECT DISTINCT ON (c.contacto_id) r.conversacion_id AS "convId", c.contacto_id AS "contactoId", COALESCE(k.nombre, '') AS nombre, r.datos, r."createdAt" AS en
+      FROM crm_mensajes m
+      JOIN crm_conversaciones c ON c.id = m.conversacion_id
+      JOIN crm_contactos k ON k.id = c.contacto_id
+      JOIN LATERAL (
+        SELECT x.conversacion_id, x.datos, x."createdAt" FROM crm_mensajes x JOIN crm_conversaciones xc ON xc.id = x.conversacion_id
+        WHERE xc.contacto_id = c.contacto_id AND xc.linea_id IS NOT DISTINCT FROM c.linea_id AND x.tipo = 'in' AND x."createdAt" > m."createdAt"
+        ORDER BY x."createdAt" LIMIT 1
+      ) r ON true
+      WHERE m.espacio_id = ${espacioActual()} AND m.tipo = 'out' AND m.datos->>'difusion' = ${id} AND COALESCE(m.estado, '') <> 'fallido'
+      ORDER BY c.contacto_id, r."createdAt"
+    ) t
+    ORDER BY en DESC
+    LIMIT ${tope}`
 }
