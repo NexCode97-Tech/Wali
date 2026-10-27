@@ -15,6 +15,7 @@ import { alcanceDe, equiposDeReq, filtroContactos, genteQueLidera, reservaDeCont
 import { actualizarContacto, correoValido, datosDeContacto, emitirContacto, exigirTelefonoLibre, telefonoValido } from './_contacto'
 import { leerHoja } from './_hoja'
 import { desbloquearEnWhatsapp } from './spam.controller'
+import { listaContactos } from '../../services/crm/contactosLista'
 
 /**
  * Contactos del CRM: crear, editar, borrar, importar desde Excel o CSV,
@@ -45,6 +46,37 @@ export async function crearContacto(req: Request, res: Response) {
   })
   await emitirContacto(k.id, req.userId!)
   return ApiResponse.created(res, await salidaContacto(k))
+}
+
+/**
+ * GET /crm/contactos/lista: una página de los contactos guardados (contactosLista.ts) con el total y los conteos.
+ * ?vista=todos|nuevos|mios|etapa:X|seg:ID|nocontactar|spam &q &etapa &asig &canal &tag &origen &producto
+ * &orden=ultimo|n|agregado &dir=1|-1 &pagina &tam=25|50|100 &etapas=<nombres separados por |, para los conteos>
+ */
+export async function listarContactos(req: Request, res: Response) {
+  const q = req.query as Record<string, string | undefined>
+  const corto = (v: unknown, n = 120) => (typeof v === 'string' ? v.trim().slice(0, n) : '')
+  const tam = [25, 50, 100].includes(Number(q.tam)) ? Number(q.tam) : 50
+  const orden = q.orden === 'n' || q.orden === 'agregado' ? q.orden : 'ultimo'
+  const etapas = corto(q.etapas, 2000).split('|').map(s => s.trim()).filter(Boolean).slice(0, 40)
+  const alcance = await alcanceDe(req)
+  const gente = alcance.lidera.length ? genteQueLidera(alcance, await equiposDeReq(req)) : []
+  return ApiResponse.success(res, await listaContactos(alcance, gente, {
+    vista: corto(q.vista) || 'todos', q: corto(q.q, 80),
+    f: { etapa: corto(q.etapa) || undefined, asig: corto(q.asig) || undefined, canal: corto(q.canal, 10) || undefined, tag: corto(q.tag) || undefined, origen: corto(q.origen) || undefined, producto: corto(q.producto) || undefined },
+    orden, dir: q.dir === '-1' ? -1 : 1, pagina: Math.max(1, Math.floor(Number(q.pagina) || 1)), tam,
+  }, etapas))
+}
+
+/** GET /crm/contactos/:id/ultimos: los últimos mensajes de su conversación más reciente, para la ficha al lado. */
+export async function ultimosDeContacto(req: Request, res: Response) {
+  const id = idNum(req.params.id, 'el contacto')
+  await contactoVisible(req, id)
+  const conv = await prisma.crmConversacion.findFirst({ where: { contactoId: id }, orderBy: { ultimoMensajeAt: { sort: 'desc', nulls: 'last' } }, select: { id: true } })
+  if (!conv) return ApiResponse.success(res, [])
+  const ms = await prisma.crmMensaje.findMany({ where: { conversacionId: conv.id, tipo: { in: ['in', 'out'] } }, orderBy: { createdAt: 'desc' }, take: 3, select: { tipo: true, datos: true, createdAt: true } })
+  const texto = (d: Json, t: string) => { const x = d[t]; if (typeof x === 'string') return x.slice(0, 200); const o = obj(x); return txt(o.cap) || (o.img ? '📷 Foto' : o.video ? '🎥 Video' : o.doc ? '📄 Documento' : o.url ? '🎤 Nota de voz' : obj(d.file).n ? `📄 ${txt(obj(d.file).n)}` : obj(d.audio).url ? '🎤 Nota de voz' : '') }
+  return ApiResponse.success(res, ms.reverse().map(m => ({ lado: m.tipo, texto: texto(obj(m.datos), m.tipo), cuando: m.createdAt.toISOString() })).filter(m => m.texto))
 }
 
 export async function editarContacto(req: Request, res: Response) {
