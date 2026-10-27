@@ -372,9 +372,18 @@ function tnCampoArchivo(t){
   return `<div class="tn-subir"><span class="pre">${pre}</span><div class="tx"><b>${esc(m.n)}</b><small>${det}</small></div><button type="button" class="btn" id="t-vx">${TP_IC.x}Quitar</button></div>
     <span class="tn-ayuda">${ayuda}</span>`;
 }
+/** El iPhone 18 Pro Max con WhatsApp donde se ve un mensaje como le llega al cliente. Lo usan Plantillas y Difusiones. */
+function tnCelular(marca, cuerpo, idFondo){
+  return `<div class="tn-tel" aria-label="Vista previa en WhatsApp"><div class="tn-pant"><span class="tn-isla"></span>
+        <div class="tn-estado"><span>9:41</span><span class="der"><svg viewBox="0 0 18 12" aria-hidden="true"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg viewBox="0 0 16 12" aria-hidden="true"><path d="M8 11.5 5.6 9a3.4 3.4 0 0 1 4.8 0Z"/><path d="M3.4 6.8a6.5 6.5 0 0 1 9.2 0l-1.2 1.2a4.8 4.8 0 0 0-6.8 0Z"/><path d="M1.1 4.5a9.8 9.8 0 0 1 13.8 0l-1.2 1.2a8.1 8.1 0 0 0-11.4 0Z"/></svg><svg viewBox="0 0 27 12" aria-hidden="true"><rect x=".5" y=".5" width="22" height="11" rx="3.5" fill="none" stroke="#000" stroke-opacity=".4"/><rect x="2" y="2" width="17" height="8" rx="2"/><path d="M24.5 4v4a2 2 0 0 0 0-4Z" fill-opacity=".4"/></svg></span></div>
+        <div class="tn-wcab"><span class="atras">${I('back')}</span><span class="ava">${esc(marca.charAt(0).toUpperCase())}</span><span class="q"><b>${esc(marca)}<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#25D366" d="M12 1.5 14.6 4l3.5-.4.9 3.4 3.1 1.7-1.3 3.3 1.3 3.3-3.1 1.7-.9 3.4-3.5-.4L12 22.5 9.4 20l-3.5.4-.9-3.4-3.1-1.7L3.2 12 1.9 8.7 5 7l.9-3.4 3.5.4Z"/><path d="m8 12 3 3 5-6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></b><small>Cuenta de empresa</small></span><span class="ic">${TP_IC.video}${TP_IC.llamar}</span></div>
+        <div class="tn-fondo"${idFondo ? ` id="${idFondo}"` : ''}>${cuerpo}</div>
+        <div class="tn-escribir">${I('plus')}<span class="campo2"></span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4Z"/><circle cx="12" cy="13" r="3.5"/></svg>${I('mic')}</div>
+        <span class="tn-barrita"></span></div></div>`;
+}
 function plantillaNueva(){
   const t = st.tplNueva, el = document.getElementById('page');
-  const marca = (ESPACIO.nombre || 'Tu empresa').trim(), ini = marca.charAt(0).toUpperCase();
+  const marca = (ESPACIO.nombre || 'Tu empresa').trim();
   const equipo = e => { const nl = tpEqLineas(e.n), np = tpEqPersonas(e.n); return `<button type="button" class="tn-op" role="checkbox" aria-checked="${t.equipos.has(e.n)}" data-tn-eq="${esc(e.n)}"><span class="tn-cb">${TP_IC.chulo}</span>${tpEqCara(e.n, ' grande')}<span style="min-width:0"><b>${esc(e.n)}</b><small>${nl ? `${nl} ${nl === 1 ? 'línea' : 'líneas'}` : 'Sin línea propia'} · ${np} ${np === 1 ? 'persona' : 'personas'}</small></span></button>`; };
   const cat = (k, precio, d) => `<button type="button" class="tn-op cat" role="radio" aria-checked="${t.cat === k}" data-tn-cat="${k}" ${(t.aprobada || t.soloLineas) && t.cat !== k ? 'disabled' : ''}><span class="tn-rd"></span><span><b>${k} · ${precio}</b><small>${d}</small></span></button>`;
   const seg = (attr, ops, val) => ops.map(([v, txt, ic]) => `<button type="button" ${attr}="${v}" aria-pressed="${val === v}">${ic || ''}${txt}</button>`).join('');
@@ -414,12 +423,7 @@ function plantillaNueva(){
       <div class="tn-rev" id="tn-rev">${tnRevision(t)}</div>
     </div>
     <div><div class="tn-vista-tit"><b>Así lo ve el cliente</b><span>Con datos de ejemplo</span></div>
-      <div class="tn-tel" aria-label="Vista previa en WhatsApp"><div class="tn-pant"><span class="tn-isla"></span>
-        <div class="tn-estado"><span>9:41</span><span class="der"><svg viewBox="0 0 18 12" aria-hidden="true"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg viewBox="0 0 16 12" aria-hidden="true"><path d="M8 11.5 5.6 9a3.4 3.4 0 0 1 4.8 0Z"/><path d="M3.4 6.8a6.5 6.5 0 0 1 9.2 0l-1.2 1.2a4.8 4.8 0 0 0-6.8 0Z"/><path d="M1.1 4.5a9.8 9.8 0 0 1 13.8 0l-1.2 1.2a8.1 8.1 0 0 0-11.4 0Z"/></svg><svg viewBox="0 0 27 12" aria-hidden="true"><rect x=".5" y=".5" width="22" height="11" rx="3.5" fill="none" stroke="#000" stroke-opacity=".4"/><rect x="2" y="2" width="17" height="8" rx="2"/><path d="M24.5 4v4a2 2 0 0 0 0-4Z" fill-opacity=".4"/></svg></span></div>
-        <div class="tn-wcab"><span class="atras">${I('back')}</span><span class="ava">${esc(ini)}</span><span class="q"><b>${esc(marca)}<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#25D366" d="M12 1.5 14.6 4l3.5-.4.9 3.4 3.1 1.7-1.3 3.3 1.3 3.3-3.1 1.7-.9 3.4-3.5-.4L12 22.5 9.4 20l-3.5.4-.9-3.4-3.1-1.7L3.2 12 1.9 8.7 5 7l.9-3.4 3.5.4Z"/><path d="m8 12 3 3 5-6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></b><small>Cuenta de empresa</small></span><span class="ic">${TP_IC.video}${TP_IC.llamar}</span></div>
-        <div class="tn-fondo" id="tn-chat">${tnVista(t)}</div>
-        <div class="tn-escribir">${I('plus')}<span class="campo2"></span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4Z"/><circle cx="12" cy="13" r="3.5"/></svg>${I('mic')}</div>
-        <span class="tn-barrita"></span></div></div></div></div>
+      ${tnCelular(marca, tnVista(t), 'tn-chat')}</div></div>
     <div class="tn-pie"><span>${t.editar ? 'Si solo cambias el nombre o las líneas, se guarda al instante.' : 'Meta la revisa, casi siempre en minutos. Te avisamos cuando la apruebe.'}</span><div>${t.editar ? '' : '<button type="button" class="btn" id="t-guardar">Guardar borrador</button>'}<button type="button" class="btn pri" id="t-meta">${t.editar ? `${I('check')}Guardar cambios` : `${I('send')}Enviar a Meta`}</button></div></div>`;
 }
 

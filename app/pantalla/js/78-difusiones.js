@@ -108,7 +108,7 @@ difusion = function(){
   if (!d.publico) d.publico = 'etapas';
   const {segD, total, tpl, costo} = dfPartes(d);
   const AUD = audiencia(), SEGS = [...SEGMENTOS, ...st.ct.propios];
-  if (!d.abierta) d.abierta = !total ? 1 : !tpl ? 2 : 3;
+  if (!d.abierta) d.abierta = 1;
   // Cuándo: ahora (si la ley lo permite) o un día y una hora permitidos (30-legal.js).
   const hl = horarioLegal(); if (d.cuando === 'ahora' && !hl.ok) d.cuando = 'prog';
   const dias = diasPermitidos(); if (!dias.find(x => x[0] === d.dia)) d.dia = dias[0][0];
@@ -121,16 +121,18 @@ difusion = function(){
     tpl ? `${tpl.n} · ${tpl.c || 'Marketing'}` : TPL.length ? 'Elige una plantilla aprobada' : 'Todavía no hay plantillas aprobadas por Meta',
     linea ? `${linea.n} · ${cuandoTxt}` : 'Elige la línea de salida'];
   const listo = [total > 0, !!tpl, !!linea];
-  const parte = (n, titulo, cuerpo) => { const ab = d.abierta === n, ok = listo[n - 1] && !ab;
-    return `<section class="df-sec${ab ? ' ab' : ''}" style="animation-delay:${(n - 1) * 60}ms"><div class="df-sh"><span class="df-n${ok ? ' ok' : ''}">${ok ? I('check') : n}</span><div><b>${titulo}</b><small>${esc(resumen[n - 1])}</small></div>${ab ? '' : `<button type="button" class="btn" data-df-abrir="${n}">${I('pen')}Cambiar</button>`}</div>${ab ? `<div class="df-sb">${cuerpo()}</div>` : ''}</section>`; };
+  const parte = (n, titulo, cuerpo) => { const ab = d.abierta === n, ok = listo[n - 1] && !ab, falta = !ab && !ok;
+    return `<section class="df-sec${ab ? ' ab' : ''}${falta ? ' falta' : ''}" style="animation-delay:${(n - 1) * 60}ms"><div class="df-sh"><span class="df-n${ok ? ' ok' : ''}">${ok ? I('check') : n}</span><div><b>${titulo}</b><small>${esc(resumen[n - 1])}</small></div>${ab ? '' : `<button type="button" class="btn" data-df-abrir="${n}">${I('pen')}Cambiar</button>`}</div>${ab ? `<div class="df-sb">${cuerpo()}</div>` : ''}</section>`; };
   const quien = () => `<div class="df-seg">${[['etapas', 'Etapas del embudo'], ['seg', 'Un segmento'], ...(d.seleccion ? [['sel', 'Elegidos en Contactos']] : [])].map(([k, t]) => `<button type="button" data-df-pub="${k}" aria-pressed="${k === 'seg' ? d.publico.startsWith('seg:') || d.publico === 'seg' : d.publico === k}">${t}</button>`).join('')}</div>
     ${d.publico === 'etapas' ? `<div class="df-chips">${AUD.map(([n, c]) => `<button type="button" data-df-aud="${esc(n)}" aria-pressed="${d.aud.has(n)}">${esc(n)} <b>${dfNum(c)}</b></button>`).join('')}</div>`
       : d.publico === 'sel' ? `<p class="df-nota" style="margin-top:0">Los ${d.seleccion} contactos que elegiste en Contactos.</p>`
       : SEGS.length ? `<div class="df-chips">${SEGS.map(x => `<button type="button" data-df-pub="seg:${esc(x.id)}" aria-pressed="${d.publico === 'seg:' + x.id}">${esc(x.n)}</button>`).join('')}</div>` : '<p class="df-nota" style="margin-top:0">Todavía no hay segmentos. Créalos en Contactos.</p>'}
-    <p class="df-nota">No se cuentan los que pidieron no recibir mensajes, los del Registro de Números Excluidos que no han autorizado a la empresa ni los que ya recibieron esta plantilla en los últimos 7 días.</p>`;
+    <p class="df-nota">No se cuentan los que pidieron no recibir mensajes, los del Registro de Números Excluidos que no han autorizado a la empresa ni los que ya recibieron esta plantilla en los últimos 7 días.</p>
+    <div class="df-sig"><button type="button" class="btn pri" data-df-abrir="2"${total ? '' : ' disabled'}>Siguiente</button></div>`;
   const usables = TPL.filter(t => tplEnLinea(t, d.linea));
   const mensaje = () => usables.length ? `<div class="df-tpls">${usables.map(t => `<button type="button" data-df-tpl="${esc(t.n)}" aria-pressed="${tpl && tpl.n === t.n}"><span><b>${esc(t.n)}</b><em class="est ${t.c === 'Utilidad' ? 'g' : 'p'}">${esc(t.c || 'Marketing')}</em></span><small>${esc(t.x)}</small></button>`).join('')}</div>
-    <p class="df-nota">La difusión llena sola {{nombre}}, {{asesor}} y {{producto}} con los datos de cada contacto.</p>`
+    <p class="df-nota">La difusión llena sola {{nombre}}, {{asesor}} y {{producto}} con los datos de cada contacto.</p>
+    <div class="df-sig"><button type="button" class="btn pri" data-df-abrir="3"${tpl ? '' : ' disabled'}>Siguiente</button></div>`
     : `<p class="df-nota" style="margin-top:0">${TPL.length ? 'Ninguna plantilla aprobada es del equipo de esta línea. Cambia la línea o crea una en Plantillas.' : 'Todavía no hay plantillas aprobadas por Meta. Créalas en Plantillas.'}</p>`;
   const envio = () => `<div class="df-dos"><div class="fld">Línea de salida${ddSel('data-df-lin', LINEAS.map(l => [l.id, `${l.n} · ${l.tel}`]), d.linea)}</div><div class="fld">Cuándo${ddSel('data-df-cu', [['ahora', hl.ok ? 'Ahora' : 'Ahora no: fuera del horario permitido'], ['prog', 'Programar']], d.cuando)}</div></div>
     ${d.cuando === 'prog' ? `<div class="df-dos"><div class="fld">Día${ddSel('data-df-dia', dias.map(x => [x[0], x[1]]), d.dia)}</div><div class="fld">Hora${ddSel('data-df-hora', horas, d.hora)}</div></div>` : ''}
@@ -139,8 +141,7 @@ difusion = function(){
   const puede = total > 0 && !!tpl && !!linea;
   dfPinta(el, `<div class="pg-h"><div class="df-tit"><button type="button" class="btn ic" id="d-x" aria-label="Volver a difusiones">${I('back')}</button><div><h2>Nueva difusión</h2><p class="sub">Todo en una página: revisa cada parte y envía.</p></div></div></div>
     <div class="df-nueva"><div>${parte(1, 'A quién', quien)}${parte(2, 'Qué mensaje', mensaje)}${parte(3, 'Cuándo y por dónde', envio)}</div>
-    <aside class="df-lado"><div class="df-cel"><div class="df-cel-sc"><div class="df-cel-top"><i>${esc(ini(linea ? linea.n : 'W'))}</i><div>${esc(linea ? linea.n : 'Tu empresa')}<small>Cuenta de empresa</small></div></div>
-      ${tpl ? `<div class="df-cel-b" data-k="${esc(tpl.n)}">${dfVistaTexto(tpl.x)}<small>${hcHora(Date.now())}</small></div>${tpl.boton ? `<div class="df-cel-cta">${esc(tpl.boton)}</div>` : ''}` : '<p class="df-cel-v">Aquí verás el mensaje como le llega al cliente.</p>'}</div></div>
+    <aside class="df-lado"><div class="df-tel">${tnCelular((linea ? linea.n : ESPACIO.nombre || 'Tu empresa').trim(), tpl ? `<span class="tn-dia">Hoy</span><div class="tn-msj df-msj" data-k="${esc(tpl.n)}"><div class="tn-bur">${dfVistaTexto(tpl.x)}<div class="t">${hcHora(Date.now())}</div></div>${tpl.boton ? `<div class="tn-boton">${esc(tpl.boton)}</div>` : ''}</div>` : '<p class="df-cel-v">Aquí verás el mensaje como le llega al cliente.</p>')}</div>
       <div class="df-tot"><div><span>Personas</span><b>${dfNum(total)}</b></div><div><span>Costo estimado en Meta</span><b>${dfUsd(costo)}</b></div></div>
       <button type="button" class="btn pri df-go" id="df-go"${puede ? '' : ` disabled title="${esc(!total ? 'Elige a quién le llega' : !tpl ? 'Falta una plantilla aprobada' : 'Elige la línea de salida')}"`}>${I('send')}${d.cuando === 'ahora' ? 'Enviar a' : 'Programar para'} ${dfNum(total)} ${total === 1 ? 'persona' : 'personas'}</button>
       <p class="df-nota">Cuando alguien responda, la conversación se abre en la bandeja y el reparto se la entrega a su asesor o al siguiente del turno.</p></aside></div>`);
@@ -187,7 +188,7 @@ document.addEventListener('click', e => {
   const ab = t.closest('[data-df-abrir]'); if (ab) { d.abierta = +ab.dataset.dfAbrir; render(); return; }
   const pu = t.closest('[data-df-pub]'); if (pu) { const k = pu.dataset.dfPub; d.publico = k === 'seg' ? 'seg:' + (([...SEGMENTOS, ...st.ct.propios][0] || {}).id || '') : k; render(); return; }
   const au = t.closest('[data-df-aud]'); if (au) { const n = au.dataset.dfAud; d.aud.has(n) ? d.aud.delete(n) : d.aud.add(n); render(); return; }
-  const tp = t.closest('[data-df-tpl]'); if (tp) { d.tpl = tp.dataset.dfTpl; d.abierta = 3; render(); return; }
+  const tp = t.closest('[data-df-tpl]'); if (tp) { d.tpl = tp.dataset.dfTpl; render(); return; }
   const li = t.closest('[data-df-lin]'); if (li) { d.linea = li.dataset.dfLin; render(); return; }
   const cu = t.closest('[data-df-cu]'); if (cu) { if (cu.dataset.dfCu === 'ahora' && !horarioLegal().ok) { toast(`Ahora no se puede enviar: ${horarioLegal().motivo} Prográmala.`); return; } d.cuando = cu.dataset.dfCu; render(); return; }
   const di = t.closest('[data-df-dia]'); if (di) { d.dia = di.dataset.dfDia; d.hora = null; render(); return; }
@@ -253,7 +254,8 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .df-sh .btn{height:30px;padding:0 10px;font-size:12.5px;flex:none}.df-sh .btn svg{width:14px;height:14px}
 .df-sh b{font-size:14.5px}.df-sh small{display:block;font-size:12.5px;color:var(--ink3)}
 .df-n{width:26px;height:26px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:12.5px;font-weight:700;background:#FFD21F;color:#0b0b10}
-.df-n.ok{background:#0b0b10;color:#FFD21F}.df-n svg{width:14px;height:14px}
+.df-n.ok{background:#0b0b10;color:#FFD21F}.df-sec.falta .df-n{background:var(--bg3,#f1f5f9);color:var(--ink3)}.df-sec.falta .df-sh b{color:var(--ink3)}
+.df-sig{display:flex;justify-content:flex-end;margin-top:12px}.df-n svg{width:14px;height:14px}
 .df-sb{margin-top:14px;display:grid;gap:10px;animation:df-sube .35s cubic-bezier(.16,1,.3,1)}
 .df-seg,.df-chips{display:flex;flex-wrap:wrap;gap:6px}
 .df-seg button,.df-chips button,.df-rit button{height:30px;padding:0 11px;border-radius:9px;border:1px solid var(--line);font-size:12.5px;font-weight:500;transition:background .15s,color .15s,border-color .15s}
@@ -269,15 +271,10 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .df-tpls small{font-size:12.5px;color:var(--ink3);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .df-dos{display:grid;grid-template-columns:1fr 1fr;gap:10px}.df-dos .dsel{min-width:0!important}
 .df-lado{position:sticky;top:0;display:grid;gap:12px}
-.df-cel{width:280px;justify-self:center;border-radius:30px;background:#0b0b10;padding:10px}
-.df-cel-sc{border-radius:22px;background:#efe7dc;height:400px;overflow:hidden}
-.df-cel-top{background:#f6f6f6;padding:12px 14px;display:flex;gap:9px;align-items:center;font-size:13px;font-weight:600}
-.df-cel-top i{width:28px;height:28px;border-radius:50%;background:#FFD21F;display:grid;place-items:center;font-style:normal;font-size:11px}
-.df-cel-top small{display:block;font-size:11px;font-weight:400;color:var(--ink3)}
-.df-cel-b{margin:14px 12px 0;background:#fff;border-radius:4px 12px 12px 12px;padding:9px 11px 6px;font-size:13px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere;box-shadow:0 1px 1px rgba(0,0,0,.06);animation:df-sube .5s cubic-bezier(.16,1,.3,1)}
-.df-cel-b small{display:block;text-align:right;font-size:10.5px;color:#8696a0;margin-top:2px}
-.df-cel-cta{margin:0 12px;background:#fff;border-top:1px solid var(--line2);border-radius:0 0 12px 12px;text-align:center;padding:8px;color:#0b84d8;font-size:13px;font-weight:500}
-.df-cel-v{margin:30px 22px;text-align:center;font-size:12.5px;color:#6b7280}
+.df-tel{width:286px;height:613px;justify-self:center}
+.df-tel .tn-tel{zoom:.68}
+.df-msj{animation:df-sube .5s cubic-bezier(.16,1,.3,1)}
+.df-cel-v{margin:auto 26px;text-align:center;font-size:15px;color:#54656f}
 .df-v{background:#fff3b0;border-radius:4px;padding:0 2px}
 .df-tot{border:1px solid var(--line2);border-radius:12px;padding:12px 14px;font-size:13px;display:grid;gap:6px}
 .df-tot div{display:flex;justify-content:space-between}.df-tot span{color:var(--ink3)}
@@ -287,5 +284,5 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 @keyframes df-llena{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 @media (max-width:960px){.df-nueva{grid-template-columns:1fr}.df-lado{position:static}}
 @media (max-width:560px){.df-tpls,.df-dos{grid-template-columns:1fr}.df-res{min-width:160px}}
-@media (prefers-reduced-motion:reduce){.df-tb tbody tr,.df-bar b,.df-menu,.df-sec,.df-sb,.df-cel-b,.df-r{animation:none}.df-panel{transition:none}}
+@media (prefers-reduced-motion:reduce){.df-tb tbody tr,.df-bar b,.df-menu,.df-sec,.df-sb,.df-msj,.df-r{animation:none}.df-panel{transition:none}}
 </style>`);
