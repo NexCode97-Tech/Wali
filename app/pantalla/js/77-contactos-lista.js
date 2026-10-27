@@ -47,17 +47,27 @@ const clCuando = iso => iso ? ctFecha(clDias(iso)) : '—';
 paginaContactos = function(){
   // Los menús flotantes no se cierran al repintar (llegan datos o avisos en tiempo real): se cierran al tocar afuera.
   const el = document.getElementById('page'), ct = st.ct, C = st.cl, D = C.datos;
-  if (ct.vista === 'sinagregar' || (ct.vista.startsWith('etapa:'))) { if (ct.vista.startsWith('etapa:')) ct.f.etapa = ct.vista.slice(6); ct.vista = 'todos'; }
+  if (ct.vista === 'sinagregar') ct.vista = 'todos';
   clCargar();
   const conteo = D ? D.conteos : null, filas = D ? D.filas : [];
   const segs = [...SEGMENTOS.filter(s => s.id !== 'nuevos'), ...(ct.propios || [])];
-  const vistaN = ct.vista === 'todos' ? 'Todos' : ct.vista === 'nuevos' ? 'Nuevos esta semana' : ct.vista === 'mios' ? 'Mis contactos' : ct.vista === 'nocontactar' ? 'No contactar' : ct.vista === 'spam' ? 'Spam' : ct.vista.startsWith('seg:') ? ((segDe(ct.vista.slice(4)) || {}).n || 'Segmento') : 'Todos';
+  const vistaN = ct.vista === 'todos' ? 'Todos' : ct.vista === 'nuevos' ? 'Nuevos esta semana' : ct.vista === 'mios' ? 'Mis contactos' : ct.vista === 'nocontactar' ? 'No contactar' : ct.vista === 'spam' ? 'Spam' : ct.vista.startsWith('etapa:') ? ct.vista.slice(6) : ct.vista.startsWith('seg:') ? ((segDe(ct.vista.slice(4)) || {}).n || 'Segmento') : 'Todos';
+  // El menú de la izquierda: Contactos, Etapas, Segmentos y Otros, con los conteos del servidor.
+  const cn = v => conteo ? Number(v || 0).toLocaleString('es-CO') : '';
+  const v = (id, ic, t, n, extra = '', borrar = '') => `<div class="ck-vw"><button type="button" class="ck-v" aria-current="${ct.vista === id}" data-cl-v="${esc(id)}">${extra || I(ic)}<span class="t">${esc(t)}</span><span class="n">${n}</span></button>${borrar}</div>`;
+  const vistas = `<nav class="ck-vistas" aria-label="Vistas de contactos">
+    <h5>Contactos</h5>${v('todos', 'users', 'Todos', cn(conteo && conteo.todos))}${v('nuevos', 'clock', 'Nuevos esta semana', cn(conteo && conteo.nuevos))}${v('mios', 'user', 'Mis contactos', cn(conteo && conteo.mios))}
+    <h5>Etapas</h5>${[...etapasActivas(), ...etapasPerdidas()].map(e => v('etapa:' + e, '', e, cn(conteo && conteo.etapas[e]), `<span class="dot" style="background:${COL[e]}"></span>`)).join('')}
+    <h5>Segmentos <button type="button" data-ck-seg="1">${I('plus')}Nuevo</button></h5>
+    ${segs.map(s => v('seg:' + s.id, s.ic || 'filter', s.n, cn(conteo && conteo.segmentos[s.id]), s.col ? `<span class="ck-sic" style="background:${esc(s.col)};color:${s.col === '#0b0b10' ? '#fff' : '#0b0b10'}">${I(s.ic || 'star')}</span>` : '', (ct.propios || []).includes(s) ? `<button type="button" class="ck-vx" data-ct-segdel="${esc(s.id)}" aria-label="Borrar el segmento ${esc(s.n)}">${I('x')}</button>` : '')).join('')}
+    <h5>Otros</h5>${v('nocontactar', 'block', 'No contactar', cn(conteo && conteo.nocontactar))}${v('spam', 'shield-x', 'Spam', cn(conteo && conteo.spam))}</nav>`;
   const pills = CK_PILLS.map(k => { const val = ct.f[k], n = ckCampo(k)[1];
     return val ? `<span class="ck-pill on"><button type="button" data-ck-pill="${k}">${esc(n)}: <b>${esc(etiquetaFiltro(k, val))}</b></button><button type="button" class="q" data-ct-quitar="${k}" aria-label="Quitar el filtro ${esc(n)}">${I('x')}</button></span>`
       : `<button type="button" class="ck-pill" data-ck-pill="${k}" aria-haspopup="menu">${esc(n)}${I('chev')}</button>`; }).join('');
   const ficha = C.ficha && filas.find(k => k.contactoId === C.ficha);
   if (C.ficha && D && !ficha) C.ficha = null;
-  const col = k => !ficha && ct.cols.has(k);
+  // La ficha se dibuja encima de la tabla: la tabla no se encoge y sigue con todas sus columnas.
+  const col = k => ct.cols.has(k);
   const gris = '<span class="ck-gris">—</span>';
   const flecha = k => ct.orden.k === k ? `<span class="ord">${ct.orden.dir === 1 ? '▲' : '▼'}</span>` : '';
   const todosSel = filas.length > 0 && filas.every(k => C.sel.has(k.contactoId));
@@ -68,7 +78,7 @@ paginaContactos = function(){
       ${col('asig') ? `<td>${k.asig ? `<span class="ck-as"><span class="av" style="background:${colorPersona(k.asig)}">${esc(ini(k.asig))}</span>${esc(k.asig)}</span>` : '<span class="ck-as sin">Sin asignar</span>'}</td>` : ''}
       ${col('canal') ? `<td class="ck-can" title="${esc(can.n)}">${I(can.ic, 'i ' + k.canal)}</td>` : ''}
       ${col('tags') ? `<td><div class="ck-tags">${(k.tags || []).map(t => `<span class="ck-tag"><i style="background:${ETIQ_COL[t] || '#9ca3af'}"></i>${esc(t)}</span>`).join('') || gris}</div></td>` : ''}
-      ${!ficha || ct.cols.has('ultimo') ? `<td class="ck-ult">${esc(clCuando(k.ultimo))}</td>` : ''}
+      ${col('ultimo') ? `<td class="ck-ult">${esc(clCuando(k.ultimo))}</td>` : ''}
       ${col('producto') ? `<td>${(k.campos || {}).producto ? esc(k.campos.producto) : gris}</td>` : ''}
       ${col('empresa') ? `<td>${(k.campos || {}).empresa ? esc(k.campos.empresa) : gris}</td>` : ''}
       ${col('ciudad') ? `<td>${(k.ficha || {}).ciudad ? esc(k.ficha.ciudad) : gris}</td>` : ''}
@@ -89,25 +99,24 @@ paginaContactos = function(){
   const nSel = C.sel.size;
   const bulkMenu = k => st.ckBulk !== k ? '' : `<div class="ck-fmenu" role="menu">${(k === 'asig' ? ASESORES.map(a => [`data-clb-asig="${esc(a)}"`, a]) : k === 'etapa' ? [...etapasActivas(), ...etapasPerdidas()].map(e => [`data-clb-etapa="${esc(e)}"`, e]) : ETIQS.map(([n]) => [`data-clb-tag="${esc(n)}"`, n])).map(([a, t]) => `<button type="button" role="menuitem" ${a}>${esc(t)}</button>`).join('') || '<p>No hay opciones.</p>'}</div>`;
   el.replaceChildren();
-  el.insertAdjacentHTML('beforeend', `<div class="cl">
+  el.insertAdjacentHTML('beforeend', `<div class="cl-con">${vistas}<div class="cl">
     <div class="cl-top"><div><h2>${esc(titulo)}</h2><p>${sub}</p></div>
       <div class="acc">${puedeConfigurarCrm() ? `<button type="button" class="btn" data-ct-acc="importar">${I('file')}Importar</button>` : ''}<button type="button" class="btn" data-ct-acc="exportar">${I('share')}Exportar</button><button type="button" class="btn pri" id="ct-nuevo">${I('plus')}Agregar contacto</button><div id="ct-mas" hidden></div></div></div>
     <div class="cl-split${ficha ? ' con-ficha' : ''}"><div class="cl-caja">
-      <div class="ck-bar cl-bar"><button type="button" class="ck-pill cl-vista" data-cl-vistas aria-haspopup="menu">${I('users')}${esc(vistaN)}${conteo ? `<em>${(ct.vista === 'todos' ? conteo.todos : tot).toLocaleString('es-CO')}</em>` : ''}${I('chev')}</button>
-        <label class="search cl-q">${I('search')}<input id="ct-q" type="search" placeholder="Buscar por nombre, teléfono, correo o ciudad" value="${esc(ct.q)}" autocomplete="off"></label>${pills}<span class="ck-sp"></span>
-        ${ficha ? '' : `<div class="dd" style="position:relative"><button type="button" class="btn" id="ct-cols-b" aria-haspopup="menu">${I('kanban')}Columnas</button>
-          <div class="menu" id="ct-cols" hidden><div class="hd">Columnas que se ven</div>${CK_COLS.map(([k, n]) => `<button type="button" data-ct-col="${k}" role="menuitemcheckbox" aria-checked="${ct.cols.has(k)}"><span class="chk ${ct.cols.has(k) ? 'on' : ''}">${ct.cols.has(k) ? I('check') : ''}</span>${n}</button>`).join('')}</div></div>`}</div>
+      <div class="ck-bar cl-bar"><label class="search cl-q">${I('search')}<input id="ct-q" type="search" placeholder="Buscar por nombre, teléfono, correo o ciudad" value="${esc(ct.q)}" autocomplete="off"></label>${pills}<span class="ck-sp"></span>
+        <div class="dd" style="position:relative"><button type="button" class="btn" id="ct-cols-b" aria-haspopup="menu">${I('kanban')}Columnas</button>
+          <div class="menu" id="ct-cols" hidden><div class="hd">Columnas que se ven</div>${CK_COLS.map(([k, n]) => `<button type="button" data-ct-col="${k}" role="menuitemcheckbox" aria-checked="${ct.cols.has(k)}"><span class="chk ${ct.cols.has(k) ? 'on' : ''}">${ct.cols.has(k) ? I('check') : ''}</span>${n}</button>`).join('')}</div></div></div>
       <div class="ck-tw cl-tw"><table class="ck-tb"><thead><tr><th class="cb"><input type="checkbox" class="ck-chk" data-cl-todos="1" ${todosSel ? 'checked' : ''} aria-label="Elegir los de esta página"></th>
-        <th><button type="button" data-ct-ord="n">Contacto ${flecha('n')}</button></th>${col('etapa') ? '<th>Etapa</th>' : ''}${col('asig') ? '<th>Miembro</th>' : ''}${col('canal') ? '<th>Canal</th>' : ''}${col('tags') ? '<th>Etiquetas</th>' : ''}${!ficha || ct.cols.has('ultimo') ? `<th><button type="button" data-ct-ord="ultimo">Último mensaje ${flecha('ultimo')}</button></th>` : ''}${col('producto') ? '<th>Producto</th>' : ''}${col('empresa') ? '<th>Empresa</th>' : ''}${col('ciudad') ? '<th>Ciudad</th>' : ''}${col('origen') ? '<th>Origen</th>' : ''}${col('agregado') ? `<th><button type="button" data-ct-ord="agregado">Agregado ${flecha('agregado')}</button></th>` : ''}<th class="ac"></th></tr></thead>
-        <tbody>${filasHTML || vacio}</tbody></table></div>${pie}</div>
-      ${ficha ? clFicha(ficha) : ''}</div>
+        <th><button type="button" data-ct-ord="n">Contacto ${flecha('n')}</button></th>${col('etapa') ? '<th>Etapa</th>' : ''}${col('asig') ? '<th>Miembro</th>' : ''}${col('canal') ? '<th>Canal</th>' : ''}${col('tags') ? '<th>Etiquetas</th>' : ''}${col('ultimo') ? `<th><button type="button" data-ct-ord="ultimo">Último mensaje ${flecha('ultimo')}</button></th>` : ''}${col('producto') ? '<th>Producto</th>' : ''}${col('empresa') ? '<th>Empresa</th>' : ''}${col('ciudad') ? '<th>Ciudad</th>' : ''}${col('origen') ? '<th>Origen</th>' : ''}${col('agregado') ? `<th><button type="button" data-ct-ord="agregado">Agregado ${flecha('agregado')}</button></th>` : ''}<th class="ac"></th></tr></thead>
+        <tbody>${filasHTML || vacio}</tbody></table></div>${pie}
+      ${ficha ? clFicha(ficha) : ''}</div></div>
     ${nSel ? `<div class="ck-flota" role="toolbar" aria-label="Acciones con la selección"><b>${nSel} ${nSel === 1 ? 'seleccionado' : 'seleccionados'}</b>
       <span class="ck-fw"><button type="button" data-ck-bulk="asig" aria-expanded="${st.ckBulk === 'asig'}">${I('user')}Asignar</button>${bulkMenu('asig')}</span>
       <span class="ck-fw"><button type="button" data-ck-bulk="etapa" aria-expanded="${st.ckBulk === 'etapa'}">${I('flow')}Cambiar etapa</button>${bulkMenu('etapa')}</span>
       <span class="ck-fw"><button type="button" data-ck-bulk="tag" aria-expanded="${st.ckBulk === 'tag'}">${I('tag')}Etiqueta</button>${bulkMenu('tag')}</span>
       <button type="button" data-cl-dif>${I('megaphone')}Difusión</button><button type="button" data-cl-exp>${I('share')}Exportar</button>
       <button type="button" class="x" data-cl-limpiar aria-label="Quitar la selección">${I('x')}</button></div>` : ''}
-  </div>`);
+  </div></div>`);
 };
 
 /* La ficha al lado: datos, «Abrir chat», «Llamar» y los últimos mensajes. */
@@ -186,12 +195,14 @@ document.addEventListener('click', e => { if (st.pagina === 'contactos' && e.tar
 document.getElementById('page').addEventListener('input', e => { if (st.pagina === 'contactos' && e.target.id === 'ct-q') st.cl.pag = 1; }, true);
 
 document.head.insertAdjacentHTML('beforeend', `<style>
-.cl{display:flex;flex-direction:column;gap:14px;height:100%;min-height:0}
+.cl-con{display:flex;gap:18px;height:100%;min-height:0}
+.cl-con > .ck-vistas{flex:none}
+.cl{flex:1;min-width:0;display:flex;flex-direction:column;gap:14px;height:100%;min-height:0}
 .cl-top{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap}.cl-top > div:first-child{flex:1;min-width:200px}
 .cl-top h2{margin:0;font-size:24px;letter-spacing:-.02em}.cl-top p{margin:2px 0 0;color:var(--ink3);font-variant-numeric:tabular-nums}
 .cl-top .acc{display:flex;gap:8px;flex-wrap:wrap}
 .cl-split{flex:1;min-height:0;display:flex;gap:14px}
-.cl-caja{flex:1;min-width:0;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden}
+.cl-caja{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden}
 .cl-bar{flex-wrap:wrap}
 .cl-vista{font-weight:600;color:var(--ink)}.cl-vista em{font-style:normal;font-weight:500;font-size:12px;color:var(--ink3);font-variant-numeric:tabular-nums}
 /* La búsqueda en una sola línea: si no cabe, el texto se corta con «…» */
@@ -212,7 +223,8 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .cl-pn .fl{border-color:var(--line);background:#fff}.cl-pn .fl:disabled{opacity:.4;cursor:default}.cl-pn .fl svg{width:14px;height:14px}.cl-pn .fl.sig svg{transform:rotate(180deg)}
 .cl-pn span{padding:0 4px;color:var(--ink3)}
 .cl-gira{display:inline-block;width:12px;height:12px;margin-left:6px;border:2px solid #e5e9f0;border-top-color:#0b0b10;border-radius:50%;vertical-align:-2px;animation:lc-gira .8s linear infinite}
-.cl-fi{width:340px;flex:none;border:1px solid var(--line);border-radius:14px;background:#fff;padding:18px;display:flex;flex-direction:column;gap:14px;overflow:auto;animation:cl-entra .35s cubic-bezier(.16,1,.3,1)}
+/* La ficha se dibuja encima de la tabla, pegada a la derecha: la tabla no se encoge. */
+.cl-fi{position:absolute;top:0;right:0;bottom:0;z-index:4;width:min(360px,92%);border-left:1px solid var(--line);background:#fff;padding:18px;display:flex;flex-direction:column;gap:14px;overflow:auto;box-shadow:-24px 0 40px -28px rgba(15,23,42,.35);animation:cl-entra .35s cubic-bezier(.16,1,.3,1)}
 @keyframes cl-entra{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
 .cl-fi-h{display:flex;align-items:center;gap:12px}.cl-fi-h > div{flex:1;min-width:0}.cl-fi-h b{display:block;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cl-fi-h small{color:var(--ink3);font-variant-numeric:tabular-nums}
 .cl-fi-h .av{width:46px;height:46px;font-size:15px}
@@ -227,6 +239,6 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .cl-msj .in{background:#f3f4f6;justify-self:start}.cl-msj .out{background:#FFEC9E;justify-self:end}.cl-msj .cl-nada{background:none;padding:0;color:var(--ink3);max-width:none}
 .ck-flmenu [data-cl-v],.ck-flmenu [data-ck-seg]{display:flex;align-items:center;gap:9px}.ck-flmenu [data-cl-v] span,.ck-flmenu [data-ck-seg] span{flex:1;text-align:left}.ck-flmenu [data-cl-v] em{font-style:normal;font-size:12px;color:var(--ink3);font-variant-numeric:tabular-nums}
 .ck-flmenu [data-cl-v][aria-checked="true"]{background:#fff7cc;font-weight:600}
-@media (max-width:1100px){.cl-split.con-ficha{flex-direction:column}.cl-fi{width:auto}}
+@media (max-width:900px){.cl-con > .ck-vistas{display:none}}
 @media (prefers-reduced-motion:reduce){.cl-fi,.cl-gira{animation:none}}
 </style>`);
