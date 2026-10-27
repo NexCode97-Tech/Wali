@@ -190,19 +190,17 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .rr-m.in{align-items:flex-start;align-self:flex-start}
 .rr-m.out{align-items:flex-end;align-self:flex-end}
 /* Barra flotante encima del mensaje (dirección B): aparece al pasar el mouse, los botones entran uno tras otro. */
-.rr-bf{position:absolute;bottom:calc(100% + 6px);z-index:3;display:flex;align-items:center;gap:2px;padding:4px;border-radius:999px;background:#fff;border:1px solid #e5e9f0;box-shadow:0 12px 28px -14px rgba(15,23,42,.4);opacity:0;visibility:hidden;pointer-events:none;transform:translateY(6px) scale(.96);transition:opacity .2s cubic-bezier(.16,1,.3,1) .2s,transform .25s cubic-bezier(.16,1,.3,1) .2s,visibility 0s linear .45s}
-.rr-m.in .rr-bf{left:0;transform-origin:bottom left}
-.rr-m.out .rr-bf{right:0;transform-origin:bottom right}
+.rr-bf{position:absolute;top:-9px;right:-9px;z-index:3;display:flex;opacity:0;visibility:hidden;pointer-events:none;transform:scale(.6);transition:opacity .2s cubic-bezier(.16,1,.3,1) .2s,transform .25s cubic-bezier(.16,1,.3,1) .2s,visibility 0s linear .45s}
 /* Puente invisible entre el mensaje y la barra: al subir el cursor no se pierde el «encima». */
 .rr-m::after{content:"";position:absolute;left:0;right:0;bottom:100%;height:8px}
 .rr-m:hover .rr-bf,.rr-bf:focus-within,.rr-m:has([data-rr-menu][aria-expanded="true"]) .rr-bf{opacity:1;visibility:visible;pointer-events:auto;transform:none;transition-delay:0s}
-.rr-be{width:30px;height:30px;border:0;border-radius:50%;background:none;display:grid;place-items:center;font-size:18px;line-height:1;padding:0;cursor:pointer;color:#4b5563;opacity:0;transform:translateY(5px) scale(.8);transition:opacity .2s cubic-bezier(.16,1,.3,1),transform .25s cubic-bezier(.16,1,.3,1),background .15s}
+.rr-be{width:22px;height:22px;border:1px solid #e5e9f0;border-radius:50%;background:#fff;box-shadow:0 2px 6px -2px rgba(15,23,42,.3);display:grid;place-items:center;font-size:18px;line-height:1;padding:0;cursor:pointer;color:#4b5563;opacity:0;transform:translateY(5px) scale(.8);transition:opacity .2s cubic-bezier(.16,1,.3,1),transform .25s cubic-bezier(.16,1,.3,1),background .15s}
 .rr-m:hover .rr-be,.rr-bf:focus-within .rr-be,.rr-m:has([data-rr-menu][aria-expanded="true"]) .rr-be{opacity:1;transform:none;transition-delay:calc(var(--i) * 35ms)}
 .rr-be:hover{background:#f1f5f9;transform:scale(1.2) translateY(-2px)!important}
 .rr-be.ic:hover{transform:none!important;color:#0b0b10}
 .rr-be.on{background:#fff3b0}
 .rr-be.elegido{transform:scale(.85)!important}
-.rr-be svg{width:16px;height:16px}
+.rr-be svg{width:14px;height:14px}
 .rr-be .rr-pts{fill:currentColor;stroke:none}
 .rr-bsep{width:1px;height:18px;background:#e5e9f0;margin:0 2px}
 .rr-cita{all:unset;box-sizing:border-box;display:grid;gap:1px;position:relative;margin-bottom:6px;padding:7px 10px 7px 14px;border-radius:10px;background:rgba(11,11,16,.06);font-size:13px;line-height:1.35;cursor:pointer;max-width:100%;min-width:0;white-space:normal}
