@@ -3,8 +3,8 @@
    Responder, Copiar y Reenviar. Responder deja la cita arriba de donde se escribe (X roja para quitarla) y el
    mensaje sale citado (datos.cita: whatsapp.ts manda el context de Meta). La reacción sale como la de WhatsApp
    (POST …/reaccion) y queda en el mensaje: datos.reac.yo la nuestra, datos.reac.cli la del cliente (entrantes.ts). */
-const RR_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
-const RR_MAS_EMOJIS = ['🙌', '👏', '🔥', '🎉', '😍', '🤔', '😅', '👌', '✅', '💯', '🥳', '😡'];
+const RR_EMOJIS = ['👍', '❤️', '😂', '😮', '🙏'];
+const RR_MAS_EMOJIS = ['😢', '🙌', '👏', '🔥', '🎉', '😍', '🤔', '😅', '👌', '✅', '💯', '🥳', '😡'];
 const rrSvg = p => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${p}</svg>`;
 const RR_IC = {
   mas: '<svg class="i rr-pts" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>',
@@ -57,9 +57,9 @@ function rrEnvolver(m, html, lado){
   const c = rrConv(); if (!c || !m || !m._id) return html;
   const cita = rrCitaHTML(c, m);
   if (cita) html = /<div class="ch-b [^"]*">/.test(html) ? html.replace(/(<div class="ch-b [^"]*">)/, `$1${cita}`) : cita + html;
-  const yoR = m.reac && m.reac.yo, id = esc(m._id);
-  const emos = rrReacciona(c, m) ? ['👍', '❤️', '😂', '😮', '🙏'].map((e, i) => `<button type="button" class="rr-be${e === yoR ? ' on' : ''}" style="--i:${i}" data-rr-rapido="${e}" aria-label="Reaccionar ${e}">${e}</button>`).join('') + '<i class="rr-bsep"></i>' : '';
-  const barra = `<div class="rr-bf" role="toolbar" aria-label="Acciones del mensaje">${emos}<button type="button" class="rr-be ic" style="--i:5" data-rr-resprapido aria-label="Responder">${RR_IC.resp}</button><button type="button" class="rr-be ic" style="--i:6" data-rr-menu="${id}" aria-label="Más opciones del mensaje" aria-haspopup="menu">${RR_IC.mas}</button></div>`;
+  const id = esc(m._id);
+  // Al pasar el cursor solo aparece el ⋯; reacciones, Responder, Copiar y Reenviar van en su menú (27-oct).
+  const barra = `<div class="rr-bf" role="toolbar" aria-label="Acciones del mensaje"><button type="button" class="rr-be ic" style="--i:0" data-rr-menu="${id}" aria-label="Más opciones del mensaje" aria-haspopup="menu">${RR_IC.mas}</button></div>`;
   return `<div class="rr-m ${lado}" data-rr="${id}">${html}${barra}${rrReacHTML(c, m)}</div>`;
 }
 const rrInSin = chBloqueIn, rrOutSin = chBloqueOut;
@@ -77,8 +77,9 @@ function rrAbrirMenu(boton, id, teclado){
   rrCerrarMenu();
   rrMenuDe = id; rrMenuBoton = boton; boton.setAttribute('aria-expanded', 'true');
   const yoR = m.reac && m.reac.yo, texto = rrTexto(m);
-  const emo = rrReacciona(c, m) ? `<div class="rr-emo">${RR_EMOJIS.map(e => `<button type="button" role="menuitem" data-rr-emoji="${e}" class="${e === yoR ? 'on' : ''}" aria-label="Reaccionar ${e}">${e}</button>`).join('')}<button type="button" class="rr-emo-mas" data-rr-masemo aria-label="Más reacciones">${RR_IC.sumar}</button></div>
-    <div class="rr-emo2">${RR_MAS_EMOJIS.map(e => `<button type="button" role="menuitem" data-rr-emoji="${e}" class="${e === yoR ? 'on' : ''}" aria-label="Reaccionar ${e}">${e}</button>`).join('')}</div>` : '';
+  const emo = !rrReacciona(c, m) ? ''
+    : `<div class="rr-emo">${RR_EMOJIS.map(e => `<button type="button" role="menuitem" data-rr-emoji="${e}" class="${e === yoR ? 'on' : ''}" aria-label="Reaccionar ${e}">${e}</button>`).join('')}<button type="button" class="rr-emo-mas" data-rr-masemo aria-label="Más reacciones">${RR_IC.sumar}</button></div>
+    <div class="rr-emo2">${RR_MAS_EMOJIS.map(e => `<button type="button" role="menuitem" data-rr-emoji="${e}" class="${e === yoR ? 'on' : ''}" aria-label="Reaccionar ${e}">${e}</button>`).join('')}</div>`;
   rrMenu.replaceChildren();
   rrMenu.insertAdjacentHTML('beforeend', `${emo}<button type="button" role="menuitem" data-rr-resp>${RR_IC.resp}Responder</button>${texto ? `<button type="button" role="menuitem" data-rr-copiar>${RR_IC.copia}Copiar</button>` : ''}${texto && typeof nmAbrir === 'function' ? `<button type="button" role="menuitem" data-rr-reenv>${RR_IC.reenv}Reenviar</button>` : ''}`);
   rrMenu.hidden = false;
