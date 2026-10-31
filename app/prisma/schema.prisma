@@ -319,6 +319,7 @@ model CrmEspacio {
   enlaces        CrmEnlace[]
   clics          CrmClic[]
   pagos          CrmPago[]
+  solicitudes    CrmSolicitud[]
 
   @@index([cuentaId])
   @@map("crm_espacios")
@@ -504,4 +505,48 @@ model ConfigApp {
   updatedAt DateTime @updatedAt
 
   @@map("config_app")
+}
+
+/// Una solicitud de soporte hecha desde el asistente «Ayuda de Wali» del CRM (maqueta aprobada el 31-oct). La atiende el
+/// operador desde el panel de superadministrador; la respuesta vuelve al asistente y por correo. El número que se
+/// muestra es S-<id + 1000>. `contexto` guarda solo datos de uso (pantalla, lo que buscó, líneas caídas), nunca mensajes.
+model CrmSolicitud {
+  id                 Int                   @id @default(autoincrement())
+  espacioId          String                @map("espacio_id")
+  espacio            CrmEspacio            @relation(fields: [espacioId], references: [id], onDelete: Cascade)
+  userId             String                @map("user_id")
+  /// mensajes, cobros, como u otra.
+  tema               String
+  /// urgente o normal (se marca sola si el texto dice «urgente», «no funciona nada», «se cayó»…).
+  prioridad          String                @default("normal")
+  /// abierta, en_curso o resuelta.
+  estado             String                @default("abierta")
+  asunto             String
+  contexto           Json                  @default("{}")
+  adjunto            String?
+  /// La persona ya vio la última respuesta del equipo (apaga el aviso del botón de ayuda).
+  vista              Boolean               @default(true)
+  primeraRespuestaAt DateTime?             @map("primera_respuesta_at")
+  resueltaAt         DateTime?             @map("resuelta_at")
+  createdAt          DateTime              @default(now()) @map("created_at")
+  updatedAt          DateTime              @updatedAt @map("updated_at")
+  mensajes           CrmSolicitudMensaje[]
+
+  @@index([estado, createdAt])
+  @@index([userId])
+  @@map("crm_solicitudes")
+}
+
+model CrmSolicitudMensaje {
+  id          Int          @id @default(autoincrement())
+  solicitudId Int          @map("solicitud_id")
+  solicitud   CrmSolicitud @relation(fields: [solicitudId], references: [id], onDelete: Cascade)
+  /// cliente o soporte.
+  autor       String
+  autorNombre String       @map("autor_nombre")
+  texto       String
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  @@index([solicitudId, createdAt])
+  @@map("crm_solicitud_mensajes")
 }

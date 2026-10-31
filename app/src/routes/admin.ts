@@ -7,10 +7,11 @@ import { logSecurityEvent } from '../utils/logger'
 import { listaEmpresas, detalleEmpresa } from '../services/crm/superadmin'
 import { resumenPanel, finanzasPanel, cobrosRecientes, atencion, type Rango } from '../services/crm/superadminFinanzas'
 import { listaCupones, crearCupon, eliminarCupon } from '../services/crm/cupones'
+import { listaSoporte, detalleSoporte, responderSoporte, cambiarEstadoSoporte, sinEntender } from '../services/crm/soporte'
 
 /**
  * API del panel de superadministrador (/api/admin), solo para el operador de la plataforma. Todo es de lectura salvo los
- * cupones (crear y eliminar en Creem). A cualquier otra persona, con o sin sesión, le responde 404, como si no existiera.
+ * cupones (crear y eliminar en Creem) y las respuestas de soporte. A cualquier otra persona, con o sin sesión, le responde 404, como si no existiera.
  */
 const router = Router()
 
@@ -79,6 +80,29 @@ router.delete('/cupones/:id', asyncHandler(async (req: Request, res: Response) =
   const id = String(req.params.id)
   if (!/^[\w-]{1,80}$/.test(id)) return res.status(404).json({ success: false, error: 'Ese cupón no existe' })
   await eliminarCupon(id, req.userName ?? req.userId ?? '')
+  res.json({ success: true })
+}))
+
+router.get('/soporte', asyncHandler(async (_req: Request, res: Response) => {
+  res.json({ success: true, data: await listaSoporte() })
+}))
+router.get('/soporte/sin-entender', asyncHandler(async (_req: Request, res: Response) => {
+  res.json({ success: true, data: await sinEntender() })
+}))
+const idSoporte = (req: Request) => { const id = Number(req.params.id); return Number.isInteger(id) && id > 0 ? id : 0 }
+router.get('/soporte/:id', asyncHandler(async (req: Request, res: Response) => {
+  const s = idSoporte(req) ? await detalleSoporte(idSoporte(req)) : null
+  if (!s) return res.status(404).json({ success: false, error: 'Esa solicitud no existe' })
+  res.json({ success: true, data: s })
+}))
+router.post('/soporte/:id/responder', asyncHandler(async (req: Request, res: Response) => {
+  const d = z.object({ texto: z.string().trim().min(2).max(4000) }).parse(req.body)
+  await responderSoporte(idSoporte(req), d.texto, req.userName ?? '')
+  res.json({ success: true })
+}))
+router.post('/soporte/:id/estado', asyncHandler(async (req: Request, res: Response) => {
+  const d = z.object({ estado: z.enum(['abierta', 'en_curso', 'resuelta']) }).parse(req.body)
+  await cambiarEstadoSoporte(idSoporte(req), d.estado)
   res.json({ success: true })
 }))
 

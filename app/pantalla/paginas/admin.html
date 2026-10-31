@@ -153,6 +153,38 @@ tr.borrando td{transition:opacity 240ms var(--e-out),padding 240ms var(--e-out);
 .err{color:var(--mal);font-size:12.5px;margin:0}
 #toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,16px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:opacity 240ms var(--e-in),transform 240ms var(--e-in);z-index:40}
 #toast.ver{opacity:1;transform:translate(-50%,0)}
+/* Soporte */
+.tab-n{min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:#e34948;color:#fff;font-size:10.5px;font-weight:700;line-height:1;display:inline-flex;align-items:center;justify-content:center}
+.tab-n[hidden]{display:none}
+.s-tabs{display:flex;gap:20px;border-bottom:1px solid var(--line);margin-bottom:12px;overflow-x:auto}
+.s-tabs button{padding:8px 2px;font-size:13px;font-weight:500;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:color 120ms var(--e-std),border-color 240ms var(--e-std)}
+.s-tabs button[aria-selected="true"]{color:var(--ink);font-weight:600;border-color:var(--ink)}
+.s-grid{display:grid;grid-template-columns:340px minmax(0,1fr);gap:14px;align-items:start}
+.s-lista{display:grid;gap:2px;align-content:start;max-height:calc(100vh - 200px);overflow-y:auto}
+.s-fila{display:flex;gap:10px;padding:12px 14px;border-radius:12px;text-align:left;width:100%;transition:background 120ms var(--e-std)}
+.s-fila:hover{background:#f6f7f9}
+.s-fila.on{background:#fffbe0;box-shadow:0 0 0 1px var(--amar) inset}
+.s-fc{flex:1;min-width:0;display:grid;gap:2px}
+.s-f1{display:flex;justify-content:space-between;gap:8px}.s-f1 b{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.s-f1 .lbl{white-space:nowrap}
+.s-f2{font-size:13px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.s-f3{display:flex;gap:6px;align-items:center;margin-top:3px}.s-nueva{margin-left:auto;font-size:11px}
+.s-det{padding:0;display:grid;grid-template-columns:minmax(0,1fr) 280px;overflow:hidden;min-height:520px}
+.s-hilo{display:flex;flex-direction:column;min-width:0;border-right:1px solid var(--line)}
+.s-hcab{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.s-hcab .btn[aria-pressed="true"]{border-color:var(--ink)}
+.s-msjs{flex:1;padding:18px 20px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;max-height:440px}
+.s-msj{max-width:80%;animation:abre 240ms var(--e-in)}.s-msj .lbl{margin-bottom:4px}
+.s-b{padding:11px 14px;border-radius:14px 14px 14px 4px;background:#f4f5f7;font-size:13.5px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.s-msj.yo{align-self:flex-end}.s-msj.yo .lbl{text-align:right}.s-msj.yo .s-b{border-radius:14px 14px 4px 14px;background:#fff8d6;border:1px solid #fde68a}
+.s-adj{display:inline-flex;gap:6px;align-items:center;font-size:12.5px;color:var(--t2)}
+.s-pista{border:1px dashed var(--line);border-radius:12px;padding:11px 14px;font-size:12.5px;display:flex;gap:10px;color:var(--t2)}.s-pista b{color:var(--ink)}
+.s-resp{padding:12px 16px;border-top:1px solid var(--line)}
+.s-resp textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-height:80px;font:inherit;font-size:13.5px;resize:vertical;outline:0;transition:border-color 120ms var(--e-std)}
+.s-resp textarea:focus{border-color:var(--ink)}
+.s-rpie{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+.s-ctx{padding:16px 18px}
+.s-cf{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-size:12.5px}.s-cf > span:first-child{flex:none}.s-cf > span:last-child{text-align:right}
+@media (max-width:1100px){.s-grid{grid-template-columns:1fr}.s-det{grid-template-columns:1fr}.s-hilo{border-right:0}}
 /* Motion de entrada: cada página arranca con .pre y al quitarla cada pieza llega a su lugar. */
 .ent{transition:opacity 240ms var(--e-in) var(--d,0ms),transform 240ms var(--e-in) var(--d,0ms)}
 .pre .ent{opacity:0;transform:translateY(10px);transition:none}
@@ -176,6 +208,7 @@ tr.borrando td{transition:opacity 240ms var(--e-out),padding 240ms var(--e-out);
     <button type="button" class="tab" role="tab" data-tab="empresas" aria-selected="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1M14 9h1M9 13h1M14 13h1"/></svg>Empresas</button>
     <button type="button" class="tab" role="tab" data-tab="finanzas" aria-selected="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>Finanzas</button>
     <button type="button" class="tab" role="tab" data-tab="cupones" aria-selected="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12V4h8l10 10-8 8Z"/><circle cx="7.5" cy="8.5" r="1.5"/></svg>Cupones</button>
+    <button type="button" class="tab" role="tab" data-tab="soporte" aria-selected="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="m5.6 5.6 3.6 3.6M14.8 14.8l3.6 3.6M18.4 5.6l-3.6 3.6M9.2 14.8l-3.6 3.6"/></svg>Soporte<span class="tab-n" hidden></span></button>
     <span class="ind" id="ind"></span>
   </nav>
   <span class="yo"><span id="yo"></span><button type="button" id="salir" aria-label="Cerrar sesión" title="Cerrar sesión"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h4v16h-4M10 17l5-5-5-5M15 12H3"/></svg></button></span>
@@ -242,6 +275,11 @@ const IC = {
   dots: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>',
   plus: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
   link: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>',
+  reloj: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  chulo: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>',
+  correo: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',
+  avion: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>',
+  empresa: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1M14 9h1M9 13h1M14 13h1"/></svg>',
   tel: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/></svg>',
 };
 /** Un cambio con su flecha: sube (verde) o baja (rojo); `malo` invierte el color (p. ej. la cancelación). */
@@ -278,7 +316,7 @@ function avatar(nombre, id, logo, tam = 28, redondo = false){
 }
 
 /* ── Estado ── */
-const S = {cupones: null, cq: '', cEst: '', cPlan: '', fila: null, confirma: null, nuevo: null, tab: 'resumen', rango: '12m', mes: '', resumen: null, finanzas: null, empresas: null, filtro: 'todas', plan: '', est: '', orden: 'uso', q: '', abierta: null, menu: null};
+const S = {soporte: null, sinEntender: null, stab: 'abierta', ssel: null, sdet: null, sq: '', sTema: '', sPri: '', borrador: {}, enviando: false, cupones: null, cq: '', cEst: '', cPlan: '', fila: null, confirma: null, nuevo: null, tab: 'resumen', rango: '12m', mes: '', resumen: null, finanzas: null, empresas: null, filtro: 'todas', plan: '', est: '', orden: 'uso', q: '', abierta: null, menu: null};
 
 /* ── Pestañas con indicador que se desliza ── */
 function moverInd(){
@@ -296,7 +334,7 @@ function irA(tab){
 /* ── Pintar la página con su motion de entrada ── */
 function pintar(entrar){
   const m = $('main');
-  const html = S.tab === 'resumen' ? vResumen() : S.tab === 'empresas' ? vEmpresas() : S.tab === 'cupones' ? vCupones() : vFinanzas();
+  const html = S.tab === 'resumen' ? vResumen() : S.tab === 'empresas' ? vEmpresas() : S.tab === 'cupones' ? vCupones() : S.tab === 'soporte' ? vSoporte() : vFinanzas();
   if (entrar && !QUIETO) m.classList.add('pre');
   m.innerHTML = html;
   if (S.tab === 'resumen' && S.resumen) montarArea();
@@ -668,6 +706,111 @@ async function borrarCupon(id){
   } catch (err) { alertar(err.message); }
 }
 
+/* ═════════════ Soporte ═════════════ */
+const TEMA_SOP = {mensajes: 'No llegan mensajes', cobros: 'Facturación', como: 'Cómo se hace', otra: 'Otra cosa'};
+const ESTADO_SOP = {abierta: 'Abiertas', en_curso: 'En curso', resuelta: 'Resueltas'};
+function hm(min){ if (min == null) return '—'; if (min < 60) return `${min} min`; const h = Math.floor(min / 60), m = min % 60; return m ? `${h} h ${m} min` : `${h} h`; }
+function chipSop(s){ return s.prioridad === 'urgente' ? `<span class="est b">${IC.alert}Urgente</span>` : `<span class="est ${s.tema === 'cobros' ? 'p' : 'w'}">${esc(TEMA_SOP[s.tema] || 'Normal')}</span>`; }
+function filtradasSop(){
+  const L = (S.soporte && S.soporte.solicitudes) || [], q = norm(S.sq);
+  // Las urgentes primero; después, la que más lleva esperando respuesta.
+  return L.filter(s => s.estado === S.stab && (!S.sTema || s.tema === S.sTema) && (!S.sPri || s.prioridad === S.sPri) && (!q || norm(`${s.empresa} ${s.persona} ${s.numero} ${s.asunto}`).includes(q)))
+    .sort((a, b) => (b.prioridad === 'urgente') - (a.prioridad === 'urgente') || (a.espera && b.espera ? new Date(a.espera) - new Date(b.espera) : new Date(b.actualizada) - new Date(a.actualizada)));
+}
+function vSoporte(){
+  const D = S.soporte;
+  const cab = `<div class="cab ent"><div><h1>Soporte</h1><p class="sub">Quién pide ayuda, desde dónde y qué buscó antes en el asistente.</p></div></div>`;
+  if (!D) return cab + '<div class="vacio">Cargando…</div>';
+  const espera = D.esperanMas4h;
+  const kps = [
+    ['Abiertas', cuenta(D.abiertas, 'n', num(D.abiertas)), `${num(D.nuevasHoy)} ${D.nuevasHoy === 1 ? 'nueva' : 'nuevas'} hoy`, false],
+    ['Esperan más de 4 h', cuenta(espera.length, 'n', num(espera.length)), espera.length ? esc(espera[0].empresa) + (espera.length > 1 ? ` y ${espera.length - 1} más` : '') : 'Ninguna', espera.length > 0],
+    ['Primera respuesta', esc(hm(D.primeraRespuestaMin)), 'promedio de 7 días', false],
+    ['Resueltas esta semana', cuenta(D.resueltasSemana, 'n', num(D.resueltasSemana)), D.mismoDia == null ? '—' : `${pct(D.mismoDia)} el mismo día`, false],
+  ].map(([l, v, d, rojo], i) => `<div class="k ent" style="--d:${40 + i * 40}ms;padding:13px 16px"><div class="lbl">${l}</div><div class="big" style="font-size:24px${rojo ? ';color:var(--mal)' : ''}">${v}</div><div class="lbl">${d}</div></div>`).join('');
+  const busca = `<div class="busca ent" style="--d:160ms"><label class="campo">${IC.search}<input id="sq" type="search" value="${esc(S.sq)}" placeholder="Buscar por empresa, persona o número de solicitud" aria-label="Buscar solicitud" autocomplete="off"></label>
+    ${dd('stema', S.sTema ? 'Tema: ' + TEMA_SOP[S.sTema] : 'Tema: todos', [['', 'Todos los temas'], ...Object.entries(TEMA_SOP)], S.sTema)}${dd('spri', S.sPri ? 'Prioridad: ' + (S.sPri === 'urgente' ? 'urgente' : 'normal') : 'Prioridad: todas', [['', 'Todas'], ['urgente', 'Urgente'], ['normal', 'Normal']], S.sPri)}</div>`;
+  const n = k => D.solicitudes.filter(s => s.estado === k).length;
+  const tabs = `<div class="s-tabs ent" style="--d:180ms" role="tablist">${[...Object.entries(ESTADO_SOP).map(([k, t]) => [k, t, n(k)]), ['sin', 'El asistente no entendió', S.sinEntender ? S.sinEntender.length : null]].map(([k, t, c]) => `<button type="button" role="tab" data-stab="${k}" aria-selected="${S.stab === k}">${t}${c != null ? ` <span class="mut">${num(c)}</span>` : ''}</button>`).join('')}</div>`;
+  if (S.stab === 'sin') return cab + `<div class="g4">${kps}</div>` + busca + tabs + vSinEntender();
+  const fs = filtradasSop();
+  if (S.ssel == null || !fs.some(s => s.id === S.ssel)) S.ssel = fs.length ? fs[0].id : null;
+  const lista = fs.length ? fs.map((s, i) => `<button type="button" class="s-fila ent${S.ssel === s.id ? ' on' : ''}" style="--d:${200 + Math.min(i, 8) * 40}ms" data-ssel="${s.id}">${avatar(s.empresa, s.empresaId, s.logo)}<span class="s-fc"><span class="s-f1"><b>${esc(s.empresa)}</b><span class="lbl">${hace(s.actualizada)}</span></span><span class="s-f2">${esc(s.asunto)}</span><span class="s-f3">${chipSop(s)}<span class="lbl">${esc(s.persona)}</span>${s.nueva ? '<b class="s-nueva">Nueva</b>' : ''}</span></span></button>`).join('')
+    : `<p class="lbl" style="padding:14px">${D.solicitudes.length ? 'Ninguna solicitud aquí con esos filtros.' : 'Todavía nadie ha escrito a soporte.'}</p>`;
+  return cab + `<div class="g4">${kps}</div>` + busca + tabs + `<div class="s-grid"><div class="s-lista">${lista}</div><div id="s-det" class="ent" style="--d:240ms">${S.sdet && S.sdet.id === S.ssel ? vDetalleSop(S.sdet) : S.ssel ? '<div class="k vacio">Cargando…</div>' : '<div class="k vacio">Elige una solicitud.</div>'}</div></div>`;
+}
+const horaDe = iso => new Date(iso).toLocaleTimeString('es-CO', {hour: 'numeric', minute: '2-digit'});
+function vDetalleSop(d){
+  const ctx = d.contexto || {}, caidas = d.caidas || [];
+  const burbuja = m => `<div class="s-msj${m.autor === 'soporte' ? ' yo' : ''}"><div class="lbl">${esc(m.nombre)}${m.autor === 'soporte' ? ' · Soporte' : ''} · ${esc(fecha(m.en))}, ${esc(horaDe(m.en))}</div><div class="s-b">${esc(m.texto)}</div></div>`;
+  const pista = caidas.length ? `<div class="s-pista">${IC.alert}<span><b>Wali lo revisó solo:</b> ${caidas.map(l => `la línea ${esc(l.nombre)} está sin conexión ${esc(hace(l.desde).toLowerCase())}`).join('; ')}. Al reconectarla en Ajustes › Líneas, los mensajes de ese rato llegan solos.</span></div>` : '';
+  const adj = d.adjunto && /^https:\/\/res\.cloudinary\.com\//.test(d.adjunto) ? `<a class="s-adj" href="${esc(d.adjunto)}" target="_blank" rel="noopener noreferrer">${IC.link}Ver la captura que adjuntó</a>` : '';
+  const [et, ec] = estado({estado: d.empresa.estado, cancelaAlFinal: d.empresa.cancelaAlFinal});
+  const filas = [['Empresa', esc(d.empresa.nombre)], ['Plan', esc(`${PLAN[d.empresa.plan] || d.empresa.plan} ${(PERIODO[d.empresa.periodo] || '').toLowerCase()}`.trim())], ['Estado', `<span class="est ${ec}">${et}</span>`], ['Rol', esc(ROL[d.persona.rol] || d.persona.rol)], ['Estaba en', esc(ctx.pantalla || '—')],
+    ...caidas.map(l => [`Línea ${esc(l.nombre)}`, `<span style="color:var(--mal)">Sin conexión ${esc(hace(l.desde).toLowerCase())}</span>`]),
+    ['Buscó antes', (ctx.busco || []).length ? ctx.busco.map(b => `«${esc(b)}»`).join(', ') : '—']];
+  const resuelta = d.estado === 'resuelta';
+  const botones = resuelta ? `<button type="button" class="btn" data-sest="abierta">Reabrir</button>`
+    : `<button type="button" class="btn" data-sest="${d.estado === 'en_curso' ? 'abierta' : 'en_curso'}" aria-pressed="${d.estado === 'en_curso'}">${IC.reloj}${d.estado === 'en_curso' ? 'En curso' : 'Marcar en curso'}</button><button type="button" class="btn" data-sest="resuelta">${IC.chulo}Resolver</button>`;
+  return `<div class="k s-det"><div class="s-hilo"><div class="s-hcab"><div style="flex:1;min-width:0"><div style="display:flex;gap:8px;align-items:center">${chipSop(d)}<span class="lbl">#${esc(d.numero)} · ${esc(hace(d.creada).toLowerCase())}</span></div><h3 class="h3" style="font-size:16px;margin-top:6px">${esc(d.asunto)}</h3></div>${botones}</div>
+    <div class="s-msjs">${d.mensajes.map(burbuja).join('')}${adj}${pista}</div>
+    <form class="s-resp" id="s-resp"><textarea id="s-texto" rows="3" maxlength="4000" placeholder="Escribe la respuesta…" aria-label="Respuesta">${esc(S.borrador[d.id] || '')}</textarea>
+      <div class="s-rpie"><span class="lbl" style="display:flex;gap:6px;align-items:center">${IC.correo}Le llega por correo y en el asistente de Wali</span><button type="submit" class="btn pri"${S.enviando ? ' disabled' : ''}>${IC.avion}${S.enviando ? 'Enviando…' : 'Responder'}</button></div></form></div>
+    <div class="s-ctx"><div style="display:flex;gap:10px;align-items:center;margin-bottom:10px">${avatar(d.persona.nombre, d.persona.correo, null, 36, true)}<div style="min-width:0"><b style="font-size:13.5px">${esc(d.persona.nombre)}</b><div class="lbl">${esc(d.persona.correo)}</div></div></div>
+      ${filas.map(([a, b]) => `<div class="s-cf"><span class="mut">${a}</span><span>${b}</span></div>`).join('')}
+      ${d.antes.length ? `<div class="lbl" style="margin-top:14px">Antes pidió</div>${d.antes.map(a => `<div class="t2" style="font-size:12.5px;margin-top:4px">«${esc(a.asunto)}» · ${a.minutos != null ? `resuelta en ${esc(hm(a.minutos))}` : esc((ESTADO_SOP[a.estado] || a.estado).toLowerCase())} · ${esc(fecha(a.creada))}</div>`).join('')}` : ''}
+      <button type="button" class="btn" style="width:100%;justify-content:center;margin-top:14px" data-sempresa="${esc(d.empresa.id)}">${IC.empresa}Ver empresa</button></div></div>`;
+}
+function vSinEntender(){
+  const L = S.sinEntender;
+  if (!L) return '<div class="vacio">Cargando…</div>';
+  const q = norm(S.sq), fs = L.filter(p => !q || norm(`${p.q} ${p.empresa}`).includes(q));
+  return fs.length ? `<div class="k tw ent" style="--d:200ms;padding:2px 6px"><table class="t"><thead><tr><th>Lo que preguntaron</th><th>Empresa</th><th>Cuándo</th></tr></thead><tbody>${fs.map(p => `<tr><td style="white-space:normal">«${esc(p.q)}»</td><td class="mut">${esc(p.empresa)}</td><td class="mut">${esc(hace(p.en))}</td></tr>`).join('')}</tbody></table></div><p class="lbl" style="margin-top:10px">Sirven para escribir guías nuevas en el asistente.</p>`
+    : '<div class="k vacio ent" style="--d:200ms">Nada por aquí: el asistente entendió todo.</div>';
+}
+function pintarDetalle(){ const c = $('s-det'); if (!c || !S.sdet) return; c.replaceChildren(); c.insertAdjacentHTML('beforeend', vDetalleSop(S.sdet)); const h = c.querySelector('.s-msjs'); if (h) h.scrollTop = h.scrollHeight; }
+async function abrirSol(id){
+  S.ssel = id; S.sdet = null; pintar(false);
+  try { const d = await api('/soporte/' + id); if (S.ssel === id) { S.sdet = d; pintarDetalle(); } }
+  catch (err) { const c = $('s-det'); if (c) { c.replaceChildren(); c.insertAdjacentHTML('beforeend', `<div class="k vacio">${esc(err.message)}</div>`); } }
+}
+async function responderSol(){
+  const t = $('s-texto'), id = S.ssel; if (!t || !id || S.enviando) return;
+  const texto = t.value.trim(); if (texto.length < 2) { alertar('Escribe la respuesta'); return; }
+  S.enviando = true; S.borrador[id] = texto; pintarDetalle();
+  try { await api(`/soporte/${id}/responder`, 'POST', {texto}); delete S.borrador[id]; alertar('Respuesta enviada'); }
+  catch (err) { alertar(err.message); }
+  S.enviando = false; await recargarSoporte();
+}
+async function estadoSol(estado){
+  const id = S.ssel; if (!id) return;
+  try { await api(`/soporte/${id}/estado`, 'POST', {estado}); alertar(estado === 'resuelta' ? 'Solicitud resuelta' : estado === 'en_curso' ? 'Marcada en curso' : 'Solicitud abierta otra vez'); S.stab = estado; await recargarSoporte(); }
+  catch (err) { alertar(err.message); }
+}
+async function recargarSoporte(){
+  S.soporte = await api('/soporte'); badgeSoporte();
+  if (S.tab === 'soporte') { pintar(false); if (S.ssel) abrirSol(S.ssel); }
+}
+function badgeSoporte(){
+  const b = document.querySelector('.tab[data-tab="soporte"] .tab-n'), n = S.soporte ? S.soporte.solicitudes.filter(s => s.espera).length : 0;
+  if (b) { b.textContent = n; b.hidden = !n; }
+  moverInd();
+}
+function eventoSoporte(t){
+  const tb = t.closest('[data-stab]');
+  if (tb) {
+    S.stab = tb.dataset.stab; S.ssel = null; S.sdet = null;
+    if (S.stab === 'sin' && !S.sinEntender) api('/soporte/sin-entender').then(l => { S.sinEntender = l; pintar(false); }, e => alertar(e.message));
+    pintar(false);
+    if (S.stab !== 'sin') { const f = filtradasSop()[0]; if (f) abrirSol(f.id); }
+    return true;
+  }
+  const se = t.closest('[data-ssel]'); if (se) { const id = +se.dataset.ssel; if (id !== S.ssel || !S.sdet) abrirSol(id); return true; }
+  const es = t.closest('[data-sest]'); if (es) { estadoSol(es.dataset.sest); return true; }
+  const em = t.closest('[data-sempresa]'); if (em) { const id = em.dataset.sempresa; irA('empresas'); (S.empresas ? Promise.resolve() : cargar('empresas')).then(() => abrirEmpresa(id)); return true; }
+  return false;
+}
+
 /* ── Exportar (CSV en el navegador, con lo que ya está cargado) ── */
 function csv(nombre, filas){
   const txt = '﻿' + filas.map(f => f.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
@@ -686,7 +829,8 @@ async function cargar(que){
     if (que === 'empresas') S.empresas = await api('/empresas');
     if (que === 'finanzas') { S.finanzas = await api('/finanzas' + (S.mes ? '?mes=' + S.mes : '')); }
     if (que === 'cupones') S.cupones = await api('/cupones');
-    if (S.tab === que) pintar(true);
+    if (que === 'soporte') { S.soporte = await api('/soporte'); badgeSoporte(); }
+    if (S.tab === que) { pintar(true); if (que === 'soporte' && S.ssel) abrirSol(S.ssel); }
   } catch (err) { if (S.tab === que) $('main').innerHTML = `<div class="vacio">${esc(err.message)}</div>`; }
 }
 
@@ -697,12 +841,13 @@ document.addEventListener('click', ev => {
   const ir = t.closest('[data-tab-ir]'); if (ir) { irA(ir.dataset.tabIr); if (!S[ir.dataset.tabIr]) cargar(ir.dataset.tabIr); return; }
   const rg = t.closest('[data-rango]'); if (rg) { if (rg.dataset.rango !== S.rango) { S.rango = rg.dataset.rango; cargar('resumen'); } return; }
   if (S.tab === 'cupones' && eventoCupones(t)) return;
+  if (S.tab === 'soporte' && eventoSoporte(t)) return;
   const ex = t.closest('[data-exportar]'); if (ex) { exportar(ex.dataset.exportar).catch(e => alertar(e.message)); return; }
   const d = t.closest('[data-dd]'); if (d) { S.menu = S.menu === d.dataset.dd ? null : d.dataset.dd; pintar(false); return; }
   const op = t.closest('[data-op]');
   if (op) {
     const [id, ...r] = op.dataset.op.split(':'), v = r.join(':'); S.menu = null;
-    if (id === 'plan') S.plan = v; if (id === 'est') S.est = v; if (id === 'orden') S.orden = v; if (id === 'cest') S.cEst = v; if (id === 'cplan') S.cPlan = v;
+    if (id === 'plan') S.plan = v; if (id === 'est') S.est = v; if (id === 'orden') S.orden = v; if (id === 'cest') S.cEst = v; if (id === 'cplan') S.cPlan = v; if (id === 'stema') { S.sTema = v; S.ssel = null; } if (id === 'spri') { S.sPri = v; S.ssel = null; }
     if (id === 'mes') { S.mes = v; cargar('finanzas'); return; }
     pintar(false); return;
   }
@@ -720,12 +865,15 @@ document.addEventListener('keydown', ev => {
 });
 document.addEventListener('input', ev => {
   if (ev.target.closest && ev.target.closest('#fm-cupon')) { leerNuevo(); return; }
+  if (ev.target.id === 's-texto') { if (S.ssel) S.borrador[S.ssel] = ev.target.value; return; }
+  if (ev.target.id === 'sq') { S.sq = ev.target.value; const pos = ev.target.selectionStart; pintar(false); const q = $('sq'); q.focus(); try { q.setSelectionRange(pos, pos); } catch {} if (S.ssel && S.stab !== 'sin') abrirSol(S.ssel); return; }
   if (ev.target.id === 'cq') { S.cq = ev.target.value; const pos = ev.target.selectionStart; pintar(false); const q = $('cq'); q.focus(); try { q.setSelectionRange(pos, pos); } catch {} return; }
   if (ev.target.id !== 'q') return;
   S.q = ev.target.value; const pos = ev.target.selectionStart; pintar(false);
   const q = $('q'); q.focus(); try { q.setSelectionRange(pos, pos); } catch {}
 });
 function alertar(t){ const el = $('toast'); el.textContent = t; el.classList.add('ver'); clearTimeout(alertar.t); alertar.t = setTimeout(() => el.classList.remove('ver'), 3200); }
+document.addEventListener('submit', ev => { if (ev.target.id === 's-resp') { ev.preventDefault(); responderSol(); } });
 $('salir').addEventListener('click', async () => {
   try { await fetch('__BASE__/api/auth/logout', {method: 'POST', credentials: 'same-origin', headers: {Authorization: 'Bearer ' + await token()}}); } catch {}
   location.href = '__BASE__/entrar';
@@ -735,10 +883,12 @@ addEventListener('resize', () => { moverInd(); if (S.tab === 'resumen' && S.resu
 /* ── Arranque ── */
 (() => {
   const h = location.hash.slice(1);
-  if (['resumen', 'empresas', 'finanzas', 'cupones'].includes(h)) S.tab = h;
+  if (['resumen', 'empresas', 'finanzas', 'cupones', 'soporte'].includes(h)) S.tab = h;
   document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === S.tab)));
   document.fonts.ready.then(moverInd); moverInd();
   pintar(false); cargar(S.tab);
+  if (S.tab !== 'soporte') api('/soporte').then(d => { S.soporte = d; badgeSoporte(); }, () => {});
+  setInterval(() => { if (document.visibilityState === 'visible' && S.tab !== 'soporte') api('/soporte').then(d => { S.soporte = d; badgeSoporte(); }, () => {}); }, 60_000);
 })();
 </script>
 </body>

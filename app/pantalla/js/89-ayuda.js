@@ -18,6 +18,7 @@
     chev: SV('<path d="m9 6 6 6-6 6"/>'), basura: SV('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>'), reloj: SV('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'), mas: SV('<path d="M12 5v14M5 12h14"/>'), flecha: SV('<path d="M7 17 17 7M9 7h8v8"/>'), atras: SV('<path d="m15 6-6 6 6 6"/>'),
     si: SV('<path d="M7 11v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3Zm0 0 4-7a2 2 0 0 1 2 2v4h5a2 2 0 0 1 2 2.3l-1.2 6A2 2 0 0 1 16.8 20H7"/>'),
     no: SV('<path d="M17 13V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-3Zm0 0-4 7a2 2 0 0 1-2-2v-4H6a2 2 0 0 1-2-2.3l1.2-6A2 2 0 0 1 7.2 4H17"/>'),
+    clip: SV('<path d="m21 11-8.5 8.5a5 5 0 0 1-7-7L14 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 7"/>'), escudo: SV('<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6Z"/>'), avion: SV('<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>'), chulo: SV('<path d="m5 12 5 5L20 7"/>'),
     persona: SV('<circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-3.5 3.8-5.5 7-5.5s6 2 7 5.5"/>'), correo: SV('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>'),
     libro: SV('<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5v-15Z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/>'), rep: SV('<path d="M16 3h5v5M21 3l-7 7M8 21H3v-5M3 21l7-7"/>'),
   };
@@ -169,15 +170,17 @@
   const guia = id => AYUDA_GUIAS.find(g => g.id === id);
 
   /* ── La conversación del panel ── */
-  const A = {abierto: false, items: [], vista: 'inicio', tema: null, escribiendo: false, hist: null, conv: null};
+  const A = {abierto: false, items: [], vista: 'inicio', tema: null, escribiendo: false, hist: null, conv: null, htab: 'conv', sol: null, sinVer: 0, aviso: null};
   /* Cada parte: {y: pregunta} | {g: guía, e: entendió, o: [otras]} | {c: charla (se vuelve a contestar igual)} |
      {n: pregunta sin respuesta, o: [opciones]} | {s: soporte}. Así se guardan en el historial sin HTML. */
   function parteHTML(p){
     if (p.y !== undefined) return yoBurbuja(p.y);
     if (p.g) { const g = guia(p.g); return g ? tarjeta(g, !!p.e, (p.o || []).map(guia).filter(Boolean)) : ''; }
-    if (p.c !== undefined) return conversar(p.c) || '';
+    if (p.c !== undefined) { const r = conversar(p.c); return r && r !== 'SOPORTE' ? r : ''; }
     if (p.n !== undefined) return noEntendio(p.n, {lista: (p.o || []).map(guia).filter(Boolean).map(g => ({g}))});
     if (p.s !== undefined) return `<div class="ay-msj bot"><span class="ay-iso pq">${ISO}</span><div class="ay-msj-c">${soporteHTML(p.s)}</div></div>`;
+    if (p.f) return formSoporte(p.f);
+    if (p.r) return tarjetaSolicitud(p);
     return '';
   }
   const pasosHTML = p => p.map(x => `<li>${esc(x).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')}</li>`).join('');
@@ -196,10 +199,94 @@
       <div class="ay-util" data-ay-utilde="${g.id}"><span>¿Te sirvió?</span><button type="button" data-ay-util="${g.id}|1">${IC.si}Sí</button><button type="button" data-ay-util="${g.id}|0">${IC.no}No</button></div>
       ${otras && otras.length ? `<div class="ay-rel"><small>¿O buscabas…?</small>${otras.map(o => `<button type="button" data-ay-guia="${o.id}">${esc(o.t)}${IC.chev}</button>`).join('')}</div>` : relacionadas(g)}</div></div>`;
   }
+  /* Soporte (maqueta aprobada «Soporte en el CRM», 31-oct): «Escribirle a soporte» abre el formulario aquí mismo y la
+     solicitud llega al panel de superadministrador; la respuesta vuelve a esta conversación y por correo. */
   function soporteHTML(q){
     const asunto = encodeURIComponent('Ayuda con Wali'), cuerpo = encodeURIComponent(q ? `Hola, necesito ayuda con esto: ${q}` : 'Hola, necesito ayuda con Wali.');
-    return `<div class="ay-soporte"><div class="ay-sop-t"><span class="ay-pic">${IC.persona}</span><div><b>¿Ninguna es?</b><small>Escríbele al equipo de soporte de Wali. Te responde en horario hábil.</small></div></div>
-      <div class="ay-sop-b"><a class="btn" href="mailto:${SOPORTE.correo}?subject=${asunto}&body=${cuerpo}">${IC.correo}Correo</a>${SOPORTE.whatsapp ? `<a class="btn ay-wa" href="https://wa.me/${SOPORTE.whatsapp}?text=${cuerpo}" target="_blank" rel="noopener noreferrer">${LOGO.wa}WhatsApp</a>` : ''}</div></div>`;
+    return `<div class="ay-soporte"><div class="ay-sop-t"><span class="ay-pic">${IC.persona}</span><div><b>Habla con una persona</b><small>El equipo de Wali te responde aquí y por correo, en horario hábil.</small></div></div>
+      <button type="button" class="btn pri ay-sop-ir" data-ay-sop="${esc(q || '')}">${IC.avion}Escribirle a soporte</button>
+      <span class="ay-sop-o">o por <a href="mailto:${SOPORTE.correo}?subject=${asunto}&body=${cuerpo}">correo</a></span></div>`;
+  }
+  const TEMAS_SOP = [['mensajes', 'No llegan mensajes'], ['cobros', 'Cobros y plan'], ['como', 'Cómo se hace algo'], ['otra', 'Otra cosa']];
+  const temaDe = t => { const n = norm(t); return /(cobr|pago|pagar|factur|plan|tarjeta|cancel|suscrip|reembols)/.test(n) ? 'cobros' : /(mensaj|llega|whatsapp|wasap|linea|conect|desconect|instagram|messenger)/.test(n) ? 'mensajes' : /(como|donde|puedo|se hace|configur)/.test(n) ? 'como' : 'otra'; };
+  // Lo que la persona escribió antes en esta conversación (sin la frase en que pide hablar con alguien).
+  const PIDE_PERSONA = /(hablar|comunicar|contactar|escribir|pasar).*(persona|humano|asesor|alguien|soporte|agente)|(quiero|necesito) (un|una|a|el|al) ?(persona|humano|asesor|soporte|alguien)|atencion humana|servicio al cliente|alguien real|soporte tecnico/;
+  function formSoporte(f){
+    return `<div class="ay-msj bot"><span class="ay-iso pq">${ISO}</span><div class="ay-msj-c"><p>${f.texto ? 'Claro, te paso con el equipo de Wali. Ya dejé escrito lo que me contaste; revísalo y envíalo.' : 'Cuéntame qué pasa y se lo paso al equipo.'}</p>
+      <form class="ay-sform" id="ay-sform" novalidate><div class="ay-schips" role="group" aria-label="Sobre qué es">${TEMAS_SOP.map(([k, t]) => `<button type="button" data-ay-stema="${k}" aria-pressed="${f.tema === k}">${t}</button>`).join('')}</div>
+        <label class="ay-sl" for="ay-stexto">Qué pasa</label><textarea id="ay-stexto" maxlength="4000" rows="4" placeholder="Cuéntanos con tus palabras">${esc(f.texto || '')}</textarea>
+        <label class="ay-sadj">${IC.clip}<span>${f.adjunto ? esc(f.adjuntoNombre || 'Captura adjunta') : f.subiendo ? 'Subiendo captura…' : '<u>Adjuntar captura</u> <em>· opcional</em>'}</span><input type="file" id="ay-sfile" accept="image/png,image/jpeg,image/webp" hidden></label>
+        <p class="ay-spriv">${IC.escudo}<span>Con tu mensaje va el nombre de tu empresa, la pantalla en la que estás y lo que buscaste aquí. <b>Nunca tus conversaciones ni tus contactos.</b></span></p>
+        ${f.error ? `<p class="ay-serr" role="alert">${esc(f.error)}</p>` : ''}
+        <button type="submit" class="btn pri ay-sop-ir"${f.enviando || f.subiendo ? ' disabled' : ''}>${IC.avion}${f.enviando ? 'Enviando…' : 'Enviar a soporte'}</button></form></div></div>`;
+  }
+  const solDe = numero => (A.sol || []).find(s => s.numero === numero);
+  const ESTADO_SOL = s => !s ? ['Recibida', 'ok'] : s.estado === 'resuelta' ? ['Resuelta', 'ok'] : s.mensajes.length && s.mensajes[s.mensajes.length - 1].autor === 'soporte' ? ['Respondida', 'w'] : ['Recibida', 'ok'];
+  const horaCorta = iso => new Date(iso).toLocaleTimeString('es-CO', {hour: 'numeric', minute: '2-digit'});
+  function tarjetaSolicitud(p){
+    const s = solDe(p.r), [et, ek] = ESTADO_SOL(s), tema = (TEMAS_SOP.find(x => x[0] === p.t) || [, 'Solicitud'])[1];
+    const respuestas = s ? s.mensajes.slice(1) : [];
+    const hilo = respuestas.map(m => m.autor === 'soporte'
+      ? `<div class="ay-sep">${esc(horaCorta(m.en))}</div><div class="ay-msj bot ay-equipo"><span class="ay-av">${esc(String(m.nombre || 'S').slice(0, 2).toUpperCase())}</span><div class="ay-msj-c"><small class="ay-quien"><b>${esc(m.nombre)}</b> · Soporte de Wali</small><div class="ay-resp">${esc(m.texto)}</div></div></div>`
+      : yoBurbuja(m.texto)).join('');
+    const ultimo = respuestas[respuestas.length - 1];
+    const acciones = s && s.estado !== 'resuelta' && ultimo && ultimo.autor === 'soporte'
+      ? `<div class="ay-sacc"><button type="button" data-ay-sresp="${esc(p.r)}|resuelta">${IC.chulo}Ya quedó</button><button type="button" data-ay-sresp="${esc(p.r)}|abierta">Sigo con el problema</button></div>` : '';
+    return `<div class="ay-scard"><div class="ay-scab"><small>Solicitud #${esc(p.r)}</small><span class="ay-sest ${ek}">${ek === 'ok' && et !== 'Resuelta' ? IC.chulo : ''}${et}</span></div><b>${esc(tema)}</b><span>${esc(p.x)}</span></div>
+      <div class="ay-msj bot"><span class="ay-iso pq">${ISO}</span><div class="ay-msj-c"><p>${s && s.estado === 'resuelta' ? 'Esta solicitud quedó resuelta. Si vuelve a pasar, escríbeme.' : 'Listo, ya la tiene el equipo. Te aviso aquí y por correo apenas te respondan.'}</p></div></div>${hilo}${acciones}`;
+  }
+  function abrirFormSoporte(previo){
+    const antes = A.items.filter(p => p.y !== undefined).map(p => p.y).filter(t => !PIDE_PERSONA.test(norm(t)));
+    const texto = previo || antes.slice(-3).join('\n');
+    A.items = A.items.filter(p => !p.f);
+    A.items.push({f: {tema: temaDe(texto), texto, busco: antes.slice(-5)}}); A.vista = 'chat'; pintar();
+    setTimeout(() => { const t = document.getElementById('ay-stexto'); if (t) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); } }, 60);
+  }
+  const formActual = () => { const p = A.items.find(x => x.f); return p ? p.f : null; };
+  function leerForm(){ const f = formActual(), t = document.getElementById('ay-stexto'); if (f && t) f.texto = t.value; return f; }
+  async function enviarSoporte(){
+    const f = leerForm(); if (!f || f.enviando) return;
+    if ((f.texto || '').trim().length < 3) { f.error = 'Cuéntanos qué pasa.'; pintar(); return; }
+    f.enviando = true; f.error = ''; pintar();
+    try {
+      const r = await crmApi('POST', '/crm/ayuda/soporte', {tema: f.tema, texto: f.texto.trim(), pantalla: NOMBRE_PAG[paginaActual()] || paginaActual(), busco: f.busco || [], adjunto: f.adjunto || null});
+      A.items = A.items.filter(p => !p.f);
+      A.items.push({r: r.numero, t: f.tema, x: f.texto.trim().slice(0, 200)});
+      await cargarSol(); guardarConv(); pintar();
+    } catch (err) { f.enviando = false; f.error = err.message || 'No se pudo enviar. Intenta de nuevo.'; pintar(); }
+  }
+  async function subirCaptura(file){
+    const f = leerForm(); if (!f || !file) return;
+    if (file.size > 5 * 1024 * 1024) { f.error = 'La captura pesa más de 5 MB.'; pintar(); return; }
+    f.subiendo = true; f.error = ''; pintar();
+    try { const r = await crmSubir(file, '/crm/ayuda/soporte/captura'); f.adjunto = r.url; f.adjuntoNombre = `${r.nombre} · ${Math.max(1, Math.round(r.peso / 1024))} KB`; }
+    catch (err) { f.error = err.message; }
+    f.subiendo = false; pintar();
+  }
+  /* Las solicitudes de la persona y las respuestas del equipo (GET /crm/ayuda/soporte). Con respuestas sin ver, el
+     botón de ayuda muestra el globito rojo y, con el chat cerrado, el aviso «Soporte te respondió». */
+  async function cargarSol(){
+    try {
+      const d = await crmApi('GET', '/crm/ayuda/soporte');
+      A.sol = Array.isArray(d && d.solicitudes) ? d.solicitudes : []; A.sinVer = +(d && d.sinVer) || 0;
+      const nueva = A.sol.find(s => !s.vista);
+      A.aviso = nueva && !A.abierto ? nueva : null;
+    } catch { A.sol = A.sol || []; }
+    if (A.abierto) { if (A.vista === 'chat' || A.vista === 'historial') pintar(); else pintarFab(); } else pintarFab();
+  }
+  function verVistas(){ if (!A.sinVer) return; A.sinVer = 0; A.aviso = null; (A.sol || []).forEach(s => { s.vista = true; }); crmApi('POST', '/crm/ayuda/soporte/vistas').catch(() => { /* se marca la próxima vez */ }); pintarFab(); }
+  function abrirSolicitud(numero){
+    const s = solDe(numero); if (!s) return;
+    A.conv = null; A.items = [{y: s.asunto}, {r: s.numero, t: s.tema, x: s.mensajes[0] ? s.mensajes[0].texto.slice(0, 200) : s.asunto}]; A.vista = 'chat'; verVistas(); pintar();
+  }
+  async function cambiarSol(numero, accion){
+    const s = solDe(numero); if (!s) return;
+    try {
+      await crmApi('POST', `/crm/ayuda/soporte/${s.id}/estado`, {accion});
+      await cargarSol();
+      if (accion === 'resuelta') A.items.push({c: 'gracias'}); guardarConv(); pintar();
+      toast(accion === 'resuelta' ? '¡Qué bien! Cerramos la solicitud.' : 'Le avisamos al equipo que sigues con el problema.');
+    } catch (err) { toast(err.message); }
   }
   function noEntendio(q, r){
     const ops = r.lista.slice(0, 3);
@@ -236,7 +323,7 @@
   function guardarConv(){
     if (!A.items.length) return;
     if (!A.conv) A.conv = {id: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), en: new Date().toISOString()};
-    A.conv.items = A.items.slice(-40); A.conv.t = titulo(A.items).slice(0, 80); A.conv.en = new Date().toISOString();
+    A.conv.items = A.items.filter(p => !p.f).slice(-40); A.conv.t = titulo(A.items).slice(0, 80); A.conv.en = new Date().toISOString();
     const lista = (A.hist || []).filter(c => c.id !== A.conv.id); lista.unshift({...A.conv}); A.hist = lista.slice(0, 20);
     clearTimeout(guardarT); guardarT = setTimeout(() => crmApi('PUT', '/crm/ayuda/historial', {convs: A.hist}).catch(() => { /* se reintenta con el próximo mensaje */ }), 800);
   }
@@ -281,12 +368,21 @@
     const grupos = new Map();
     for (const c of A.hist) { const [g, h] = cuandoHist(c.en); if (!grupos.has(g)) grupos.set(g, []); grupos.get(g).push([c, h]); }
     const n = c => (c.items || []).filter(p => p.y !== undefined).length;
-    return `<div class="ay-sec"><div class="ay-hcab"><h4 class="ay-h">Tus conversaciones</h4><button type="button" class="ay-hnueva" data-ay-nueva="1">${IC.mas}Nueva</button></div>
+    const tabs = `<div class="ay-htabs" role="tablist"><button type="button" role="tab" data-ay-htab="conv" aria-selected="${A.htab === 'conv'}">Conversaciones</button><button type="button" role="tab" data-ay-htab="sol" aria-selected="${A.htab === 'sol'}">Solicitudes${A.sinVer ? ` <i>· ${A.sinVer}</i>` : ''}</button></div>`;
+    if (A.htab === 'sol') return tabs + solicitudesHTML();
+    return tabs + `<div class="ay-sec"><div class="ay-hcab"><h4 class="ay-h">Tus conversaciones</h4><button type="button" class="ay-hnueva" data-ay-nueva="1">${IC.mas}Nueva</button></div>
       ${A.hist.length ? [...grupos].map(([g, cs]) => `<small>${g}</small><div class="ay-hl">${cs.map(([c, h]) => `${A.hBorrar === c.id
         ? `<div class="ay-hi ay-hconf" data-ay-hk="${esc(c.id)}"><span>¿Borrar «${esc(c.t)}»?</span><button type="button" class="ay-hbb" data-ay-hborrarok="${esc(c.id)}">${IC.basura}Borrar</button><button type="button" class="ay-hbx" data-ay-hcancelar="1" aria-label="Cancelar">${IC.x}</button></div>`
         : `<div class="ay-hi-w" data-ay-hk="${esc(c.id)}"><button type="button" class="ay-hi${A.conv && A.conv.id === c.id ? ' on' : ''}" data-ay-conv="${esc(c.id)}"><i>${IC.reloj}</i><em>${esc(c.t)}<small>${esc(h)} · ${n(c)} ${n(c) === 1 ? 'pregunta' : 'preguntas'}</small></em>${IC.chev}</button><button type="button" class="ay-hbt" data-ay-hborrar="${esc(c.id)}" aria-label="Borrar «${esc(c.t)}»">${IC.basura}</button></div>`}`).join('')}</div>`).join('') : '<p class="ay-vacio">Todavía no tienes conversaciones. Pregúntame algo y queda aquí.</p>'}</div>
       <p class="ay-hnota">Se guardan en tu cuenta las últimas 20, también en el celular.</p>
       ${A.hist.length ? (A.hTodo ? `<div class="ay-htconf"><b>¿Borrar ${A.hist.length === 1 ? 'la conversación' : `las ${A.hist.length} conversaciones`}?</b><span>No se puede deshacer.</span><div><button type="button" class="ay-hbb" data-ay-htodook="1">${IC.basura}Borrar todo</button><button type="button" class="ay-hbx" data-ay-hcancelar="1" aria-label="Cancelar">${IC.x}</button></div></div>` : '<button type="button" class="ay-htodo" data-ay-htodo="1">Borrar todo el historial</button>') : ''}`;
+  }
+  function solicitudesHTML(){
+    if (!A.sol) { cargarSol(); return '<p class="ay-cargando">Cargando…</p>'; }
+    if (!A.sol.length) return '<p class="ay-vacio">Todavía no le has escrito a soporte. Si algo no te funciona, pregúntame y te paso con el equipo.</p>';
+    const tema = s => (TEMAS_SOP.find(x => x[0] === s.tema) || [, s.asunto])[1];
+    return `<div class="ay-sl-lista">${A.sol.map(s => { const [et, ek] = ESTADO_SOL(s), [g, h] = cuandoHist(s.creada);
+      return `<button type="button" class="ay-sfila" data-ay-sol="${esc(s.numero)}"><em><b>${esc(s.asunto || tema(s))}</b><small>#${esc(s.numero)} · ${g === 'Hoy' ? 'hoy, ' + esc(h) : esc(h)}</small></em><span class="ay-sest ${ek === 'ok' && et === 'Resuelta' ? 'ok' : et === 'Respondida' ? 'w' : 'g'}">${et}</span></button>`; }).join('')}</div>`;
   }
   function pintar(){
     let p = document.getElementById('ay-panel');
@@ -313,7 +409,14 @@
     let f = document.getElementById('ay-fab');
     if (!f) { document.body.insertAdjacentHTML('beforeend', `<button type="button" class="ay-fab" id="ay-fab" data-ay-fab="1" aria-label="Ayuda de Wali" aria-expanded="false"></button>`); f = document.getElementById('ay-fab'); }
     f.classList.toggle('abierta', A.abierto); f.setAttribute('aria-expanded', String(A.abierto));
-    f.replaceChildren(); f.insertAdjacentHTML('beforeend', A.abierto ? IC.x : `${GLOBO}${ASTRO}<span class="ay-fab-hola" aria-hidden="true">¿Te ayudo?</span>`);
+    f.replaceChildren(); f.insertAdjacentHTML('beforeend', A.abierto ? IC.x : `${GLOBO}${ASTRO}${A.sinVer ? `<span class="ay-fab-n" aria-label="${A.sinVer} ${A.sinVer === 1 ? 'respuesta nueva' : 'respuestas nuevas'} de soporte">${A.sinVer}</span>` : '<span class="ay-fab-hola" aria-hidden="true">¿Te ayudo?</span>'}`);
+    let av = document.getElementById('ay-aviso');
+    const s = !A.abierto && A.aviso;
+    if (!s) { if (av) { av.classList.add('sale'); setTimeout(() => av.remove(), 200); } return; }
+    const m = [...s.mensajes].reverse().find(x => x.autor === 'soporte');
+    if (!av) { document.body.insertAdjacentHTML('beforeend', '<div class="ay-aviso" id="ay-aviso" role="status"></div>'); av = document.getElementById('ay-aviso'); }
+    av.replaceChildren();
+    av.insertAdjacentHTML('beforeend', `<div class="ay-av-c"><span class="ay-av">${esc(String(m ? m.nombre : 'S').slice(0, 2).toUpperCase())}</span><div><b>Soporte te respondió</b><small>${esc(m ? m.texto : '')}</small></div><button type="button" class="ay-av-x" data-ay-avisox="1" aria-label="Cerrar aviso">${IC.x}</button></div><button type="button" class="btn pri" data-ay-versol="${esc(s.numero)}">Ver respuesta</button>`);
   }
   const yoBurbuja = t => `<div class="ay-msj yo"><p>${esc(t)}</p></div>`;
   /* Charla: saludos, gracias, quién es y despedidas no son preguntas de guías; se contestan como persona. Una pregunta
@@ -336,7 +439,7 @@
     if (/^(hola )?(tengo|tendria|me (surgio|quedo)|quiero hacer(te)?|te (hago|tengo)|una|otra|ultima) ?(otra|una|mas de una|varias|unas|la ultima)? ?(duda|dudas|pregunta|preguntas|consulta|consultas|inquietud|cosa|cosita)( mas)?( para ti)?$|^(puedo|te puedo|quiero) (hacer(te)?|preguntar(te)?)( una| otra)?( pregunta| cosa| algo)?$|^(necesito|quiero) (ayuda|preguntar(te)? algo|saber algo)$|^otra cosa$/.test(t)) return bot(['¡Claro! Cuéntame, ¿qué necesitas?', 'Dale, dime tu duda.', '¡Claro que sí! ¿Qué quieres saber?']);
     if (/^(si|no|ok|okey|okay|vale|dale|listo|bueno|bien|perfecto|entendido|ya|aja|claro|de una|super|genial)( gracias)?$/.test(t)) return bot(['¡Listo! ¿Te ayudo con algo más?', 'Perfecto. ¿Algo más?', 'Bien 👍 Si te queda otra duda, me dices.']);
     if (/(que (puedes|sabes) hacer|en que (me )?(ayudas|puedes ayudar)|para que sirves|que temas)/.test(t)) return bot('Te ayudo con casi todo en Wali: conectar WhatsApp, plantillas, difusiones, equipos, el reparto de chats, flujos, agentes IA, informes y pagos. Y si quieres, te llevo a la pantalla y te muestro dónde tocar. Por ejemplo:', sugs());
-    if (/(hablar|comunicar|contactar|escribir).*(persona|humano|asesor|alguien|soporte|agente real)|quiero (un|una) (persona|humano)|atencion humana|servicio al cliente/.test(t)) return bot('Claro. Escríbele al equipo de soporte y te atiende una persona en horario hábil:', soporteHTML(''));
+    if (PIDE_PERSONA.test(t)) return 'SOPORTE';
     if (/(estoy perdid|no entiendo nada|no se (nada|como|que hacer)|me perdi|esto es dificil|que es esto|ayuda+$|socorro|auxilio)/.test(t)) return bot(['Tranqui, vamos paso a paso. Empieza por aquí:', 'No te preocupes, lo vemos juntos. Arranca por aquí:'], sugs());
     if (/(urgente|emergencia|ya mismo|rapido por favor|se cayo todo|no funciona nada)/.test(t)) return bot('Entiendo, vamos rápido. Mira si arriba sale una franja roja de WhatsApp desconectado; si no es eso, escríbele a soporte contando qué pasa y lo revisamos de una.', soporteHTML(q));
     if (/(tonto|estupido|inutil|no sirves|no sirve para nada|malo|pesimo|basura)/.test(t)) return bot('Perdón, no te ayudé bien. ¿Me lo dices con otras palabras? O, si prefieres, escríbele a una persona de soporte:', soporteHTML(q));
@@ -376,6 +479,7 @@
     ]);
     Promise.all([sem, new Promise(ok => setTimeout(ok, 380))]).then(([s]) => {
       A.escribiendo = false;
+      if (charla === 'SOPORTE') { guardarConv(); abrirFormSoporte(); return; }
       if (charla) { A.items.push({c: q}); guardarConv(); pintar(); return; }
       const d = decidir(buscar(q), s);
       if (d.nivel === 'alta') A.items.push({g: d.orden[0].id, e: 1});
@@ -414,10 +518,17 @@
   document.addEventListener('click', e => {
     const t = e.target instanceof Element ? e.target : null; if (!t) return;
     if (t.closest('#ay-foco')) { quitarFoco(); return; }
-    if (t.closest('[data-ay-fab]')) { A.abierto = !A.abierto; pintar(); if (A.abierto && !A.hist) cargarHist().then(() => { if (A.abierto && A.vista === 'inicio') pintar(); }); return; }
+    if (t.closest('[data-ay-fab]')) { A.abierto = !A.abierto; A.aviso = null; if (A.abierto && A.sinVer) { A.vista = 'historial'; A.htab = 'sol'; verVistas(); } pintar(); if (A.abierto && !A.hist) cargarHist().then(() => { if (A.abierto && A.vista === 'inicio') pintar(); }); return; }
+    if (t.closest('[data-ay-avisox]')) { A.aviso = null; pintarFab(); return; }
+    const vs = t.closest('[data-ay-versol]'); if (vs) { A.abierto = true; A.aviso = null; abrirSolicitud(vs.dataset.ayVersol); return; }
     if (!t.closest('#ay-panel')) return;
     const g = (attr, fn) => { const b = t.closest(`[${attr}]`); if (!b) return false; fn(b.getAttribute(attr)); return true; };
     if (g('data-ay-cerrar', () => { A.abierto = false; pintar(); })) return;
+    if (g('data-ay-sop', v => abrirFormSoporte(v))) return;
+    if (g('data-ay-stema', v => { const f = leerForm(); if (f) { f.tema = v; pintar(); } })) return;
+    if (g('data-ay-htab', v => { A.htab = v; if (v === 'sol') { verVistas(); if (!A.sol) cargarSol(); } pintar(); })) return;
+    if (g('data-ay-sol', v => abrirSolicitud(v))) return;
+    if (g('data-ay-sresp', v => { const [n, a] = v.split('|'); cambiarSol(n, a); })) return;
     if (g('data-ay-guia', id => abrirGuia(id))) return;
     if (g('data-ay-todas', () => { A.vista = 'todas'; A.tema = null; pintar(); })) return;
     if (g('data-ay-tema', v => { A.vista = 'todas'; A.tema = v || null; pintar(); })) return;
@@ -439,14 +550,25 @@
       if (si !== '1') { A.items.push({s: guia(id) ? guia(id).t : ''}); guardarConv(); pintar(); }
     })) return;
   });
+  document.addEventListener('change', e => { if (e.target.id === 'ay-sfile') subirCaptura(e.target.files && e.target.files[0]); });
   document.addEventListener('submit', e => {
+    if (e.target.id === 'ay-sform') { e.preventDefault(); enviarSoporte(); return; }
     if (e.target.id !== 'ay-form') return;
     e.preventDefault(); const i = document.getElementById('ay-q'); const v = i.value; i.value = ''; preguntar(v);
   });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (document.getElementById('ay-foco')) quitarFoco(); else if (A.abierto && (A.hBorrar || A.hTodo)) { A.hBorrar = null; A.hTodo = false; pintar(); } else if (A.abierto) { A.abierto = false; pintar(); } } });
   addEventListener('resize', quitarFoco);
   // La burbuja aparece cuando el CRM ya cargó.
-  const arrancar = () => { if (document.body) pintarFab(); else setTimeout(arrancar, 200); };
+  // El correo de una respuesta trae ?ayuda=solicitudes: se lee ya, porque el CRM limpia la dirección al cargar.
+  const DESDE_CORREO = (() => { try { return new URLSearchParams(window.top.location.search).get('ayuda') === 'solicitudes'; } catch { return false; } })();
+  const arrancar = () => {
+    if (!document.body) { setTimeout(arrancar, 200); return; }
+    pintarFab(); cargarSol();
+    if (DESDE_CORREO) { A.abierto = true; A.vista = 'historial'; A.htab = 'sol'; pintar(); verVistas(); }
+  };
+  // La respuesta del equipo llega en vivo (80-datos.js reenvía el evento) y, por si se pierde, se pregunta cada 2 minutos.
+  addEventListener('wali-soporte', cargarSol);
+  setInterval(() => { if (document.visibilityState === 'visible') cargarSol(); }, 120_000);
   setTimeout(arrancar, 400);
   // Para la prueba de guías (y para quien la quiera usar desde la consola).
   window.ayudaDecidir = (q, sem) => { const d = decidir(buscar(q), sem); return {nivel: d.nivel, top: d.orden.slice(0, 3).map(g => g.id)}; };
@@ -586,6 +708,46 @@ body:has(#ec-cajon.on) .ay-fab:not(.abierta){opacity:0;pointer-events:none;trans
 .ay-sop-b .btn{justify-content:center;text-decoration:none}
 .ay-sop-b svg{width:16px;height:16px}
 .ay-sop-b .ay-wa svg{fill:#25D366}
+.ay-sop-ir{display:flex;align-items:center;justify-content:center;gap:7px;height:40px;width:100%;border-radius:10px}
+.ay-sop-ir svg{width:16px;height:16px}
+.ay-sop-o{text-align:center;font-size:12px;color:var(--ink3)}.ay-sop-o a{color:inherit}
+.ay-sform{display:grid;gap:10px;padding:12px;border:1px solid var(--line);border-radius:14px;background:#fff;animation:ay-sube .24s cubic-bezier(.05,.7,.1,1)}
+.ay-schips{display:flex;flex-wrap:wrap;gap:6px}
+.ay-schips button{height:30px;padding:0 11px;border-radius:9px;border:1px solid var(--line);background:#fff;font:inherit;font-size:12.5px;font-weight:500;cursor:pointer}
+.ay-schips button[aria-pressed="true"]{background:#0b0b10;border-color:#0b0b10;color:#fff}
+.ay-sl{font-size:12.5px;font-weight:600}
+.ay-sform textarea{border:1.5px solid #0b0b10;border-radius:10px;padding:9px 11px;font:inherit;font-size:13.5px;line-height:1.45;resize:vertical;min-height:84px;outline:0}
+.ay-sadj{display:flex;align-items:center;gap:7px;font-size:12.5px;color:#374151;cursor:pointer}.ay-sadj em{font-style:normal;color:var(--ink4)}.ay-sadj svg{width:15px;height:15px;flex:none}
+.ay-spriv{display:flex;gap:8px;margin:0;padding:9px 10px;border-radius:10px;background:#f6f7f9;font-size:12px;color:var(--ink2)}.ay-spriv svg{width:15px;height:15px;flex:none;margin-top:1px}.ay-spriv b{color:#1f2937}
+.ay-serr{margin:0;color:#b91c1c;font-size:12.5px}
+.ay-scard{align-self:flex-end;margin-left:auto;width:84%;display:grid;gap:2px;padding:12px;border:1px solid var(--line);border-radius:14px;background:#fafafa;animation:ay-entra-der .3s cubic-bezier(.05,.7,.1,1)}
+.ay-scab{display:flex;justify-content:space-between;align-items:center}.ay-scab small{font-size:11.5px;color:var(--ink3)}
+.ay-scard b{font-size:13.5px}.ay-scard > span{font-size:13px;color:var(--ink2);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.ay-sest{display:inline-flex;align-items:center;justify-content:center;gap:4px;line-height:1;height:20px;padding:0 7px;border-radius:6px;font-size:11px;font-weight:600;flex:none}
+.ay-sest svg{width:12px;height:12px}
+.ay-sest.ok{background:#e8f8ee;color:#15803d}.ay-sest.w{background:#fff8e1;color:#7a5a00}.ay-sest.g{background:#f1f5f9;color:#4b5563}
+.ay-sep{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--ink4)}.ay-sep::before,.ay-sep::after{content:"";flex:1;height:1px;background:var(--line)}
+.ay-av{width:28px;height:28px;border-radius:50%;background:#0b0b10;color:#FFD21F;display:flex;align-items:center;justify-content:center;line-height:1;font-size:11px;font-weight:700;flex:none}
+.ay-quien{font-size:12px;color:var(--ink3)}.ay-quien b{color:#1f2937}
+.ay-resp{border-radius:4px 14px 14px 14px;background:#fff8d6;border:1px solid #fde68a;padding:10px 12px;font-size:14px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.ay-equipo{animation:ay-sube .3s cubic-bezier(.05,.7,.1,1)}
+.ay-sacc{display:flex;gap:6px;margin-left:37px;flex-wrap:wrap}
+.ay-sacc button{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 11px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;font:inherit;font-size:12.5px;font-weight:500;cursor:pointer}.ay-sacc svg{width:14px;height:14px}
+.ay-htabs{display:flex;gap:4px;padding:3px;border-radius:10px;background:#f4f5f7;margin-bottom:12px}
+.ay-htabs button{flex:1;padding:6px;border:0;border-radius:8px;background:none;font:inherit;font-size:12.5px;color:var(--ink3);cursor:pointer}
+.ay-htabs button[aria-selected="true"]{background:#fff;font-weight:600;color:#0b0b10;box-shadow:0 1px 2px rgba(0,0,0,.08)}.ay-htabs i{font-style:normal;color:#dc2626}
+.ay-sl-lista{display:grid}
+.ay-sfila{display:flex;gap:10px;align-items:flex-start;padding:11px 4px;border:0;border-top:1px solid #f1f2f4;background:none;font:inherit;text-align:left;cursor:pointer}
+.ay-sfila:first-child{border-top:0}.ay-sfila em{flex:1;min-width:0;font-style:normal}.ay-sfila b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ay-sfila small{font-size:12px;color:var(--ink3)}
+.ay-fab-n{position:absolute;top:-2px;right:-2px;min-width:22px;height:22px;padding:0 6px;border-radius:99px;background:#e34948;color:#fff;font-size:11.5px;font-weight:700;line-height:1;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px #fff;animation:ay-pop .3s cubic-bezier(.05,.7,.1,1)}
+.ay-aviso{position:fixed;right:24px;bottom:96px;width:260px;background:#fff;border-radius:14px;box-shadow:0 18px 40px -18px rgba(15,23,42,.45),0 0 0 1px #e9ebef;padding:12px 14px;z-index:239;display:grid;gap:10px;animation:ay-sube .3s cubic-bezier(.05,.7,.1,1)}
+.ay-aviso.sale{opacity:0;transform:translateY(6px);transition:opacity .2s cubic-bezier(.3,0,1,1),transform .2s cubic-bezier(.3,0,1,1)}
+.ay-av-c{display:flex;gap:10px;align-items:flex-start}.ay-av-c > div{flex:1;min-width:0}.ay-av-c b{display:block;font-size:13px}.ay-av-c small{display:block;font-size:12px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ay-av-x{width:26px;height:26px;border:0;border-radius:7px;background:none;color:#dc2626;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}.ay-av-x svg{width:14px;height:14px}
+.ay-aviso .btn{justify-self:end;height:32px;padding:0 12px;font-size:12.5px}
+@keyframes ay-sube{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes ay-entra-der{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
+@keyframes ay-pop{from{transform:scale(.4)}to{transform:none}}
 .ay-escr{display:flex;gap:4px;padding:12px 14px;border:1px solid var(--line);border-radius:14px 14px 14px 4px;background:#fff;align-self:flex-start}
 .ay-escr i{width:7px;height:7px;border-radius:50%;background:#9ca3af;animation:ay-punto 1.2s cubic-bezier(.16,1,.3,1) infinite}
 .ay-escr i:nth-child(2){animation-delay:.15s}
@@ -600,7 +762,7 @@ body:has(#ec-cajon.on) .ay-fab:not(.abierta){opacity:0;pointer-events:none;trans
 .ay-tip{position:fixed;width:260px;padding:14px;border-radius:14px;background:#fff;box-shadow:0 18px 40px -12px rgba(11,11,16,.4);display:grid;gap:4px}
 .ay-tip b{font-size:14px}
 .ay-tip small{font-size:12.5px;color:var(--ink3)}
-@media (prefers-reduced-motion:reduce){.ay-fab:not(.abierta),.ay-fab-hola,.ay-toast,.ay-hconf,.ay-htconf,.ay-hbt,.ay-ok,.ay-escr i,.ay-hueco,.ay-astro .ojos,.ay-astro .antena{animation:none}.ay-ok{stroke-dashoffset:0}}
+@media (prefers-reduced-motion:reduce){.ay-sform,.ay-scard,.ay-equipo,.ay-fab-n,.ay-aviso,.ay-fab:not(.abierta),.ay-fab-hola,.ay-toast,.ay-hconf,.ay-htconf,.ay-hbt,.ay-ok,.ay-escr i,.ay-hueco,.ay-astro .ojos,.ay-astro .antena{animation:none}.ay-ok{stroke-dashoffset:0}}
 @media (max-width:760px){.ay-fab{right:16px;bottom:84px}.ay{right:16px;bottom:150px;height:min(560px,calc(100vh - 180px))}}
 </style>`);
 })();

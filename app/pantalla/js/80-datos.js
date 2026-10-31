@@ -650,6 +650,7 @@ const crmDatos = (() => {
       const base = String((window.CRM_INICIO && window.CRM_INICIO.api) || '').replace(/\/+$/, '');
       const fuente = new EventSource(`${base}/eventos?ticket=${encodeURIComponent(d.ticket)}`); es = fuente;
       fuente.addEventListener('conectado', () => { if (yaConecto) resincronizar(); yaConecto = true; });
+      fuente.addEventListener('soporte-respuesta', () => dispatchEvent(new Event('wali-soporte')));
       fuente.addEventListener('crm', e => { let x; try { x = JSON.parse(e.data); } catch { return; } aplicarEvento(x); });
       fuente.onerror = () => { fuente.close(); if (es === fuente) es = null; clearTimeout(reconexion); reconexion = setTimeout(conectar, 5000); };
     } catch { clearTimeout(reconexion); reconexion = setTimeout(conectar, 5000); }
