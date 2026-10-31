@@ -19,6 +19,7 @@ import { BASE } from './utils/base'
  *   orden en un solo <script> (comparten el ámbito global). Antes del código va `CRM_INICIO` con la persona de
  *   la sesión; los datos los pide la página al API con su token.
  * - /usuarios: las cuentas del espacio, para el administrador.
+ * - /admin: el panel de superadministrador, solo para el operador de la plataforma.
  * - /chat.js: la burbuja del chat para las páginas web de la empresa (pública).
  */
 const PANTALLA = join(process.cwd(), 'pantalla')
@@ -117,6 +118,15 @@ router.get('/usuarios', asyncHandler(async (req: Request, res: Response) => {
   if (s.u.role !== 'ADMIN') return res.redirect(BASE + '/')
   const inicio = { marca: MARCA(), espacio: s.espacio, yo: { id: s.u.id, nombre: s.u.nombre ?? s.u.email } }
   html(res, leer('paginas/usuarios.html').replace(/__MARCA__/g, escapar(MARCA())).replace('/*USUARIOS_INICIO*/', () => `window.INICIO = ${enScript(inicio)};`))
+}))
+
+/** El panel de superadministrador (maqueta A aprobada el 27-oct). Sin sesión de operador responde 404, como si no
+ *  existiera: ni siquiera se insinúa que hay un panel. */
+router.get('/admin', asyncHandler(async (req: Request, res: Response) => {
+  const u = await sesionDePagina(req)
+  if (!u || !(u.operador && u.role === 'ADMIN')) { res.status(404).type('text/plain').send('No encontrado'); return }
+  const inicio = { yo: { nombre: u.nombre ?? u.email } }
+  html(res, leer('paginas/admin.html').replace('/*ADMIN_INICIO*/', () => `window.INICIO = ${enScript(inicio)};`))
 }))
 
 /** La burbuja del chat web: pública y cargable desde otro dominio. La dirección del API es la de este servidor. */
