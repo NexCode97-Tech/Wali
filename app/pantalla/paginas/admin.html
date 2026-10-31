@@ -130,6 +130,29 @@ tbody tr[data-emp]:focus-visible{outline:2px solid var(--ink);outline-offset:-2p
 .g2b{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .pyg{display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
 .pyg.tot{font-weight:700;font-size:15px}
+/* Cupones */
+.btn.pri{background:var(--amar);border-color:var(--amar);color:#0b0b10;font-weight:600}
+.btn.pri:hover{background:#f5c800}
+.btn:disabled{opacity:.55;cursor:default}
+.cod{display:inline-flex;align-items:center;justify-content:center;line-height:1;height:24px;padding:0 8px;border-radius:6px;background:#f4f5f7;border:1px dashed var(--line);font-size:12.5px;font-weight:600}
+.mas{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;background:#fff}
+.mas:hover{background:#f6f7f9}
+tr.borrando td{transition:opacity 240ms var(--e-out),padding 240ms var(--e-out);opacity:0;padding-top:0;padding-bottom:0}
+.fm{display:grid;gap:16px;margin-top:18px}
+.fm label,.fm .lb{display:grid;gap:6px;font-size:12.5px;font-weight:600}
+.fm input{height:40px;border:1px solid var(--line);border-radius:10px;padding:0 12px;font:inherit;font-size:13.5px;color:var(--ink);background:#fff;outline:0;transition:border-color 120ms var(--e-std)}
+.fm input:focus{border-color:var(--ink)}
+.fm small{font-weight:400;color:var(--t3);font-size:12px}
+.fm .dd > .btn{width:100%;justify-content:space-between}
+.dos{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg.ancho{display:flex;width:100%}.seg.ancho button{flex:1;text-align:center;padding:7px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips button{height:34px;padding:0 13px;border-radius:9px;border:1px solid var(--line);font-size:13px;font-weight:500;transition:background 120ms var(--e-std),color 120ms var(--e-std)}
+.chips button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.prev{border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:13px;color:var(--t2)}
+.err{color:var(--mal);font-size:12.5px;margin:0}
+#toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,16px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:opacity 240ms var(--e-in),transform 240ms var(--e-in);z-index:40}
+#toast.ver{opacity:1;transform:translate(-50%,0)}
 /* Motion de entrada: cada página arranca con .pre y al quitarla cada pieza llega a su lugar. */
 .ent{transition:opacity 240ms var(--e-in) var(--d,0ms),transform 240ms var(--e-in) var(--d,0ms)}
 .pre .ent{opacity:0;transform:translateY(10px);transition:none}
@@ -152,12 +175,14 @@ tbody tr[data-emp]:focus-visible{outline:2px solid var(--ink);outline-offset:-2p
     <button type="button" class="tab" role="tab" data-tab="resumen" aria-selected="true"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 12 4l9 7v9h-6v-6H9v6H3Z"/></svg>Resumen</button>
     <button type="button" class="tab" role="tab" data-tab="empresas" aria-selected="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1M14 9h1M9 13h1M14 13h1"/></svg>Empresas</button>
     <button type="button" class="tab" role="tab" data-tab="finanzas" aria-selected="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>Finanzas</button>
+    <button type="button" class="tab" role="tab" data-tab="cupones" aria-selected="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12V4h8l10 10-8 8Z"/><circle cx="7.5" cy="8.5" r="1.5"/></svg>Cupones</button>
     <span class="ind" id="ind"></span>
   </nav>
   <span class="yo"><span id="yo"></span><button type="button" id="salir" aria-label="Cerrar sesión" title="Cerrar sesión"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h4v16h-4M10 17l5-5-5-5M15 12H3"/></svg></button></span>
 </header>
 <main id="main" class="pre"></main>
 <aside class="pn" id="pn" hidden aria-labelledby="pn-t"></aside>
+<div id="toast" role="status"></div>
 <script>
 /*ADMIN_INICIO*/
 const INI = window.INICIO || {yo: {}};
@@ -175,12 +200,12 @@ async function token(fresco){
   if (r.status === 401 || r.status === 403) { location.href = '__BASE__/entrar'; throw new Error('Tu sesión venció'); }
   tk.v = (await r.json()).token; tk.en = Date.now(); return tk.v;
 }
-async function api(ruta){
+async function api(ruta, metodo = 'GET', cuerpo){
   for (let i = 0; i < 2; i++) {
-    const r = await fetch('__BASE__/api/admin' + ruta, {cache: 'no-store', headers: {Authorization: 'Bearer ' + await token(i > 0)}});
+    const r = await fetch('__BASE__/api/admin' + ruta, {method: metodo, cache: 'no-store', headers: {Authorization: 'Bearer ' + await token(i > 0), ...(cuerpo ? {'Content-Type': 'application/json'} : {})}, body: cuerpo ? JSON.stringify(cuerpo) : undefined});
     if (r.status === 401 && i === 0) continue;
     const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(j.error || 'No se pudo cargar. Intenta de nuevo.');
+    if (!r.ok) throw new Error(j.error || j.message || 'No se pudo completar. Intenta de nuevo.');
     return j.data;
   }
 }
@@ -214,6 +239,9 @@ const IC = {
   cal: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
   search: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
   x: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+  dots: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>',
+  plus: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
+  link: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>',
   tel: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/></svg>',
 };
 /** Un cambio con su flecha: sube (verde) o baja (rojo); `malo` invierte el color (p. ej. la cancelación). */
@@ -250,7 +278,7 @@ function avatar(nombre, id, logo, tam = 28, redondo = false){
 }
 
 /* ── Estado ── */
-const S = {tab: 'resumen', rango: '12m', mes: '', resumen: null, finanzas: null, empresas: null, filtro: 'todas', plan: '', est: '', orden: 'uso', q: '', abierta: null, menu: null};
+const S = {cupones: null, cq: '', cEst: '', cPlan: '', fila: null, confirma: null, nuevo: null, tab: 'resumen', rango: '12m', mes: '', resumen: null, finanzas: null, empresas: null, filtro: 'todas', plan: '', est: '', orden: 'uso', q: '', abierta: null, menu: null};
 
 /* ── Pestañas con indicador que se desliza ── */
 function moverInd(){
@@ -268,7 +296,7 @@ function irA(tab){
 /* ── Pintar la página con su motion de entrada ── */
 function pintar(entrar){
   const m = $('main');
-  const html = S.tab === 'resumen' ? vResumen() : S.tab === 'empresas' ? vEmpresas() : vFinanzas();
+  const html = S.tab === 'resumen' ? vResumen() : S.tab === 'empresas' ? vEmpresas() : S.tab === 'cupones' ? vCupones() : vFinanzas();
   if (entrar && !QUIETO) m.classList.add('pre');
   m.innerHTML = html;
   if (S.tab === 'resumen' && S.resumen) montarArea();
@@ -514,6 +542,132 @@ function tipBarras(e){
   tip.style.cssText = `left:${x > r.width - 190 ? x - 180 : x + 14}px;top:20px;opacity:1`;
 }
 
+/* ═════════════ Cupones ═════════════ */
+const C_ESTADO = {activo: ['Activo', 'ok'], programado: ['Programado', 'p'], agotado: ['Agotado', 'g'], vencido: ['Vencido', 'g'], eliminado: ['Eliminado', 'b']};
+const enlaceCupon = c => location.origin + '__BASE__/entrar?cupon=' + encodeURIComponent(c);
+function textoDescuento(c){
+  const v = c.tipo === 'porcentaje' ? c.valor + ' %' : usd(c.valor);
+  const d = c.duracion === 'once' ? 'una vez' : c.duracion === 'forever' ? 'siempre' : `${c.meses} ${c.meses === 1 ? 'mes' : 'meses'}`;
+  return `${v} · ${d}`;
+}
+const textoPlanes = p => p.length === 3 ? 'Todos los planes' : p.map(x => PLAN[x]).join(' y ');
+function vCupones(){
+  const C = S.cupones;
+  const activos = C ? C.cupones.filter(c => c.estado === 'activo') : [];
+  const copiar = dd('copiar', 'Copiar enlace con cupón', activos.length ? activos.map(c => [c.codigo, c.codigo]) : [['', 'No hay cupones activos']], '', IC.link);
+  const cab = `<div class="cab ent"><div><h1>Cupones</h1><p class="sub">Códigos de descuento para la página de pago de Creem.</p></div><div class="der">${copiar}<button type="button" class="btn pri" data-c-nuevo="1"${C && !C.pagosListos ? ' disabled title="Los pagos con Creem todavía no están activos"' : ''}>${IC.plus}Nuevo cupón</button></div></div>`;
+  if (!C) return cab + '<div class="vacio">Cargando…</div>';
+  const kps = [
+    ['Cupones activos', cuenta(C.activos, 'n', num(C.activos)), `<span class="lbl">de ${num(C.creados)} ${C.creados === 1 ? 'creado' : 'creados'}</span>`],
+    ['Usos este mes', cuenta(C.usosMes, 'n', num(C.usosMes)), '<span class="lbl">pagos con cupón</span>'],
+    ['Ingreso que trajeron', cuenta(C.ingreso, 'usd', usd(C.ingreso, 0)), '<span class="lbl">desde el inicio</span>'],
+    ['Descuento entregado', cuenta(C.descuento, 'usd', usd(C.descuento, 0)), '<span class="lbl">lo que dejaron de pagar</span>'],
+  ].map(([l, v, d], i) => `<div class="k ent" style="--d:${40 + i * 40}ms"><div class="lbl">${l}</div><div class="big">${v}</div><div style="margin-top:2px">${d}</div></div>`).join('');
+  const estOps = [['', 'Todos los estados'], ...Object.entries(C_ESTADO).map(([k, [t]]) => [k, t])];
+  const busca = `<div class="busca ent" style="--d:160ms"><label class="campo">${IC.search}<input id="cq" type="search" value="${esc(S.cq)}" placeholder="Buscar cupón por código" aria-label="Buscar cupón por código" autocomplete="off"></label>
+    ${dd('cest', S.cEst ? 'Estado: ' + C_ESTADO[S.cEst][0] : 'Estado: todos', estOps.map(([k, t]) => [k, t, k ? C.cupones.filter(c => c.estado === k).length : C.cupones.length]), S.cEst)}${dd('cplan', S.cPlan ? 'Plan: ' + PLAN[S.cPlan] : 'Plan: todos', [['', 'Todos los planes'], ...Object.entries(PLAN)].map(([k, t]) => [k, t]), S.cPlan)}</div>`;
+  const q = S.cq.trim().toUpperCase();
+  const fs = C.cupones.filter(c => (!q || c.codigo.includes(q)) && (!S.cEst || c.estado === S.cEst) && (!S.cPlan || c.planes.includes(S.cPlan)));
+  const fila = c => {
+    const [et, ek] = C_ESTADO[c.estado] || [c.estado, 'g'], tope = c.maxUsos || Math.max(c.usos, 1) * 2;
+    const vig = c.vence ? `${new Date(c.vence) < new Date() ? 'Venció el' : 'Hasta el'} ${fecha(c.vence)}` : 'Sin fecha';
+    const menu = S.fila === c.id ? `<div class="menu" role="menu">${S.confirma === c.id
+      ? `<p style="margin:4px 8px 8px;font-size:12.5px;max-width:220px;white-space:normal" class="t2">Se elimina también en Creem y no se puede deshacer. Los cobros que ya hizo se quedan.</p><button type="button" role="menuitem" data-c-borrar="${esc(c.id)}" style="color:#dc2626;font-weight:600">Sí, eliminar ${esc(c.codigo)}</button>`
+      : c.estado !== 'eliminado' ? `<button type="button" role="menuitem" data-c-copiar="${esc(c.codigo)}">Copiar enlace</button><button type="button" role="menuitem" data-c-confirmar="${esc(c.id)}" style="color:#dc2626">Eliminar</button>` : '<p class="lbl" style="margin:6px 8px">Eliminado en Creem.</p>'}</div>` : '';
+    return `<tr data-cupon="${esc(c.id)}"><td><span class="cod">${esc(c.codigo)}</span></td><td>${esc(textoDescuento(c))}</td><td class="mut">${esc(textoPlanes(c.planes))}</td>
+      <td><div style="display:flex;align-items:center;gap:10px;min-width:150px"><div class="bar" style="flex:1"><b style="width:${Math.min(100, c.usos / tope * 100)}%;background:var(--ink)"></b></div><span>${num(c.usos)}${c.maxUsos ? '/' + num(c.maxUsos) : ''}</span></div></td>
+      <td style="font-weight:600">${c.ingreso ? usd(c.ingreso, 0) : '—'}</td><td class="mut">${esc(vig)}</td><td><span class="est ${ek}">${et}</span></td>
+      <td style="text-align:right"><div class="dd" style="display:inline-block"><button type="button" class="mas" data-c-fila="${esc(c.id)}" aria-label="Más opciones de ${esc(c.codigo)}" aria-expanded="${S.fila === c.id}">${IC.dots}</button>${menu}</div></td></tr>`;
+  };
+  const tabla = fs.length ? `<div class="k tw ent" style="--d:200ms;padding:2px 6px;overflow:visible"><table class="t"><thead><tr><th>Código</th><th>Descuento</th><th>Planes</th><th>Usos</th><th>Ingreso</th><th>Vigencia</th><th>Estado</th><th></th></tr></thead><tbody>${fs.map(fila).join('')}</tbody></table></div>`
+    : `<div class="k vacio ent" style="--d:200ms">${C.cupones.length ? 'Ningún cupón con esos filtros.' : 'Todavía no hay cupones. Crea el primero con «Nuevo cupón».'}</div>`;
+  return cab + `<div class="g4">${kps}</div>` + busca + tabla + (C.pagosListos ? '' : '<p class="lbl" style="margin-top:12px">Los pagos con Creem todavía no están activos en el servidor: los cupones se podrán crear cuando lo estén.</p>');
+}
+
+/* El panel «Nuevo cupón»: entra desde la derecha y muestra cómo queda el precio. */
+function abrirNuevo(){
+  S.nuevo = {codigo: '', tipo: 'porcentaje', valor: '', dura: '3', planes: ['starter', 'growth'], vence: '', maxUsos: '', error: '', enviando: false};
+  pintarNuevo();
+  const pn = $('pn'); pn.hidden = false; requestAnimationFrame(() => pn.classList.add('in'));
+  setTimeout(() => { const i = $('c-codigo'); if (i) i.focus(); }, 60);
+}
+function cerrarNuevo(){
+  if (!S.nuevo) return; S.nuevo = null; S.menu = null;
+  const pn = $('pn'); pn.classList.remove('in'); setTimeout(() => { if (!S.nuevo && !S.abierta) pn.hidden = true; }, 260);
+}
+const DURAS = [['once', 'Una vez'], ['1', '1 mes'], ['2', '2 meses'], ['3', '3 meses'], ['6', '6 meses'], ['12', '12 meses'], ['forever', 'Siempre']];
+function vistaPrevia(n){
+  const precios = (S.cupones && S.cupones.precios) || {}, plan = n.planes.find(p => precios[p]), v = +n.valor;
+  if (!plan || !v) return 'Escribe el valor para ver cómo queda el precio.';
+  const antes = precios[plan], despues = n.tipo === 'porcentaje' ? Math.round(antes * (1 - Math.min(v, 100) / 100)) : Math.max(0, antes - Math.round(v * 100));
+  const cuando = n.dura === 'once' ? 'el primer mes' : n.dura === 'forever' ? 'siempre' : `los primeros ${n.dura} ${n.dura === '1' ? 'mes' : 'meses'}`;
+  return `${esc(PLAN[plan])} mensual pasa de <b>${usd(antes)}</b> a <b>${usd(despues)}</b> ${cuando}. Se crea también en Creem.`;
+}
+function pintarNuevo(){
+  const n = S.nuevo; if (!n) return;
+  $('pn').innerHTML = `<div class="pn-h"><h2 id="pn-t">Nuevo cupón</h2><button type="button" class="x" data-c-cerrar="1" aria-label="Cerrar">${IC.x}</button></div>
+    <form class="fm" id="fm-cupon" novalidate>
+      <label>Código<input id="c-codigo" value="${esc(n.codigo)}" maxlength="30" autocomplete="off" placeholder="NAVIDAD25"><small>Lo que el cliente escribe al pagar. Solo letras y números.</small></label>
+      <div class="lb">Descuento<span class="seg ancho">${[['porcentaje', 'Porcentaje'], ['fijo', 'Monto fijo']].map(([k, t]) => `<button type="button" data-c-tipo="${k}" aria-pressed="${n.tipo === k}">${t}</button>`).join('')}</span></div>
+      <div class="dos"><label>${n.tipo === 'porcentaje' ? 'Porcentaje' : 'Valor en dólares'}<input id="c-valor" inputmode="decimal" value="${esc(n.valor)}" placeholder="${n.tipo === 'porcentaje' ? '25' : '20'}"></label>
+        <div class="lb">Dura${dd('cdura', DURAS.find(x => x[0] === n.dura)[1], DURAS, n.dura)}</div></div>
+      <div class="lb">Planes<span class="chips">${Object.entries(PLAN).map(([k, t]) => `<button type="button" data-c-plan="${k}" aria-pressed="${n.planes.includes(k)}">${t}</button>`).join('')}</span></div>
+      <div class="dos"><label>Vence<input id="c-vence" type="date" value="${esc(n.vence)}" min="${new Date(Date.now() + 864e5).toISOString().slice(0, 10)}"></label><label>Usos máximos<input id="c-max" inputmode="numeric" value="${esc(n.maxUsos)}" placeholder="Sin límite"></label></div>
+      <div class="prev" id="c-prev">${vistaPrevia(n)}</div>
+      ${n.error ? `<p class="err" role="alert">${esc(n.error)}</p>` : ''}
+      <button type="submit" class="btn pri" style="justify-content:center;height:42px"${n.enviando ? ' disabled' : ''}>${n.enviando ? 'Creando en Creem…' : 'Crear cupón'}</button>
+    </form>`;
+  $('fm-cupon').addEventListener('submit', ev => { ev.preventDefault(); crearCupon(); });
+}
+function leerNuevo(){
+  const n = S.nuevo; if (!n || !$('c-codigo')) return;
+  const ci = $('c-codigo'), limpio = ci.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 30);
+  if (ci.value !== limpio) ci.value = limpio;
+  n.codigo = limpio; n.valor = $('c-valor').value.replace(/[^\d.,]/g, '').replace(',', '.'); n.vence = $('c-vence').value; n.maxUsos = $('c-max').value.replace(/\D/g, '');
+  $('c-prev').innerHTML = vistaPrevia(n);
+}
+async function crearCupon(){
+  const n = S.nuevo; if (!n || n.enviando) return; leerNuevo();
+  const v = +n.valor;
+  n.error = !/^[A-Z0-9]{3,30}$/.test(n.codigo) ? 'El código lleva de 3 a 30 letras o números.' : !v || v <= 0 ? 'Escribe el valor del descuento.' : n.tipo === 'porcentaje' && v > 100 ? 'El porcentaje va de 1 a 100.' : !n.planes.length ? 'Elige al menos un plan.' : '';
+  if (n.error) { pintarNuevo(); return; }
+  n.enviando = true; pintarNuevo();
+  const dura = n.dura === 'once' || n.dura === 'forever' ? {duracion: n.dura} : {duracion: 'repeating', meses: +n.dura};
+  try {
+    await api('/cupones', 'POST', {codigo: n.codigo, tipo: n.tipo, valor: n.tipo === 'porcentaje' ? Math.round(v) : Math.round(v * 100), ...dura, planes: n.planes,
+      ...(n.vence ? {vence: new Date(n.vence + 'T23:59:59-05:00').toISOString()} : {}), ...(n.maxUsos ? {maxUsos: +n.maxUsos} : {})});
+    const codigo = n.codigo; cerrarNuevo(); alertar(`Cupón ${codigo} creado en Creem`); await cargar('cupones');
+  } catch (err) { if (S.nuevo) { n.enviando = false; n.error = err.message; pintarNuevo(); } }
+}
+function eventoCupones(t){
+  if (t.closest('[data-c-nuevo]')) { if (!t.closest('[disabled]')) abrirNuevo(); return true; }
+  if (t.closest('[data-c-cerrar]')) { cerrarNuevo(); return true; }
+  const tp = t.closest('[data-c-tipo]'); if (tp && S.nuevo) { leerNuevo(); S.nuevo.tipo = tp.dataset.cTipo; pintarNuevo(); return true; }
+  const pl = t.closest('[data-c-plan]'); if (pl && S.nuevo) { leerNuevo(); const l = S.nuevo.planes, k = pl.dataset.cPlan; S.nuevo.planes = l.includes(k) ? l.filter(x => x !== k) : [...l, k]; pintarNuevo(); return true; }
+  const du = t.closest('[data-dd="cdura"]'); if (du && S.nuevo) { leerNuevo(); S.menu = S.menu === 'cdura' ? null : 'cdura'; pintarNuevo(); return true; }
+  const op = t.closest('[data-op^="cdura:"]'); if (op && S.nuevo) { S.nuevo.dura = op.dataset.op.slice(6); S.menu = null; pintarNuevo(); return true; }
+  if (S.nuevo && S.menu === 'cdura' && t.closest('#pn')) { S.menu = null; pintarNuevo(); return true; }
+  const cp = t.closest('[data-op^="copiar:"]'); if (cp) { const c = cp.dataset.op.slice(7); S.menu = null; pintar(false); if (c) copiarEnlace(c); return true; }
+  const cc = t.closest('[data-c-copiar]'); if (cc) { S.fila = null; pintar(false); copiarEnlace(cc.dataset.cCopiar); return true; }
+  const fi = t.closest('[data-c-fila]'); if (fi) { S.fila = S.fila === fi.dataset.cFila ? null : fi.dataset.cFila; S.confirma = null; pintar(false); return true; }
+  const cf = t.closest('[data-c-confirmar]'); if (cf) { S.confirma = cf.dataset.cConfirmar; pintar(false); return true; }
+  const bo = t.closest('[data-c-borrar]'); if (bo) { borrarCupon(bo.dataset.cBorrar); return true; }
+  if (S.fila && !t.closest('.dd')) { S.fila = null; S.confirma = null; pintar(false); return true; }
+  return false;
+}
+async function copiarEnlace(c){
+  try { await navigator.clipboard.writeText(enlaceCupon(c)); alertar(`Enlace con ${c} copiado`); } catch { alertar(enlaceCupon(c)); }
+}
+/* Al eliminar, la fila se desvanece y se cierra (motion de borrado) antes de volver a pintar la lista. */
+async function borrarCupon(id){
+  S.fila = null; S.confirma = null; pintar(false);
+  try {
+    await api('/cupones/' + encodeURIComponent(id), 'DELETE');
+    const tr = document.querySelector(`tr[data-cupon="${CSS.escape(id)}"]`); if (tr && !QUIETO) tr.classList.add('borrando');
+    setTimeout(() => cargar('cupones').then(() => alertar('Cupón eliminado')), QUIETO ? 0 : 260);
+  } catch (err) { alertar(err.message); }
+}
+
 /* ── Exportar (CSV en el navegador, con lo que ya está cargado) ── */
 function csv(nombre, filas){
   const txt = '﻿' + filas.map(f => f.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
@@ -531,6 +685,7 @@ async function cargar(que){
     if (que === 'resumen') S.resumen = await api('/resumen?rango=' + S.rango);
     if (que === 'empresas') S.empresas = await api('/empresas');
     if (que === 'finanzas') { S.finanzas = await api('/finanzas' + (S.mes ? '?mes=' + S.mes : '')); }
+    if (que === 'cupones') S.cupones = await api('/cupones');
     if (S.tab === que) pintar(true);
   } catch (err) { if (S.tab === que) $('main').innerHTML = `<div class="vacio">${esc(err.message)}</div>`; }
 }
@@ -541,12 +696,13 @@ document.addEventListener('click', ev => {
   const tab = t.closest('[data-tab]'); if (tab) { if (tab.dataset.tab !== S.tab) { irA(tab.dataset.tab); if (!S[tab.dataset.tab]) cargar(tab.dataset.tab); } return; }
   const ir = t.closest('[data-tab-ir]'); if (ir) { irA(ir.dataset.tabIr); if (!S[ir.dataset.tabIr]) cargar(ir.dataset.tabIr); return; }
   const rg = t.closest('[data-rango]'); if (rg) { if (rg.dataset.rango !== S.rango) { S.rango = rg.dataset.rango; cargar('resumen'); } return; }
+  if (S.tab === 'cupones' && eventoCupones(t)) return;
   const ex = t.closest('[data-exportar]'); if (ex) { exportar(ex.dataset.exportar).catch(e => alertar(e.message)); return; }
   const d = t.closest('[data-dd]'); if (d) { S.menu = S.menu === d.dataset.dd ? null : d.dataset.dd; pintar(false); return; }
   const op = t.closest('[data-op]');
   if (op) {
     const [id, ...r] = op.dataset.op.split(':'), v = r.join(':'); S.menu = null;
-    if (id === 'plan') S.plan = v; if (id === 'est') S.est = v; if (id === 'orden') S.orden = v;
+    if (id === 'plan') S.plan = v; if (id === 'est') S.est = v; if (id === 'orden') S.orden = v; if (id === 'cest') S.cEst = v; if (id === 'cplan') S.cPlan = v;
     if (id === 'mes') { S.mes = v; cargar('finanzas'); return; }
     pintar(false); return;
   }
@@ -555,18 +711,21 @@ document.addEventListener('click', ev => {
   if (t.closest('#pn-x')) { cerrarPanel(); return; }
   const tr = t.closest('tr[data-emp]'); if (tr) { S.abierta === tr.dataset.emp ? cerrarPanel() : abrirEmpresa(tr.dataset.emp); return; }
   if (S.abierta && !t.closest('#pn')) cerrarPanel();
+  if (S.nuevo && !t.closest('#pn') && !t.closest('[data-c-nuevo]')) cerrarNuevo();
 });
 document.addEventListener('mousemove', tipBarras);
 document.addEventListener('keydown', ev => {
-  if (ev.key === 'Escape') { if (S.menu) { S.menu = null; pintar(false); } else cerrarPanel(); }
+  if (ev.key === 'Escape') { if (S.nuevo && S.menu) { S.menu = null; pintarNuevo(); } else if (S.menu || S.fila) { S.menu = null; S.fila = null; S.confirma = null; pintar(false); } else if (S.nuevo) cerrarNuevo(); else cerrarPanel(); }
   if ((ev.key === 'Enter' || ev.key === ' ') && ev.target instanceof Element && ev.target.matches('tr[data-emp]')) { ev.preventDefault(); abrirEmpresa(ev.target.dataset.emp); }
 });
 document.addEventListener('input', ev => {
+  if (ev.target.closest && ev.target.closest('#fm-cupon')) { leerNuevo(); return; }
+  if (ev.target.id === 'cq') { S.cq = ev.target.value; const pos = ev.target.selectionStart; pintar(false); const q = $('cq'); q.focus(); try { q.setSelectionRange(pos, pos); } catch {} return; }
   if (ev.target.id !== 'q') return;
   S.q = ev.target.value; const pos = ev.target.selectionStart; pintar(false);
   const q = $('q'); q.focus(); try { q.setSelectionRange(pos, pos); } catch {}
 });
-function alertar(t){ console.warn(t); }
+function alertar(t){ const el = $('toast'); el.textContent = t; el.classList.add('ver'); clearTimeout(alertar.t); alertar.t = setTimeout(() => el.classList.remove('ver'), 3200); }
 $('salir').addEventListener('click', async () => {
   try { await fetch('__BASE__/api/auth/logout', {method: 'POST', credentials: 'same-origin', headers: {Authorization: 'Bearer ' + await token()}}); } catch {}
   location.href = '__BASE__/entrar';
@@ -576,7 +735,7 @@ addEventListener('resize', () => { moverInd(); if (S.tab === 'resumen' && S.resu
 /* ── Arranque ── */
 (() => {
   const h = location.hash.slice(1);
-  if (['resumen', 'empresas', 'finanzas'].includes(h)) S.tab = h;
+  if (['resumen', 'empresas', 'finanzas', 'cupones'].includes(h)) S.tab = h;
   document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === S.tab)));
   document.fonts.ready.then(moverInd); moverInd();
   pintar(false); cargar(S.tab);

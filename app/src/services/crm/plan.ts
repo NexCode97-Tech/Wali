@@ -34,9 +34,14 @@ function productos(): Record<string, string> {
 }
 export const pagosListos = () => !!(process.env.CREEM_API_KEY && Object.keys(productos()).length)
 
-async function creem<T>(ruta: string, cuerpo?: unknown): Promise<T> {
+/** Productos de Creem de cada plan (sus dos periodos), según CREEM_PRODUCTOS. */
+export function productosDePlan(plan: string): string[] {
+  return Object.entries(productos()).filter(([k]) => k.startsWith(plan + '-')).map(([, id]) => id)
+}
+
+export async function creem<T>(ruta: string, cuerpo?: unknown, metodo?: 'GET' | 'POST' | 'DELETE'): Promise<T> {
   const r = await fetch(`${API()}/v1${ruta}`, {
-    method: cuerpo === undefined ? 'GET' : 'POST',
+    method: metodo ?? (cuerpo === undefined ? 'GET' : 'POST'),
     headers: { 'x-api-key': process.env.CREEM_API_KEY ?? '', ...(cuerpo === undefined ? {} : { 'Content-Type': 'application/json' }) },
     body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
     signal: AbortSignal.timeout(15_000),
@@ -141,7 +146,7 @@ export async function limiteUsuarios(espacioDado: string): Promise<number> {
  * Lleva al pago de un plan. Si el espacio ya tiene una suscripción, la cambia de plan (con prorrateo) en vez de
  * abrir otro pago. Devuelve la dirección a la que hay que enviar a la persona, o null si el cambio ya quedó hecho.
  */
-export async function pagarPlan(espacioDado: string, plan: Plan, periodo: Periodo, email: string, volverA: string): Promise<{ url: string | null }> {
+export async function pagarPlan(espacioDado: string, plan: Plan, periodo: Periodo, email: string, volverA: string, cupon?: string): Promise<{ url: string | null }> {
   if (!pagosListos()) throw new AppError('Los pagos todavía no están activos. Escríbenos y te activamos el plan.', 503)
   const espacioId = await cuentaDe(espacioDado)
   const producto = productos()[`${plan}-${periodo}`]
@@ -152,14 +157,20 @@ export async function pagarPlan(espacioDado: string, plan: Plan, periodo: Period
     logger.info({ evento: 'PLAN_CAMBIO', espacioId, plan, periodo })
     return { url: null }
   }
-  const r = await creem<{ checkout_url: string }>('/checkouts', {
+  const pago = (codigo?: string) => creem<{ checkout_url: string }>('/checkouts', {
     product_id: producto,
     request_id: `${espacioId}-${crypto.randomBytes(6).toString('hex')}`,
     customer: { email },
     success_url: volverA,
-    metadata: { espacio: espacioId, plan, periodo },
+    ...(codigo ? { discount_code: codigo } : {}),
+    metadata: { espacio: espacioId, plan, periodo, ...(codigo ? { cupon: codigo } : {}) },
   })
-  return { url: r.checkout_url }
+  // Un cupón vencido, agotado o de otro plan no debe frenar el pago: se abre sin él y en Creem se puede escribir otro.
+  if (cupon) {
+    try { return { url: (await pago(cupon)).checkout_url } }
+    catch { logger.warn({ evento: 'CUPON_NO_APLICO', cupon, plan, periodo }) }
+  }
+  return { url: (await pago()).checkout_url }
 }
 
 /** El portal del cliente en Creem: facturas, tarjeta y cancelación. */
@@ -236,8 +247,9 @@ async function registrarCobro(espacioId: string, sub: Obj, estado: 'pagado' | 'r
   const creemId = estado === 'pagado'
     ? txt(sub.last_transaction_id) || `${txt(sub.id)}:${txt(sub.current_period_start_date)}`
     : `${txt(sub.id)}:${txt(sub.next_transaction_date) || txt(sub.current_period_end_date)}:rechazado`
+  const cupon = txt(obj(sub.metadata).cupon).toUpperCase() || null
   const datos = {
-    plan, periodo, estado, subtotal, total,
+    plan, periodo, estado, subtotal, total, cupon, descuento: estado === 'pagado' ? entero(tr?.discount_amount) ?? 0 : 0,
     impuestos: entero(tr?.tax_amount) ?? Math.max(0, total - subtotal),
     moneda: (txt(tr?.currency) || txt(prod.currency) || 'USD').toUpperCase(),
     desde: estado === 'pagado' ? fechaDe(tr?.period_start) ?? fechaDe(sub.current_period_start_date) : null,

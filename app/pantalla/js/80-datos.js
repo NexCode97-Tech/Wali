@@ -821,6 +821,8 @@ function abrirDesdeAviso(q, avisarSiNo){
   if (ir === 'cfg-plan' && q.get('pago') === 'ok') st.pagoOk = true;
   // Viene de la página de precios con un plan elegido: 70-plan.js lo lleva al pago.
   if (['starter', 'growth', 'business'].includes(q.get('pagar'))) { try { sessionStorage.setItem('crm-pagar', JSON.stringify({plan: q.get('pagar'), periodo: q.get('periodo') === 'anual' ? 'anual' : 'mensual'})); } catch { /* sin almacenamiento */ } }
+  // Enlace con cupón (panel de superadministrador, 31-oct): se recuerda 30 días en este navegador y se aplica al pagar.
+  const cu = String(q.get('cupon') || '').toUpperCase(); if (/^[A-Z0-9]{3,30}$/.test(cu)) { try { localStorage.setItem('wali-cupon', JSON.stringify({c: cu, hasta: Date.now() + 30 * 864e5})); } catch { /* sin almacenamiento */ } }
   if (IR_AVISO.includes(ir)) { st.pagina = ir; st.sel = null; return true; }
   return false;
 }

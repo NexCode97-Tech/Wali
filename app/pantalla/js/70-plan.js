@@ -285,8 +285,10 @@ async function plPagar(id){
   if (cambio && !(await plConfirmar(`Cambiar a ${nombre}`, `Tu plan pasa a ${nombre} ${periodo} (${plPrecioTxt(id, periodo)}). Se cobra o se abona solo la diferencia del periodo que va corriendo, en la tarjeta que ya tienes.`, `Cambiar a ${nombre}`))) return;
   try {
     toast(cambio ? 'Cambiando tu plan…' : 'Abriendo el pago seguro…');
-    const r = await crmApi('POST', '/crm/plan/pagar', {plan:id, periodo});
-    if (r && r.url) { window.top.location.href = r.url; return; }
+    // El cupón de un enlace del panel (entrar.html o 80-datos.js lo guardan): va al pago y se olvida al usarlo.
+    let cupon = ''; try { const c = JSON.parse(localStorage.getItem('wali-cupon') || 'null'); if (c && c.hasta > Date.now()) cupon = c.c; } catch { /* sin almacenamiento */ }
+    const r = await crmApi('POST', '/crm/plan/pagar', {plan:id, periodo, ...(cupon && !cambio ? {cupon} : {})});
+    if (r && r.url) { try { localStorage.removeItem('wali-cupon'); } catch { /* sin almacenamiento */ } window.top.location.href = r.url; return; }
     toast(`Listo: tu plan pasa a ${nombre}`); st.pagoOk = true; plEsperarActivo(id);
   } catch (err) { toast(err.message); }
 }

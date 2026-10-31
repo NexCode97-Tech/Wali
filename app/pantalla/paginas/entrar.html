@@ -689,12 +689,16 @@ const ERRORES = {
   // Lo que trae la dirección (el enlace del correo, el regreso de Google) se lee una vez y se quita de la barra.
   const q = new URLSearchParams(location.search), token = q.get('clave'), err = q.get('error'), google = q.get('google'), registro = q.has('registro');
   ['clave', 'error', 'google', 'registro'].forEach(k => q.delete(k));
+  // (el cupón se guarda abajo y no sigue en la dirección)
   // Viene de nexcode97.com/precios con un plan: se guarda en la pestaña (sobrevive a la ida y vuelta de Google) y,
   // al entrar, el CRM abre Plan y pagos y lleva al pago (70-plan.js).
   const PLANES = {starter: 'Starter', growth: 'Growth', business: 'Business'};
+  // Enlace con cupón (panel de superadministrador, 31-oct): se recuerda 30 días en este navegador y se aplica al pagar.
+  const cu = String(q.get('cupon') || '').toUpperCase(); if (/^[A-Z0-9]{3,30}$/.test(cu)) { try { localStorage.setItem('wali-cupon', JSON.stringify({c: cu, hasta: Date.now() + 30 * 864e5})); } catch { /* sin almacenamiento */ } }
   if (PLANES[q.get('pagar')]) { try { sessionStorage.setItem('crm-pagar', JSON.stringify({plan: q.get('pagar'), periodo: q.get('periodo') === 'anual' ? 'anual' : 'mensual'})); } catch { /* sin almacenamiento */ } }
   let elegido = null; try { elegido = JSON.parse(sessionStorage.getItem('crm-pagar') || 'null'); } catch { /* sin almacenamiento */ }
   if (elegido && PLANES[elegido.plan]) { $('re-plan-n').textContent = `${PLANES[elegido.plan]} ${elegido.periodo === 'anual' ? 'anual' : 'mensual'}`; $('re-plan').hidden = false; }
+  q.delete('cupon');
   DESTINO = q.toString() ? '?' + q : '';
   history.replaceState(null, '', location.pathname + DESTINO);
   ir(registro ? 'registro' : 'entrar');

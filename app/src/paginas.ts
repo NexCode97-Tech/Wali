@@ -71,7 +71,12 @@ router.get('/entrar', asyncHandler(async (req: Request, res: Response) => {
   // Con sesión ya abierta se va al CRM; si viene de la página de precios con un plan, el plan sigue en la dirección.
   if (await sesionDePagina(req)) {
     const plan = typeof req.query.pagar === 'string' && /^(starter|growth|business)$/.test(req.query.pagar) ? req.query.pagar : ''
-    return res.redirect(BASE + '/' + (plan ? `?pagar=${plan}&periodo=${req.query.periodo === 'anual' ? 'anual' : 'mensual'}` : ''))
+    // El cupón de un enlace del panel sigue hasta el CRM, que lo guarda para el pago.
+    const cupon = typeof req.query.cupon === 'string' && /^[A-Za-z0-9]{3,30}$/.test(req.query.cupon) ? req.query.cupon.toUpperCase() : ''
+    const q = new URLSearchParams()
+    if (plan) { q.set('pagar', plan); q.set('periodo', req.query.periodo === 'anual' ? 'anual' : 'mensual') }
+    if (cupon) q.set('cupon', cupon)
+    return res.redirect(BASE + '/' + (q.toString() ? '?' + q : ''))
   }
   const logo = LOGO ? `<img src="${escapar(LOGO)}" alt="">` : ''
   html(res, leer('paginas/entrar.html').replace('__LOGO__', () => logo).replace(/__MARCA__/g, escapar(MARCA())))

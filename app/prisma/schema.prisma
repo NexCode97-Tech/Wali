@@ -346,10 +346,37 @@ model CrmPago {
   desde      DateTime?
   hasta      DateTime?
   fecha      DateTime
+  /// El cupón con que se pagó (su código) y cuánto descontó, en centavos (31-oct).
+  cupon      String?
+  descuento  Int        @default(0)
   createdAt  DateTime   @default(now()) @map("created_at")
 
   @@index([espacioId, fecha])
+  @@index([cupon])
   @@map("crm_pagos")
+}
+
+/// Un cupón de descuento para la página de pago de Creem, creado desde el panel de superadministrador (31-oct).
+/// El descuento vive en Creem (id = el de Creem); aquí se guarda lo necesario para listarlo y contar lo que trajo.
+model CrmCupon {
+  id        String    @id
+  codigo    String    @unique
+  /// porcentaje o fijo. `valor` es el porcentaje (1–100) o el monto en centavos de dólar.
+  tipo      String
+  valor     Int
+  /// once, forever o repeating (con `meses`).
+  duracion  String
+  meses     Int?
+  /// Los planes a los que aplica: starter, growth, business.
+  planes    String[]
+  vence     DateTime?
+  maxUsos   Int?      @map("max_usos")
+  /// activo o eliminado (al eliminarlo en Creem no se puede recuperar).
+  estado    String    @default("activo")
+  creadoPor String?   @map("creado_por")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@map("crm_cupones")
 }
 
 /// Enlace de pauta. Lleva a WhatsApp
