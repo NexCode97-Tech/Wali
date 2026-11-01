@@ -33,9 +33,27 @@ import { actualizarContacto, CANALES, CLAVES_CONTACTO, emitirContacto, telefonoV
 
 // ─── GET /inicio ─────────────────────────────────────────────────────────────
 
+/** Finalizadas de antes del lote 6b (sin `finPor`): quién la finalizó sale del evento «Finalizada por …» del chat. */
+async function ponerFinPor(convs: { id: number; estado: string; extra: Prisma.JsonValue }[]) {
+  const sinQuien = convs.filter(c => c.estado === 'finalizadas' && !('finPor' in obj(c.extra))).map(c => c.id)
+  if (!sinQuien.length) return
+  const evs = await prisma.crmMensaje.findMany({
+    where: { conversacionId: { in: sinQuien }, tipo: 'ev', datos: { path: ['t'], string_starts_with: 'Finalizada por ' } },
+    orderBy: { createdAt: 'desc' }, select: { conversacionId: true, datos: true },
+  })
+  const quien = new Map<number, string>()
+  for (const e of evs) if (!quien.has(e.conversacionId)) quien.set(e.conversacionId, txt(obj(e.datos).t).replace(/^Finalizada por /, '').split(/ · |: /)[0].trim())
+  for (const c of convs) { const q = quien.get(c.id); if (q) c.extra = { ...obj(c.extra), finPor: q } }
+}
+
+/**
+ * GET /crm/inicio. Con `?abiertas=1` (el celular, punto 2 de la auditoría del 31-oct) no trae las finalizadas: la
+ * bandeja abre más rápido y las pide aparte (GET /crm/finalizadas) solo cuando hacen falta; trae su cuenta para el menú.
+ */
 export async function inicio(req: Request, res: Response) {
   // Quién ve qué (alcance.ts): el administrador sin equipo, todo; el líder, su equipo; los demás, lo asignado.
   const alcance = await alcanceDe(req)
+  const soloAbiertas = req.query.abiertas === '1'
   const eqs = await equiposDeReq(req)
   const config = alcance.config
   const [usuarios, lineas, ajustesFilas, pref, convs, nombres, prefs] = await Promise.all([
@@ -47,7 +65,7 @@ export async function inicio(req: Request, res: Response) {
     leerPreferencias(req.userId!),
     prisma.crmConversacion.findMany({
       where: {
-        AND: [convVigente(), filtroConvs(alcance)],
+        AND: [soloAbiertas ? { estado: { not: 'finalizadas' } } : convVigente(), filtroConvs(alcance)],
       },
       include: { contacto: true, mensajes: ULTIMO_VISIBLE },
       orderBy: [{ ultimoMensajeAt: { sort: 'desc', nulls: 'last' } }, { id: 'desc' }],
@@ -56,17 +74,7 @@ export async function inicio(req: Request, res: Response) {
     prisma.crmPreferencia.findMany(),
   ])
   const conContacto = [...new Set(convs.map(c => c.contactoId))]
-  // Finalizadas de antes del lote 6b (sin `finPor`): quién la finalizó sale del evento «Finalizada por …» del chat.
-  const sinQuien = convs.filter(c => c.estado === 'finalizadas' && !('finPor' in obj(c.extra))).map(c => c.id)
-  if (sinQuien.length) {
-    const evs = await prisma.crmMensaje.findMany({
-      where: { conversacionId: { in: sinQuien }, tipo: 'ev', datos: { path: ['t'], string_starts_with: 'Finalizada por ' } },
-      orderBy: { createdAt: 'desc' }, select: { conversacionId: true, datos: true },
-    })
-    const quien = new Map<number, string>()
-    for (const e of evs) if (!quien.has(e.conversacionId)) quien.set(e.conversacionId, txt(obj(e.datos).t).replace(/^Finalizada por /, '').split(/ · |: /)[0].trim())
-    for (const c of convs) { const q = quien.get(c.id); if (q) c.extra = { ...obj(c.extra), finPor: q } }
-  }
+  await ponerFinPor(convs)
   // Contactos sueltos (sin conversación vigente en la bandeja): los suyos, los de conversaciones que ve (de
   // cualquier fecha) y los de la gente de los equipos que lidera; nunca los reservados para otros líderes.
   const contactos = await prisma.crmContacto.findMany({
@@ -98,6 +106,7 @@ export async function inicio(req: Request, res: Response) {
     ajustes,
     pref,
     conversaciones: convs.map(c => convAFront(c, nombres)),
+    finalizadasAparte: soloAbiertas ? await prisma.crmConversacion.count({ where: { AND: [{ estado: 'finalizadas' }, convVigente(), filtroConvs(alcance)] } }) : null,
     contactos: contactos.map(k => contactoAFront(k, nombres)),
     waConfigurado: await waConfigurado(),
     espacio: await prismaGlobal.crmEspacio.findUnique({ where: { id: req.espacioId! }, select: { id: true, nombre: true } }),
@@ -111,6 +120,21 @@ export async function inicio(req: Request, res: Response) {
     alcance: alcanceParaFront(alcance, eqs),
     ahora: new Date().toISOString(),
   })
+}
+
+/** GET /crm/finalizadas: las finalizadas vigentes que ve, para el celular que abrió solo con las abiertas. */
+export async function finalizadasAparte(req: Request, res: Response) {
+  const alcance = await alcanceDe(req)
+  const [convs, nombres] = await Promise.all([
+    prisma.crmConversacion.findMany({
+      where: { AND: [{ estado: 'finalizadas' }, convVigente(), filtroConvs(alcance)] },
+      include: { contacto: true, mensajes: ULTIMO_VISIBLE },
+      orderBy: [{ ultimoMensajeAt: { sort: 'desc', nulls: 'last' } }, { id: 'desc' }],
+    }),
+    mapaNombres(),
+  ])
+  await ponerFinPor(convs)
+  return ApiResponse.success(res, convs.map(c => convAFront(c, nombres)))
 }
 
 // ─── Mensajes ────────────────────────────────────────────────────────────────

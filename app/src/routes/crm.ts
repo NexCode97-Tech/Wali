@@ -159,6 +159,7 @@ const limitePruebas = rateLimit({
 
 // Bandeja
 router.get('/inicio', asyncHandler(conv.inicio))
+router.get('/finalizadas', asyncHandler(conv.finalizadasAparte))
 router.get('/menciones', asyncHandler(menciones))
 router.post('/conversaciones', asyncHandler(conv.nuevaConversacion))
 router.get('/conversaciones/:id/mensajes', asyncHandler(conv.listarMensajes))

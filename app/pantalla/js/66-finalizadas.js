@@ -35,7 +35,8 @@
   };
 
   /* ── Menú: «Finalizadas» ── */
-  const finalizadas = () => CONV.filter(c => okRol(c) && c.est === 'finalizadas').length;
+  // En el celular pueden no haber llegado todavía (80-datos.js, punto 2): mientras tanto, la cuenta del servidor.
+  const finalizadas = () => window.FIN_APARTE && FIN_APARTE.pendiente ? FIN_APARTE.cuenta : CONV.filter(c => okRol(c) && c.est === 'finalizadas').length;
   const navBase = nav;
   nav = function(){
     // Las cuentas del menú (Mi bandeja, Sin asignar…) siguen siendo las de las abiertas, como en la maqueta.
@@ -72,6 +73,7 @@
   // Cualquier otro camino que cambie el estado de la lista (el desplegable, abrir un contacto) sale de Finalizadas.
   const renderBase = render;
   render = function(){
+    if (window.FIN_APARTE && FIN_APARTE.pendiente && (st.est !== 'abiertas' || (st.q || '').trim() || ['contactos', 'embudo', 'informes', 'vivo'].includes(st.pagina))) crmTraerFinalizadas();
     if (st.finVista && st.est !== 'finalizadas') st.finVista = false;
     if (st.finVista && st.vista === 'sin') st.vista = 'todas';
     return renderBase.apply(this, arguments);

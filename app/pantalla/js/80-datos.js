@@ -382,8 +382,28 @@ const crmDatos = (() => {
     (d.contactos || []).forEach(mezclarCt);
     avisarAlcance();
   }
+  // Punto 2 de la auditoría (31-oct): el celular abre solo con las abiertas y las finalizadas llegan aparte, la primera
+  // vez que hacen falta (Finalizadas, otro estado, una búsqueda, Contactos, Embudo o Informes: 66-finalizadas.js).
+  const SOLO_ABIERTAS = matchMedia('(max-width:760px)').matches;
+  const FIN_APARTE = window.FIN_APARTE = {pendiente: false, cuenta: 0, trayendo: null};
+  const rutaInicio = () => '/crm/inicio' + (SOLO_ABIERTAS ? '?abiertas=1' : '');
+  window.crmTraerFinalizadas = function(){
+    if (!FIN_APARTE.pendiente) return Promise.resolve();
+    return FIN_APARTE.trayendo || (FIN_APARTE.trayendo = crmApi('GET', '/crm/finalizadas')
+      .then(l => { (l || []).forEach(mezclarConv); FIN_APARTE.pendiente = false; repintarPronto(); })
+      .catch(() => { /* se vuelve a intentar en el próximo repintado */ })
+      .finally(() => { FIN_APARTE.trayendo = null; }));
+  };
+  async function inicioCompleto(){
+    const d = await crmApi('GET', rutaInicio());
+    if (d.finalizadasAparte == null) return d;
+    // Si ya las había traído, la resincronización las vuelve a pedir para no sacarlas de la bandeja.
+    if (listo && !FIN_APARTE.pendiente) d.conversaciones = (d.conversaciones || []).concat(await crmApi('GET', '/crm/finalizadas'));
+    else { FIN_APARTE.pendiente = true; FIN_APARTE.cuenta = d.finalizadasAparte; }
+    return d;
+  }
   async function cargar(){
-    const d = await crmApi('GET', '/crm/inicio');
+    const d = await inicioCompleto();
     aplicarInicio(d, true);
     try { await crmPlantillas(); } catch { /* sin plantillas: se ve el estado vacío */ }
     cargarCatalogo();
@@ -392,7 +412,7 @@ const crmDatos = (() => {
   }
   // Tras una reconexión pudo haberse perdido cualquier evento: los mensajes completos se vuelven a pedir.
   // Si ya no tiene acceso al CRM (lo sacaron de su equipo), la pantalla lo dice (crmSinAcceso, 62-vistas-rol.js).
-  async function resincronizar(){ try { for (const c of CONV) c._cargada = false; aplicarInicio(await crmApi('GET', '/crm/inicio'), false); crmMenciones(); repintarPronto(); } catch (err) { if (err && err.status === 403) sinAcceso(err.message); /* si no, se vuelve a intentar en la próxima reconexión */ } }
+  async function resincronizar(){ try { for (const c of CONV) c._cargada = false; aplicarInicio(await inicioCompleto(), false); crmMenciones(); repintarPronto(); } catch (err) { if (err && err.status === 403) sinAcceso(err.message); /* si no, se vuelve a intentar en la próxima reconexión */ } }
   function cargarCatalogo(){
     crmCatalogoInfo.cargando = true;
     crmApi('GET', '/crm/catalogo').then(d => {
