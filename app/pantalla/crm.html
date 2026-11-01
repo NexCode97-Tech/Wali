@@ -103,7 +103,17 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 
 /* ─ embudo ─ */
 .kb{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(300px,1fr);gap:14px;overflow-x:auto;padding-bottom:10px;align-items:start}
-.kcol{background:var(--bg3);border-radius:12px;padding:12px;min-height:380px;display:grid;gap:8px;align-content:start}
+.kcol{background:var(--bg3);border-radius:12px;padding:0 12px 12px;height:min(640px,calc(100dvh - 230px));min-height:380px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#c3cad5 transparent;display:grid;gap:8px;align-content:start}
+.kcol::-webkit-scrollbar{width:6px}.kcol::-webkit-scrollbar-thumb{background:#c3cad5;border-radius:99px}
+.kcol > .kh{position:sticky;top:0;z-index:1;background:var(--bg3);padding-top:14px}
+.k-carga{display:grid;gap:8px}
+.k-esq{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:9px}
+.k-esq i{display:block;height:10px;border-radius:99px;background:linear-gradient(90deg,#eef1f5 0%,#f7f9fb 50%,#eef1f5 100%);background-size:200% 100%;animation:k-brillo 1.2s linear infinite}
+.k-esq > div{display:flex;align-items:center;gap:8px}.k-esq > div i:first-child{width:28px;height:28px;border-radius:50%;flex:none}.k-esq > div i:last-child{width:46%}
+.k-esq > i:nth-of-type(1){width:70%}.k-esq > i:nth-of-type(2){width:36%}
+.k-carga-t{margin:0;text-align:center;font-size:12px;color:var(--ink4)}
+@keyframes k-brillo{from{background-position:200% 0}to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.k-esq i{animation:none}}
 .kcol.over{outline:2px dashed var(--blue);outline-offset:-2px}
 .kh{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;padding:2px 4px 6px}
 .kh .n{margin-left:auto;font-size:11.5px;color:var(--ink3);background:#fff;border-radius:6px;padding:1px 7px;font-variant-numeric:tabular-nums}

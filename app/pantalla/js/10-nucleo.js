@@ -287,9 +287,19 @@ function nav(){
   document.getElementById('tabs').innerHTML = T.map(([k,n,c]) => `<button type="button" data-v="${k}" aria-pressed="${st.vista === k}">${n}<span class="n">${c}</span></button>`).join('');
 }
 
+const EMB_LOTE = 20;
 function kanban(){
   const el = document.getElementById('page');
   let dragId = null;
+  // Al asomar el final de una columna, 20 más.
+  if ('IntersectionObserver' in window) el.querySelectorAll('[data-k-carga]').forEach(c => {
+    const ob = new IntersectionObserver(es => {
+      if (!es.some(x => x.isIntersecting) || !c.isConnected || !st.embTope) return;
+      ob.disconnect(); const col = c.dataset.kCarga;
+      st.embTope[col] = (st.embTope[col] || EMB_LOTE) + EMB_LOTE; render();
+    }, {root: c.closest('.kcol'), rootMargin: '0px 0px 120px 0px'});
+    ob.observe(c);
+  });
   el.querySelectorAll('.kc').forEach(k => {
     k.addEventListener('dragstart', e => { dragId = +k.dataset.kc; k.classList.add('drag'); e.dataTransfer.effectAllowed = 'move'; });
     k.addEventListener('dragend', () => k.classList.remove('drag'));
@@ -705,12 +715,17 @@ function pagina(){
     const eqs = equiposQueVeo(); if (!eqs.includes(st.embEq)) st.embEq = eqs.includes('Ventas') ? 'Ventas' : eqs[0] || 'Ventas';
     const eq = st.embEq, COLS = etapasDe(eq).map(e => e[0]), tiene = n => COLS.includes(n);
     const vis = ultimasConv().filter(c => equipoConv(c) === eq);
+    // Altura fija y de a 20 por columna (maqueta aprobada «Embudo A», 1-nov): las siguientes 20 se pintan solas al bajar
+    // dentro de la columna (kanban(), más abajo). Lo ya cargado se conserva al repintar, hasta cambiar de equipo.
+    if (!st.embTope || st.embTope.eq !== eq) st.embTope = {eq};
+    const tope = col => st.embTope[col] || EMB_LOTE;
     const sel = eqs.length > 1 ? `<div class="dd" id="dd-emb"><button type="button" class="emb-sel" id="emb-b" aria-haspopup="listbox" aria-expanded="false"><i style="background:${colorEquipo(eq)}"></i>${esc(eq)}${I('chev')}</button><div class="menu" id="emb-m" role="listbox" hidden>${eqs.map(n => `<button type="button" role="option" data-emb-eq="${esc(n)}" aria-selected="${n === eq}"><i class="pc-sq" style="background:${colorEquipo(n)}"></i>${esc(n)}${n === eq ? I('check','i ck') : ''}</button>`).join('')}</div></div>` : '';
     el.innerHTML = `<div class="pg-h"><div><h2>Embudo</h2><p class="sub emb-sub">Arrastra una conversación a otra columna para cambiarla de etapa.${tiene('Pagado') ? ' Pagado se marca solo cuando se confirma el pago.' : ''}</p></div><div style="display:flex;gap:8px;align-items:center;flex:none">${st.rol === 'l' ? `<button type="button" class="btn" data-ir="cfg-etapas">${I('kanban')}Etapas del embudo</button>` : ''}${sel}</div></div>
       <div class="ksum"><span><b>${vis.length}</b> en el embudo</span>${tiene('Caliente') ? `<span class="cal"><b>${vis.filter(c => c.etq[0] === 'Caliente').length}</b> calientes</span>` : ''}${tiene('Pagado') ? (() => { const pag = vis.filter(c => c.etq[0] === 'Pagado').length, t = vis.length ? Math.round(pag / vis.length * 100) : 0; return `<span class="pag"><b>${pag}</b> pagadas</span><span class="tasa"><svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="14" fill="none" stroke="#4a463f" stroke-width="5"/>${t ? `<circle cx="18" cy="18" r="14" fill="none" stroke="#FFD21F" stroke-width="5" stroke-dasharray="${(t * 0.88).toFixed(1)} 88" transform="rotate(-90 18 18)" stroke-linecap="round"/>` : ''}</svg>Tasa de cierre <b>${t} %</b></span>`; })() : ''}</div>
       ${COLS.length ? '' : `<p class="muted">${esc(eq)} todavía no tiene etapas. ${st.rol === 'l' ? 'Créalas en Etapas del embudo.' : 'Las crea su líder.'}</p>`}
       <div class="kb">${COLS.map(col => `<div class="kcol" data-col="${esc(col)}"><div class="kh"><span class="dot" style="background:${COL[col]}"></span>${esc(col)}<span class="n">${vis.filter(c => c.etq[0] === col).length}</span></div>
-        ${vis.filter(c => c.etq[0] === col).map(c => `<div class="kc" draggable="true" data-kc="${c.id}" data-open="${c.id}" title="Abrir la conversación"><div class="t"><span class="av" style="background:${AVC[c.id % AVC.length]}">${esc(ini(c.n))}</span><b>${esc(c.n)}</b></div><p>${esc([c.ficha.interes, c.ficha.ciudad].filter(Boolean).join(' · ') || c.tel)}</p><div class="f"><span>${c.hora}${c.espera ? ' · espera ' + c.espera : ''}</span>${c.asig ? `<span class="mini av" title="${esc(c.asig)}" style="background:${colorPersona(c.asig)}">${fotoAv(fotoDe(c.asig), c.asig)}</span>` : '<span class="mini" title="Sin asignar">–</span>'}</div></div>`).join('')}
+        ${vis.filter(c => c.etq[0] === col).slice(0, tope(col)).map(c => `<div class="kc" draggable="true" data-kc="${c.id}" data-open="${c.id}" title="Abrir la conversación"><div class="t"><span class="av" style="background:${AVC[c.id % AVC.length]}">${esc(ini(c.n))}</span><b>${esc(c.n)}</b></div><p>${esc([c.ficha.interes, c.ficha.ciudad].filter(Boolean).join(' · ') || c.tel)}</p><div class="f"><span>${c.hora}${c.espera ? ' · espera ' + c.espera : ''}</span>${c.asig ? `<span class="mini av" title="${esc(c.asig)}" style="background:${colorPersona(c.asig)}">${fotoAv(fotoDe(c.asig), c.asig)}</span>` : '<span class="mini" title="Sin asignar">–</span>'}</div></div>`).join('')}
+        ${(n => n > tope(col) ? `<div class="k-carga" data-k-carga="${esc(col)}" aria-hidden="true">${'<div class="k-esq"><div><i></i><i></i></div><i></i><i></i></div>'.repeat(2)}</div><p class="k-carga-t" role="status">Cargando ${Math.min(EMB_LOTE, n - tope(col))} más de ${n}…</p>` : '')(vis.filter(c => c.etq[0] === col).length)}
       </div>`).join('')}</div>`;
     kanban();
   } else if (st.pagina === 'difusiones') {
