@@ -15,6 +15,8 @@ import { enEspacio, espacioDeUsuario } from '../services/crm/espacio'
 import { usuariosCrm } from '../services/crm/usuarios'
 import { emitirCrm } from '../services/crm/tiempoReal'
 import { BASE } from '../utils/base'
+import { esOperador, operadorRecien, darPase, quitarPase } from '../services/crm/panelAcceso'
+import { resumenPanel } from '../services/crm/superadminFinanzas'
 
 /**
  * La cuenta de cada persona: entrar, salir, el token del API y su perfil.
@@ -57,7 +59,8 @@ router.post('/login', limiteEntrar, asyncHandler(async (req: Request, res: Respo
     throw new UnauthorizedError('El correo o la contraseña no coinciden')
   }
   await abrirSesion(req, res, user)
-  return ApiResponse.success(res, { ok: true })
+  // La cuenta de operador elige después entre el CRM y el panel (panelAcceso.ts).
+  return ApiResponse.success(res, { ok: true, elegir: esOperador(user) })
 }))
 
 /** Abre la sesión de una cuenta (contraseña, Google, registro o contraseña nueva): revisa que pueda entrar y deja la cookie. */
@@ -74,8 +77,39 @@ export async function abrirSesion(req: Request, res: Response, user: User) {
 
 router.post('/logout', (_req: Request, res: Response) => {
   res.clearCookie(COOKIE_SESION, { path: RUTA_COOKIE })
+  quitarPase(res)
   return ApiResponse.success(res, { ok: true })
 })
+
+/* ── CRM o panel (maqueta B aprobada el 31-oct): solo justo después de iniciar sesión con una cuenta de operador ── */
+const limitePanel = rateLimit({ windowMs: 15 * 60_000, max: 30, standardHeaders: true, legacyHeaders: false })
+// Lo que se ve en cada lado de la pantalla dividida: un vistazo real del CRM de la persona y del panel.
+router.get('/elegir', limitePanel, asyncHandler(async (req: Request, res: Response) => {
+  const u = await operadorRecien(req)
+  if (!u) return res.status(404).json({ success: false, error: 'Ruta no encontrada' })
+  const espacioId = await espacioDeUsuario(u.id)
+  const [espacio, abiertas, recientes, empresas, soporte, cupones, r] = await Promise.all([
+    espacioId ? prisma.crmEspacio.findUnique({ where: { id: espacioId }, select: { nombre: true } }) : null,
+    espacioId ? prisma.crmConversacion.count({ where: { espacioId, estado: 'abiertas' } }) : 0,
+    espacioId ? prisma.crmConversacion.findMany({ where: { espacioId, estado: 'abiertas', asignadoId: u.id }, orderBy: { ultimoMensajeAt: { sort: 'desc', nulls: 'last' } }, take: 3, select: { id: true, noLeidos: true, contacto: { select: { nombre: true, telefono: true } } } }) : [],
+    prisma.crmEspacio.count({ where: { cuentaId: null } }),
+    prisma.crmSolicitud.count({ where: { estado: { not: 'resuelta' } } }),
+    prisma.crmCupon.count({ where: { estado: 'activo' } }),
+    resumenPanel('12m'),
+  ])
+  return ApiResponse.success(res, {
+    nombre: (u.nombre ?? u.email).split(' ')[0],
+    crm: { espacio: espacio?.nombre ?? '', abiertas, recientes: recientes.map(c => ({ id: c.id, nombre: c.contacto.nombre || c.contacto.telefono || 'Cliente', sinLeer: c.noLeidos })) },
+    panel: { mrr: r.mrr, serie: r.serie.map(p => p.mrr), empresas, soporte, cupones },
+  })
+}))
+router.post('/panel', limitePanel, asyncHandler(async (req: Request, res: Response) => {
+  const u = await operadorRecien(req)
+  if (!u) return res.status(404).json({ success: false, error: 'Ruta no encontrada' })
+  darPase(res, u.id)
+  auditLog(req, 'LOGIN', 'panel', u.id)
+  return ApiResponse.success(res, { url: `${BASE}/admin` })
+}))
 
 /** El token corto del API, a cambio de la cookie de la sesión. */
 router.get('/token', asyncHandler(async (req: Request, res: Response) => {

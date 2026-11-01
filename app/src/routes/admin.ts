@@ -8,6 +8,7 @@ import { listaEmpresas, detalleEmpresa } from '../services/crm/superadmin'
 import { resumenPanel, finanzasPanel, cobrosRecientes, atencion, type Rango } from '../services/crm/superadminFinanzas'
 import { listaCupones, crearCupon, eliminarCupon } from '../services/crm/cupones'
 import { listaSoporte, detalleSoporte, responderSoporte, cambiarEstadoSoporte, sinEntender } from '../services/crm/soporte'
+import { paseValido } from '../services/crm/panelAcceso'
 
 /**
  * API del panel de superadministrador (/api/admin), solo para el operador de la plataforma. Todo es de lectura salvo los
@@ -21,7 +22,8 @@ router.use((req: Request, res: Response, next: NextFunction) => {
   authenticate(req, res, err => err ? res.status(404).json({ success: false, error: 'Ruta no encontrada' }) : next())
 })
 router.use((req: Request, res: Response, next: NextFunction) => {
-  if (req.operador) return next()
+  // Operador y con el pase de 12 horas que da elegir «Panel» al iniciar sesión (panelAcceso.ts).
+  if (req.operador && paseValido(req, req.userId)) return next()
   logSecurityEvent('ACCESS_DENIED', { userId: req.userId, url: req.originalUrl, method: req.method, motivo: 'panel de superadministrador' })
   res.status(404).json({ success: false, error: 'Ruta no encontrada' })
 })

@@ -150,6 +150,60 @@ input[type="password"]::-ms-reveal,input[type="password"]::-ms-clear{display:non
 .toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:var(--texto);color:#0a0a0d;padding:9px 16px;border-radius:999px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:opacity .2s;z-index:11}
 .toast.ver{opacity:1}
 @media (max-width:860px){.pantalla{grid-template-columns:1fr}.der{display:none}.izq{padding:76px 16px 48px}}
+
+/* ── CRM o panel (maqueta B «pantalla dividida» aprobada el 31-oct): solo las cuentas de operador, justo al entrar ──
+   La tormenta y el astronauta siguen vivos de fondo; la pantalla se parte en dos destinos y el astronauta flota en la
+   línea del medio. El lado señalado crece; al elegir, ese lado se abre y el astronauta despega. */
+.elegir{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;opacity:0;transition:opacity .4s cubic-bezier(.05,.7,.1,1)}
+.elegir.ver{opacity:1}
+body.eligiendo .izq{opacity:0;pointer-events:none;transition:opacity .3s cubic-bezier(.3,0,1,1)}
+body.eligiendo .der{position:fixed;inset:0;z-index:1}
+body.eligiendo .der blockquote,body.eligiendo .der .degradado{display:none}
+.el-cab{position:relative;z-index:2;text-align:center;padding:40px 16px 0}
+.el-op{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;border:1px solid rgba(255,210,31,.35);background:rgba(255,210,31,.08);color:var(--amarillo);font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;line-height:1}
+.el-op svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.el-cab h1{margin:12px 0 0;font-size:26px;letter-spacing:-.02em}
+.el-lados{position:relative;flex:1;display:flex;min-height:0}
+.el-lado{position:relative;flex:1 1 0;display:flex;flex-direction:column;justify-content:center;gap:22px;padding:0 120px 0 72px;text-align:left;overflow:hidden;transition:flex-grow .5s cubic-bezier(.2,0,0,1),opacity .3s}
+.el-lado.der-l{padding:0 72px 0 120px;align-items:flex-end}
+.el-lado.der-l > *{width:100%;max-width:380px}
+.el-lado > *{max-width:380px}
+.el-lado::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 22% 60%,rgba(124,58,237,.2),transparent 60%);opacity:.35;transition:opacity .4s;pointer-events:none}
+.el-lado.der-l::before{background:radial-gradient(ellipse at 78% 50%,rgba(255,210,31,.16),transparent 60%)}
+.el-lado.sel{flex-grow:1.14}
+.el-lado.sel::before{opacity:1}
+.el-lado:focus-visible{outline:none}
+.el-lado:focus-visible .el-ir{outline:2px solid var(--amarillo);outline-offset:3px}
+.el-tx{position:relative;display:grid;gap:10px}
+.el-etq{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-3);transition:color .24s}
+.el-lado.sel .el-etq{color:var(--amarillo)}
+.el-tecla{display:block;flex:none}
+.el-tx b{font-size:34px;letter-spacing:-.025em;line-height:1.1}
+.el-tx small{font-size:14px;color:var(--texto-2);line-height:1.5}
+.el-ir{display:inline-flex;align-items:center;gap:8px;height:42px;padding:0 18px;border-radius:999px;width:max-content;font-weight:700;border:1px solid var(--linea-2);transition:background .24s,color .24s,border-color .24s}
+.el-ir svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .24s cubic-bezier(.2,0,0,1)}
+.el-lado.sel .el-ir{background:var(--amarillo);border-color:var(--amarillo);color:#0a0a0d}
+.el-lado.sel .el-ir svg{transform:translateX(3px)}
+.el-vista{position:relative;display:grid;gap:8px}
+.el-fila{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:rgba(18,18,23,.86);border:1px solid var(--linea)}
+.el-fila > span{flex:1;min-width:0}.el-fila b{display:block;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.el-fila small{display:block;font-size:11.5px;color:var(--texto-2)}
+.el-fila svg{display:block;flex:none}
+.el-mrr{padding:14px;border-radius:14px;background:rgba(18,18,23,.86);border:1px solid var(--linea)}
+.el-mrr small{font-size:11.5px;color:var(--texto-2)}.el-mrr > b{display:block;font-size:26px;letter-spacing:-.02em}
+.el-mrr svg{display:block;width:100%;height:auto;margin-top:8px}
+.el-chips{display:flex;gap:6px;margin-top:10px}.el-chips span{flex:1;padding:7px 8px;border-radius:9px;background:#18181f;font-size:11px;color:var(--texto-2)}.el-chips b{display:block;font-size:13px;color:var(--texto)}
+.el-vacio{padding:12px;border-radius:12px;border:1px dashed var(--linea-2);font-size:12.5px;color:var(--texto-2)}
+.el-costura{position:relative;flex:none;width:0;z-index:2}
+.el-costura::before{content:"";position:absolute;top:30px;bottom:30px;left:0;width:1px;background:linear-gradient(transparent,#33333e 20%,#33333e 80%,transparent)}
+.el-costura .astro{position:absolute;left:0;top:50%;width:300px;transform:translate(-50%,-50%)}
+.el-pie{position:relative;z-index:2;display:flex;justify-content:center;align-items:center;gap:16px;padding:0 16px 28px;font-size:12.5px;color:var(--texto-3);flex-wrap:wrap}
+.el-pie svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8}
+.el-pie button{color:var(--texto-2);font-weight:600}.el-pie button:hover{color:var(--texto);text-decoration:underline;text-underline-offset:3px}
+.el-sube{animation:el-sube .55s cubic-bezier(.05,.7,.1,1) both}
+@keyframes el-sube{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.elegir.va .el-lado:not(.va){opacity:0}
+.elegir.va .el-lado.va{flex-grow:4}
+@media (max-width:860px){.el-lados{flex-direction:column}.el-lado,.el-lado.der-l{padding:24px 16px;align-items:stretch}.el-costura{display:none}.el-cab{padding-top:28px}.el-tx b{font-size:26px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -349,9 +403,29 @@ input[type="password"]::-ms-reveal,input[type="password"]::-ms-clear{display:non
   </section>
 </div>
 
+<div class="elegir" id="elegir" hidden role="dialog" aria-modal="true" aria-labelledby="el-t">
+  <div class="el-cab el-sube"><span class="el-op"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6Z"/></svg>Operador de Wali</span><h1 id="el-t">¿A dónde vas hoy?</h1></div>
+  <div class="el-lados">
+    <button type="button" class="el-lado" data-elegir="crm">
+      <span class="el-tx el-sube" style="animation-delay:.08s"><span class="el-etq"><svg class="el-tecla" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect x=".5" y=".5" width="19" height="19" rx="5" fill="none" stroke="#33333e"/><text x="10" y="10" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="700" fill="#6f6f7c" font-family="Inter,system-ui,sans-serif">1</text></svg>Tu equipo</span>
+        <b id="el-crm-t">CRM</b><small>La bandeja, los clientes, las difusiones y tu equipo, como siempre.</small>
+        <span class="el-ir">Entrar<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></span>
+      <span class="el-vista el-sube" id="el-crm-v" style="animation-delay:.18s"></span>
+    </button>
+    <div class="el-costura" id="el-costura"></div>
+    <button type="button" class="el-lado der-l sel" data-elegir="panel">
+      <span class="el-tx el-sube" style="animation-delay:.14s"><span class="el-etq"><svg class="el-tecla" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect x=".5" y=".5" width="19" height="19" rx="5" fill="none" stroke="#33333e"/><text x="10" y="10" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="700" fill="#6f6f7c" font-family="Inter,system-ui,sans-serif">2</text></svg>Solo operadores</span>
+        <b>Panel de Wali</b><small>Empresas, finanzas, cupones y soporte de todas las cuentas.</small>
+        <span class="el-ir">Entrar<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></span>
+      <span class="el-vista el-sube" id="el-panel-v" style="animation-delay:.24s"></span>
+    </button>
+  </div>
+  <div class="el-pie el-sube" style="animation-delay:.3s"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>El panel solo se abre desde aquí y su acceso dura 12 horas.</span><button type="button" data-el-salir>Cerrar sesión</button></div>
+</div>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
+/*ENTRAR_INICIO*/
 const $ = id => document.getElementById(id);
 function toast(t){ const el = $('toast'); el.textContent = t; el.classList.add('ver'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('ver'), 2600); }
 
@@ -610,6 +684,60 @@ async function api(ruta, datos){
   return j.data;
 }
 let OPC = {registro: true, google: true, recuperar: true}, DESTINO = '', TOKEN = '', CON_GOOGLE = false, CORREO_RECUPERAR = '';
+/* ── CRM o panel: solo cuentas de operador, justo después de iniciar sesión (panelAcceso.ts en el servidor) ── */
+const EL_COLORES = ['#2563eb', '#7c3aed', '#0d9488', '#db2777', '#ea580c', '#0891b2', '#4f46e5', '#65a30d'];
+const elEsc = t => String(t ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+// Iniciales y números en SVG, centrados por coordenadas (regla del 31-oct: nunca corridos).
+function elAvatar(n, id){
+  const ini = String(n || '').trim().split(/\s+/).slice(0, 2).map(p => p[0] || '').join('').toUpperCase() || '·';
+  return `<svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="14" fill="${EL_COLORES[Math.abs(Number(id) || 0) % EL_COLORES.length]}"/><text x="14" y="14" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="700" fill="#fff" font-family="Inter,system-ui,sans-serif">${elEsc(ini)}</text></svg>`;
+}
+const elGlobo = n => `<svg width="20" height="20" viewBox="0 0 20 20" role="img" aria-label="${Number(n)} sin leer"><circle cx="10" cy="10" r="10" fill="#FFD21F"/><text x="10" y="10" text-anchor="middle" dominant-baseline="central" font-size="10.5" font-weight="800" fill="#0a0a0d" font-family="Inter,system-ui,sans-serif">${Number(n) > 99 ? '99+' : Number(n)}</text></svg>`;
+const elUsd = c => 'US$ ' + new Intl.NumberFormat('es-CO', {maximumFractionDigits: 0}).format((Number(c) || 0) / 100);
+let EL = null;
+function elPoner(id, html){ const el = $(id); if (!el) return; el.replaceChildren(); el.insertAdjacentHTML('beforeend', html); }
+async function elegirDestino(){
+  if (EL) return;
+  EL = {yendo: false};
+  document.body.classList.add('eligiendo');
+  const caja = $('elegir'), cos = $('el-costura'), astro = document.querySelector('.der .astro');
+  if (astro && cos) cos.appendChild(astro);
+  caja.hidden = false; requestAnimationFrame(() => caja.classList.add('ver'));
+  const p = document.querySelector('[data-elegir="panel"]'); if (p) p.focus({preventScroll: true});
+  try {
+    const d = await api('elegir');
+    $('el-t').textContent = `Hola, ${d.nombre}. ¿A dónde vas hoy?`;
+    if (d.crm.espacio) $('el-crm-t').textContent = `CRM de ${d.crm.espacio}`;
+    elPoner('el-crm-v', d.crm.recientes.length
+      ? d.crm.recientes.map(c => `<span class="el-fila">${elAvatar(c.nombre, c.id)}<span><b>${elEsc(c.nombre)}</b><small>${c.sinLeer ? `${Number(c.sinLeer)} ${c.sinLeer === 1 ? 'mensaje nuevo' : 'mensajes nuevos'}` : 'Al día'}</small></span>${c.sinLeer ? elGlobo(c.sinLeer) : ''}</span>`).join('')
+      : `<span class="el-vacio">${d.crm.abiertas ? `${Number(d.crm.abiertas)} conversaciones abiertas en tu equipo.` : 'No tienes conversaciones abiertas ahora.'}</span>`);
+    const s = d.panel.serie.length > 1 ? d.panel.serie.map(Number) : [0, Number(d.panel.mrr) || 0], mx = Math.max(...s, 1), W = 240, H = 78;
+    const pts = s.map((v, i) => `${(i * W / (s.length - 1)).toFixed(1)},${(H - 4 - v / mx * (H - 10)).toFixed(1)}`).join(' ');
+    elPoner('el-panel-v', `<span class="el-mrr"><small>Ingreso mensual recurrente</small><b>${elUsd(d.panel.mrr)}</b><svg viewBox="0 0 ${W} ${H}" aria-hidden="true"><defs><linearGradient id="el-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD21F" stop-opacity=".35"/><stop offset="1" stop-color="#FFD21F" stop-opacity="0"/></linearGradient></defs><polygon points="0,${H} ${pts} ${W},${H}" fill="url(#el-g)"/><polyline points="${pts}" fill="none" stroke="#FFD21F" stroke-width="2.2" stroke-linejoin="round"/></svg>
+      <span class="el-chips"><span>Empresas<b>${Number(d.panel.empresas)}</b></span><span>Soporte<b>${Number(d.panel.soporte)}</b></span><span>Cupones<b>${Number(d.panel.cupones)}</b></span></span></span>`);
+  } catch { /* sin vistazo: los dos destinos siguen sirviendo */ }
+}
+async function irDestino(cual){
+  if (!EL || EL.yendo) return; EL.yendo = true;
+  const lado = document.querySelector(`[data-elegir="${cual}"]`), caja = $('elegir');
+  caja.classList.add('va'); if (lado) lado.classList.add('va');
+  despegar();
+  try {
+    const url = cual === 'panel' ? (await api('panel', {})).url : '__BASE__/' + DESTINO;
+    setTimeout(() => { location.href = url; }, QUIETO ? 0 : 1300);
+  } catch (err) {
+    EL.yendo = false; caja.classList.remove('va'); if (lado) lado.classList.remove('va');
+    toast(/no encontrada/i.test(err.message) ? 'Por seguridad, vuelve a iniciar sesión para entrar al panel' : err.message);
+  }
+}
+document.addEventListener('mouseover', e => { const l = e.target.closest && e.target.closest('[data-elegir]'); if (!l || !EL || EL.yendo) return; document.querySelectorAll('[data-elegir]').forEach(x => x.classList.toggle('sel', x === l)); });
+document.addEventListener('focusin', e => { const l = e.target.closest && e.target.closest('[data-elegir]'); if (!l || !EL || EL.yendo) return; document.querySelectorAll('[data-elegir]').forEach(x => x.classList.toggle('sel', x === l)); });
+document.addEventListener('click', async e => {
+  const l = e.target.closest('[data-elegir]'); if (l) { irDestino(l.dataset.elegir); return; }
+  if (e.target.closest('[data-el-salir]')) { try { await api('logout', {}); } catch { /* igual se recarga */ } location.href = '__BASE__/entrar'; }
+});
+document.addEventListener('keydown', e => { if (!EL || EL.yendo || e.target.matches('input, textarea')) return; if (e.key === '1') irDestino('crm'); if (e.key === '2') irDestino('panel'); });
+
 // Entró: el astronauta despega y luego abre la bandeja.
 function alCrm(){ despegar(); setTimeout(() => { location.href = '__BASE__/' + DESTINO; }, QUIETO ? 0 : 1300); }
 
@@ -633,7 +761,7 @@ $('f-entrar').addEventListener('submit', async e => {
   if (!correoOk(c)) return error('entrar', 'Escribe un correo válido.', 'en-correo');
   if (!k) return error('entrar', 'Escribe tu contraseña.', 'en-clave');
   cargando('f-entrar', true);
-  try { await api('login', {email: c, password: k}); alCrm(); }
+  try { const r = await api('login', {email: c, password: k}); if (r && r.elegir) { cargando('f-entrar', false); elegirDestino(); } else alCrm(); }
   catch (err) { cargando('f-entrar', false); error('entrar', err.message, 'en-clave'); }
 });
 $('f-registro').addEventListener('submit', async e => {
@@ -661,7 +789,7 @@ $('f-nueva').addEventListener('submit', async e => {
   if ($('nu-clave').value.length < 10) return error('nueva', 'La contraseña debe tener 10 caracteres o más.', 'nu-clave');
   if ($('nu-clave').value !== $('nu-clave2').value) return error('nueva', 'Las dos contraseñas no coinciden.', 'nu-clave2');
   cargando('f-nueva', true);
-  try { await api('nueva-clave', {token: TOKEN, password: $('nu-clave').value}); toast('Contraseña cambiada. Entrando…'); alCrm(); }
+  try { const r = await api('nueva-clave', {token: TOKEN, password: $('nu-clave').value}); toast('Contraseña cambiada. Entrando…'); if (r && r.elegir) elegirDestino(); else alCrm(); }
   catch (err) { cargando('f-nueva', false); error('nueva', err.message); }
 });
 
@@ -688,7 +816,7 @@ const ERRORES = {
 (async () => {
   // Lo que trae la dirección (el enlace del correo, el regreso de Google) se lee una vez y se quita de la barra.
   const q = new URLSearchParams(location.search), token = q.get('clave'), err = q.get('error'), google = q.get('google'), registro = q.has('registro');
-  ['clave', 'error', 'google', 'registro'].forEach(k => q.delete(k));
+  ['clave', 'error', 'google', 'registro', 'elegir', 'ir'].forEach(k => q.delete(k));
   // (el cupón se guarda abajo y no sigue en la dirección)
   // Viene de nexcode97.com/precios con un plan: se guarda en la pestaña (sobrevive a la ida y vuelta de Google) y,
   // al entrar, el CRM abre Plan y pagos y lleva al pago (70-plan.js).
@@ -702,6 +830,8 @@ const ERRORES = {
   DESTINO = q.toString() ? '?' + q : '';
   history.replaceState(null, '', location.pathname + DESTINO);
   ir(registro ? 'registro' : 'entrar');
+  // Volvió de Google con una cuenta de operador: elige entre el CRM y el panel.
+  if (window.ENTRAR && window.ENTRAR.elegir) elegirDestino();
   api('opciones').then(o => {
     OPC = o;
     if (!o.registro) document.querySelectorAll('#v-entrar .alterna').forEach(x => { x.hidden = true; });

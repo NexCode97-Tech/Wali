@@ -8,6 +8,7 @@ import { espacioDeUsuario } from './services/crm/espacio'
 import { configura } from './utils/roles'
 import { PAISES } from './data/paises'
 import { BASE } from './utils/base'
+import { esOperador, operadorRecien, paseValido } from './services/crm/panelAcceso'
 
 /**
  * Las pantallas. Todas son HTML con su CSS y su código dentro, servidas por aquí (y no como archivos sueltos)
@@ -68,8 +69,12 @@ function html(res: Response, cuerpo: string) {
 const router = Router()
 
 router.get('/entrar', asyncHandler(async (req: Request, res: Response) => {
+  // La cuenta de operador recién entrada (Google) elige entre el CRM y el panel; quien viene del panel sin pase vuelve
+  // a iniciar sesión aunque tenga la del CRM abierta (panelAcceso.ts).
+  const elegir = req.query.elegir === '1' && !!(await operadorRecien(req))
+  const alPanel = req.query.ir === 'panel'
   // Con sesión ya abierta se va al CRM; si viene de la página de precios con un plan, el plan sigue en la dirección.
-  if (await sesionDePagina(req)) {
+  if (!elegir && !alPanel && await sesionDePagina(req)) {
     const plan = typeof req.query.pagar === 'string' && /^(starter|growth|business)$/.test(req.query.pagar) ? req.query.pagar : ''
     // El cupón de un enlace del panel sigue hasta el CRM, que lo guarda para el pago.
     const cupon = typeof req.query.cupon === 'string' && /^[A-Za-z0-9]{3,30}$/.test(req.query.cupon) ? req.query.cupon.toUpperCase() : ''
@@ -79,7 +84,7 @@ router.get('/entrar', asyncHandler(async (req: Request, res: Response) => {
     return res.redirect(BASE + '/' + (q.toString() ? '?' + q : ''))
   }
   const logo = LOGO ? `<img src="${escapar(LOGO)}" alt="">` : ''
-  html(res, leer('paginas/entrar.html').replace('__LOGO__', () => logo).replace(/__MARCA__/g, escapar(MARCA())))
+  html(res, leer('paginas/entrar.html').replace('__LOGO__', () => logo).replace(/__MARCA__/g, escapar(MARCA())).replace('/*ENTRAR_INICIO*/', () => `window.ENTRAR = ${enScript({ elegir })};`))
 }))
 
 /** La persona de la sesión con su espacio, o la redirección al inicio de sesión. */
@@ -129,7 +134,9 @@ router.get('/usuarios', asyncHandler(async (req: Request, res: Response) => {
  *  existiera: ni siquiera se insinúa que hay un panel. */
 router.get('/admin', asyncHandler(async (req: Request, res: Response) => {
   const u = await sesionDePagina(req)
-  if (!u || !(u.operador && u.role === 'ADMIN')) { res.status(404).type('text/plain').send('No encontrado'); return }
+  if (!u || !esOperador(u)) { res.status(404).type('text/plain').send('No encontrado'); return }
+  // Sin el pase que da elegir «Panel» al iniciar sesión, se vuelve a iniciar sesión.
+  if (!paseValido(req, u.id)) { res.redirect(BASE + '/entrar?ir=panel'); return }
   const inicio = { yo: { nombre: u.nombre ?? u.email } }
   html(res, leer('paginas/admin.html').replace('/*ADMIN_INICIO*/', () => `window.INICIO = ${enScript(inicio)};`))
 }))

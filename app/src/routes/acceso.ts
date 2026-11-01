@@ -1,4 +1,5 @@
 import crypto from 'crypto'
+import { esOperador } from '../services/crm/panelAcceso'
 import { Router, Request, Response } from 'express'
 import rateLimit from 'express-rate-limit'
 import jwt from 'jsonwebtoken'
@@ -205,7 +206,7 @@ router.post('/nueva-clave', limiteEnlace, asyncHandler(async (req: Request, res:
   })
   logSecurityEvent('CLAVE_RECUPERADA', { userId: user.id, ip: req.ip })
   await abrirSesion(req, res, user)
-  return ApiResponse.success(res, { ok: true })
+  return ApiResponse.success(res, { ok: true, elegir: esOperador(user) })
 }))
 
 // ─── Google ──────────────────────────────────────────────────────────────────
@@ -253,7 +254,8 @@ router.get('/google/regreso', limiteEnlace, asyncHandler(async (req: Request, re
       if (e instanceof ForbiddenError) return volver(user.suspendido ? 'error=suspendida' : 'error=sin-espacio')
       throw e
     }
-    return res.redirect(BASE + '/')
+    // La cuenta de operador elige entre el CRM y el panel (panelAcceso.ts).
+    return res.redirect(BASE + (esOperador(user) ? '/entrar?elegir=1' : '/'))
   }
   if (!registroAbierto()) return volver('error=google-sin-cuenta')
   const foto = p.picture && /^https:\/\/[^\s"'<>]+$/.test(p.picture) ? p.picture.slice(0, 500) : null
