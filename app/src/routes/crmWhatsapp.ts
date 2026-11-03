@@ -18,7 +18,7 @@ import {
   numerosDisponibles, proveedorBase, proveedorPublico, revisarConexion, urlApi, type DatosWhatsapp,
 } from '../services/crm/conexiones'
 import { conectarPaginaManual, conectarPaginasMeta, revisarPagina } from '../services/crm/paginas'
-import { conectarInstagramManual, empezarInstagram, guardarProveedorInstagram, proveedorInstagramPublico, revisarInstagram, terminarInstagram } from '../services/crm/instagram'
+import { conectarInstagramManual, empezarInstagram, guardarProveedorInstagram, proveedorInstagram, proveedorInstagramPublico, revisarInstagram, terminarInstagram } from '../services/crm/instagram'
 import { conectarTelegram, revisarTelegram, secretoAvisosTelegram } from '../services/crm/telegram'
 import { conectarCorreo, revisarCorreo } from '../services/crm/correo'
 import {
@@ -59,9 +59,10 @@ function firmaValida(cuerpo: Buffer, cabecera: string | undefined, secreto: stri
 }
 
 /** Guarda el aviso y lo procesa aparte. Lo que no se va a procesar igual recibe 200: si no, Meta lo reintenta durante días. */
-async function recibirAviso(req: Request, res: Response, secreto: string, origen: { espacioId: string | null; conexionId: string | null }) {
+async function recibirAviso(req: Request, res: Response, secreto: string | string[], origen: { espacioId: string | null; conexionId: string | null }) {
   const crudo: Buffer = Buffer.isBuffer(req.body) ? req.body : Buffer.from('')
-  if (!firmaValida(crudo, req.get('x-hub-signature-256'), secreto)) {
+  const firma = req.get('x-hub-signature-256')
+  if (![secreto].flat().some(s => firmaValida(crudo, firma, s))) {
     logger.warn('[CRM Meta] aviso con firma que no cuadra: se ignora')
     // En una conexión propia queda dicho: casi siempre es la clave secreta de otra app.
     if (origen.conexionId) void prismaGlobal.crmConexion.update({ where: { id: origen.conexionId }, data: { error: 'Llegó un aviso de Meta con una firma que no cuadra con la clave secreta guardada: revisa que sea la de la misma app y vuelve a conectar' } }).catch(() => null)
@@ -102,7 +103,9 @@ function direccionesDeAvisos(r: Router) {
   r.post('/webhook', async (req: Request, res: Response) => {
     const p = await proveedorBase().catch(() => null)
     if (!p) { logger.warn('[CRM Meta] llegó un aviso a la dirección general, pero el botón de Meta no está configurado: no se procesa'); return res.sendStatus(200) }
-    return recibirAviso(req, res, p.appSecret, { espacioId: null, conexionId: null })
+    // La app de Instagram tiene su propia clave secreta: los avisos del botón de Instagram pueden venir firmados con ella.
+    const ig = await proveedorInstagram().catch(() => null)
+    return recibirAviso(req, res, ig ? [p.appSecret, ig.appSecret] : p.appSecret, { espacioId: null, conexionId: null })
   })
 
   r.get('/webhook/:clave', asyncHandler(async (req: Request, res: Response) => {
