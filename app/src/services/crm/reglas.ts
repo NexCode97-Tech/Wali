@@ -413,7 +413,7 @@ const CLAVE_TURNO = '_repartoTurno'
 /**
  * Elige dentro de un equipo, con las mismas reglas de disponibilidad del
  * reparto (reciben reparto, «En línea», con el CRM abierto si «No asignar a
- * quien está ausente» está prendido y por debajo del tope). `menos` = al que
+ * quien está ausente» está prendido y por debajo de su máximo propio, si tiene). `menos` = al que
  * tenga menos abiertas (empate por turno); si no, por turnos. El turno se
  * guarda en el mismo ajuste interno que usa reparto.ts.
  */
@@ -424,6 +424,7 @@ async function elegirEnEquipo(equipo: string, menos: boolean): Promise<{ id: str
   const conectados = usuariosConectados()
   const filas = await prisma.crmConversacion.groupBy({ by: ['asignadoId'], where: { asignadoId: { in: orden.map(u => u.id) }, estado: 'abiertas' }, _count: { _all: true } })
   const carga = new Map(filas.map(f => [f.asignadoId as string, f._count._all]))
+  const topes = obj(await leerAjuste('equipos')).topes
   const libres: { u: UsuarioCrm; abiertas: number }[] = []
   for (const u of orden) {
     const pref = await leerPreferencias(u.id)
@@ -431,10 +432,12 @@ async function elegirEnEquipo(equipo: string, menos: boolean): Promise<{ id: str
     if ((typeof pref.estado === 'string' ? pref.estado : 'En línea') !== 'En línea') continue
     if (cfg.ausente && !conectados.has(u.id)) continue
     const abiertas = carga.get(u.id) ?? 0
-    if (abiertas >= cfg.tope) continue
+    // Sin máximo propio no hay límite (1-nov: se quitó el general).
+    const tope = Number(obj(topes)[u.id])
+    if (tope > 0 && abiertas >= tope) continue
     libres.push({ u, abiertas })
   }
-  if (!libres.length) return { id: null, motivo: `nadie de ${equipo} está disponible ahora (en línea, con el CRM abierto y por debajo del tope)` }
+  if (!libres.length) return { id: null, motivo: `nadie de ${equipo} está disponible ahora (en línea, con el CRM abierto y por debajo de su máximo)` }
   const min = Math.min(...libres.map(l => l.abiertas))
   const candidatos = new Set(libres.filter(l => !menos || l.abiertas === min).map(l => l.u.id))
   const turnos = obj(await leerAjuste(CLAVE_TURNO))

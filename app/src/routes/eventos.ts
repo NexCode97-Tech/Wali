@@ -40,7 +40,7 @@ async function esMiembroCrm(userId: string): Promise<boolean> {
  * como «tiene el CRM abierto» (GET /crm/inicio `conectado`, reparto y el evento
  * `pref` con `conectado`); el visitante de solo lectura no cuenta. Desde el 29-sep
  * también cuenta quien entra al CRM por un equipo (crm_miembros: auditores,
- * colaboradores): sin eso el reparto por turnos de Moderación no les llegaba.
+ * colaboradores): sin eso el reparto por turnos no les llegaba.
  */
 router.post('/ticket', autenticarSinEscritura, asyncHandler(async (req: Request, res: Response) => {
   const cuerpo = req.body && typeof req.body === 'object' ? req.body as Record<string, unknown> : {}

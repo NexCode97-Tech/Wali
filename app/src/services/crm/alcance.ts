@@ -38,6 +38,8 @@ export interface Alcance {
   integra: string[]
   /** lidera ∪ integra, en el orden del ajuste. */
   equipos: string[]
+  /** Equipos donde está en algún subequipo sin ser del equipo (1-nov): recibe y ve solo lo que le asignen. */
+  enSubequipos: string[]
   /** Rol ADMIN o LIDER_VENTAS de la plataforma: la configuración general del CRM, como siempre. */
   config: boolean
 }
@@ -50,8 +52,10 @@ export function alcanceDePersona(userId: string, rolPlataforma: string | null | 
   const lidera = orden.filter(eq => (eqs.lideres[eq] ?? []).includes(userId))
   const integra = orden.filter(eq => !lidera.includes(eq) && (eqs.ids[eq] ?? []).includes(userId))
   const equipos = orden.filter(eq => lidera.includes(eq) || integra.includes(eq))
+  const enSubequipos = orden.filter(eq => !equipos.includes(eq) && (eqs.subequipos[eq] ?? []).some(s => s.ids.includes(userId)))
   const rol = rolEfectivo(rolPlataforma)
-  return { userId, todo: rol === 'ADMIN' && equipos.length === 0, lidera, integra, equipos, config: configura(rol) }
+  // Ver todo es del administrador que no está en ningún equipo ni subequipo: en un subequipo, ve lo que le asignen.
+  return { userId, todo: rol === 'ADMIN' && equipos.length === 0 && enSubequipos.length === 0, lidera, integra, equipos, enSubequipos, config: configura(rol) }
 }
 
 /** El alcance de quien hace la petición (se calcula una vez por petición). */
@@ -72,7 +76,7 @@ export async function equiposDeReq(req: Request): Promise<EquiposNorm> {
 
 /** Lo que la pantalla recibe (GET /crm/inicio y el evento `alcance`). `administra`: los equipos que puede cambiar. */
 export function alcanceParaFront(a: Alcance, eqs: EquiposNorm) {
-  return { todo: a.todo, lidera: a.lidera, integra: a.integra, equipos: a.equipos, administra: a.todo ? Object.keys(eqs.miembros) : a.lidera, config: a.config }
+  return { todo: a.todo, lidera: a.lidera, integra: a.integra, equipos: a.equipos, enSubequipos: a.enSubequipos, administra: a.todo ? Object.keys(eqs.miembros) : a.lidera, config: a.config }
 }
 
 /** ¿Lidera el equipo de la conversación (o lo ve todo)? Marcar «solo líder», cancelar programados de otros. */

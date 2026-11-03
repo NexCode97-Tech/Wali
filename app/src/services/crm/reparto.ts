@@ -63,11 +63,10 @@ export async function metodoDe(equipo: string, cfg?: CfgReparto): Promise<string
 /** ¿Esta forma de repartir entrega sola la conversación a alguien? */
 const automatico = (metodo: string) => !/manual/i.test(metodo)
 
-/** La gente de un subequipo que sigue en su equipo, en el orden del subequipo (el de sus turnos). */
-async function genteDeSubequipo(eqs: EquiposNorm, equipo: string, sub: Subequipo): Promise<UsuarioCrm[]> {
+/** La gente de un subequipo, en su orden (el de sus turnos). Puede no ser del equipo (1-nov). */
+async function genteDeSubequipo(sub: Subequipo): Promise<UsuarioCrm[]> {
   const usuarios = await usuariosCrm()
-  const delEquipo = new Set(eqs.ids[equipo] ?? [])
-  return sub.ids.filter(id => delEquipo.has(id)).map(id => usuarios.find(u => u.id === id)).filter((u): u is UsuarioCrm => Boolean(u) && !u!.pendiente)
+  return sub.ids.map(id => usuarios.find(u => u.id === id)).filter((u): u is UsuarioCrm => Boolean(u) && !u!.pendiente)
 }
 
 /** Integrantes de un equipo según el ajuste `equipos` ({miembros: {equipo: [nombres]}}). */
@@ -139,7 +138,7 @@ async function disponibles(personas: UsuarioCrm[], cfg: CfgReparto, excluir: Set
   const conectados = usuariosConectados()
   const enTurno = await enTurnoAhora()
   const carga = await abiertasPor(personas.map(p => p.id))
-  // El máximo de cada persona (pestaña Personas); si no tiene uno propio, el general.
+  // El máximo de cada persona (pestaña Personas). Sin uno propio no tiene límite (1-nov: se quitó el general).
   const topes = obj(obj(await leerAjuste('equipos')).topes)
   const out: { u: UsuarioCrm; abiertas: number }[] = []
   for (const u of personas) {
@@ -150,8 +149,8 @@ async function disponibles(personas: UsuarioCrm[], cfg: CfgReparto, excluir: Set
     if ((typeof pref.estado === 'string' ? pref.estado : 'En línea') !== 'En línea') continue
     if (cfg.ausente && !conectados.has(u.id)) continue
     const abiertas = carga.get(u.id) ?? 0
-    const tope = Number(topes[u.id]) > 0 ? Number(topes[u.id]) : cfg.tope
-    if (abiertas >= tope) continue
+    const tope = Number(topes[u.id])
+    if (tope > 0 && abiertas >= tope) continue
     out.push({ u, abiertas })
   }
   return out
@@ -247,7 +246,7 @@ async function repartirAhora(convId: number, excluir: string[] = [], desdeFila =
   // también para el cliente conocido.
   const lideres = new Set(eqs.lideres[equipo] ?? [])
   const puede = (u: UsuarioCrm) => !c.soloLider || lideres.has(u.id)
-  const orden = (sub ? await genteDeSubequipo(eqs, equipo, sub) : await miembrosDe(equipo)).filter(puede)
+  const orden = (sub ? await genteDeSubequipo(sub) : await miembrosDe(equipo)).filter(puede)
   const claveTurno = sub ? `${equipo}#${sub.id}` : equipo
   const conocidos = (await duenoConocido(c.contacto, cfg)).filter(id => !sacar.has(id))
   if (conocidos.length) {
@@ -343,4 +342,36 @@ export async function repartir(convId: number, desdeFila = false): Promise<void>
   } catch (e) {
     logger.error(`[CRM reparto] conversación ${convId}: ${(e as Error)?.message ?? e}`)
   }
+}
+
+/**
+ * Al quitar a alguien de un equipo o de un subequipo y elegir «Repartirlas» (maqueta aprobada «Equipos y
+ * subequipos», 1-nov): sus conversaciones abiertas de ese lugar se le quitan y se reparten con la regla del equipo
+ * o del subequipo. Las de un equipo son las que no son de un subequipo donde sigue. Devuelve cuántas se movieron.
+ */
+export async function repartirAlSalir(userId: string, equipo: string, subequipoId: string | null): Promise<number> {
+  const eqs = await leerEquipos()
+  const sigueEn = new Set((eqs.subequipos[equipo] ?? []).filter(s => s.ids.includes(userId)).map(s => s.id))
+  const enEquipo = equipo === 'Ventas' ? [{ equipo: 'Ventas' }, { equipo: null }] : [{ equipo }]
+  const filas = await prisma.crmConversacion.findMany({
+    where: { asignadoId: userId, estado: { not: 'finalizadas' }, OR: enEquipo },
+    select: { id: true, extra: true },
+  })
+  const deAhi = filas.filter(c => {
+    const sub = obj(c.extra).subequipo
+    return subequipoId ? sub === subequipoId : !(typeof sub === 'string' && sigueEn.has(sub))
+  })
+  const nombre = (await usuariosCrm()).find(u => u.id === userId)?.nombre ?? 'La persona'
+  const lugar = subequipoId ? (eqs.subequipos[equipo] ?? []).find(s => s.id === subequipoId)?.n ?? 'su subequipo' : equipo
+  let n = 0
+  for (const c of deAhi) {
+    const hecho = await prisma.crmConversacion.updateMany({ where: { id: c.id, asignadoId: userId }, data: { asignadoId: null } })
+    if (!hecho.count) continue
+    n++
+    const m = await prisma.crmMensaje.create({ data: { conversacionId: c.id, tipo: 'ev', datos: { ev: 'swap', t: `${nombre} salió de ${lugar}: se reparte de nuevo` } } })
+    emitirMsg(c.id, m, null)
+    await emitirConv(c.id, null)
+    await repartirA(c.id, [userId]).catch(e => logger.error(`[CRM reparto] al salir ${c.id}: ${(e as Error)?.message ?? e}`))
+  }
+  return n
 }

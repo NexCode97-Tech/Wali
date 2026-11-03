@@ -139,9 +139,14 @@ editorEquipo = function(){
   const lid = new Set(x.lideres.filter(id => x.ids.includes(id)));
   const personas = [...x.ids.filter(id => lid.has(id)), ...x.ids.filter(id => !lid.has(id))].map(personaDe).filter(Boolean);
   const con = personas.filter(p => qDisponible(p.id)).length, color = colorOk(x.color);
+  // Rol en un desplegable (Líder primero) y sus subequipos en texto: se manejan desde cada subequipo (maqueta aprobada
+  // «Equipos y subequipos», 1-nov). La X solo lo saca del equipo y antes pregunta (86-subequipos.js).
   const per = personas.length ? personas.map(p => { const esL = lid.has(p.id), d = qDisponible(p.id), subs = x.subs.filter(s => s.ids.includes(p.id)).map(s => s.n);
-    return `<div class="qe-per"><span class="q-p">${avPer(p)}<i class="${d ? 'on' : ''}"></i></span><span class="qe-nm"><b>${esc(p.nombre)}</b><small>${d ? 'Disponible' : 'No disponible'} · ${esL ? 've todo el equipo' : subs.length ? `${esc(subs.join(' · '))} · ve lo que le asignen` : 've lo que le asignen'}</small></span>
-      <span class="qe-rol${esL ? ' lid' : ''}" role="group" aria-label="Rol de ${esc(p.nombre)}"><button type="button" aria-pressed="${esL}" data-eqr-rolop="${esc(p.id)}" data-v="lider">Líder</button><button type="button" aria-pressed="${!esL}" data-eqr-rolop="${esc(p.id)}" data-v="integrante">Miembro</button></span>
+    const k = 'rol:' + p.id, ab = st.eqrMenu === k;
+    const op = (v, b, sm) => { const sel = (v === 'lider') === esL; return `<button type="button" class="eqr-op${sel ? ' sel' : ''}" role="option" aria-selected="${sel}" data-eqr-rolop="${esc(p.id)}" data-v="${v}"><span><b>${b}</b><small>${sm}</small></span>${sel ? I('check') : ''}</button>`; };
+    const menu = ab ? `<div class="eqr-menu qe-menu" role="listbox" aria-label="Rol de ${esc(p.nombre)}">${op('lider', 'Líder', 'Ve y administra todo el equipo')}${op('integrante', 'Miembro', 'Ve lo que le asignen')}</div>` : '';
+    return `<div class="qe-per"><span class="q-p">${avPer(p)}<i class="${d ? 'on' : ''}"></i></span><span class="qe-nm"><b>${esc(p.nombre)}</b><small>${d ? 'Disponible' : 'No disponible'} · ${subs.length ? `${esc(subs.join(' · '))} · ` : ''}${esL ? 've todo el equipo' : 've lo que le asignen'}</small></span>
+      <span class="qe-dd"><button type="button" class="qe-ddb${esL ? ' lid' : ''}${ab ? ' abierto' : ''}" data-eqr-abrir="${esc(k)}" aria-haspopup="listbox" aria-expanded="${ab}" aria-label="Rol de ${esc(p.nombre)}: ${esL ? 'Líder' : 'Miembro'}">${esL ? 'Líder' : 'Miembro'}${I('chev')}</button>${menu}</span>
       <button type="button" class="qe-x" data-eqr-quitar="${esc(p.id)}" aria-label="Quitar a ${esc(p.nombre)}">${I('x')}</button></div>`; }).join('')
     : `<div class="qe-vacio">${svgAviso}<span><b>${esc(eqrNom(x) || 'Este equipo')} no tiene personas</b><small>Lo que le llegue no lo atiende nadie hasta que agregues a alguien.</small></span></div>`;
   const B = st.eqBusca || {q: '', res: []};
@@ -149,8 +154,8 @@ editorEquipo = function(){
       : B.error ? `<p class="muted" style="margin:0;padding:10px 12px">${esc(B.error)}</p>`
       : B.res.length ? B.res.map(p => { const ya = x.ids.includes(p.id), adm = !ya && !todo && eqrEsAdmin(p); return `<div class="rq-op">${avPer(p)}<span class="tx">${esc(p.nombre)}<small>${esc(adm ? EQR_SOLO_ADMIN : p.cargo ? p.cargo + ', según el organigrama' : (p.enCrm ? 'Ya está en el CRM' : 'Todavía no entra al CRM'))}</small></span><span class="rq-rol">${esc(p.rolNombre || ROL_NOMBRE[p.rol] || p.rol)}</span><button type="button" class="btn" data-eq-add="${esc(p.id)}" ${ya || adm ? 'disabled' : ''}>${ya ? 'Ya está' : `${I('plus')}Agregar`}</button></div>`; }).join('')
       : '<p class="muted" style="margin:0;padding:10px 12px">Nadie coincide. Los colaboradores no aparecen: no pueden entrar al CRM.</p>') : '';
-  const subs = x.subs.length ? x.subs.map(s => { const g = s.ids.filter(id => x.ids.includes(id)).map(personaDe).filter(Boolean);
-    return `<div class="qe-sub"><span class="qe-pt" style="background:${color}"></span><b>${esc(s.n)}</b><span class="qe-c">${esc(eqrMetodo(s.metodo)[1])}</span><span class="sp"></span><span class="q-av">${g.slice(0, 4).map(p => `<span class="q-p">${avPer(p)}</span>`).join('')}${g.length > 4 ? `<span class="q-mas">+${g.length - 4}</span>` : ''}</span><button type="button" class="btn" data-eqr-subeditar="${esc(s.id)}">Editar</button></div>`; }).join('')
+  const subs = x.subs.length ? x.subs.map(s => { const g = s.ids.map(personaDe).filter(Boolean);
+    return `<div class="qe-sub"><span class="qe-pt" style="background:${color}"></span><span class="qe-subn"><b>${esc(s.n)}</b><small>${g.length} ${g.length === 1 ? 'persona' : 'personas'} · ${esc(eqrMetodo(s.metodo)[1].toLowerCase())}</small></span>${subPila(g)}<button type="button" class="btn" data-eqr-subeditar="${esc(s.id)}">Editar</button></div>`; }).join('') + '<p class="qe-ay" style="margin-top:10px">Para meter o sacar a alguien de un subequipo, toca su «Editar».</p>'
     : '<p class="qe-ay">Grupos dentro del equipo con su propia forma de repartir. Todavía no hay.</p>';
   let recibe;
   if (todo) {

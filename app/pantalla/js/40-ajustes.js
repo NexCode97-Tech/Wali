@@ -493,7 +493,6 @@ function tabReglas(){
   const usan = k => { const n = EQUIPOS.filter(e => metodoDe(e.n) === k).map(e => e.n); return n.length ? `La ${n.length === 1 ? 'usa' : 'usan'}: ${n.join(', ').replace(/, ([^,]*)$/, ' y $1')}` : 'Ningún equipo la usa'; };
   return `<div class="two3"><div class="cfg">
       <div class="box2"><h4>${I('users')}Límites</h4>
-        ${fila('Máximo de conversaciones abiertas por persona', 'Al llegar al máximo deja de recibir nuevas; las que ya tiene siguen con ella. Se puede cambiar por persona en la pestaña Personas.', `<input class="inl" data-cfg-in="reparto.tope" value="${r.tope}">`)}
         ${fila('Si no responde a tiempo, pasa a otra persona', 'Minutos que espera la conversación antes de pasar a la siguiente persona del mismo equipo.', `<span style="display:flex;align-items:center;gap:6px"><input class="inl" data-cfg-in="reparto.minutos" value="${r.minutos}">min</span>`)}</div>
       <div class="box2"><h4>${I('flow')}Excepciones</h4>
         ${fila('No asignar a quien está ausente', 'Si la persona marcó «Ausente» en su estado, el reparto la salta.', sw('rep-ausente', r.ausente))}
@@ -532,7 +531,7 @@ function editorEquipo(){
           <label class="cn-q" style="margin:0">${I('search')}<input id="eq-busca" value="${esc(B.q)}" placeholder="Escribe un nombre o un correo" autocomplete="off" aria-label="Buscar una persona de la plataforma"></label>
           ${res ? `<div class="rq-res" id="eq-res">${res}</div>` : ''}</div></section>
       ${nuevo || x.orig === 'Ventas' ? '' : `<div><button type="button" class="btn" data-eq-borrar="1" style="color:#b91c1c;border-color:#fecaca">${I('trash')}Eliminar equipo</button></div>`}</div>
-      <div><section class="rq-card" aria-label="Nombre y color"><h4>Nombre y color</h4><input class="rq-in" id="eq-nombre" value="${esc(x.n)}" placeholder="Ej. Moderación" aria-label="Nombre del equipo">
+      <div><section class="rq-card" aria-label="Nombre y color"><h4>Nombre y color</h4><input class="rq-in" id="eq-nombre" value="${esc(x.n)}" placeholder="Ej. Atención al cliente" aria-label="Nombre del equipo">
           <div class="rq-sw" role="group" aria-label="Color del equipo">${COLORES_EQ.map(([c, n]) => `<button type="button" style="background:${c}" data-eq-color="${c}" aria-pressed="${x.color === c}" aria-label="${n}"></button>`).join('')}</div></section>
         <section class="rq-card" aria-label="Qué conversaciones recibe"><h4>Qué conversaciones recibe</h4>${lineas}
           <label class="rq-chk"><input type="checkbox" data-eq-transf="1" ${x.transferible ? 'checked' : ''}><span>Las que le transfieren otros equipos</span></label></section>

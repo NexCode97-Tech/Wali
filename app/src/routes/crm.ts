@@ -198,6 +198,7 @@ router.delete('/contactos/:id', asyncHandler(contactos.borrarContacto))
 // Ajustes del equipo y preferencias propias
 router.get('/ajustes/versiones', asyncHandler(ajustes.versionesAjustes))
 router.get('/personas', adminEquipos('agregar personas a los equipos'), asyncHandler(ajustes.buscarPersonas))
+router.post('/equipos/repartir', adminEquipos('repartir las conversaciones de quien sale de un equipo'), asyncHandler(ajustes.repartirAlSalirDe))
 router.post('/personas/invitar', adminEquipos('invitar personas al CRM'), asyncHandler(ajustes.invitarPersona))
 router.post('/personas/:id/reenviar', adminEquipos('reenviar invitaciones'), asyncHandler(ajustes.reenviarInvitacion))
 router.delete('/personas/:id/invitacion', adminEquipos('cancelar invitaciones'), asyncHandler(ajustes.cancelarInvitacion))

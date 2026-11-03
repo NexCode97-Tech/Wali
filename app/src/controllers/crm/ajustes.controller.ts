@@ -14,8 +14,8 @@ import { emitirAlcance, emitirConv, emitirCrm, olvidarGenteCrm } from '../../ser
 import { usuariosCrm } from '../../services/crm/usuarios'
 import { leerWeb, extraerTexto, TIPOS_DOC, EXT_DOC, MENSAJE_TIPOS } from '../../services/crm/kb'
 import { probarAgente } from '../../services/crm/agentes'
-import { alcanceDe, alcanceDePersona, alcanceParaFront, entraPorRol, sincronizarMiembros, type Alcance } from '../../services/crm/alcance'
-import { normalizarEquipos, type EquiposNorm } from '../../services/crm/equipos'
+import { alcanceDe, alcanceDePersona, alcanceParaFront, entraPorRol, puedeAdministrar, sincronizarMiembros, type Alcance } from '../../services/crm/alcance'
+import { conGenteDeSubequipos, normalizarEquipos, type EquiposNorm } from '../../services/crm/equipos'
 import { conectarShopify, conectarCalendario, conectarHotmart, desconectar, estadoIntegraciones } from '../../services/crm/integraciones'
 import { invitar, invitarNuevos } from '../../services/crm/invitaciones'
 import { limiteUsuarios } from '../../services/crm/plan'
@@ -252,10 +252,19 @@ async function equiposConIds(valorPedido: Record<string, unknown>, previo: unkno
       throw new ForbiddenError('Solo un administrador sin equipo puede agregar a un administrador a un equipo.')
     }
     // Ni lo saca (30-sep): sin equipo, un administrador ve y administra todo el CRM, así que sacarlo (o sacarse a sí
-    // mismo, como Orlando de Moderación) le daría más alcance, no menos. Eso también lo decide un administrador sin equipo.
+    // mismo) le daría más alcance, no menos. Eso también lo decide un administrador sin equipo.
     const salen = [...new Set(a.lidera.flatMap(eq => (antes.ids[eq] ?? []).filter(id => !(ids[eq] ?? []).includes(id))))]
     if (salen.length && await prismaGlobal.user.count({ where: { id: { in: salen }, suspendido: false, role: { in: ['ADMIN', 'LECTOR'] } } })) {
       throw new ForbiddenError('Solo un administrador sin equipo puede sacar a un administrador de un equipo.')
+    }
+    // Lo mismo en los subequipos (1-nov): en uno, el administrador deja de ver todo el CRM.
+    const genteSub = (v: unknown, eq: string) => new Set((Array.isArray(obj(v)[eq]) ? obj(v)[eq] as unknown[] : []).flatMap(x => { const l = obj(x).ids; return Array.isArray(l) ? l.map(String) : [] }))
+    const cambianSub = [...new Set(a.lidera.flatMap(eq => {
+      const ahora = genteSub(valor.subequipos, eq), previa = genteSub(antes.subequipos, eq)
+      return [...[...ahora].filter(id => !previa.has(id)), ...[...previa].filter(id => !ahora.has(id))]
+    }))]
+    if (cambianSub.length && await prismaGlobal.user.count({ where: { id: { in: cambianSub }, suspendido: false, role: { in: ['ADMIN', 'LECTOR'] } } })) {
+      throw new ForbiddenError('Solo un administrador sin equipo puede meter o sacar a un administrador de un subequipo.')
     }
     // El máximo por persona: del pedido para la gente que queda en los equipos que lidera; el resto, lo guardado.
     const suyos = new Set(a.lidera.flatMap(eq => ids[eq] ?? []))
@@ -268,7 +277,8 @@ async function equiposConIds(valorPedido: Record<string, unknown>, previo: unkno
   normalizarEquipos({ ...valor, ids }, usuarios0, { estricto: true })
   // Quien entra por un equipo queda como miembro del espacio (o deja de serlo) antes de ponerle nombre:
   // así aparece en la lista de personas del CRM con el mismo nombre que ven todos.
-  const { quitados } = await sincronizarMiembros(ids)
+  // También quien está solo en un subequipo (1-nov): entra al CRM y ve lo que le asignen.
+  const { quitados } = await sincronizarMiembros(conGenteDeSubequipos(ids, valor.subequipos))
   olvidarGenteCrm()
   const usuarios = await usuariosCrm(true)
   const nombre = new Map(usuarios.map(u => [u.id, u.nombre]))
@@ -537,7 +547,7 @@ export async function guardarAjusteRuta(req: Request, res: Response) {
       // No se guardó: la membresía del espacio vuelve a ser la de los equipos guardados.
       const guardados = normalizarEquipos(actual.valor, await usuariosCrm(true))
       guardado = guardados
-      await sincronizarMiembros(guardados.ids).catch(e => logger.warn(`[CRM equipos] miembros tras el choque: ${(e as Error)?.message ?? e}`))
+      await sincronizarMiembros(conGenteDeSubequipos(guardados.ids, guardados.subequipos)).catch(e => logger.warn(`[CRM equipos] miembros tras el choque: ${(e as Error)?.message ?? e}`))
       olvidarGenteCrm()
     }
     return res.status(409).json({
@@ -811,4 +821,18 @@ export async function motorQuitar(req: Request, res: Response) {
   exigirEscritura(req)
   exigirLider(req, 'desconectar el motor de IA')
   return ApiResponse.success(res, await desconectarMotor(String(req.params.proveedor || '').slice(0, 20), req.userId ?? null))
+}
+
+/**
+ * POST /crm/equipos/repartir {userId, equipo, subequipo?}: después de guardar los equipos, reparte las conversaciones
+ * abiertas de quien salió de ese equipo o subequipo (si quien lo sacó eligió «Repartirlas»). Lo usa quien administra
+ * ese equipo.
+ */
+export async function repartirAlSalirDe(req: Request, res: Response) {
+  const p = z.object({ userId: z.string().min(1).max(100), equipo: z.string().min(1).max(120), subequipo: z.string().max(120).nullish() }).safeParse(req.body)
+  if (!p.success) throw new ValidationError('Faltan datos para repartir las conversaciones.')
+  const a = await alcanceDe(req)
+  if (!puedeAdministrar(a, p.data.equipo)) throw new ForbiddenError(`Solo quien administra ${p.data.equipo} puede repartir sus conversaciones.`)
+  const { repartirAlSalir } = await import('../../services/crm/reparto')
+  return ApiResponse.success(res, { repartidas: await repartirAlSalir(p.data.userId, p.data.equipo, p.data.subequipo || null) })
 }

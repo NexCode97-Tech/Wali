@@ -8,7 +8,7 @@ import { ValidationError } from '../../utils/errors'
  *
  * - `lideres: {equipo: [userId]}`: quiénes lideran cada equipo (varios se permiten, siempre dentro de `ids`).
  *   Su rol es «Líder de <Equipo>», sale solo del nombre del equipo y no se guarda.
- * - `roles: {equipo: texto}`: cómo se llama la gente del equipo que no es líder (Ventas «Asesor», Moderación
+ * - `roles: {equipo: texto}`: cómo se llama la gente del equipo que no es líder (p. ej. «Asesor» o
  *   «Auditor»). Lo escribe a mano el líder o el administrador; si no hay, «Integrante».
  * - `subequipos: {equipo: [{id, n, ids, metodo}]}`: grupos dentro de un equipo con su propia forma de repartir.
  *   La conversación que se pasa a uno guarda su id en `extra.subequipo`.
@@ -185,8 +185,9 @@ export function normalizarEquipos(valor: unknown, usuarios: UsuarioCrm[], op: Op
       const clave = planoNombre(n)
       if (vistos.has(clave)) { error(`${eq} ya tiene un subequipo «${n}».`); continue }
       vistos.add(clave)
-      // Solo personas del equipo, sin repetir; quien no es del equipo se descarta.
-      const idsSub = unicos((Array.isArray(s.ids) ? s.ids as unknown[] : []).filter((x): x is string => typeof x === 'string')).filter(id => dentro.has(id))
+      // Sin repetir. Desde el 1-nov puede tener gente que no es del equipo (recibe solo lo del subequipo); se
+      // descarta quien no es del CRM, salvo la gente del equipo, que el guardado ya dejó como miembro del espacio.
+      const idsSub = unicos((Array.isArray(s.ids) ? s.ids as unknown[] : []).filter((x): x is string => typeof x === 'string')).filter(id => dentro.has(id) || rolDe.has(id))
       const sub: Subequipo = { id: '', n, ids: idsSub, metodo: metodoValido(s.metodo) ?? 'turnos' }
       if (typeof s.id === 'string' && ID_SUBEQUIPO.test(s.id) && !usados.has(s.id)) { sub.id = s.id; usados.add(s.id) } else sinId.push({ eq, s: sub })
       subs.push(sub)
@@ -214,6 +215,17 @@ export function subequipoDe(eqs: EquiposNorm, equipo: string, extra: unknown): S
   const id = obj(extra).subequipo
   if (typeof id !== 'string' || !id) return null
   return (eqs.subequipos[equipo] ?? []).find(s => s.id === id) ?? null
+}
+
+/** Por equipo, su gente más la de sus subequipos (que puede no ser del equipo): la que entra al CRM. */
+export function conGenteDeSubequipos(ids: Record<string, string[]>, subequipos: unknown): Record<string, string[]> {
+  const subs = obj(subequipos)
+  const out: Record<string, string[]> = {}
+  for (const eq of new Set([...Object.keys(ids), ...Object.keys(subs)])) {
+    const deSubs = (Array.isArray(subs[eq]) ? subs[eq] as unknown[] : []).flatMap(s => { const x = obj(s).ids; return Array.isArray(x) ? x.filter((y): y is string => typeof y === 'string' && y.length > 0) : [] })
+    out[eq] = unicos([...(ids[eq] ?? []), ...deSubs])
+  }
+  return out
 }
 
 /** Las personas de estos equipos, sin repetir. */

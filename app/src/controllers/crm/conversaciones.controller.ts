@@ -336,8 +336,7 @@ export async function editarConversacion(req: Request, res: Response) {
     const cambiaSub = !!sub && sub.id !== subAntes
     // Pasó a otro equipo o a un subequipo: si quien la tiene no es de ahí, queda sin asesor y se reparte entre esa
     // gente conectada. Esperando desde el cambio, así el reparto de cada minuto la sigue ofreciendo si no hay nadie conectado.
-    const delEquipo = new Set(eqs.ids[eqSub] ?? [])
-    const destino = sub ? new Set(sub.ids.filter(u => delEquipo.has(u))) : cambiaEquipo ? miembrosNuevo : null
+    const destino = sub ? new Set(sub.ids) : cambiaEquipo ? miembrosNuevo : null
     if ((cambiaSub || cambiaEquipo) && destino && c.estado !== 'finalizadas') {
       const quien = nuevoAsignado !== undefined ? nuevoAsignado : c.asignadoId
       if (!quien || !destino.has(quien)) {

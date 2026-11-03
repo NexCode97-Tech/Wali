@@ -259,17 +259,16 @@ function eqrBorrador(nombre){
   const x = {orig: eq ? eq.n : '', n: eq ? eq.n : '', color: colorDe(eq ? eq.n : '', i), ids, lineas: eq ? lineasDe(eq.n).map(l => l.id) : [],
     transferible: eq ? EQ_CFG.transferibles[eq.n] !== false : true, metodo: eq ? eqrMetodoDe(eq.n) : eqrMetodo(metodoGeneral())[0],
     lideres: eq ? lideresDe(eq.n) : [], rol: eq ? rolIntegrantesDe(eq.n) : 'Integrante',
-    subs: eq ? subequiposDe(eq.n).map(s => ({id: s.id, n: s.n, ids: (Array.isArray(s.ids) ? s.ids : []).filter(id => ids.includes(id)), metodo: eqrMetodo(s.metodo)[0]})) : [],
+    subs: eq ? subequiposDe(eq.n).map(s => ({id: s.id, n: s.n, ids: Array.isArray(s.ids) ? [...s.ids] : [], metodo: eqrMetodo(s.metodo)[0]})) : [],
     verTodas: false};
   x._foto = eqrFoto(x);
   return x;
 }
-// Sacar a alguien del equipo (en el borrador) lo quita también de los líderes y de los subequipos.
-function eqrQuitar(x, id){ x.ids = x.ids.filter(y => y !== id); x.lideres = x.lideres.filter(y => y !== id); x.subs.forEach(s => { s.ids = s.ids.filter(y => y !== id); }); }
+// Sacar a alguien del equipo (en el borrador) lo quita del equipo y de sus líderes; sus subequipos no se tocan (1-nov).
+function eqrQuitar(x, id){ x.ids = x.ids.filter(y => y !== id); x.lideres = x.lideres.filter(y => y !== id); }
 // Lo mismo en lo guardado (EQ_CFG), para los diálogos de Personas.
 function eqrSacarDe(eq, id){
   if (Array.isArray(EQ_CFG.lideres[eq])) EQ_CFG.lideres[eq] = EQ_CFG.lideres[eq].filter(y => y !== id);
-  if (Array.isArray(EQ_CFG.subequipos[eq])) EQ_CFG.subequipos[eq] = EQ_CFG.subequipos[eq].map(s => ({...s, ids: (s.ids || []).filter(y => y !== id)}));
 }
 function eqrCerrarEditor(){
   st.eqVer = null; st.eqDraft = null; st.eqBusca = null; st.eqrMenu = null;
@@ -278,7 +277,8 @@ function eqrCerrarEditor(){
 }
 
 /* ── Lista de equipos (pestañas Equipos, Personas y, con la configuración general, Reglas del reparto) ── */
-const eqrPersonasVisibles = () => { const adm = equiposAdministrables(); return personasCrm().filter(p => ALCANCE.todo || adm.some(eq => idsDe(eq).includes(p.id))); };
+// También quien está solo en un subequipo de sus equipos (1-nov).
+const eqrPersonasVisibles = () => { const adm = equiposAdministrables(); return personasCrm().filter(p => ALCANCE.todo || adm.some(eq => idsDe(eq).includes(p.id) || subequiposDe(eq).some(s => (s.ids || []).includes(p.id)))); };
 const eqrTabs = adm => `<div class="cn-bar"><div class="cn-tabs" role="tablist" aria-label="Equipos y reparto">${[['equipos', 'Equipos', adm.length], ['personas', 'Personas', eqrPersonasVisibles().length], ...(ALCANCE.config ? [['reglas', 'Reglas del reparto', null]] : [])].map(([k, n, c]) => `<button type="button" role="tab" aria-selected="${st.repTab === k}" data-rep-tab="${k}">${n}${c != null ? `<span class="kb-n">${c}</span>` : ''}</button>`).join('')}</div></div>`;
 paginaEquipos = function(){
   const volver = `<button type="button" class="volver" data-ir="ajustes-crm">${I('back')}Ajustes del CRM</button>`;
@@ -340,7 +340,7 @@ editorEquipo = function(){
         return `<div class="eqr-sub"><div class="eqr-subc"><span class="eqr-sq" style="background:${colorOk(x.color)}"></span><b>${esc(s.n)}</b><small>· ${esc(eqrMetodo(s.metodo)[1])}</small><span class="eqr-sp"></span><button type="button" class="btn eqr-b eqr-bs" data-eqr-subeditar="${esc(s.id)}" aria-label="Editar ${esc(s.n)}">Editar</button></div>${gente.length ? `<div class="eqr-chips">${gente.map(p => `<span class="eqr-chip">${avPer(p)}${esc(p.nombre)}</span>`).join('')}</div>` : ''}</div>`; }).join('')}</section>`;
   // Nombre y líneas: solo el administrador sin equipo (tocan otros equipos); el líder los ve en texto y sí cambia el color.
   const cardNombre = `<section class="eqr-card" aria-label="Nombre y color"><h4>Nombre y color</h4>
-      ${todo ? `<input class="eqr-in" id="eq-nombre" value="${esc(x.n)}" placeholder="Ej. Moderación" maxlength="80" autocomplete="off" aria-label="Nombre del equipo">` : `<span class="eqr-nombre-t">${esc(x.orig)}</span>`}
+      ${todo ? `<input class="eqr-in" id="eq-nombre" value="${esc(x.n)}" placeholder="Ej. Atención al cliente" maxlength="80" autocomplete="off" aria-label="Nombre del equipo">` : `<span class="eqr-nombre-t">${esc(x.orig)}</span>`}
       <div class="eqr-sw" role="group" aria-label="Color del equipo">${COLORES_EQ.map(([c, n]) => `<button type="button" style="background:${c}" data-eq-color="${c}" aria-pressed="${x.color === c}" aria-label="${n}"></button>`).join('')}</div></section>`;
   const cardRoles = `<section class="eqr-card" aria-label="Roles del equipo"><h4>${eqrSvg(EQR_IC.roles, 17)}Roles del equipo</h4>
       <div class="eqr-campo"><span class="eqr-et">Líder</span><span class="eqr-auto"><span>Líder de ${eqrNomSpan(x)}</span>${eqrSvg(EQR_IC.candado, 15)}</span><small>Sale solo del nombre del equipo.</small></div>
@@ -352,7 +352,7 @@ editorEquipo = function(){
       : '<p class="rq-ayuda">Todavía no hay líneas de WhatsApp conectadas. Cuando conectes una, la eliges aquí.</p>')
       + `<label class="rq-chk"><input type="checkbox" data-eq-transf="1" ${x.transferible ? 'checked' : ''}><span>Las que le transfieren otros equipos</span></label>`;
   } else {
-    // Como las maquetas: con una línea, «nombre · teléfono» (Moderación); con varias, sus nombres juntos (Ventas).
+    // Como las maquetas: con una línea, «nombre · teléfono»; con varias, sus nombres juntos.
     const ls = lineasDe(x.orig), partes = ls.length === 1 ? [`${ls[0].n} · ${ls[0].tel}`] : ls.length ? [ls.map(l => l.n).join(' · ')] : [];
     if (x.orig === 'Ventas' && !partes.length) partes.push('Las que llegan sin un equipo propio');
     recibe = partes.length ? partes.map(t => `<span class="eqr-txt">${esc(t)}</span>`).join('') : '<span class="eqr-txt rq-sub">Ninguna todavía</span>';
@@ -397,7 +397,7 @@ guardarEquipo = function(){
   EQ_CFG.lideres[n] = x.lideres.filter(id => ids.includes(id));
   // Vacío: el API pone el rol inicial (Asesor, Auditor o Integrante) y vuelve con el evento del ajuste.
   EQ_CFG.roles[n] = rol;
-  EQ_CFG.subequipos[n] = x.subs.map(s => ({id: s.id, n: s.n, ids: s.ids.filter(id => ids.includes(id)), metodo: s.metodo}));
+  EQ_CFG.subequipos[n] = x.subs.map(s => ({id: s.id, n: s.n, ids: [...s.ids], metodo: s.metodo}));
   MIEMBROS[n] = ids.map(id => (personaDe(id) || {}).nombre).filter(Boolean);
   EQ_CFG.colores[n] = x.color; EQ_CFG.metodos[n] = x.metodo;
   if (todo) {
@@ -439,15 +439,15 @@ document.getElementById('page').addEventListener('click', e => {
   const ro = t.closest('[data-eqr-rolop]'); if (ro) {
     const id = ro.dataset.eqrRolop, lider = ro.dataset.v === 'lider';
     x.lideres = x.lideres.filter(y => y !== id);
-    // El líder ve todo el equipo: sale de los subequipos (el diálogo de subequipo solo ofrece integrantes).
-    if (lider) { x.lideres.push(id); x.subs.forEach(s => { s.ids = s.ids.filter(y => y !== id); }); }
+    // Cambiar el rol no quita a nadie de sus subequipos (1-nov).
+    if (lider) x.lideres.push(id);
     st.eqrMenu = null; render(); eqrFoco(`[data-eqr-abrir="${CSS.escape('rol:' + id)}"]`); return;
   }
   const me = t.closest('[data-eqr-metodo]'); if (me) { x.metodo = eqrMetodo(me.dataset.eqrMetodo)[0]; st.eqrMenu = null; render(); eqrFoco('[data-eqr-abrir="metodo"]'); return; }
   const qu = t.closest('[data-eqr-quitar]'); if (qu) {
     // Un administrador lo saca solo un administrador sin equipo (el API lo exige): la X se ve como en la maqueta y avisa.
     if (!ALCANCE.todo && eqrEsAdmin(personaDe(qu.dataset.eqrQuitar))) { toast('Solo un administrador sin equipo puede sacar a un administrador de un equipo'); return; }
-    eqrQuitar(x, qu.dataset.eqrQuitar); render(); return;
+    subQuitarDelEquipo(x, qu.dataset.eqrQuitar); return;
   }
   if (t.closest('[data-eqr-vertodas]')) { x.verTodas = true; render(); return; }
   if (t.closest('[data-eqr-subnuevo]')) { eqrAbrirSub(null); return; }
@@ -504,7 +504,7 @@ function eqrDlgSub(){
   const gente = x.ids.filter(id => !x.lideres.includes(id)).map(personaDe).filter(Boolean);
   const m = eqrMetodo(S.metodo), chulo = eqrSvg(EQR_IC.chulo, 12, 3);
   return `<div class="eqr-sqb"><div class="eqr-sqh"><div><h3>${S.id ? 'Editar subequipo' : 'Nuevo subequipo'}</h3><span>Dentro de ${esc(nom)}</span></div><button type="button" class="eqr-sqx" data-cerrar-dlg="1" aria-label="Cerrar">${eqrSvg(EQR_IC.x, 18, 2)}</button></div>
-    <label class="eqr-lab">Nombre<input id="eqr-sq-n" value="${esc(S.n)}" placeholder="Ej. Moderación de salas" maxlength="60" autocomplete="off"></label>
+    <label class="eqr-lab">Nombre<input id="eqr-sq-n" value="${esc(S.n)}" placeholder="Ej. Clientes nuevos" maxlength="60" autocomplete="off"></label>
     <div class="eqr-sqp" role="group" aria-labelledby="eqr-sq-pt"><span id="eqr-sq-pt">Personas</span>${gente.map(p => { const on = S.ids.includes(p.id); return `<button type="button" class="eqr-chk" role="checkbox" aria-checked="${on}" data-eqr-sq-per="${esc(p.id)}"><span class="eqr-caja${on ? ' on' : ''}">${on ? chulo : ''}</span>${avPer(p)}${esc(p.nombre)}</button>`; }).join('')}
       <small>Solo salen las personas de ${esc(nom)}. Una persona puede estar en más de un subequipo.</small></div>
     <div class="eqr-lab"><span id="eqr-sq-mt">Cómo se reparte</span><div class="eqr-dd"><button type="button" class="eqr-sel eqr-sel2${S.abierto ? ' abierto' : ''}" data-eqr-sq-abrir="1" aria-haspopup="listbox" aria-expanded="${!!S.abierto}" aria-labelledby="eqr-sq-mt eqr-sq-mv"><span id="eqr-sq-mv">${esc(m[1])}</span>${eqrSvg(S.abierto ? EQR_IC.arriba : EQR_IC.abajo, 14, 2)}</button>
@@ -587,7 +587,7 @@ document.addEventListener('crm:alcance', () => {
 /* ── Personas: quién ve qué en el CRM (RolesPersonas), con el buscador, el filtro por equipo, «Agregar persona»,
    «Máximo abiertas» y el lápiz de antes. El líder ve solo a la gente de sus equipos. ── */
 tabPersonas = function(){
-  const q = norm(st.perQ || ''), tope = CFG.reparto.tope, adm = equiposAdministrables();
+  const q = norm(st.perQ || ''), adm = equiposAdministrables();
   if (st.perEq && !adm.includes(st.perEq)) st.perEq = '';
   // Como la maqueta: primero quien no tiene equipo; después cada equipo, sus líderes arriba y su gente en el orden del equipo.
   const orden = p => { const eq = EQUIPOS.find(e => idsDe(e.n).includes(p.id)); return eq ? [EQUIPOS.indexOf(eq), rolEnEquipo(p.id, eq.n) === 'lider' ? 0 : 1, idsDe(eq.n).indexOf(p.id)] : [-1, 0, 0]; };
@@ -595,18 +595,20 @@ tabPersonas = function(){
     .map(p => ({p, o: orden(p)})).sort((a, b) => a.o[0] - b.o[0] || a.o[1] - b.o[1] || a.o[2] - b.o[2]).map(y => y.p);
   const filas = lista.map(p => {
     const eqs = EQUIPOS.map(e => e.n).filter(eq => idsDe(eq).includes(p.id)), v = queVeEnCrm(p);
-    const tags = eqs.length ? eqs.map(eq => { const l = rolEnEquipo(p.id, eq) === 'lider'; return `<span class="eqr-par"><span class="eqr-tag"><i style="background:${colorEquipo(eq)}"></i>${esc(eq)}</span><span class="eqr-tag${l ? ' lid' : ''}">${esc(l ? nombreLiderDe(eq) : rolIntegrantesDe(eq))}</span></span>`; }).join('') : '<span class="eqr-sin">Sin equipo</span>';
+    // Sus subequipos van al lado, también los de equipos donde no está (1-nov).
+    const subsTags = EQUIPOS.flatMap(e => subequiposDe(e.n).filter(sq => (sq.ids || []).includes(p.id)).map(sq => `<span class="eqr-tag"><i style="background:${colorEquipo(e.n)}"></i>${esc(sq.n)}${eqs.includes(e.n) ? '' : ` de ${esc(e.n)}`}</span>`)).join('');
+    const tags = (eqs.length ? eqs.map(eq => { const l = rolEnEquipo(p.id, eq) === 'lider'; return `<span class="eqr-par"><span class="eqr-tag"><i style="background:${colorEquipo(eq)}"></i>${esc(eq)}</span><span class="eqr-tag${l ? ' lid' : ''}">${esc(l ? nombreLiderDe(eq) : rolIntegrantesDe(eq))}</span></span>`; }).join('') : subsTags ? '' : '<span class="eqr-sin">Sin equipo</span>') + subsTags;
     const pend = !!(USUARIOS.find(u => u.id === p.id) || {}).pendiente;
     return `<tr class="${pend ? 'eqr-pend' : ''}"><td><span class="eqr-pers">${avPer(p)}<span>${esc(p.nombre)}${pend ? '<span class="eqr-inv">Invitación pendiente</span>' : ''}</span></span></td><td>${esc(ROL_NOMBRE[p.rol] || p.rol || '')}</td><td><span class="eqr-tags">${tags}</span></td><td>${esc(v.t)}${v.s ? `<small>${esc(v.s)}</small>` : ''}</td>
-      <td><input class="rq-num" data-per-tope="${esc(p.id)}" value="${esc(EQ_CFG.topes[p.id] || '')}" placeholder="${tope}" inputmode="numeric" aria-label="Máximo de conversaciones abiertas de ${esc(p.nombre)}"></td>
+      <td><input class="rq-num" data-per-tope="${esc(p.id)}" value="${esc(EQ_CFG.topes[p.id] || '')}" placeholder="Ilimitado" inputmode="numeric" maxlength="3" aria-label="Máximo de conversaciones abiertas de ${esc(p.nombre)}"></td>
       <td class="eqr-lap">${pend ? `<button type="button" class="btn ic" data-per-reenviar="${esc(p.id)}" aria-label="Reenviar la invitación a ${esc(p.nombre)}" title="Reenviar la invitación">${I('send')}</button><button type="button" class="btn ic eqr-xr" data-per-cancelar="${esc(p.id)}" aria-label="Cancelar la invitación de ${esc(p.nombre)}" title="Cancelar la invitación">${I('x')}</button>` : ''}<button type="button" class="btn ic" data-per-eq="${esc(p.id)}" aria-label="Editar a ${esc(p.nombre)}" title="Editar">${I('pen')}</button></td></tr>`;
   }).join('');
   return `<div class="eqr-pt"><p class="eqr-pdesc">Quién entra al CRM y qué ve. Los administradores que no están en ningún equipo ven todo; los demás ven lo que les da su rol en el equipo.</p>
     <div class="rq-bar"><label class="cn-q">${I('search')}<input id="per-q" value="${esc(st.perQ || '')}" placeholder="Buscar una persona" autocomplete="off" aria-label="Buscar una persona"></label>
       ${ddSel('data-per-filtro', [['', 'Todos los equipos'], ...adm.map(n => [n, n])], st.perEq)}<span class="sp"></span>${adm.length ? `<button type="button" class="btn pri" data-per-agregar="1">${I('plus')}Agregar persona</button>` : ''}</div>
-    <div class="eqr-tw"><table class="eqr-tb"><thead><tr><th>Persona</th><th>Rol en la plataforma</th><th>Equipo y rol</th><th>Qué ve en el CRM</th><th>Máximo abiertas</th><th></th></tr></thead>
+    <div class="eqr-tw"><table class="eqr-tb"><thead><tr><th>Persona</th><th>Rol en la plataforma</th><th>Equipo, rol y subequipos</th><th>Qué ve en el CRM</th><th>Máximo abiertas</th><th></th></tr></thead>
       <tbody>${filas || `<tr><td colspan="6" class="eqr-nadie">${q || st.perEq ? 'Nadie coincide con la búsqueda.' : 'Todavía no hay nadie en tus equipos.'}</td></tr>`}</tbody></table></div>
-    <p class="rq-ayuda" style="margin-top:10px">Sin un máximo propio, cada persona usa el general de ${tope}${ALCANCE.config ? ' (Reglas del reparto)' : ''}.</p></div>`;
+    <p class="rq-ayuda" style="margin-top:10px">Vacío es ilimitado. Escribe un número para ponerle un límite a esa persona.</p></div>`;
 };
 
 /* ── Diálogos de Personas: solo los equipos que esta persona administra; lo de los demás equipos no se toca ── */
@@ -808,11 +810,12 @@ document.getElementById('ov-x').addEventListener('click', e => {
   if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(email)) { toast('Ese correo no parece completo'); return; }
   const telefono = valorTel('pa-inv-t'); A.inv.telefono = telefono;
   if (telefono && telefono.replace(/\D/g, '').length < 7) { toast('El teléfono está incompleto'); return; }
-  const eqs = (A.inv.eqs || []).filter(puedeAdministrarEquipo); if (!eqs.length) { toast('Elige al menos un equipo'); return; }
+  const eqs = (A.inv.eqs || []).filter(puedeAdministrarEquipo), subsInv = A.inv.subs || {};
+  if (!eqs.length && !Object.values(subsInv).some(l => l.length)) { toast('Elige al menos un equipo o un subequipo'); return; }
   A.inv.enviando = true; pintarPa();
   // Al quedar en un equipo le llega el correo de invitación (invitaciones.ts, al guardar los equipos).
   crmApi('POST', '/crm/personas/invitar', {nombre, email, telefono: telefono.replace(/[^\d+]/g, '')})
-    .then(p => { if (st.pa !== A) return; PERSONAS_EXTRA[p.id] = {...(PERSONAS_EXTRA[p.id] || {}), nombre: p.nombre, rol: p.rol, foto: p.foto || null}; eqrMembresias(p.id, eqs); paAplicarRoles(p.id, eqs, A.inv.roles || {}); st.pa = null; cerrarDialogo(); render(); toast(`Le enviamos la invitación a ${p.nombre} (${email})`); })
+    .then(p => { if (st.pa !== A) return; PERSONAS_EXTRA[p.id] = {...(PERSONAS_EXTRA[p.id] || {}), nombre: p.nombre, rol: p.rol, foto: p.foto || null}; eqrMembresias(p.id, eqs); paAplicarRoles(p.id, eqs, A.inv.roles || {}); subAplicar(p.id, subsInv); st.pa = null; cerrarDialogo(); render(); toast(`Le enviamos la invitación a ${p.nombre} (${email})`); })
     .catch(err => { if (st.pa !== A) return; A.inv.enviando = false; pintarPa(); toast(err.message || 'No se pudo invitar'); });
 });
 

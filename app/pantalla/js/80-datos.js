@@ -87,7 +87,7 @@ const crmDatos = (() => {
     let x;
     if (!a || typeof a !== 'object') x = {todo: true, lidera: [], integra: [], equipos: [], config: !!CRM_YO.esLider};
     else if (typeof a.todo !== 'boolean') x = {todo: false, lidera: [], integra: lista(a.equipos), equipos: lista(a.equipos), config: !!CRM_YO.esLider};
-    else x = {todo: a.todo, lidera: lista(a.lidera), integra: lista(a.integra), equipos: lista(a.equipos), config: !!a.config};
+    else x = {todo: a.todo, lidera: lista(a.lidera), integra: lista(a.integra), equipos: [...lista(a.equipos), ...lista(a.enSubequipos)], config: !!a.config};
     x.administra = a && typeof a === 'object' && Array.isArray(a.administra) ? lista(a.administra) : x.todo ? (equiposDelAjuste || EQUIPOS.map(e => e.n)) : x.lidera;
     Object.assign(ALCANCE, x, {on: !x.todo});
   }
@@ -567,15 +567,17 @@ const crmDatos = (() => {
     colaAj.set(clave, p); p.finally(() => { if (colaAj.get(clave) === p) colaAj.delete(clave); });
     return p;
   }
+  // Devuelve si quedó guardado (o no había nada que guardar), para quien tiene que hacer algo después (86-subequipos.js).
   async function guardarAjusteYa(clave){
     pendAj.delete(clave);
-    const j = serial(clave, AJUSTES[clave]()), prev = baseAj.get(clave); if (j === prev) return;
+    const j = serial(clave, AJUSTES[clave]()), prev = baseAj.get(clave); if (j === prev) return true;
     baseAj.set(clave, j);
     // Los equipos llevan además los cambios de nombre que todavía no guardó el API (renombrarEquipo).
     const ren = clave === 'equipos' && Object.keys(renombres).length ? {...renombres} : null;
     try {
       await crmApi('PUT', `/crm/ajustes/${encodeURIComponent(clave)}`, {valor: ren ? {...JSON.parse(j), renombres: ren} : JSON.parse(j)});
       if (ren) for (const [k, v] of Object.entries(ren)) if (renombres[k] === v) delete renombres[k];
+      return true;
     }
     catch (err) {
       baseAj.set(clave, prev);
@@ -586,15 +588,16 @@ const crmDatos = (() => {
         toast(err.message); repintarPronto();
       }
       else sinRed();
+      return false;
     }
   }
   // Guarda ya lo pendiente de esas claves, sin esperar la revisión ni los 600 ms. Lo usa el chat de prueba del
   // agente (pregunta con la base de conocimiento que se ve en pantalla) y la subida de documentos (el agente
   // encendido los lee desde el siguiente mensaje).
   async function guardarYa(claves){
-    if (SOLO_LECTURA || !listo) return;
+    if (SOLO_LECTURA || !listo) return [false];
     revisarAjustes();
-    await Promise.all(claves.filter(k => AJUSTES[k]).map(k => {
+    return Promise.all(claves.filter(k => AJUSTES[k]).map(k => {
       if (pendAj.has(k)) { clearTimeout(timersAj.get(k)); return guardarAjuste(k); }
       return colaAj.get(k) || Promise.resolve();
     }));

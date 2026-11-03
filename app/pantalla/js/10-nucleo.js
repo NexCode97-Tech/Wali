@@ -147,7 +147,7 @@ const ETIQ_COL = Object.fromEntries(ETIQS.map(([n, c]) => [n, colorOk(c)]));
 // Etiquetas por equipo (28-sep, maqueta «CRM · etiquetas por equipo»): [nombre, color, equipo]; sin equipo es para todos.
 const eqDeEtiq = e => (e && typeof e[2] === 'string' && e[2]) || '';
 // Las de la barra: las de todos (y las de un equipo que ya no existe) y las de los equipos que la persona ve, sin repetir
-// el nombre. Quien entra solo por Moderación no ve las de Ventas (como etapasQueVeo).
+// el nombre. Quien entra solo por otro equipo no ve las de Ventas (como etapasQueVeo).
 function etiquetasQueVeo(){ const eqs = new Set(equiposQueVeo()), vistos = new Set(); return ETIQS.filter(e => { const q = eqDeEtiq(e); return (!q || eqs.has(q) || !EQUIPOS.some(x => x.n === q)) && !vistos.has(e[0]) && vistos.add(e[0]); }); }
 const eqDeConv = c => (c && c.equipo) || 'Ventas';
 // Material de ventas del equipo (Ajustes del CRM, Archivos): se guarda como ajuste «material».
@@ -640,7 +640,10 @@ function opcionesAsesor(c, q){
   // Primero los conectados (en línea, ocupados, ausentes y al final los desconectados), luego por nombre (6-oct).
   const ORDEN_EST = {'En línea':0, 'Ocupada':1, 'Ausente':2, 'Desconectado':3};
   // Los administradores también responden y se les puede asignar (14-oct), aunque no estén en el equipo.
-  const delEq = personasDeEquipo(eq), admins = USUARIOS.filter(u => u.rol === 'ADMIN' && !delEq.some(x => x.id === u.id));
+  // Y la gente del subequipo de la conversación, aunque no sea del equipo (1-nov).
+  const delEquipo = personasDeEquipo(eq), sq = c.subequipo ? subequiposDe(eq).find(y => y.id === c.subequipo) : null;
+  const delEq = [...delEquipo, ...(sq ? (sq.ids || []).map(id => USUARIOS.find(u => u.id === id)).filter(u => u && !delEquipo.some(x => x.id === u.id)) : [])];
+  const admins = USUARIOS.filter(u => u.rol === 'ADMIN' && !delEq.some(x => x.id === u.id));
   const gente = [...delEq, ...admins].filter(u => !n || norm(u.nombre).includes(n))
     .sort((a, b) => (ORDEN_EST[estadoDe(a)] ?? 3) - (ORDEN_EST[estadoDe(b)] ?? 3) || a.nombre.localeCompare(b.nombre, 'es'));
   const sin = !n || norm('Sin asignar').includes(n) ? `<button type="button" role="option" class="pc-op" data-a="" aria-selected="${!c.asig}"><span class="av" style="background:#e5e9f0;color:#6b7280">–</span><span class="pc-tx"><span>Sin asignar</span><small>La toma el reparto del equipo</small></span>${!c.asig ? I('check','i ck') : ''}</button>` : '';
@@ -825,7 +828,7 @@ function pagina(){
       ${ac('disp','clock','Mi disponibilidad', `${AJ.estado}${AJ.reparto ? ' · recibes conversaciones nuevas' : ' · no recibes conversaciones nuevas'}`, `
         <div class="fl">Estado${ddSel('data-aj-est', ['En línea','Ocupada','Ausente'], AJ.estado)}</div>
         ${tg('reparto', 'Recibir conversaciones nuevas del reparto automático', 'Apágalo si estás en reunión o terminando tu turno.')}
-        <p class="hint">Tu tope es de ${esc(String(CFG.reparto.tope))} conversaciones abiertas, lo define tu líder. Si te marcas como ausente, las conversaciones nuevas pasan al siguiente asesor disponible.</p>`)}
+        <p class="hint">${EQ_CFG.topes && EQ_CFG.topes[CRM_YO.id] ? `Tu máximo es de ${esc(String(EQ_CFG.topes[CRM_YO.id]))} conversaciones abiertas, lo define tu líder o un administrador.` : 'No tienes un máximo de conversaciones abiertas.'} Si te marcas como ausente, las nuevas pasan al siguiente disponible.</p>`)}
       ${ac('firma','pen','Firma en los mensajes', AJ.firma ? 'Tus mensajes terminan con tu nombre' : 'Sin firma', `
         ${tg('firma', 'Agregar mi nombre al final de cada mensaje', '')}
         <div class="prev"><div class="b">Así se ve el final de tus mensajes.${AJ.firma ? `<br><br><i>${esc(AJ.corto)}${ESPACIO.nombre ? ' · ' + esc(ESPACIO.nombre) : ''}</i>` : ''}</div></div>`)}
@@ -1697,7 +1700,6 @@ function paginaCfg(k){
   if (k === 'reparto') { const r = CFG.reparto; return `<div class="ajw ancho">${cab('Equipos y reparto', 'Cómo se reparten las conversaciones nuevas entre los asesores conectados.')}
     <div class="two3"><div class="cfg"><div class="box2"><h4>${I('users')}Método de reparto</h4>${ddSel('data-cfg-metodo', ['Por turnos','Al que tenga menos','Manual'], r.metodo)}
       <p class="muted" style="margin:0">${r.metodo === 'Por turnos' ? 'Una para cada asesor conectado, en orden.' : r.metodo === 'Al que tenga menos' ? 'Va al asesor con menos conversaciones abiertas.' : 'Nadie la recibe sola: el líder la asigna.'}</p>
-      ${fila('Tope de conversaciones abiertas por asesor', 'Al llegar al tope, deja de recibir nuevas', `<input class="inl" data-cfg-in="reparto.tope" value="${r.tope}">`)}
       ${fila('Si no responde en estos minutos, pasa al siguiente', '', `<input class="inl" data-cfg-in="reparto.minutos" value="${r.minutos}">`)}</div></div>
       <div class="cfg"><div class="box2"><h4>${I('flow')}Excepciones</h4>
       ${fila('No asignar a quien está ausente', '', sw('rep-ausente', r.ausente))}
