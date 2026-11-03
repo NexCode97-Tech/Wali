@@ -551,12 +551,16 @@ const crmDatos = (() => {
     // Contactos que se quitaron de la lista.
     for (const id of [...baseCt.keys()]) if (!CT_EXTRA.some(x => x.contactoId === id) && !CONV.some(c => c.contactoId === id)) { baseCt.delete(id); crmApi('DELETE', `/crm/contactos/${id}`).catch(err => toast(err.message)); }
   }
-  const pendAj = new Map(), timersAj = new Map();
+  // rechazadoAj: lo último que el servidor rechazó (4xx) por clave. Ese mismo valor no se vuelve a mandar solo: sin esto,
+  // un ajuste que no vuelve exacto a lo de antes (o sin «antes») se reintentaba cada segundo, p. ej. con la prueba vencida.
+  const pendAj = new Map(), timersAj = new Map(), rechazadoAj = new Map();
   function revisarAjustes(){
     for (const clave of Object.keys(AJUSTES)) {
       if (!puedeGuardar(clave)) continue;
       const o = AJUSTES[clave](); if (o === undefined) continue;
-      const j = serial(clave, o); if (j === baseAj.get(clave) || j === pendAj.get(clave)) continue;
+      const j = serial(clave, o);
+      if (j === baseAj.get(clave)) { rechazadoAj.delete(clave); continue; }
+      if (j === pendAj.get(clave) || j === rechazadoAj.get(clave)) continue;
       pendAj.set(clave, j); clearTimeout(timersAj.get(clave)); timersAj.set(clave, setTimeout(() => guardarAjuste(clave), 600));
     }
   }
@@ -583,6 +587,8 @@ const crmDatos = (() => {
       baseAj.set(clave, prev);
       if (err.status >= 400 && err.status < 500) {
         if (serial(clave, AJUSTES[clave]()) === j && prev) aplicarAjuste(clave, JSON.parse(prev));
+        // Lo que quedó en pantalla tras revertir es lo que no se vuelve a mandar hasta que cambie o se recargue.
+        rechazadoAj.set(clave, serial(clave, AJUSTES[clave]()));
         // No se guardó: el nombre vuelve a ser el de antes y las conversaciones vuelven a tener el suyo.
         if (ren) { for (const k of Object.keys(ren)) delete renombres[k]; resincronizar(); }
         toast(err.message); repintarPronto();
@@ -599,18 +605,21 @@ const crmDatos = (() => {
     revisarAjustes();
     return Promise.all(claves.filter(k => AJUSTES[k]).map(k => {
       if (pendAj.has(k)) { clearTimeout(timersAj.get(k)); return guardarAjuste(k); }
+      if (rechazadoAj.has(k) && rechazadoAj.get(k) === serial(k, AJUSTES[k]())) return false;
       return colaAj.get(k) || Promise.resolve();
     }));
   }
-  let timerPref = null;
+  let timerPref = null, rechazadoPref = null;
   function revisarPref(){
-    if (J(prefDe()) === basePref) return;
+    const actual = J(prefDe());
+    if (actual === basePref) { rechazadoPref = null; return; }
+    if (actual === rechazadoPref) return;
     clearTimeout(timerPref);
     timerPref = setTimeout(async () => {
       const v = prefDe(), j = J(v), prev = basePref; if (j === prev) return;
       basePref = j; const mio = USUARIOS.find(u => u.id === YO_ID); if (mio) mio.estado = AJ.estado;
       try { await crmApi('PUT', '/crm/preferencias', {valor: v}); }
-      catch (err) { basePref = prev; if (err.status >= 400 && err.status < 500) { toast(err.message); } else sinRed(); }
+      catch (err) { basePref = prev; if (err.status >= 400 && err.status < 500) { rechazadoPref = j; toast(err.message); } else sinRed(); }
     }, 600);
   }
   // Solo lectura: nada se escribe; lo que se intentó cambiar vuelve como estaba.
