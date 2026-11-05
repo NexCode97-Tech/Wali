@@ -6,6 +6,7 @@ import { asyncHandler } from '../middleware/errorHandler'
 import { configura } from '../utils/roles'
 import { AppError, ForbiddenError, ValidationError } from '../utils/errors'
 import { cambiarPedir, nuevaVersion, resumenTerminos } from '../services/crm/terminos'
+import { enEspacio } from '../services/crm/espacio'
 import { nombreArchivo, subirACloudinary } from '../controllers/crm/_comun'
 import { logger } from '../utils/logger'
 import { rutasWaCrm } from './crmWhatsapp'
@@ -224,7 +225,8 @@ router.post('/terminos', soloLideres('subir los términos y condiciones'), unArc
     logger.error(`[CRM términos] Cloudinary: ${(e as Error)?.message ?? e}`)
     throw new AppError('No se pudo guardar el PDF. Intenta de nuevo en un momento.', 502)
   }
-  return ApiResponse.created(res, await nuevaVersion(url, n, req.userId ?? null, urlPublica()))
+  // multer corre fuera del contexto de la petición: la empresa se vuelve a fijar antes de guardar.
+  return ApiResponse.created(res, await enEspacio(req.espacioId!, () => nuevaVersion(url, n, req.userId ?? null, urlPublica())))
 }))
 router.put('/terminos', soloLideres('cambiar los términos y condiciones'), asyncHandler(async (req: Request, res: Response) => {
   if (req.soloLectura) throw new ForbiddenError('Tu cuenta es de solo lectura')
