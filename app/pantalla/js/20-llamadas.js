@@ -805,7 +805,7 @@ burbuja = function(m){
   if (!m.call) return burbujaBase(m);
   const k = m.call, perdida = k.estado !== 'ok';
   const titulo = k.estado === 'buzon' ? 'Llamada perdida · dejó un mensaje de voz' : k.estado === 'perdida' ? 'Llamada perdida' : k.estado === 'nocontesto' ? 'Llamada por WhatsApp · no contestó' : `${k.dir === 'in' ? 'Llamada entrante' : 'Llamada saliente'} por WhatsApp · ${mmss(k.dur || 0)}`;
-  const audio = k.audio && /^https:\/\//.test(k.audio) ? `<audio controls preload="none" src="${esc(k.audio)}" style="width:100%;margin-top:6px"></audio>` : '';
+  const audio = k.audio && /^https:\/\//.test(k.audio) ? `<audio controls preload="none" src="${esc(k.audio)}" style="width:100%;margin-top:6px"></audio>` : k.audio ? `<button type="button" class="lc-ply" data-lv-oir="" data-lv-msg="${esc(m._id || '')}">Escuchar la grabación</button>` : '';
   return `<div class="callrec ${perdida ? 'perdida' : ''}"><div class="t">${I('phone')}${titulo}</div>
     ${k.estado === 'ok' ? `<div class="r"><span>Atendió</span><span>${esc(k.quien)}</span></div>` : ''}
     <div class="r"><span>Línea</span><span>${esc(lineaDe(k.linea).n)}</span></div>

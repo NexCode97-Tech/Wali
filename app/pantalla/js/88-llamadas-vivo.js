@@ -116,6 +116,8 @@ function lvRutas(pc){
 function lvGrabar(){
   if (!LV || LV.grabador || !LV.remoto || !LV.desde || !window.MediaRecorder) return;
   if ((LLAM.lineas[LV.linea] || {}).grabar === false) { LV.sinGrabar = 'la línea no graba las llamadas'; return; }
+  const cv = CONV.find(z => z.id === LV.convId), pg = cv ? puedeGrabar(cv) : {ok:false, motivo:'no ha autorizado la grabación'};
+  if (!pg.ok) { LV.sinGrabar = pg.motivo; return; }
   try {
     const ctx = new AudioContext(), dest = ctx.createMediaStreamDestination();
     ctx.createMediaStreamSource(LV.mic).connect(dest); ctx.createMediaStreamSource(LV.remoto).connect(dest);
@@ -142,8 +144,8 @@ async function lvCerrar(x){
     if (g.trozos.length) {
       try {
         const ext = /mp4/.test(g.tipo) ? 'm4a' : 'webm';
-        const r = await crmSubir(new File(g.trozos, `llamada-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.${ext}`, {type: g.tipo.split(';')[0]}));
-        audio = r.url || '';
+        const r = await crmSubir(new File(g.trozos, `llamada-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.${ext}`, {type: g.tipo.split(';')[0]}), '/crm/grabaciones/subir');
+        audio = r.ref || '';
       } catch (e) { sinGrabar = 'no se pudo subir la grabación'; toast(`La grabación no se pudo guardar: ${e.message}`); }
     }
   }
@@ -219,12 +221,12 @@ function lvDialogoPermiso(c, p){
   const bloqueo = !p.ventana ? 'Pasaron más de 24 horas desde su último mensaje. Cuando te vuelva a escribir, le puedes mandar la solicitud.'
     : !p.puedePedir ? 'WhatsApp deja mandar 1 solicitud al día y 2 por semana a cada persona, y ya se mandaron. Intenta más adelante.' : '';
   abrirDialogo(`<div class="pm"><div class="pm-h"><span class="pm-ic">${LV_IC.tel}</span><div><h3>Pedir permiso para llamar a ${esc(pila || c.n)}</h3><p>${tyc && tyc.requiere ? 'WhatsApp solo deja llamar a quien lo autoriza. Primero acepta los términos y después elige.' : 'WhatsApp solo deja llamar a quien lo autoriza. Le llega este mensaje y elige.'}</p></div></div>
-    <div class="pm-b"><div class="pm-izq">${tyc && tyc.requiere ? `<div class="ll-nota" style="margin-bottom:12px"><b>${esc(pila || c.n)} aún no acepta los términos (versión ${Number(tyc.version)})</b><br>Primero le llegan los términos. Al aceptarlos, sale solo la solicitud de llamada.<br>Enlace: ${esc(String(tyc.enlace).replace(/^https?:\/\//, ''))}</div>` : tyc && tyc.aceptoEn ? `<div class="ll-nota" style="margin-bottom:12px">Aceptó los términos (versión ${Number(tyc.version)}) el ${esc(new Date(tyc.aceptoEn).toLocaleDateString('es-CO', {day: 'numeric', month: 'short', timeZone: 'America/Bogota'}))}.</div>` : ''}<label class="pm-lb">${tyc && tyc.requiere ? 'Mensaje de la solicitud' : 'Mensaje'}<textarea id="pm-t" maxlength="1024">${esc(texto)}</textarea></label><small class="pm-cnt" id="pm-n">${texto.length} / 1024</small>
+    <div class="pm-b${tyc && tyc.requiere ? ' tres' : ''}"><div class="pm-izq">${tyc && tyc.requiere ? `<div class="ll-nota" style="margin-bottom:12px"><b>${esc(pila || c.n)} aún no acepta los términos</b><br>Primero le llegan los términos. Al aceptarlos, sale solo la solicitud de llamada.<br>Enlace: ${esc(String(tyc.enlace).replace(/^https?:\/\//, ''))}</div>` : tyc && tyc.aceptoEn ? `<div class="ll-nota" style="margin-bottom:12px">Aceptó los términos el ${esc(new Date(tyc.aceptoEn).toLocaleDateString('es-CO', {day: 'numeric', month: 'short', timeZone: 'America/Bogota'}))}.</div>` : ''}<label class="pm-lb">${tyc && tyc.requiere ? 'Mensaje de la solicitud' : 'Mensaje'}<textarea id="pm-t" maxlength="1024">${esc(texto)}</textarea></label><small class="pm-cnt" id="pm-n">${texto.length} / 1024</small>
       <ul class="pm-info"><li>${LV_IC.ok}<span>Si acepta, le puedes llamar <b>7 días</b>, o siempre si lo elige.</span></li>
         <li>${LV_IC.reloj}<span>Máximo <b>1 solicitud al día</b> y <b>2 por semana</b>. Se reinicia con cualquier llamada contestada.</span></li>
         <li>${LV_IC.info}<span>WhatsApp solo deja mandarla si te escribió en las <b>últimas 24 horas</b>.</span></li></ul>
       ${bloqueo ? `<div class="ll-nota" style="margin-top:12px">${esc(bloqueo)}</div>` : ''}</div>
-      <div class="pm-tel">${tyc && tyc.requiere ? `<small>1. Primero le llega este formulario</small><div class="pm-wa"><div class="pm-bur"><span>Hola${pila ? ' ' + esc(pila) : ''}, para poder llamarte por WhatsApp primero necesitamos que aceptes nuestros términos y condiciones.</span></div><div class="pm-bur" style="text-align:center;font-weight:600;color:#00796b">Revisar y aceptar</div></div><small style="margin-top:10px">2. Si acepta, sale solo el permiso</small>` : '<small>Así le llega</small>'}<div class="pm-wa"><div class="pm-bur"><span id="pm-v">${esc(texto)}</span><span class="pm-h1">${esc(new Date().toLocaleTimeString('es-CO', {hour: 'numeric', minute: '2-digit'}))}</span></div>
+      ${tyc && tyc.requiere ? `<div class="pm-tel pm-paso"><small>1. Primero le llega este formulario</small><div class="pm-wa"><div class="pm-bur" style="padding-bottom:8px"><span>Hola${pila ? ' ' + esc(pila) : ''}, para poder llamarte por WhatsApp primero necesitamos que aceptes nuestros términos y condiciones.</span></div><div class="pm-cta">Revisar y aceptar</div></div></div>` : ''}<div class="pm-tel">${tyc && tyc.requiere ? '<small>2. Si acepta, sale solo el permiso</small>' : '<small>Así le llega</small>'}<div class="pm-wa"><div class="pm-bur"><span id="pm-v">${esc(texto)}</span><span class="pm-h1">${esc(new Date().toLocaleTimeString('es-CO', {hour: 'numeric', minute: '2-digit'}))}</span></div>
         ${lvTarjetaWa(empresa)}</div>
         <small class="pm-sub">Al tocar «Seleccionar preferencia» elige</small><div class="pm-ops"><span>Permitir llamadas</span><span>Permitir temporalmente las llamadas</span><span>Ahora no</span></div></div></div>
     <div class="pm-f"><button type="button" class="pm-cancel" data-cerrar-dlg="1">Cancelar</button><button type="button" class="pm-send" data-lv-pedir="${c.id}" ${bloqueo ? 'disabled' : ''}>${LV_IC.tel}${tyc && tyc.requiere ? 'Enviar términos' : 'Enviar solicitud'}</button></div></div>`, 'pm-dlg');
@@ -314,7 +316,7 @@ burbuja = function(m){
   const titulo = ok ? `${k.dir === 'in' ? 'Llamada entrante' : 'Llamada saliente'} · ${mmss(k.dur || 0)}`
     : k.estado === 'buzon' ? 'Llamada perdida · dejó un mensaje de voz' : k.estado === 'perdida' ? 'Llamada perdida' : 'Llamada saliente · no contestó';
   const sub = ok ? `${k.dir === 'in' ? 'Contestó' : 'Llamó'} ${esc(k.quien || 'el equipo')}${m.h ? ' · ' + esc(m.h) : ''}` : `${esc(lineaDe(k.linea).n)}${m.h ? ' · ' + esc(m.h) : ''}${k.error ? ' · ' + esc(k.error) : ''}`;
-  const audio = k.audio && /^https:\/\//.test(k.audio) ? `<button type="button" class="lc-ply" data-lv-oir="${esc(k.audio)}">${LV_IC.play}Grabación</button>` : '';
+  const audio = k.audio ? `<button type="button" class="lc-ply" data-lv-oir="${esc(/^https:\/\//.test(k.audio) ? k.audio : '')}" data-lv-msg="${esc(m._id || '')}">${LV_IC.play}Grabación</button>` : '';
   return `<div class="lc-log${entra ? ' entra' : ''}"><div class="lc-ll${ok ? '' : ' mal'}">${k.dir === 'in' ? LV_IC.ent : LV_IC.sal}<div><b>${titulo}</b><small>${sub}</small></div>${audio}</div>
     ${k.nota ? `<div class="lc-nl">${LV_IC.nota}<span><b>Nota de la llamada:</b> ${esc(k.nota)}</span></div>` : ''}
     ${ok && !audio && k.sinGrabar ? `<small class="lc-sg">No se grabó: ${esc(k.sinGrabar)}</small>` : ''}</div>`;
@@ -325,7 +327,10 @@ document.addEventListener('click', e => {
   const b = e.target.closest('[data-lv-oir]'); if (!b) return;
   if (lvOyendo && lvOyendo.b === b) { lvOyendo.a.pause(); lvBotonOir(b, false); lvOyendo = null; return; }
   if (lvOyendo) { lvOyendo.a.pause(); lvBotonOir(lvOyendo.b, false); }
-  const a = new Audio(b.dataset.lvOir); lvOyendo = {a, b};
+  const a = new Audio(); lvOyendo = {a, b};
+  // Las privadas piden una dirección que vence; si no llega, no suena y se avisa.
+  (b.dataset.lvOir ? Promise.resolve(b.dataset.lvOir) : crmApi('GET', `/crm/grabaciones/${encodeURIComponent(b.dataset.lvMsg)}/url`).then(d => d.url))
+    .then(u => { if (lvOyendo && lvOyendo.a === a) { a.src = u; a.play().catch(() => {}); } }).catch(err => { toast(err.message); lvBotonOir(b, false); lvOyendo = null; });
   a.onended = () => { lvBotonOir(b, false); lvOyendo = null; };
   a.play().then(() => lvBotonOir(b, true)).catch(() => toast('No se pudo reproducir la grabación'));
 });
@@ -396,12 +401,12 @@ body:has(.lcd) .ay-fab:not(.abierta){opacity:0;pointer-events:none}
 /* Botón Llamar cuando ya dio permiso */
 #b-call.pr-llamar > svg:first-child{background:#16a34a!important;color:#fff!important;box-shadow:0 0 0 4px rgba(22,163,74,.18)}
 /* Diálogo del permiso */
-.dlg.pm-dlg{width:min(760px,calc(100vw - 32px));padding:0;overflow:hidden}
+.dlg.pm-dlg{width:min(1120px,calc(100vw - 32px));padding:0;overflow:hidden}.dlg.pm-dlg > :last-child,.dlg.pm-dlg .pm > :last-child{margin-bottom:0}
 .pm .i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
 .pm-h{display:flex;gap:14px;align-items:flex-start;padding:22px 24px 16px}
 .pm-ic{width:42px;height:42px;border-radius:12px;background:#dcfce7;color:#15803d;display:grid;place-items:center;flex:none}
 .pm-h h3{margin:0;font-size:18px;font-weight:700;letter-spacing:-.01em}.pm-h p{margin:3px 0 0;font-size:13.5px;color:var(--ink3)}
-.pm-b{display:grid;grid-template-columns:1fr 260px;gap:22px;padding:4px 24px 20px}
+.pm-b{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:22px;padding:4px 24px 20px}.pm-b.tres{grid-template-columns:minmax(0,1.15fr) minmax(0,.9fr) minmax(0,1.1fr)}.pm-paso{display:grid;gap:8px;align-content:start;min-width:0}.pm-cta{display:flex;align-items:center;justify-content:center;min-height:40px;background:#fff;border-radius:10px;color:#00796b;font-weight:600;font-size:13.5px}
 .pm-lb{display:grid;gap:6px;font-size:12.5px;font-weight:600;color:var(--ink2)}
 .pm-lb textarea{min-height:92px;resize:vertical;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit;font-size:14px;font-weight:400;color:var(--ink)}
 .pm-cnt{display:block;text-align:right;font-size:11.5px;color:var(--ink4);margin-top:4px}
@@ -420,7 +425,8 @@ body:has(.lcd) .ay-fab:not(.abierta){opacity:0;pointer-events:none}
 .pm-cancel{height:40px;padding:0 16px;border:1px solid var(--line);border-radius:10px;background:#fff;font:inherit;font-weight:600;cursor:pointer}
 .pm-send{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 18px;border:0;border-radius:10px;background:#FFD21F;font:inherit;font-weight:700;cursor:pointer}
 .pm-send:disabled{opacity:.5;cursor:default}
-@media (max-width:700px){.pm-b{grid-template-columns:1fr}}
+@media (max-width:1000px){.pm-b.tres{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.pm-b.tres .pm-izq{grid-row:1/3}}
+@media (max-width:700px){.pm-b,.pm-b.tres{grid-template-columns:1fr}.pm-b.tres .pm-izq{grid-row:auto}}
 /* La solicitud en el chat y el aviso cuando acepta */
 .ch-b.pr{display:grid;gap:6px;max-width:340px}
 .pr-cab{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#15803d}.pr-cab .i{width:15px;height:15px}

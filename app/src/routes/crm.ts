@@ -7,7 +7,8 @@ import { configura } from '../utils/roles'
 import { AppError, ForbiddenError, ValidationError } from '../utils/errors'
 import { cambiarPedir, nuevaVersion, resumenTerminos } from '../services/crm/terminos'
 import { enEspacio } from '../services/crm/espacio'
-import { nombreArchivo, subirACloudinary } from '../controllers/crm/_comun'
+import { borrarGrabacion, direccionDe, grabacionPorId, listarGrabaciones, puedeVerGrabaciones, subirGrabacion } from '../services/crm/grabaciones'
+import { convVisible, nombreArchivo, subirACloudinary } from '../controllers/crm/_comun'
 import { logger } from '../utils/logger'
 import { rutasWaCrm } from './crmWhatsapp'
 import { rutasIaCrm } from './crmIa'
@@ -212,6 +213,35 @@ router.put('/preferencias', asyncHandler(ajustes.guardarPreferencias))
 
 // Archivos, catálogo de enlaces de pago e informes
 router.post('/archivos', unArchivo(25), asyncHandler(ajustes.subirArchivo))
+// Grabaciones de llamadas: privadas, solo con una dirección que vence (grabaciones.ts).
+router.post('/grabaciones/subir', unArchivo(60), asyncHandler(async (req: Request, res: Response) => {
+  if (req.soloLectura) throw new ForbiddenError('Tu cuenta es de solo lectura')
+  if (!req.file) throw new ValidationError('Falta el archivo. Súbelo en el campo «archivo».')
+  if (!/^(audio|video)\//.test(req.file.mimetype)) throw new ValidationError('La grabación tiene que ser un audio')
+  try { return ApiResponse.created(res, { ref: await subirGrabacion(req.file.buffer) }) } catch (e) {
+    logger.error(`[CRM grabaciones] Cloudinary: ${(e as Error)?.message ?? e}`)
+    throw new AppError('No se pudo guardar la grabación.', 502)
+  }
+}))
+router.get('/grabaciones', asyncHandler(async (req: Request, res: Response) => {
+  const a = await alcanceDe(req)
+  if (!puedeVerGrabaciones(a)) throw new ForbiddenError('Las grabaciones las ven los administradores y los líderes.')
+  const t = (v: unknown) => (typeof v === 'string' ? v : '')
+  return ApiResponse.success(res, await listarGrabaciones(a, { q: t(req.query.q), miembro: t(req.query.miembro), equipo: t(req.query.equipo), dias: Number(req.query.dias) || 0, antesDe: t(req.query.antesDe) }))
+}))
+router.get('/grabaciones/:id/url', asyncHandler(async (req: Request, res: Response) => {
+  const g = await grabacionPorId(String(req.params.id))
+  await convVisible(req, g.convId)
+  const descargar = req.query.descargar === '1'
+  if (descargar && (req.soloLectura || !puedeVerGrabaciones(await alcanceDe(req)))) throw new ForbiddenError('Tu cuenta no puede descargar grabaciones.')
+  res.setHeader('Cache-Control', 'no-store')
+  return ApiResponse.success(res, { url: direccionDe(g.audio, descargar) })
+}))
+router.delete('/grabaciones/:id', asyncHandler(async (req: Request, res: Response) => {
+  if (req.soloLectura || req.userRole !== 'ADMIN') throw new ForbiddenError('Solo un administrador puede eliminar grabaciones.')
+  await borrarGrabacion(String(req.params.id), 'la eliminó un administrador')
+  return ApiResponse.success(res, { ok: true })
+}))
 // Términos y condiciones de la empresa (Protección de datos).
 router.get('/terminos', asyncHandler(async (_req: Request, res: Response) => ApiResponse.success(res, await resumenTerminos(urlPublica()))))
 router.post('/terminos', soloLideres('subir los términos y condiciones'), unArchivo(10), asyncHandler(async (req: Request, res: Response) => {

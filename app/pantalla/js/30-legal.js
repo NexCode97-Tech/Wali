@@ -17,6 +17,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .pd-arch{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:12px}.pd-arch .ic{flex:none;width:40px;height:40px;border-radius:10px;background:var(--bg2,#f1f3f6);display:flex;align-items:center;justify-content:center}.pd-arch div{min-width:0;flex:1}.pd-arch b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pd-arch small{display:block;font-size:12.5px;color:var(--ink3)}
 .pd-acc{display:flex;flex-wrap:wrap;gap:8px}.pd-acc a{text-decoration:none}
 .pd-enl{display:flex;align-items:center;gap:8px;padding:6px 6px 6px 12px;min-height:50px;border-radius:12px;background:var(--bg2,#f6f7f9)}.pd-enl span{flex:1;min-width:0;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pd-ops{display:grid;gap:8px;margin-top:8px}.pd-op{display:flex;gap:11px;padding:13px 14px;border:1px solid var(--line);border-radius:13px;text-align:left;width:100%;min-height:44px}.pd-op.on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}.pd-op b{display:block;font-weight:600}.pd-op small{display:block;font-size:13px;color:var(--ink3);font-weight:400;margin-top:2px}
 .pd-fest{display:flex;flex-wrap:wrap;gap:6px}
 .pd-fest span{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:2px 10px;color:var(--ink2)}
 .pd-est{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;border-radius:999px;padding:2px 10px}
@@ -78,12 +79,15 @@ function menorDeEdad(c){
   return !!c.menor;
 }
 // Si «Menores de edad: pedirla al representante legal» está encendido (Protección de datos), el menor necesita la autorización del representante legal.
-const pideRepresentante = c => PD.menores !== false && menorDeEdad(c);
+// «Solo mayores de edad» (Protección de datos): no se pide, salvo a quien tenga registrada una edad menor de 18.
+const pideRepresentante = c => { const e = parseInt((c.campos || {}).edad, 10); return e > 0 ? e < 18 : PD.menores !== false && !!c.menor; };
 const nombrePila = c => /^\+?\d/.test(c.n || '') ? '' : String(c.n || '').split(' ')[0];
 function puedeGrabar(c){
   const L = LLAM.lineas[c.linea] || {};
   if (!L.grabar) return {ok:false, motivo:'la grabación está apagada en esta línea'};
-  // La autorización de datos se toma en la misma llamada: WhatsApp avisa en voz alta el propósito antes de grabar (6-oct).
+  // Solo con autorización previa (5-nov): sin ella la llamada sigue, pero no se graba. El menor necesita la de su representante.
+  if (!c.aut) return {ok:false, motivo:'no ha autorizado la grabación'};
+  if (pideRepresentante(c) && !c.rep) return {ok:false, motivo:'falta la autorización del representante legal'};
   return {ok:true};
 }
 function filaGrabacion(c){
@@ -229,22 +233,18 @@ function pdTerminos(){
     <div class="pd-acc"><button type="button" class="btn" data-pd-subir="1">Subir nueva versión</button><a class="btn" href="${esc(TYC.enlace)}" target="_blank" rel="noopener noreferrer">Ver</a></div>
     <div class="fld">Enlace para los clientes<div class="pd-enl"><span>${esc(TYC.enlace.replace(/^https?:\/\//, ''))}</span><button type="button" class="btn" data-pd-copiar="1">Copiar</button></div></div>
     ${fila('Pedirlos antes de solicitar una llamada', 'Por WhatsApp, con una casilla para aceptarlos y el enlace para leerlos', `<button type="button" class="tg" role="switch" data-pd-pedir="1" aria-checked="${TYC.pedir}" aria-label="Pedirlos antes de solicitar una llamada"></button>`)}
-    ${fila('Aceptaron esta versión', 'Queda guardada la fecha y la versión de cada aceptación', `<b>${Number(TYC.aceptaron)}</b>`)}
     <p class="muted" style="margin:0">Al subir una versión nueva, se les vuelve a pedir antes de la siguiente solicitud de llamada. PDF de hasta 10 MB.</p></div>`;
 }
 function paginaDatos(){
   const volver = `<button type="button" class="volver" data-ir="ajustes-crm">${I('back')}Ajustes del CRM</button>`;
-  const con = CONV.filter(c => c.canal === 'wa' || c.canal === 'ig' || c.canal === 'fb');
-  const sinAut = con.filter(c => !c.aut).length, menSin = con.filter(c => pideRepresentante(c) && c.aut && !c.rep).length, rne = CONV.filter(c => c.rne);
+  const rne = CONV.filter(c => c.rne);
   const hoy = ahoraCO(), prox = [...festivosCO(hoy.y), ...festivosCO(hoy.y + 1)].filter(f => f >= isoF(hoy.y, hoy.m, hoy.d)).slice(0, 5).map(f => { const [, m, d] = f.split('-').map(Number); return `${d} ${MESES_C[m - 1]}`; });
   const tab = st.pdTab || 'term';
   const boton = (k, t, punto) => `<button type="button" role="tab" data-pd-tab="${k}" aria-selected="${tab === k}">${t}${punto ? '<span class="pd-pto"></span>' : ''}</button>`;
-  const aut = `<div class="box2"><h4 class="pd-tit">${I('lock')}Autorización de datos${sinAut ? `<span class="pd-est no">${sinAut} sin autorización</span>` : ''}</h4>
+  const aut = `<div class="box2"><h4 class="pd-tit">${I('lock')}Autorización de datos</h4>
         <label class="fld">Texto de la autorización<textarea data-pd-texto="1" rows="4">${esc(PD.texto)}</textarea></label>
         ${fila('Dónde se pide', 'En los formularios de la empresa y por WhatsApp cuando falta', '')}
-        ${fila('Menores de edad: pedirla al representante legal', 'La ley exige que autorice el papá, la mamá o el representante legal', `<button type="button" class="tg" role="switch" data-pd-tg="menores" aria-checked="${PD.menores}" aria-label="Pedir al representante legal"></button>`)}
-        ${fila('Contactos sin autorización', 'No se les graba ninguna llamada', `<b>${sinAut}</b>`)}
-        ${fila('Menores sin autorización del representante legal', 'Se les puede atender, pero no se graba', `<b>${menSin}</b>`)}
+        <div class="fld">Público de la empresa<div class="pd-ops" role="radiogroup" aria-label="Público de la empresa">${[[false, 'Solo mayores de edad', 'No se pide nada al representante legal. Si un contacto tiene registrada una edad menor de 18 años, se le pide igual.'], [true, 'También menores de edad', 'La ley exige que autorice el papá, la mamá o el representante legal. Sin esa autorización se les puede atender, pero no se graba.']].map(([v, t, d]) => `<button type="button" class="pd-op${PD.menores === v ? ' on' : ''}" role="radio" aria-checked="${PD.menores === v}" data-pd-pub="${v}"><span class="bq-sel"></span><span><b>${t}</b><small>${d}</small></span></button>`).join('')}</div></div>
         <p class="muted" style="margin:0">La política de tratamiento de datos de la empresa tiene que mencionar la grabación de llamadas y su propósito.</p></div>`;
   const hor = `<div class="box2"><h4>${I('clock')}Horario para contactar con fines comerciales</h4>
         ${fila('Lunes a viernes', '', '7 a. m. a 7 p. m.')}${fila('Sábados', '', '8 a. m. a 3 p. m.')}${fila('Domingos y festivos', '', 'No se contacta')}
@@ -258,7 +258,7 @@ function paginaDatos(){
         <p class="muted" style="margin:0">Cómo se consulta el registro, por servicio web o por descarga, se confirma con la CRC al inscribir a la empresa.</p></div>`;
   const panel = {term: pdTerminos, aut: () => aut, hor: () => hor, rne: () => num}[tab]();
   return `<div class="ajw ancho">${volver}<h2>Protección de datos</h2><p class="sub">Lo que exige la ley colombiana para contactar, llamar y grabar a los clientes. El CRM lo aplica solo.</p>
-    <div class="cn-tabs pd-tabs" role="tablist">${boton('term', 'Términos', TYC && !TYC.actual)}${boton('aut', 'Autorización', sinAut > 0)}${boton('hor', 'Horario')}${boton('rne', 'Números excluidos', !PD.rneInscrito)}</div>
+    <div class="cn-tabs pd-tabs" role="tablist">${boton('term', 'Términos', TYC && !TYC.actual)}${boton('aut', 'Autorización')}${boton('hor', 'Horario')}${boton('rne', 'Números excluidos', !PD.rneInscrito)}</div>
     <div class="cfg pd-panel">${panel}</div></div>`;
 }
 const paginaCfgLegal = paginaCfg;
@@ -272,6 +272,7 @@ document.getElementById('page').addEventListener('click', e => {
     crmApi('PUT', '/crm/terminos', {pedir: !TYC.pedir}).then(d => { TYC = d; render(); toast(d.pedir ? 'Se pedirán antes de solicitar una llamada' : 'Ya no se pedirán antes de solicitar una llamada'); }).catch(err => toast(err.message));
     return;
   }
+  const pub = e.target.closest('[data-pd-pub]'); if (pub) { PD.menores = pub.dataset.pdPub === 'true'; render(); toast(PD.menores ? 'Público: también menores de edad' : 'Público: solo mayores de edad'); return; }
   const tg = e.target.closest('[data-pd-tg]'); if (tg) { PD[tg.dataset.pdTg] = !PD[tg.dataset.pdTg]; render(); toast(PD[tg.dataset.pdTg] ? 'Activado' : 'Apagado'); return; }
   const ins = e.target.closest('[data-pd-inscrito]'); if (ins) { PD.rneInscrito = ins.dataset.pdInscrito === '1'; render(); toast(PD.rneInscrito ? 'La empresa queda como inscrita en el registro' : 'La empresa queda como no inscrita en el registro'); }
 });

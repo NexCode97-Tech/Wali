@@ -8,6 +8,7 @@ import { espacioActual } from '../../services/crm/espacio'
 import { enviarTerminos, terminosDe } from '../../services/crm/terminos'
 import { urlPublica } from '../../routes/acceso'
 import { cierre, colgar, contestar, llamadasEnCurso, llamar, pedirPermiso, permiso, rechazar } from '../../services/crm/llamadasVivo'
+import { esRefGrabacion } from '../../services/crm/grabaciones'
 import { convVisible, exigirEscritura, idNum } from './_comun'
 
 /**
@@ -62,7 +63,7 @@ export async function colgarLlamada(req: Request, res: Response) {
 /** POST /crm/llamadas/:id/cierre {audio?, nota?, sinGrabar?}: la grabación (ya subida) y la nota de quien atendió. */
 export async function cierreLlamada(req: Request, res: Response) {
   const b = req.body ?? {}
-  const audio = typeof b.audio === 'string' && /^https:\/\/\S{8,1900}$/.test(b.audio) ? b.audio : undefined
+  const audio = typeof b.audio === 'string' && (/^https:\/\/\S{8,1900}$/.test(b.audio) || esRefGrabacion(b.audio)) ? b.audio : undefined
   const nota = typeof b.nota === 'string' && b.nota.trim() ? b.nota.trim().slice(0, 2000) : undefined
   const sinGrabar = typeof b.sinGrabar === 'string' && b.sinGrabar.trim() ? b.sinGrabar.trim().slice(0, 200) : undefined
   await cierre(idLlamada(req.params.id), req.userId!, { audio, nota, sinGrabar })

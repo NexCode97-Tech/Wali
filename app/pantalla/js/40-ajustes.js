@@ -109,7 +109,8 @@ function conectarCanal(k){
 const LLCFG = {guardar:'1 año'};
 function paginaLlamadas(){
   const volver = `<button type="button" class="volver" data-ir="ajustes-crm">${I('back')}Ajustes del CRM</button>`;
-  const cab = `${volver}<h2>Llamadas</h2><p class="sub">Los canales de llamadas conectados, las grabaciones y el horario para llamar.</p>`;
+  const cab = `${volver}<h2>Llamadas</h2><p class="sub">Los canales de llamadas conectados, las grabaciones y el horario para llamar.</p>${grbPestanas()}`;
+  if (st.llTab === 'grab' && grbVe()) return `<div class="ajw ancho">${cab}${grbPagina()}</div>`;
   const lineas = LINEAS.filter(l => llamadasActivas(l.id));
   if (!lineas.length) return `<div class="ajw ancho">${cab}<div class="vacio">${I('phone')}<b>Ningún canal de llamadas conectado</b><p>Conecta las llamadas de WhatsApp o un teléfono normal desde Canales.</p><button type="button" class="btn" data-cn-irtab="call">Conectar</button></div></div>`;
   const llamadas = CONV.flatMap(c => (c.msgs || []).filter(m => m.call).map(m => ({c, m}))).sort((a, b) => String(b.m._t || '').localeCompare(String(a.m._t || ''))).slice(0, 5);

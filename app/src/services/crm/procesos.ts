@@ -276,6 +276,7 @@ export async function cadaDiezMinutos() {
   try {
     await pasoPorEspacio('asesores fuera de Ventas', procesarAsesoresFuera)
     await pasoPorEspacio('cierre automático', procesarCierreAutomatico)
+    await pasoPorEspacio('grabaciones vencidas', () => import('./grabaciones').then(m => m.borrarVencidas()))
     await pasoPorEspacio('regla de 48 horas sin respuesta', revisarSinRespuesta)
     await pasoPorEspacio('resumen diario de pendientes', procesarResumenDiario)
     // Los tokens de Instagram duran 60 días: los que tienen más de 30 se renuevan (renovarTokensInstagram mira la fecha de cada uno).
