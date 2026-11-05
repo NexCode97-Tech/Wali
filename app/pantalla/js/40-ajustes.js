@@ -996,6 +996,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .e2-x{width:30px;height:30px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink3);display:grid;place-items:center;flex:none}
 .e2-x:hover{background:var(--hover);color:var(--ink)}
 .e2-x svg{width:13px;height:13px}
+@media (max-width:560px){.e2-r{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;column-gap:10px;row-gap:0}.e2-r small{grid-column:3;grid-row:2}.e2-r .e2-x{grid-column:4;grid-row:1 / 3;width:44px;height:44px}.e2-r .e2-asa,.e2-r .e2-dot{grid-row:1 / 3}}
 .e2-bt{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
 #e2c-m button small{margin-left:auto}
 .emb-sel{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:13.5px;font-weight:400;color:var(--ink)}

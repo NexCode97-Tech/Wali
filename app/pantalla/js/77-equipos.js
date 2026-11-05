@@ -123,7 +123,7 @@ paginaEquipos = function(){
     </article>`;
   }).join('');
   return `<div class="ajw ancho">${cab}${eqrTabs(adm)}
-    <div class="rq-bar"><label class="cn-q">${I('search')}<input id="rep-q" value="${esc(st.repQ || '')}" placeholder="Buscar un equipo o una persona" autocomplete="off" aria-label="Buscar un equipo o una persona"></label><span class="sp"></span>${ALCANCE.todo ? `<button type="button" class="btn pri" data-eq-abrir="">${I('plus')}Crear equipo</button>` : ''}</div>
+    <div class="rq-bar"><label class="cn-q">${I('search')}<input id="rep-q" value="${esc(st.repQ || '')}" placeholder="Buscar un equipo o una persona" autocomplete="off" aria-label="Buscar un equipo o una persona"></label><span class="sp"></span>${ALCANCE.todo ? `<button type="button" class="btn pri" data-eq-abrir="" aria-label="Crear equipo">${I('plus')}Crear equipo</button>` : ''}</div>
     <div class="q-lista">${tarjetas || `<p class="muted" style="margin:0;padding:16px 4px">${q ? 'Nada coincide con la búsqueda.' : 'Todavía no tienes equipos a tu cargo.'}</p>`}</div></div>`;
 };
 
@@ -352,5 +352,9 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .qe-pie{position:sticky;bottom:0;display:flex;gap:8px;align-items:center;margin-top:18px;padding:12px 0;background:linear-gradient(transparent,#fff 30%);z-index:2}.qe-pie .sp{flex:1}
 .qe-borrar{color:#b91c1c;border-color:#fecaca}
 @media (max-width:900px){.qe-grid{grid-template-columns:1fr}.q-cols{grid-template-columns:1fr;padding-left:18px;gap:14px}}
-@media (max-width:560px){.qe-per{flex-wrap:wrap}.qe-rol{margin-left:48px}.q-card footer{flex-wrap:wrap}}
+@media (max-width:560px){.qe-per{flex-wrap:wrap}.qe-rol{margin-left:48px}
+.q-card footer{display:grid;grid-template-columns:30px minmax(0,1fr) auto;column-gap:10px;row-gap:8px;align-items:center;padding:14px}
+.q-card footer .q-ic{grid-column:1;grid-row:1}.q-card footer .q-tx{display:contents}.q-card footer .q-tx b{grid-column:2;grid-row:1}
+.q-card footer .q-sw,.q-card footer .q-cnt + .q-sw{grid-column:3;grid-row:1;margin:0}.q-card footer .q-tx small{grid-column:1 / -1;grid-row:2}
+.q-card footer .q-cnt{grid-column:1 / -1;grid-row:3;justify-self:start}}
 </style>`);

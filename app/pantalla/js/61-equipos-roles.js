@@ -218,7 +218,6 @@ document.head.insertAdjacentHTML('beforeend', `<style>
   .eqr-card .rq-op{flex-wrap:wrap}
   .eqr-card .rq-op .tx{flex-basis:calc(100% - 44px)}
   .eqr-card .rq-op .btn{margin-left:auto}
-  .eqr-tb{min-width:980px}
   .eqr-sqb{padding:20px 18px 16px}
   .eqr-sqft{flex-wrap:wrap;padding:12px 18px}
   .eqr-sqft .eqr-borrar{flex-basis:100%;justify-content:center}
@@ -599,13 +598,13 @@ tabPersonas = function(){
     const subsTags = EQUIPOS.flatMap(e => subequiposDe(e.n).filter(sq => (sq.ids || []).includes(p.id)).map(sq => `<span class="eqr-tag"><i style="background:${colorEquipo(e.n)}"></i>${esc(sq.n)}${eqs.includes(e.n) ? '' : ` de ${esc(e.n)}`}</span>`)).join('');
     const tags = (eqs.length ? eqs.map(eq => { const l = rolEnEquipo(p.id, eq) === 'lider'; return `<span class="eqr-par"><span class="eqr-tag"><i style="background:${colorEquipo(eq)}"></i>${esc(eq)}</span><span class="eqr-tag${l ? ' lid' : ''}">${esc(l ? nombreLiderDe(eq) : rolIntegrantesDe(eq))}</span></span>`; }).join('') : subsTags ? '' : '<span class="eqr-sin">Sin equipo</span>') + subsTags;
     const pend = !!(USUARIOS.find(u => u.id === p.id) || {}).pendiente;
-    return `<tr class="${pend ? 'eqr-pend' : ''}"><td><span class="eqr-pers">${avPer(p)}<span>${esc(p.nombre)}${pend ? '<span class="eqr-inv">Invitación pendiente</span>' : ''}</span></span></td><td>${esc(ROL_NOMBRE[p.rol] || p.rol || '')}</td><td><span class="eqr-tags">${tags}</span></td><td>${esc(v.t)}${v.s ? `<small>${esc(v.s)}</small>` : ''}</td>
+    return `<tr class="${pend ? 'eqr-pend' : ''}"><td><span class="eqr-pers">${avPer(p)}<span>${esc(p.nombre)}${pend ? '<span class="eqr-inv">Invitación pendiente</span>' : ''}${p.rol === 'ADMIN' || (!eqs.length && !subsTags) ? `<small class="eqr-rolm">${esc(ROL_NOMBRE[p.rol] || p.rol || '')}</small>` : ''}</span></span></td><td>${esc(ROL_NOMBRE[p.rol] || p.rol || '')}</td><td><span class="eqr-tags">${tags}</span><small class="eqr-vem">Ve: ${esc(v.t)}${v.s ? ` · ${esc(v.s)}` : ''}</small></td><td>${esc(v.t)}${v.s ? `<small>${esc(v.s)}</small>` : ''}</td>
       <td><input class="rq-num" data-per-tope="${esc(p.id)}" value="${esc(EQ_CFG.topes[p.id] || '')}" placeholder="Ilimitado" inputmode="numeric" maxlength="3" aria-label="Máximo de conversaciones abiertas de ${esc(p.nombre)}"></td>
       <td class="eqr-lap">${pend ? `<button type="button" class="btn ic" data-per-reenviar="${esc(p.id)}" aria-label="Reenviar la invitación a ${esc(p.nombre)}" title="Reenviar la invitación">${I('send')}</button><button type="button" class="btn ic eqr-xr" data-per-cancelar="${esc(p.id)}" aria-label="Cancelar la invitación de ${esc(p.nombre)}" title="Cancelar la invitación">${I('x')}</button>` : ''}<button type="button" class="btn ic" data-per-eq="${esc(p.id)}" aria-label="Editar a ${esc(p.nombre)}" title="Editar">${I('pen')}</button></td></tr>`;
   }).join('');
   return `<div class="eqr-pt"><p class="eqr-pdesc">Quién entra al CRM y qué ve. Los administradores que no están en ningún equipo ven todo; los demás ven lo que les da su rol en el equipo.</p>
     <div class="rq-bar"><label class="cn-q">${I('search')}<input id="per-q" value="${esc(st.perQ || '')}" placeholder="Buscar una persona" autocomplete="off" aria-label="Buscar una persona"></label>
-      ${ddSel('data-per-filtro', [['', 'Todos los equipos'], ...adm.map(n => [n, n])], st.perEq)}<span class="sp"></span>${adm.length ? `<button type="button" class="btn pri" data-per-agregar="1">${I('plus')}Agregar persona</button>` : ''}</div>
+      ${ddSel('data-per-filtro', [['', 'Todos los equipos'], ...adm.map(n => [n, n])], st.perEq)}<span class="sp"></span>${adm.length ? `<button type="button" class="btn pri" data-per-agregar="1" aria-label="Agregar persona">${I('plus')}Agregar persona</button>` : ''}</div>
     <div class="eqr-tw"><table class="eqr-tb"><thead><tr><th>Persona</th><th>Rol en la plataforma</th><th>Equipo, rol y subequipos</th><th>Qué ve en el CRM</th><th>Máximo abiertas</th><th></th></tr></thead>
       <tbody>${filas || `<tr><td colspan="6" class="eqr-nadie">${q || st.perEq ? 'Nadie coincide con la búsqueda.' : 'Todavía no hay nadie en tus equipos.'}</td></tr>`}</tbody></table></div>
     <p class="rq-ayuda" style="margin-top:10px">Vacío es ilimitado. Escribe un número para ponerle un límite a esa persona.</p></div>`;
@@ -828,6 +827,51 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .eqr-inv{display:inline-block;margin-left:8px;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;background:#fff7e0;color:#92400e;vertical-align:1px}
 .eqr-lap{white-space:nowrap}
 .eqr-lap .btn.ic + .btn.ic{margin-left:6px}
+/* Personas se acomoda al espacio: nunca se desliza de lado ni esconde botones. */
+.eqr-pt{container:eqrp / inline-size}
+.eqr-tb td small.eqr-rolm,.eqr-tb td small.eqr-vem{display:none}
+@container eqrp (max-width:1120px){
+  .eqr-tb th:nth-child(2),.eqr-tb td:nth-child(2){display:none}
+  .eqr-tb td small.eqr-rolm{display:block}
+  .eqr-tb td:nth-child(1){white-space:normal}
+  .eqr-inv{display:block;width:fit-content;margin:2px 0 0;white-space:nowrap}
+}
+@container eqrp (max-width:820px){
+  .eqr-tb th:nth-child(4),.eqr-tb td:nth-child(4){display:none}
+  .eqr-tb td small.eqr-vem{display:block;margin-top:6px}
+}
+/* Celular: tarjetas (patrón de Contactos). */
+@container eqrp (max-width:560px){
+  .eqr-tb thead{display:none}
+  .eqr-tb,.eqr-tb tbody{display:block}
+  .eqr-tb tbody{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+  .eqr-tb tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;padding:14px;border:1px solid #e5e9f0;border-radius:14px}
+  .eqr-tb td{display:block;padding:0;border:0;white-space:normal;width:auto}
+  .eqr-tb td:nth-child(2),.eqr-tb td:nth-child(4){display:none!important}
+  .eqr-tb td:nth-child(1){grid-column:1;grid-row:1;white-space:normal}
+  .eqr-tb td.eqr-lap{grid-column:2;grid-row:1;width:auto}
+  .eqr-tb td:nth-child(3){grid-column:1 / -1}
+  .eqr-tb td small.eqr-vem{display:block;margin-top:6px}
+  .eqr-tb td:nth-child(5){grid-column:1 / -1;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .eqr-tb td:nth-child(5)::before{content:"Máximo abiertas";font-size:12.5px;color:#6b7280}
+  .eqr-tb .rq-num{height:44px}
+  .eqr-lap .btn.ic{width:44px;height:44px}
+}
+/* Equipos y Personas en celular: una sola fila de herramientas, con botones de solo ícono. */
+@media (max-width:560px){
+  .cn-tabs[aria-label="Equipos y reparto"]{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .cn-tabs[aria-label="Equipos y reparto"] > *{flex:none}
+  .ajw:has(.cn-tabs[aria-label="Equipos y reparto"]) .rq-bar{flex-wrap:nowrap}
+  .ajw:has(.cn-tabs[aria-label="Equipos y reparto"]) .rq-bar .cn-q{flex:1;width:auto;min-width:0}
+  .ajw:has(.cn-tabs[aria-label="Equipos y reparto"]) .rq-bar .sp{display:none}
+  .ajw:has(.cn-tabs[aria-label="Equipos y reparto"]) .rq-bar .btn.pri{flex:none;width:44px;height:44px;padding:0;gap:0;font-size:0;justify-content:center}
+  .ajw:has(.cn-tabs[aria-label="Equipos y reparto"]) .rq-bar .dsel{flex:none;min-width:0!important;width:44px}
+  .ajw:has(.cn-tabs[aria-label="Equipos y reparto"]) .rq-bar .dsel > .sel{width:44px;height:44px;padding:0;font-size:0;display:grid;place-items:center}
+  .ajw:has(.cn-tabs[aria-label="Equipos y reparto"]) .rq-bar .dsel > .sel > *{display:none}
+  .ajw:has(.cn-tabs[aria-label="Equipos y reparto"]) .rq-bar .dsel > .sel::before{content:"";width:18px;height:18px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 5h18M7 12h10M10 19h4'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 5h18M7 12h10M10 19h4'/%3E%3C/svg%3E") center/contain no-repeat}
+  .ajw:has(.cn-tabs[aria-label="Equipos y reparto"]) .rq-bar .dsel > .menu{left:auto!important;right:0!important;width:240px!important}
+  #page:has(.cn-tabs[aria-label="Equipos y reparto"]){padding-bottom:96px}
+}
 .eqr-xr,.eqr-xr svg{color:#dc2626}
 </style>`);
 document.addEventListener('click', e => {

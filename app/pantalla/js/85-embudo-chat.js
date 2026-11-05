@@ -14,8 +14,8 @@
   document.head.insertAdjacentHTML('beforeend', `<style>
 #ec-velo{position:fixed;inset:0;z-index:70;background:rgba(11,11,16,.18);opacity:0;pointer-events:none;transition:opacity .2s}
 #ec-velo.on{opacity:1;pointer-events:auto}
-#ec-cajon{position:fixed;top:0;right:0;bottom:0;z-index:71;width:min(520px,100vw);background:#fff;box-shadow:-24px 0 48px -24px rgba(11,11,16,.45);display:flex;flex-direction:column;transform:translateX(102%);transition:transform .28s cubic-bezier(.22,1,.36,1)}
-#ec-cajon.on{transform:none}
+#ec-cajon{position:fixed;top:0;right:0;bottom:0;z-index:71;width:min(520px,100vw);background:#fff;display:flex;flex-direction:column;transform:translateX(102%);transition:transform .28s cubic-bezier(.22,1,.36,1)}
+#ec-cajon.on{transform:none;box-shadow:-24px 0 48px -24px rgba(11,11,16,.45)}
 .ec-cab{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid #eef1f5;position:relative;flex:none}
 .ec-cab .av{width:36px;height:36px;font-size:12px;flex:none}
 .ec-nm{min-width:0;flex:1}

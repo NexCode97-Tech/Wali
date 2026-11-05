@@ -33,7 +33,7 @@ const AVC = ['#1f93ff','#7c5cff','#f97316','#0d9488','#e11d48','#64748b','#ca8a0
 // Array.from: un emoji (dos unidades de texto) sale entero y no partido.
 const ini = n => String(n || '').split(' ').filter(Boolean).slice(0,2).map(w => Array.from(w)[0]).join('').toUpperCase();
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const I = (n, cls = 'i') => `<svg class="${esc(cls)}"><use href="#i-${esc(n)}"/></svg>`;
+const I = (n, cls = 'i') => `<svg class="${esc(cls)}${n === 'x' ? ' ix' : ''}"><use href="#i-${esc(n)}"/></svg>`;
 // Quien usa el CRM. Es `let`: si cambia su nombre en Mi cuenta, cambia aquí también.
 let yo = CRM_YO.nombre || '';
 // Foto de la cuenta de Google o, si no hay, las iniciales.
