@@ -138,7 +138,7 @@
 .enc-barras em{font-style:normal;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
 .enc-mas{display:flex;justify-content:center;margin-top:12px}
 /* Tablero 7: Ajustes del CRM › Encuesta al finalizar */
-.ajw.ancho.enc-aj{max-width:1064px}
+
 .enc-aj2{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
 .enc-aj .box2{gap:12px}
 .enc-aj .row2 b{font-weight:600;display:block}

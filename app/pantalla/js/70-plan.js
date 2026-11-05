@@ -3,7 +3,7 @@
    el recibo en PDF, que sale del datáfono imprimiendo. Pagar y cambiar de plan los hace el administrador; el pago es
    en la página de Creem y vuelve a /?ir=cfg-plan&pago=ok. ── */
 document.head.insertAdjacentHTML('beforeend', `<style>
-.pl{max-width:1080px}
+
 .pl-ok{display:flex;align-items:center;gap:10px;margin:0 0 16px;padding:12px 16px;border-radius:12px;background:var(--green-soft);color:var(--green-ink);font-size:13.5px;font-weight:600}
 .pl-ok svg{width:18px;height:18px;flex:none}
 .pl-actual{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden}

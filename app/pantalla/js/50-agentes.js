@@ -3,7 +3,7 @@
    la persona y la pasa al equipo correcto. El flujo de botones «Bienvenida» queda de respaldo si el agente está apagado. ── */
 document.querySelector('symbol').parentNode.insertAdjacentHTML('beforeend', '<symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4h6v3"/></symbol><symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3v8"/><path d="M6.4 7.4a8 8 0 1 0 11.2 0"/></symbol><symbol id="i-bot" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="11" rx="3"/><path d="M12 4.5V8M9 13h.01M15 13h.01M9.5 16h5"/><circle cx="12" cy="3.5" r="1"/></symbol>');
 document.head.insertAdjacentHTML('beforeend', `<style>
-.ag-w{max-width:1320px}
+
 .ag-tb{width:100%;border-collapse:collapse;font-size:13px}
 .ag-tb th{text-align:left;font-weight:600;color:var(--ink2);font-size:12px;padding:8px 10px;border-bottom:1px solid var(--line)}
 .ag-tb td{padding:12px 10px;border-bottom:1px solid var(--line2);vertical-align:middle}

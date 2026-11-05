@@ -55,11 +55,11 @@ function queVeEnCrm(p){
 document.head.insertAdjacentHTML('beforeend', `<style>
 /* Página del equipo (RolesModeracion y RolesVentas) */
 /* El ancho de contenido de la maqueta (1280 con 40 de margen a cada lado) cuando la pantalla alcanza. */
-.ajw.ancho.eqr{max-width:1200px}
-/* Personas: las cuatro columnas de RolesPersonas en un renglón y, además, «Máximo abiertas» y el lápiz, que existían y la
+
+/* Las tres pestañas de Equipos y reparto van al mismo ancho. Personas: las cuatro columnas de RolesPersonas en un renglón y, además, «Máximo abiertas» y el lápiz, que existían y la
    maqueta no dibuja: con 1180 px el lápiz quedaba escondido a la derecha. Si la pantalla alcanza, la página se abre para
    que la tabla quepa entera; si no, se desliza dentro de su caja, como antes. */
-.ajw.ancho:has(> .eqr-pt){max-width:1300px}
+
 /* Como la maqueta: renglones de alto «normal» (el CRM usa 1,5), salvo donde ella dice otro. */
 .eqr,.eqr-pt,.dlg.eqr-dlg{line-height:normal}
 .eqr-top{display:flex;align-items:flex-end;gap:12px;margin-bottom:18px}

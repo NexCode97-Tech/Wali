@@ -55,7 +55,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 .tbl .av{width:28px;height:28px;font-size:10px;display:inline-grid;vertical-align:middle;margin-right:8px}
 .setl{display:grid;gap:8px;max-width:640px}
 .ajt{margin:0 0 16px}
-.ajw{max-width:720px;margin:0 auto}
+.ajw{max-width:1300px;margin:0 auto}
 .ajw .acs,.ajw .setl{max-width:none}
 .acs{display:grid;gap:10px;max-width:680px}
 .ac{border:1px solid var(--line);border-radius:12px;background:#fff}
@@ -304,7 +304,8 @@ button.pill svg{width:12px;height:12px}
 .vivo td,.vivo th{white-space:nowrap}
 .vivo .est{display:inline-flex;align-items:center;gap:6px}
 .chips2 button[aria-pressed="true"]{border-color:var(--blue);background:var(--blue-soft);color:var(--blue-ink)}
-.ajw.ancho{max-width:1180px}
+/* Todas las páginas de Ajustes van al mismo ancho (.ajw). */
+#page:has(> .ajw){scrollbar-gutter:stable}
 .box2 > .acb{display:grid;gap:18px}
 .box2 > .acb .two2{gap:14px}
 .box2 > .acb .foto{padding-bottom:18px;border-bottom:1px solid var(--line2)}

@@ -983,7 +983,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .e2-tab[aria-selected="true"]{color:var(--blue-ink);border-bottom-color:var(--blue-ink)}
 .e2-tab i{width:9px;height:9px;border-radius:50%;display:inline-block}
 .e2-n{min-width:20px;height:20px;border-radius:999px;background:var(--bg3);font-size:11px;font-weight:600;color:var(--ink2);padding:0 6px;display:inline-grid;place-items:center;box-sizing:border-box}
-.e2-lista{display:flex;flex-direction:column;gap:8px;max-width:760px}
+.e2-lista{display:flex;flex-direction:column;gap:8px}
 .e2-r{display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:#fff}
 .e2-r.arrastrando{opacity:.5}
 .e2-r.sobre{border-color:var(--blue);box-shadow:0 0 0 3px rgba(11,11,16,.08)}
