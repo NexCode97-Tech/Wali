@@ -4,7 +4,10 @@ import rateLimit from 'express-rate-limit'
 import { authenticate, requireRole } from '../middleware/auth'
 import { asyncHandler } from '../middleware/errorHandler'
 import { configura } from '../utils/roles'
-import { ForbiddenError } from '../utils/errors'
+import { AppError, ForbiddenError, ValidationError } from '../utils/errors'
+import { cambiarPedir, nuevaVersion, resumenTerminos } from '../services/crm/terminos'
+import { nombreArchivo, subirACloudinary } from '../controllers/crm/_comun'
+import { logger } from '../utils/logger'
 import { rutasWaCrm } from './crmWhatsapp'
 import { rutasIaCrm } from './crmIa'
 import { rutasEncuestaCrm } from './crmEncuesta'
@@ -208,6 +211,25 @@ router.put('/preferencias', asyncHandler(ajustes.guardarPreferencias))
 
 // Archivos, catálogo de enlaces de pago e informes
 router.post('/archivos', unArchivo(25), asyncHandler(ajustes.subirArchivo))
+// Términos y condiciones de la empresa (Protección de datos).
+router.get('/terminos', asyncHandler(async (_req: Request, res: Response) => ApiResponse.success(res, await resumenTerminos(urlPublica()))))
+router.post('/terminos', soloLideres('subir los términos y condiciones'), unArchivo(10), asyncHandler(async (req: Request, res: Response) => {
+  if (req.soloLectura) throw new ForbiddenError('Tu cuenta es de solo lectura')
+  const f = req.file
+  if (!f) throw new ValidationError('Falta el archivo. Súbelo en el campo «archivo».')
+  if (f.buffer.subarray(0, 5).toString('latin1') !== '%PDF-') throw new ValidationError('Los términos tienen que ser un archivo PDF')
+  const n = nombreArchivo(f)
+  let url: string
+  try { url = await subirACloudinary(f.buffer, n, 'application/pdf', 'crm/terminos') } catch (e) {
+    logger.error(`[CRM términos] Cloudinary: ${(e as Error)?.message ?? e}`)
+    throw new AppError('No se pudo guardar el PDF. Intenta de nuevo en un momento.', 502)
+  }
+  return ApiResponse.created(res, await nuevaVersion(url, n, req.userId ?? null, urlPublica()))
+}))
+router.put('/terminos', soloLideres('cambiar los términos y condiciones'), asyncHandler(async (req: Request, res: Response) => {
+  if (req.soloLectura) throw new ForbiddenError('Tu cuenta es de solo lectura')
+  return ApiResponse.success(res, await cambiarPedir(req.body?.pedir !== false, req.userId ?? null, urlPublica()))
+}))
 router.get('/catalogo', asyncHandler(catalogo))
 router.get('/informes', asyncHandler(informes))
 

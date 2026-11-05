@@ -214,20 +214,20 @@ const lvEmpresa = () => ((typeof espActual === 'function' && espActual()) || {})
 
 /* ── Pedir permiso (maqueta «Pedir permiso para llamar») ── */
 function lvDialogoPermiso(c, p){
-  const pila = nombrePila(c), empresa = ((typeof espActual === 'function' && espActual()) || {}).n || 'Tu empresa';
+  const pila = nombrePila(c), empresa = ((typeof espActual === 'function' && espActual()) || {}).n || 'Tu empresa', tyc = p.terminos;
   const texto = `Hola${pila ? ' ' + pila : ''}, ¿te podemos llamar por WhatsApp para atenderte mejor?`;
   const bloqueo = !p.ventana ? 'Pasaron más de 24 horas desde su último mensaje. Cuando te vuelva a escribir, le puedes mandar la solicitud.'
     : !p.puedePedir ? 'WhatsApp deja mandar 1 solicitud al día y 2 por semana a cada persona, y ya se mandaron. Intenta más adelante.' : '';
-  abrirDialogo(`<div class="pm"><div class="pm-h"><span class="pm-ic">${LV_IC.tel}</span><div><h3>Pedir permiso para llamar a ${esc(pila || c.n)}</h3><p>WhatsApp solo deja llamar a quien lo autoriza. Le llega este mensaje y elige.</p></div></div>
-    <div class="pm-b"><div class="pm-izq"><label class="pm-lb">Mensaje<textarea id="pm-t" maxlength="1024">${esc(texto)}</textarea></label><small class="pm-cnt" id="pm-n">${texto.length} / 1024</small>
+  abrirDialogo(`<div class="pm"><div class="pm-h"><span class="pm-ic">${LV_IC.tel}</span><div><h3>Pedir permiso para llamar a ${esc(pila || c.n)}</h3><p>${tyc && tyc.requiere ? 'WhatsApp solo deja llamar a quien lo autoriza. Primero acepta los términos y después elige.' : 'WhatsApp solo deja llamar a quien lo autoriza. Le llega este mensaje y elige.'}</p></div></div>
+    <div class="pm-b"><div class="pm-izq">${tyc && tyc.requiere ? `<div class="ll-nota" style="margin-bottom:12px"><b>${esc(pila || c.n)} aún no acepta los términos (versión ${Number(tyc.version)})</b><br>Primero le llegan los términos. Al aceptarlos, sale solo la solicitud de llamada.<br>Enlace: ${esc(String(tyc.enlace).replace(/^https?:\/\//, ''))}</div>` : tyc && tyc.aceptoEn ? `<div class="ll-nota" style="margin-bottom:12px">Aceptó los términos (versión ${Number(tyc.version)}) el ${esc(new Date(tyc.aceptoEn).toLocaleDateString('es-CO', {day: 'numeric', month: 'short', timeZone: 'America/Bogota'}))}.</div>` : ''}<label class="pm-lb">${tyc && tyc.requiere ? 'Mensaje de la solicitud' : 'Mensaje'}<textarea id="pm-t" maxlength="1024">${esc(texto)}</textarea></label><small class="pm-cnt" id="pm-n">${texto.length} / 1024</small>
       <ul class="pm-info"><li>${LV_IC.ok}<span>Si acepta, le puedes llamar <b>7 días</b>, o siempre si lo elige.</span></li>
         <li>${LV_IC.reloj}<span>Máximo <b>1 solicitud al día</b> y <b>2 por semana</b>. Se reinicia con cualquier llamada contestada.</span></li>
-        <li>${LV_IC.info}<span>Sale gratis. WhatsApp solo deja mandarla si te escribió en las <b>últimas 24 horas</b>.</span></li></ul>
+        <li>${LV_IC.info}<span>WhatsApp solo deja mandarla si te escribió en las <b>últimas 24 horas</b>.</span></li></ul>
       ${bloqueo ? `<div class="ll-nota" style="margin-top:12px">${esc(bloqueo)}</div>` : ''}</div>
-      <div class="pm-tel"><small>Así le llega</small><div class="pm-wa"><div class="pm-bur"><span id="pm-v">${esc(texto)}</span><span class="pm-h1">${esc(new Date().toLocaleTimeString('es-CO', {hour: 'numeric', minute: '2-digit'}))}</span></div>
+      <div class="pm-tel">${tyc && tyc.requiere ? `<small>1. Primero le llega este formulario</small><div class="pm-wa"><div class="pm-bur"><span>Hola${pila ? ' ' + esc(pila) : ''}, para poder llamarte por WhatsApp primero necesitamos que aceptes nuestros términos y condiciones.</span></div><div class="pm-bur" style="text-align:center;font-weight:600;color:#00796b">Revisar y aceptar</div></div><small style="margin-top:10px">2. Si acepta, sale solo el permiso</small>` : '<small>Así le llega</small>'}<div class="pm-wa"><div class="pm-bur"><span id="pm-v">${esc(texto)}</span><span class="pm-h1">${esc(new Date().toLocaleTimeString('es-CO', {hour: 'numeric', minute: '2-digit'}))}</span></div>
         ${lvTarjetaWa(empresa)}</div>
         <small class="pm-sub">Al tocar «Seleccionar preferencia» elige</small><div class="pm-ops"><span>Permitir llamadas</span><span>Permitir temporalmente las llamadas</span><span>Ahora no</span></div></div></div>
-    <div class="pm-f"><button type="button" class="pm-cancel" data-cerrar-dlg="1">Cancelar</button><button type="button" class="pm-send" data-lv-pedir="${c.id}" ${bloqueo ? 'disabled' : ''}>${LV_IC.tel}Enviar solicitud</button></div></div>`, 'pm-dlg');
+    <div class="pm-f"><button type="button" class="pm-cancel" data-cerrar-dlg="1">Cancelar</button><button type="button" class="pm-send" data-lv-pedir="${c.id}" ${bloqueo ? 'disabled' : ''}>${LV_IC.tel}${tyc && tyc.requiere ? 'Enviar términos' : 'Enviar solicitud'}</button></div></div>`, 'pm-dlg');
 }
 document.getElementById('ov-x').addEventListener('input', e => {
   if (e.target.id !== 'pm-t') return;
@@ -240,7 +240,7 @@ document.getElementById('ov-x').addEventListener('click', e => {
   const t = (document.getElementById('pm-t') || {}).value || '';
   b.disabled = true;
   crmApi('POST', `/crm/conversaciones/${b.dataset.lvPedir}/permiso-llamada`, {texto: t.trim()})
-    .then(() => { cerrarDialogo(); toast('Solicitud enviada'); })
+    .then(r => { cerrarDialogo(); toast(r && r.terminos ? 'Términos enviados. Al aceptarlos sale la solicitud' : 'Solicitud enviada'); })
     .catch(err => { b.disabled = false; toast(err.message || 'No se pudo enviar la solicitud'); });
 });
 

@@ -9,6 +9,14 @@
 document.head.insertAdjacentHTML('beforeend', `<style>
 .pd-lista{display:grid;gap:6px}
 .pd-lista .row2{border-top:1px solid var(--line2);padding-top:8px}
+.cn-tabs.pd-tabs{margin-top:16px;border-bottom:1px solid var(--line);flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+.cn-tabs.pd-tabs button{flex:none;display:inline-flex;align-items:center;gap:7px;min-height:44px}.cn-tabs.pd-tabs button[aria-selected="true"]{color:var(--ink);font-weight:600;border-bottom-color:var(--ink)}
+.pd-pto{width:7px;height:7px;border-radius:50%;background:#e8920c}
+.pd-panel{margin-top:18px;max-width:780px}.pd-tit{flex-wrap:wrap}.pd-tit .pd-est{margin-left:auto}
+.pd-vacio{display:grid;justify-items:center;gap:10px;padding:28px 18px;border:1.5px dashed var(--line);border-radius:14px;text-align:center}.pd-vacio b{font-size:15px}.pd-vacio span{color:var(--ink3);font-size:13.5px;max-width:420px}
+.pd-arch{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:12px}.pd-arch .ic{flex:none;width:40px;height:40px;border-radius:10px;background:var(--bg2,#f1f3f6);display:flex;align-items:center;justify-content:center}.pd-arch div{min-width:0;flex:1}.pd-arch b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pd-arch small{display:block;font-size:12.5px;color:var(--ink3)}
+.pd-acc{display:flex;flex-wrap:wrap;gap:8px}.pd-acc a{text-decoration:none}
+.pd-enl{display:flex;align-items:center;gap:8px;padding:6px 6px 6px 12px;min-height:50px;border-radius:12px;background:var(--bg2,#f6f7f9)}.pd-enl span{flex:1;min-width:0;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pd-fest{display:flex;flex-wrap:wrap;gap:6px}
 .pd-fest span{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:2px 10px;color:var(--ink2)}
 .pd-est{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;border-radius:999px;padding:2px 10px}
@@ -204,41 +212,80 @@ document.addEventListener('click', e => {
 
 /* Página «Protección de datos» */
 const PD = {rneInscrito:false, rneOn:true, texto:'Autorizo a tratar mis datos personales para contactarme por WhatsApp, llamadas y correo con información de sus productos y servicios, y a grabar las llamadas para mejorar la atención, según su política de tratamiento de datos.', menores:true};
+/* Pestañas (maqueta B aprobada el 5-nov). Términos y condiciones: terminos.ts en el servidor. */
+let TYC = null, TYC_PIDE = false;
+function tycCargar(){
+  if (TYC_PIDE) return; TYC_PIDE = true;
+  crmApi('GET', '/crm/terminos').then(d => { TYC = d; if (st.pagina === 'cfg-datos') render(); }).catch(() => { TYC = {error: true, actual: null, pedir: true, aceptaron: 0, enlace: ''}; if (st.pagina === 'cfg-datos') render(); }).finally(() => { TYC_PIDE = false; });
+}
+function pdTerminos(){
+  if (!TYC) { tycCargar(); return `<div class="box2"><h4>${I('file')}Términos y condiciones</h4><p class="muted" style="margin:0">Cargando…</p></div>`; }
+  const entrada = '<input type="file" id="pd-pdf" accept="application/pdf,.pdf" hidden>';
+  if (!TYC.actual) return `<div class="box2"><h4 class="pd-tit">${I('file')}Términos y condiciones<span class="pd-est no">Sin subir</span></h4>${entrada}
+    <div class="pd-vacio">${I('upload')}<b>Sube los términos y condiciones de tu empresa</b><span>PDF de hasta 10 MB. Al subirlos se crea el enlace para los clientes. Mientras tanto, la solicitud de llamada sale como hoy.</span><button type="button" class="btn pri" data-pd-subir="1">Subir PDF</button></div></div>`;
+  const a = TYC.actual, f = new Date(a.cuando).toLocaleDateString('es-CO', {day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Bogota'});
+  return `<div class="box2"><h4 class="pd-tit">${I('file')}Términos y condiciones<span class="pd-est si">Versión ${Number(a.version)} activa</span></h4>${entrada}
+    <div class="pd-arch"><span class="ic">${I('file')}</span><div><b>${esc(a.nombre)}</b><small>Versión ${Number(a.version)} · subida el ${esc(f)}</small></div></div>
+    <div class="pd-acc"><button type="button" class="btn" data-pd-subir="1">Subir nueva versión</button><a class="btn" href="${esc(TYC.enlace)}" target="_blank" rel="noopener noreferrer">Ver</a></div>
+    <div class="fld">Enlace para los clientes<div class="pd-enl"><span>${esc(TYC.enlace.replace(/^https?:\/\//, ''))}</span><button type="button" class="btn" data-pd-copiar="1">Copiar</button></div></div>
+    ${fila('Pedirlos antes de solicitar una llamada', 'Por WhatsApp, con una casilla para aceptarlos y el enlace para leerlos', `<button type="button" class="tg" role="switch" data-pd-pedir="1" aria-checked="${TYC.pedir}" aria-label="Pedirlos antes de solicitar una llamada"></button>`)}
+    ${fila('Aceptaron esta versión', 'Queda guardada la fecha y la versión de cada aceptación', `<b>${Number(TYC.aceptaron)}</b>`)}
+    <p class="muted" style="margin:0">Al subir una versión nueva, se les vuelve a pedir antes de la siguiente solicitud de llamada. PDF de hasta 10 MB.</p></div>`;
+}
 function paginaDatos(){
   const volver = `<button type="button" class="volver" data-ir="ajustes-crm">${I('back')}Ajustes del CRM</button>`;
   const con = CONV.filter(c => c.canal === 'wa' || c.canal === 'ig' || c.canal === 'fb');
   const sinAut = con.filter(c => !c.aut).length, menSin = con.filter(c => pideRepresentante(c) && c.aut && !c.rep).length, rne = CONV.filter(c => c.rne);
   const hoy = ahoraCO(), prox = [...festivosCO(hoy.y), ...festivosCO(hoy.y + 1)].filter(f => f >= isoF(hoy.y, hoy.m, hoy.d)).slice(0, 5).map(f => { const [, m, d] = f.split('-').map(Number); return `${d} ${MESES_C[m - 1]}`; });
-  return `<div class="ajw ancho">${volver}<h2>Protección de datos</h2><p class="sub">Lo que exige la ley colombiana para contactar, llamar y grabar a los clientes. El CRM lo aplica solo.</p>
-    <div class="two3" style="align-items:start"><div class="cfg">
-      <div class="box2"><h4>${I('lock')}Autorización de datos</h4>
+  const tab = st.pdTab || 'term';
+  const boton = (k, t, punto) => `<button type="button" role="tab" data-pd-tab="${k}" aria-selected="${tab === k}">${t}${punto ? '<span class="pd-pto"></span>' : ''}</button>`;
+  const aut = `<div class="box2"><h4 class="pd-tit">${I('lock')}Autorización de datos${sinAut ? `<span class="pd-est no">${sinAut} sin autorización</span>` : ''}</h4>
         <label class="fld">Texto de la autorización<textarea data-pd-texto="1" rows="4">${esc(PD.texto)}</textarea></label>
         ${fila('Dónde se pide', 'En los formularios de la empresa y por WhatsApp cuando falta', '')}
         ${fila('Menores de edad: pedirla al representante legal', 'La ley exige que autorice el papá, la mamá o el representante legal', `<button type="button" class="tg" role="switch" data-pd-tg="menores" aria-checked="${PD.menores}" aria-label="Pedir al representante legal"></button>`)}
         ${fila('Contactos sin autorización', 'No se les graba ninguna llamada', `<b>${sinAut}</b>`)}
         ${fila('Menores sin autorización del representante legal', 'Se les puede atender, pero no se graba', `<b>${menSin}</b>`)}
-        <p class="muted" style="margin:0">La política de tratamiento de datos de la empresa tiene que mencionar la grabación de llamadas y su propósito.</p></div>
-      <div class="box2"><h4>${I('clock')}Horario para contactar con fines comerciales</h4>
+        <p class="muted" style="margin:0">La política de tratamiento de datos de la empresa tiene que mencionar la grabación de llamadas y su propósito.</p></div>`;
+  const hor = `<div class="box2"><h4>${I('clock')}Horario para contactar con fines comerciales</h4>
         ${fila('Lunes a viernes', '', '7 a. m. a 7 p. m.')}${fila('Sábados', '', '8 a. m. a 3 p. m.')}${fila('Domingos y festivos', '', 'No se contacta')}
         <div class="fld">Próximos festivos<div class="pd-fest">${prox.map(x => `<span>${x}</span>`).join('')}</div></div>
-        <p class="muted" style="margin:0">Lo fija la Ley 2300 de 2023 y no se puede cambiar. Aplica a las llamadas que hace el asesor y a las difusiones. No aplica cuando el cliente escribe o llama.</p></div>
-    </div><div class="cfg">
-      <div class="box2"><h4>${I('block')}Registro de Números Excluidos</h4>
+        <p class="muted" style="margin:0">Lo fija la Ley 2300 de 2023 y no se puede cambiar. Aplica a las llamadas que hace el asesor y a las difusiones. No aplica cuando el cliente escribe o llama.</p></div>`;
+  const num = `<div class="box2"><h4 class="pd-tit">${I('block')}Registro de Números Excluidos${PD.rneInscrito ? '<span class="pd-est si">Inscrita</span>' : '<span class="pd-est no">Sin inscribir</span>'}</h4>
         <p class="muted" style="margin:0">Es el registro de la CRC donde las personas inscriben su número para no recibir mensajes ni llamadas comerciales. Desde abril de 2024 hay que consultarlo antes de contactar, también por WhatsApp.</p>
-        ${fila('La empresa está inscrita para consultarlo', 'La inscripción se hace en tramitescrcom.gov.co', PD.rneInscrito ? `<span style="display:flex;align-items:center;gap:8px"><span class="pd-est si">Inscrito</span><button type="button" class="btn" data-pd-inscrito="0">Desmarcar</button></span>` : `<button type="button" class="btn" data-pd-inscrito="1">Marcar como inscrito</button>`)}
+        ${fila('La empresa está inscrita para consultarlo', 'La inscripción se hace en tramitescrcom.gov.co', PD.rneInscrito ? `<button type="button" class="btn" data-pd-inscrito="0">Desmarcar</button>` : `<button type="button" class="btn" data-pd-inscrito="1">Marcar como inscrito</button>`)}
         ${fila('No contactar a los números del registro', 'Salvo que hayan autorizado a la empresa. Si escriben primero, se les responde por el chat', `<button type="button" class="tg" role="switch" data-pd-tg="rneOn" aria-checked="${PD.rneOn}" aria-label="No contactar a los números del registro"></button>`)}
         <div class="fld">Contactos en el registro<div class="pd-lista">${rne.map(c => fila(esc(c.n), `${esc(c.tel)} · ${c.aut ? 'autorizó a la empresa' : 'no ha autorizado'}`, c.aut ? '<span class="pd-est si">Se puede contactar</span>' : '<span class="pd-est no">Sin llamadas ni difusiones</span>')).join('') || '<p class="muted" style="margin:0">Ningún contacto está marcado en el registro.</p>'}</div></div>
-        <p class="muted" style="margin:0">Cómo se consulta el registro, por servicio web o por descarga, se confirma con la CRC al inscribir a la empresa.</p></div>
-    </div></div></div>`;
+        <p class="muted" style="margin:0">Cómo se consulta el registro, por servicio web o por descarga, se confirma con la CRC al inscribir a la empresa.</p></div>`;
+  const panel = {term: pdTerminos, aut: () => aut, hor: () => hor, rne: () => num}[tab]();
+  return `<div class="ajw ancho">${volver}<h2>Protección de datos</h2><p class="sub">Lo que exige la ley colombiana para contactar, llamar y grabar a los clientes. El CRM lo aplica solo.</p>
+    <div class="cn-tabs pd-tabs" role="tablist">${boton('term', 'Términos', TYC && !TYC.actual)}${boton('aut', 'Autorización', sinAut > 0)}${boton('hor', 'Horario')}${boton('rne', 'Números excluidos', !PD.rneInscrito)}</div>
+    <div class="cfg pd-panel">${panel}</div></div>`;
 }
 const paginaCfgLegal = paginaCfg;
 paginaCfg = function(k){ return k === 'datos' ? paginaDatos() : paginaCfgLegal(k); };
 document.getElementById('page').addEventListener('click', e => {
   if (st.pagina !== 'cfg-datos') return;
+  const pt = e.target.closest('[data-pd-tab]'); if (pt) { st.pdTab = pt.dataset.pdTab; render(); return; }
+  if (e.target.closest('[data-pd-subir]')) { const i = document.getElementById('pd-pdf'); if (i) i.click(); return; }
+  if (e.target.closest('[data-pd-copiar]') && TYC) { navigator.clipboard.writeText(TYC.enlace).then(() => toast('Enlace copiado'), () => toast('No se pudo copiar el enlace')); return; }
+  if (e.target.closest('[data-pd-pedir]') && TYC) {
+    crmApi('PUT', '/crm/terminos', {pedir: !TYC.pedir}).then(d => { TYC = d; render(); toast(d.pedir ? 'Se pedirán antes de solicitar una llamada' : 'Ya no se pedirán antes de solicitar una llamada'); }).catch(err => toast(err.message));
+    return;
+  }
   const tg = e.target.closest('[data-pd-tg]'); if (tg) { PD[tg.dataset.pdTg] = !PD[tg.dataset.pdTg]; render(); toast(PD[tg.dataset.pdTg] ? 'Activado' : 'Apagado'); return; }
   const ins = e.target.closest('[data-pd-inscrito]'); if (ins) { PD.rneInscrito = ins.dataset.pdInscrito === '1'; render(); toast(PD.rneInscrito ? 'La empresa queda como inscrita en el registro' : 'La empresa queda como no inscrita en el registro'); }
 });
-document.getElementById('page').addEventListener('change', e => { if (st.pagina === 'cfg-datos' && e.target.dataset.pdTexto) { PD.texto = e.target.value; toast('Texto guardado'); } });
+document.getElementById('page').addEventListener('change', e => {
+  if (st.pagina !== 'cfg-datos') return;
+  if (e.target.id === 'pd-pdf') {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    if (f.size > 10 * 1048576) { toast('El PDF pasa de 10 MB'); return; }
+    toast('Subiendo el PDF…');
+    crmSubir(f, '/crm/terminos').then(d => { TYC = d; render(); toast(`Versión ${d.actual.version} activa`); }).catch(err => toast(err.message));
+    return;
+  }
+  if (e.target.dataset.pdTexto) { PD.texto = e.target.value; toast('Texto guardado'); }
+});
 
 /* Difusiones: horario permitido y registro de excluidos */
 function diasPermitidos(){

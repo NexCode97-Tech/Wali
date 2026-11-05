@@ -8,6 +8,7 @@ import { espacioDeUsuario } from './services/crm/espacio'
 import { configura } from './utils/roles'
 import { PAISES } from './data/paises'
 import { BASE } from './utils/base'
+import { pdfPublico } from './services/crm/terminos'
 import { esOperador, operadorDeSesion, operadorRecien, paseValido } from './services/crm/panelAcceso'
 
 /**
@@ -142,6 +143,16 @@ router.get('/admin', asyncHandler(async (req: Request, res: Response) => {
   if (!paseValido(req, u.id)) { res.redirect(BASE + '/entrar?ir=panel'); return }
   const inicio = { yo: { nombre: u.nombre ?? u.email } }
   html(res, leer('paginas/admin.html').replace('/*ADMIN_INICIO*/', () => `window.INICIO = ${enScript(inicio)};`))
+}))
+
+/** El enlace público de los términos y condiciones de una empresa: siempre abre la última versión. */
+router.get('/t/:espacio', asyncHandler(async (req: Request, res: Response) => {
+  const id = String(req.params.espacio)
+  const url = /^[a-z0-9][a-z0-9-]{0,80}$/.test(id) ? await pdfPublico(id) : null
+  if (!url) { res.status(404).type('text/plain').send('Esta empresa no tiene términos y condiciones publicados.'); return }
+  res.setHeader('Cache-Control', 'no-store')
+  res.setHeader('X-Robots-Tag', 'noindex')
+  res.redirect(302, url)
 }))
 
 /** La burbuja del chat web: pública y cargable desde otro dominio. La dirección del API es la de este servidor. */

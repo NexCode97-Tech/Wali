@@ -46,6 +46,14 @@ async function repintar(contactoId: number) {
   for (const c of convs) await emitirConv(c.id, null)
 }
 
+/** La marcó en el formulario de términos: misma constancia que al responder «Autorizo». */
+export async function marcarAutorizacion(convId: number, k: CrmContacto, cuando: Date, via: string): Promise<void> {
+  const reg = { via, fecha: cuando.toISOString(), texto: txt(obj(await leerAjuste('pd')).texto) || TEXTO_PD, respuesta: 'Marcó la casilla de autorización', por: 'Automático al responder' }
+  await prisma.crmContacto.update({ where: { id: k.id }, data: { autorizacion: reg as Prisma.InputJsonValue } })
+  await evento(convId, `Marcó la casilla: la autorización de datos quedó marcada · ${via}`)
+  await repintar(k.id)
+}
+
 export async function autorizacionPorRespuesta(convId: number, k: CrmContacto, texto: string, cuando: Date): Promise<boolean> {
   try {
     if (!texto || !esAutorizo(texto)) return false

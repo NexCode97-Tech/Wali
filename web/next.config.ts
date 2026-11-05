@@ -44,6 +44,7 @@ const nextConfig: NextConfig = {
       // El home y los precios son las maquetas aprobadas (8-oct), tal cual: public/inicio.html y public/precios.html.
       beforeFiles: [{ source: "/", destination: "/inicio.html" }, { source: "/precios", destination: "/precios.html" }, { source: "/partners", destination: "/partners.html" }],
       afterFiles: [
+        { source: "/t/:espacio", destination: `${CRM_ORIGEN}/t/:espacio` },
         { source: "/crm", destination: `${CRM_ORIGEN}/` },
         { source: "/crm/:path*", destination: `${CRM_ORIGEN}/:path*` },
       ],

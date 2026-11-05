@@ -20,6 +20,7 @@ import { perfilDe, tokenDePagina } from './paginas'
 import { bajarDeTelegram, contestarBoton } from './telegram'
 import { bajarDeTiktok } from './tiktok'
 import { encuestaNoLlego, respuestaFormulario } from './encuesta'
+import { botonTerminos, respuestaTerminos } from './terminos'
 import { leerLlamadas } from './llamadas'
 import { entrante, estadoSaliente, respuesta, respuestaPermiso, terminada } from './llamadasVivo'
 
@@ -456,6 +457,7 @@ export async function procesarEntrante(linea: CrmLinea, m: WaMensaje, perfiles: 
     if (await prisma.crmMensaje.findUnique({ where: { waId: m.id }, select: { id: true } })) return // repetido: Meta reintenta
     const cuando = m.timestamp && Number(m.timestamp) > 0 ? new Date(Number(m.timestamp) * 1000) : new Date()
     // La respuesta del formulario de la encuesta al finalizar (lote 6): tarjeta en su conversación, sin reabrirla.
+    if (m.type === 'interactive' && m.interactive?.type === 'nfm_reply' && await respuestaTerminos(m, cuando)) return
     if (m.type === 'interactive' && m.interactive?.type === 'nfm_reply' && await respuestaFormulario(linea, m, tel, cuando, uid)) return
     const nombre = txt(perfil?.profile?.name) || txt(perfiles[0]?.profile?.name)
     // Aceptó o no las llamadas: aviso en su conversación, sin abrirla ni repartirla (no escribió nada).
@@ -473,6 +475,9 @@ export async function procesarEntrante(linea: CrmLinea, m: WaMensaje, perfiles: 
     if (citado) (datos as Record<string, unknown>).cita = citado.id
     const k = await contactoDe({ tel, uid, usuario: txt(perfil?.profile?.username) }, nombre, m.referral)
     await entrar(k, { linea }, [datos], m.id, cuando, `WA ${linea.nombre}`)
+    // Tocó Acepto o No acepto en los términos: el mensaje ya quedó en el chat.
+    const idBoton = m.interactive?.button_reply?.id
+    if (idBoton?.startsWith('tyc_')) await botonTerminos(idBoton, cuando)
   })
 }
 

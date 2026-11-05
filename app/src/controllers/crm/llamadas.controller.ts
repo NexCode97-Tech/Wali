@@ -3,6 +3,10 @@ import { ApiResponse } from '../../utils/response'
 import { ValidationError } from '../../utils/errors'
 import { logger } from '../../utils/logger'
 import { msgAFront } from '../../services/crm/formas'
+import { prisma, prismaGlobal } from '../../services/crm/bd'
+import { espacioActual } from '../../services/crm/espacio'
+import { enviarTerminos, terminosDe } from '../../services/crm/terminos'
+import { urlPublica } from '../../routes/acceso'
 import { cierre, colgar, contestar, llamadasEnCurso, llamar, pedirPermiso, permiso, rechazar } from '../../services/crm/llamadasVivo'
 import { convVisible, exigirEscritura, idNum } from './_comun'
 
@@ -77,7 +81,8 @@ export async function llamarCliente(req: Request, res: Response) {
 export async function permisoLlamada(req: Request, res: Response) {
   const convId = idNum(req.params.id)
   await convVisible(req, convId)
-  return ApiResponse.success(res, await permiso(convId))
+  const conv = await prisma.crmConversacion.findUnique({ where: { id: convId }, select: { contacto: true } })
+  return ApiResponse.success(res, { ...await permiso(convId), terminos: conv ? await terminosDe(conv.contacto, urlPublica()) : null })
 }
 
 /** POST /crm/conversaciones/:id/permiso-llamada {texto}: la solicitud de permiso, que sale por WhatsApp. */
@@ -92,5 +97,8 @@ export async function pedirPermisoLlamada(req: Request, res: Response) {
   // Sin plantillas (24-oct): fuera de la ventana de 24 h WhatsApp no deja mandar la solicitud libre; sale cuando vuelva a escribir.
   if (!p.ventana) throw new ValidationError('Pasaron más de 24 horas desde su último mensaje: la solicitud solo sale cuando te vuelva a escribir')
   if (!p.puedePedir) throw new ValidationError('WhatsApp deja mandar 1 solicitud al día y 2 por semana a cada persona. Ya se mandaron: intenta más adelante')
+  // Sin aceptar la versión vigente de los términos: primero ellos; la solicitud sale sola al aceptar (terminos.ts).
+  const conv = await prisma.crmConversacion.findUnique({ where: { id: convId }, select: { contacto: true } })
+  if (conv && (await terminosDe(conv.contacto, urlPublica())).requiere) return ApiResponse.success(res, { terminos: await enviarTerminos(convId, req.userId!, texto, urlPublica(), (await prismaGlobal.crmEspacio.findUnique({ where: { id: espacioActual() }, select: { nombre: true } }))?.nombre ?? '') })
   return ApiResponse.success(res, msgAFront(await pedirPermiso(convId, req.userId!, texto)))
 }

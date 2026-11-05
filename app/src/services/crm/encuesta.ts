@@ -389,7 +389,7 @@ async function emitirFormularios(): Promise<void> {
 
 interface FlowMeta { id: string; name?: string; status?: string }
 
-async function listarFlows(waba: string, cred: CredMeta): Promise<FlowMeta[]> {
+export async function listarFlows(waba: string, cred: CredMeta): Promise<FlowMeta[]> {
   const todos: FlowMeta[] = []
   let after: string | undefined
   for (let i = 0; i < 20; i++) {
@@ -407,10 +407,10 @@ async function borrarBorrador(id: string, cred: CredMeta): Promise<void> {
 }
 
 /** Crea el formulario con ese nombre y lo deja publicado. Devuelve su id. */
-async function crearYPublicar(waba: string, nombre: string, cred: CredMeta): Promise<string> {
+export async function crearYPublicar(waba: string, nombre: string, cred: CredMeta, json: unknown = FORMULARIO_JSON, categorias: string[] = ['SURVEY']): Promise<string> {
   const r = await graph<{ id?: string; success?: boolean; validation_errors?: { error?: string; message?: string }[] }>(`/${waba}/flows`, {
     cred, method: 'POST', timeoutMs: TIEMPO_META,
-    body: { name: nombre, categories: ['SURVEY'], flow_json: JSON.stringify(FORMULARIO_JSON), publish: true },
+    body: { name: nombre, categories: categorias, flow_json: JSON.stringify(json), publish: true },
   })
   if (!r.id) throw new ErrorEncuesta('Meta no devolvió el id del formulario')
   if (Array.isArray(r.validation_errors) && r.validation_errors.length) {
