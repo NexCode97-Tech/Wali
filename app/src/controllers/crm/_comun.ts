@@ -25,7 +25,7 @@ export function exigirEscritura(req: Request) {
 }
 
 export function exigirLider(req: Request, que: string) {
-  if (!esLider(req)) throw new ForbiddenError(`Solo los administradores y líderes pueden ${que}. Pídeselo a tu líder.`)
+  if (!esLider(req)) throw new ForbiddenError(`Solo los administradores pueden ${que}. Pídeselo a tu administrador.`)
 }
 
 export function idNum(v: unknown, que = 'la conversación'): number {

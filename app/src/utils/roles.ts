@@ -13,7 +13,7 @@ import type { Role } from '@prisma/client'
 export const TODOS: Role[] = ['ADMIN', 'LIDER', 'AGENTE', 'LECTOR']
 
 /** Cambian la configuración general del espacio. */
-export const CONFIGURAN: Role[] = ['ADMIN', 'LIDER']
+export const CONFIGURAN: Role[] = ['ADMIN']
 
 export const esAdmin = (r?: string | null): boolean => r === 'ADMIN'
 export const configura = (r?: string | null): boolean => CONFIGURAN.includes(r as Role)

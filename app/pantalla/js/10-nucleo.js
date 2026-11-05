@@ -287,7 +287,7 @@ function nav(){
   document.getElementById('tabs').innerHTML = T.map(([k,n,c]) => `<button type="button" data-v="${k}" aria-pressed="${st.vista === k}">${n}<span class="n">${c}</span></button>`).join('');
 }
 
-const EMB_LOTE = 20;
+const EMB_LOTE = 20, EMB_INICIO = 50;
 function kanban(){
   const el = document.getElementById('page');
   let dragId = null;
@@ -296,7 +296,7 @@ function kanban(){
     const ob = new IntersectionObserver(es => {
       if (!es.some(x => x.isIntersecting) || !c.isConnected || !st.embTope) return;
       ob.disconnect(); const col = c.dataset.kCarga;
-      st.embTope[col] = (st.embTope[col] || EMB_LOTE) + EMB_LOTE; render();
+      st.embTope[col] = (st.embTope[col] || EMB_INICIO) + EMB_LOTE; render();
     }, {root: c.closest('.kcol'), rootMargin: '0px 0px 120px 0px'});
     ob.observe(c);
   });
@@ -442,6 +442,9 @@ const ICONOS_MAQ = {
 // El distintivo del canal en la tarjeta y en la segunda fila del encabezado: WhatsApp va con el globo de contorno de
 // las maquetas (no con el logo relleno del sprite); los demás canales, que las maquetas no dibujan, con su ícono.
 const icCanal = (canal, cls = 'i') => canal === 'wa' ? `<svg class="${esc(cls)}" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12Z"/></svg>` : I(CANALES[canal].ic, cls);
+const LISTA_INICIO = 50, LISTA_LOTE = 20;
+// Bandeja: 50 al entrar y 20 más al llegar abajo; el marcador solo existe si quedan por dibujar.
+document.addEventListener('scroll', () => { const s = document.getElementById('l-carga'); if (!s || s.getBoundingClientRect().top > innerHeight + 200) return; st.lTope = (st.lTope || LISTA_INICIO) + LISTA_LOTE; lista(); }, true);
 function lista(){
   const qi = document.getElementById('q'); if (qi.value !== st.q) qi.value = st.q; document.getElementById('q-x').hidden = !st.q;
   const fa = filtroActivo();
@@ -460,7 +463,7 @@ function lista(){
   // La etapa se distingue de las etiquetas (maqueta «tarjetas de la bandeja», 3-oct): píldora de su color; las etiquetas, punto y texto.
   const tinte = (c, a) => { let x = colorOk(c).slice(1); if (x.length <= 4) x = x.split('').map(d => d + d).join(''); const n = parseInt(x.slice(0, 6), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
   const chipEtapa = e => `<span class="tj-chip et" style="background:${tinte(COL[e], .16)};color:color-mix(in srgb, ${colorOk(COL[e])} 70%, #000)"><span>${esc(e)}</span></span>`;
-  document.getElementById('items').innerHTML = L.length ? L.map(c => {
+  document.getElementById('items').innerHTML = L.length ? L.slice(0, st.lTope || LISTA_INICIO).map(c => {
     const ult = [...c.msgs].reverse().find(m => m.in || (m.out != null && !m.prog) || m.recepcion || m.ia);
     const txt = ult ? (ult.in ? resumenIn(ult.in) : ult.recepcion ? 'IA: ' + ult.recepcion : ult.ia ? 'IA: ' + ult.ia : 'Tú: ' + resumenOut(ult)) : '';
     const eq = equipoConv(c), recs = recPend(c), vencido = recs.some(r => recEst(r) === 'vencido');
@@ -480,7 +483,7 @@ function lista(){
         ? `<span class="av tj-mini" style="background:${colorPersona(c.asig)}">${fotoAv(fotoDe(c.asig), c.asig)}</span><span class="tj-as"><span>Atiende <b>${esc(c.asig)}</b></span></span>`
         : '<span class="tj-mini tj-sin">?</span><span class="tj-as"><span><b>Sin asignar</b> · nadie la atiende</span></span>'}${c.espera ? `<span class="tj-esp">${I('clock')}${esc(c.espera)}</span>` : ''}<span class="tj-eq"><i style="background:${colorEquipo(eq)}"></i>${esc(eq)}</span></span>
     </button>`;
-  }).join('') : (st.q.trim() ? `<div class="nothing"><b>Ningún lead con «${esc(st.q.trim())}»</b><span>${st.vista !== 'todas' || fa.length ? 'Buscaste solo en esta vista.' : 'Revisa el nombre o prueba con el número.'}</span>${st.vista !== 'todas' ? `<button type="button" class="btn" data-ver-todas="1">Buscar en todas las conversaciones</button>` : ''}</div>` : st.menciones ? `<div class="empty">${I('at')}<b>Sin menciones</b><span>Cuando un compañero te mencione en una nota privada, aparece aquí.</span></div>` : `<div class="nothing"><b>Nada por aquí</b><span>${fa.length ? 'Ninguna conversación ' + (st.vista === 'mias' ? 'tuya ' : st.vista === 'sin' ? 'sin asignar ' : '') + 'coincide con ' + esc(fa.map(f => f.n).join(' y ')) + '.' : 'No hay conversaciones activas en esta vista.'}</span>${fa.length ? `<button type="button" class="btn" data-quitar="todo">Quitar filtros</button>` : ''}${st.vista !== 'todas' && fa.length ? `<button type="button" class="btn" data-ver-todas="1">Ver las de todo el equipo</button>` : ''}</div>`);
+  }).join('') + (L.length > (st.lTope || LISTA_INICIO) ? '<div id="l-carga" class="k-carga" aria-hidden="true" style="height:40px"></div>' : '') : (st.q.trim() ? `<div class="nothing"><b>Ningún lead con «${esc(st.q.trim())}»</b><span>${st.vista !== 'todas' || fa.length ? 'Buscaste solo en esta vista.' : 'Revisa el nombre o prueba con el número.'}</span>${st.vista !== 'todas' ? `<button type="button" class="btn" data-ver-todas="1">Buscar en todas las conversaciones</button>` : ''}</div>` : st.menciones ? `<div class="empty">${I('at')}<b>Sin menciones</b><span>Cuando un compañero te mencione en una nota privada, aparece aquí.</span></div>` : `<div class="nothing"><b>Nada por aquí</b><span>${fa.length ? 'Ninguna conversación ' + (st.vista === 'mias' ? 'tuya ' : st.vista === 'sin' ? 'sin asignar ' : '') + 'coincide con ' + esc(fa.map(f => f.n).join(' y ')) + '.' : 'No hay conversaciones activas en esta vista.'}</span>${fa.length ? `<button type="button" class="btn" data-quitar="todo">Quitar filtros</button>` : ''}${st.vista !== 'todas' && fa.length ? `<button type="button" class="btn" data-ver-todas="1">Ver las de todo el equipo</button>` : ''}</div>`);
 }
 
 const estrellas = n => `<span class="stars" aria-label="${n} de 5">${[1,2,3,4,5].map(i => `<svg class="${i <= n ? 'on' : ''}"><use href="#i-star"/></svg>`).join('')}</span>`;
@@ -721,7 +724,7 @@ function pagina(){
     // Altura fija y de a 20 por columna (maqueta aprobada «Embudo A», 1-nov): las siguientes 20 se pintan solas al bajar
     // dentro de la columna (kanban(), más abajo). Lo ya cargado se conserva al repintar, hasta cambiar de equipo.
     if (!st.embTope || st.embTope.eq !== eq) st.embTope = {eq};
-    const tope = col => st.embTope[col] || EMB_LOTE;
+    const tope = col => st.embTope[col] || EMB_INICIO;
     const sel = eqs.length > 1 ? `<div class="dd" id="dd-emb"><button type="button" class="emb-sel" id="emb-b" aria-haspopup="listbox" aria-expanded="false"><i style="background:${colorEquipo(eq)}"></i>${esc(eq)}${I('chev')}</button><div class="menu" id="emb-m" role="listbox" hidden>${eqs.map(n => `<button type="button" role="option" data-emb-eq="${esc(n)}" aria-selected="${n === eq}"><i class="pc-sq" style="background:${colorEquipo(n)}"></i>${esc(n)}${n === eq ? I('check','i ck') : ''}</button>`).join('')}</div></div>` : '';
     el.innerHTML = `<div class="pg-h"><div><h2>Embudo</h2><p class="sub emb-sub">Arrastra una conversación a otra columna para cambiarla de etapa.${tiene('Pagado') ? ' Pagado se marca solo cuando se confirma el pago.' : ''}</p></div><div style="display:flex;gap:8px;align-items:center;flex:none">${st.rol === 'l' ? `<button type="button" class="btn" data-ir="cfg-etapas">${I('kanban')}Etapas del embudo</button>` : ''}${sel}</div></div>
       <div class="ksum"><span><b>${vis.length}</b> en el embudo</span>${tiene('Caliente') ? `<span class="cal"><b>${vis.filter(c => c.etq[0] === 'Caliente').length}</b> calientes</span>` : ''}${tiene('Pagado') ? (() => { const pag = vis.filter(c => c.etq[0] === 'Pagado').length, t = vis.length ? Math.round(pag / vis.length * 100) : 0; return `<span class="pag"><b>${pag}</b> pagadas</span><span class="tasa"><svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="14" fill="none" stroke="#4a463f" stroke-width="5"/>${t ? `<circle cx="18" cy="18" r="14" fill="none" stroke="#FFD21F" stroke-width="5" stroke-dasharray="${(t * 0.88).toFixed(1)} 88" transform="rotate(-90 18 18)" stroke-linecap="round"/>` : ''}</svg>Tasa de cierre <b>${t} %</b></span>`; })() : ''}</div>

@@ -133,7 +133,7 @@ function paginaLlamadas(){
 }
 
 /* Página «Conversaciones» */
-const CVCFG = {auto:true, n:'3', u:'días', motivo:true, resumen:false, motivos:['Compró', 'Soporte atendido', 'Duda atendida', 'No le interesa', 'Ya es cliente', 'Número equivocado', 'No volvió a responder'], mismo:true, diasMismo:'30', sinAsesor:false};
+const CVCFG = {auto:false, n:'3', u:'días', motivo:true, resumen:false, motivos:['Compró', 'Soporte atendido', 'Duda atendida', 'No le interesa', 'Ya es cliente', 'Número equivocado', 'No volvió a responder'], mismo:true, diasMismo:'30', sinAsesor:false};
 function paginaConversaciones(){
   const volver = `<button type="button" class="volver" data-ir="ajustes-crm">${I('back')}Ajustes del CRM</button>`;
   const tg = (k, on, lab) => `<button type="button" class="tg" role="switch" data-cv-tg="${k}" aria-checked="${on}" aria-label="${lab}"></button>`;

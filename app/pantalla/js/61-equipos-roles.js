@@ -811,8 +811,11 @@ document.getElementById('ov-x').addEventListener('click', e => {
   const telefono = valorTel('pa-inv-t'); A.inv.telefono = telefono;
   if (telefono && telefono.replace(/\D/g, '').length < 7) { toast('El teléfono está incompleto'); return; }
   const eqs = (A.inv.eqs || []).filter(puedeAdministrarEquipo), subsInv = A.inv.subs || {};
-  if (!eqs.length && !Object.values(subsInv).some(l => l.length)) { toast('Elige al menos un equipo o un subequipo'); return; }
+  const comoAdmin = !!A.inv.comoAdmin;
+  if (!comoAdmin && !eqs.length && !Object.values(subsInv).some(l => l.length)) { toast('Elige al menos un equipo o un subequipo'); return; }
   A.inv.enviando = true; pintarPa();
+  // Como Administrador no queda en equipos: entra con el correo que manda el servidor y ve todo el CRM.
+  if (comoAdmin) { crmApi('POST', '/crm/personas/invitar', {nombre, email, telefono: telefono.replace(/[^\d+]/g, ''), rol: 'ADMIN'}).then(() => { st.pa = null; cerrarDialogo(); render(); toast(`Invitación enviada a ${email}`); }).catch(err => { if (st.pa !== A) return; A.inv.enviando = false; pintarPa(); toast(err.message || 'No se pudo invitar'); }); return; }
   // Al quedar en un equipo le llega el correo de invitación (invitaciones.ts, al guardar los equipos).
   crmApi('POST', '/crm/personas/invitar', {nombre, email, telefono: telefono.replace(/[^\d+]/g, '')})
     .then(p => { if (st.pa !== A) return; PERSONAS_EXTRA[p.id] = {...(PERSONAS_EXTRA[p.id] || {}), nombre: p.nombre, rol: p.rol, foto: p.foto || null}; eqrMembresias(p.id, eqs); paAplicarRoles(p.id, eqs, A.inv.roles || {}); subAplicar(p.id, subsInv); st.pa = null; cerrarDialogo(); render(); toast(`Le enviamos la invitación a ${p.nombre} (${email})`); })

@@ -282,19 +282,22 @@ function bqHTML(k){
   const eqs = adm.map(eq => {
     const esta = on.includes(eq), marcados = subs[eq] || [], ss = subequiposDe(eq), parcial = !esta && marcados.length > 0, lid = roles[eq] === 'lider';
     const ab = st.bqAb === `${k}|${eq}`;
-    const opc = (v, b, sm) => { const sel = (v === 'lider') === lid; return `<button type="button" class="eqr-op${sel ? ' sel' : ''}" role="option" aria-selected="${sel}" data-bq-rol="${esc(`${k}|${eq}|${v}`)}"><span><b>${b}</b><small>${sm}</small></span>${sel ? I('check') : ''}</button>`; };
-    const rol = esta ? `<span class="bq-dd"><button type="button" class="qe-ddb${lid ? ' lid' : ''}${ab ? ' abierto' : ''}" data-bq-ab="${esc(`${k}|${eq}`)}" aria-haspopup="listbox" aria-expanded="${ab}" aria-label="Rol en ${esc(eq)}: ${lid ? 'Líder' : 'Miembro'}">${lid ? 'Líder' : 'Miembro'}${I('chev')}</button>${ab ? `<div class="eqr-menu qe-menu" role="listbox" aria-label="Rol en ${esc(eq)}">${opc('lider', 'Líder', 'Ve y administra todo el equipo')}${opc('integrante', 'Miembro', 'Ve lo que le asignen')}</div>` : ''}</span>` : '';
+    const comoAdm = !!d.comoAdmin, puedeAdm = k !== 'pe' && CRM_YO.rol === 'ADMIN';
+    const opc = (v, b, sm) => { const sel = comoAdm ? v === 'admin' : v !== 'admin' && (v === 'lider') === lid; return `<button type="button" class="eqr-op${sel ? ' sel' : ''}" role="option" aria-selected="${sel}" data-bq-rol="${esc(`${k}|${eq}|${v}`)}"><span><b>${b}</b><small>${sm}</small></span>${sel ? I('check') : ''}</button>`; };
+    const rol = esta ? `<span class="bq-dd"><button type="button" class="qe-ddb${lid ? ' lid' : ''}${ab ? ' abierto' : ''}" data-bq-ab="${esc(`${k}|${eq}`)}" aria-haspopup="listbox" aria-expanded="${ab}" ${comoAdm ? 'style="background:#EDE9FE;border-color:#C4B5FD" ' : ''}aria-label="Rol en ${esc(eq)}: ${comoAdm ? 'Administrador' : lid ? 'Líder' : 'Miembro'}">${comoAdm ? 'Administrador' : lid ? 'Líder' : 'Miembro'}${I('chev')}</button>${ab ? `<div class="eqr-menu qe-menu" role="listbox" aria-label="Rol en ${esc(eq)}">${puedeAdm ? opc('admin', 'Administrador', 'Ve todo el CRM y cambia la configuración') : ''}${opc('lider', 'Líder', 'Ve y administra todo el equipo')}${opc('integrante', 'Miembro', 'Ve lo que le asignen')}</div>` : ''}</span>` : '';
     const ramas = ss.length ? `<div class="bq-ramas">${ss.map(s => { const m = marcados.includes(s.id); return `<button type="button" class="bq-sub" role="checkbox" aria-checked="${m}" data-bq-sub="${esc(`${k}|${eq}|${s.id}`)}"><span class="bq-sel"></span><span>${esc(s.n)}</span><small>${esc(eqrMetodo(s.metodo)[1])}</small></button>`; }).join('')}</div>` : '';
     const n = idsDe(eq).length;
     return `<div class="bq-eq${esta ? ' on' : ''}${parcial ? ' parcial' : ''}"><div class="bq-cab"><button type="button" class="bq-chk" role="checkbox" aria-checked="${esta}" data-bq-eq="${esc(`${k}|${eq}`)}"><span class="bq-sel"></span><i style="background:${colorEquipo(eq)}"></i><span class="bq-n"><b>${esc(eq)}</b><small>${parcial ? 'No es del equipo · solo en los subequipos marcados' : `${n} ${n === 1 ? 'persona' : 'personas'}`}</small></span></button>${rol}</div>${ramas}</div>`;
   }).join('');
   const nEq = on.filter(eq => adm.includes(eq)).length, nSub = adm.reduce((a, eq) => a + (subs[eq] || []).length, 0);
   const cuenta = [nEq ? `${nEq} ${nEq === 1 ? 'equipo' : 'equipos'}` : '', nSub ? `${nSub} ${nSub === 1 ? 'subequipo' : 'subequipos'}` : ''].filter(Boolean).join(' · ');
-  return `<div class="bq-st">Equipos, rol y subequipos<span>${cuenta}</span></div>${eqs || '<p class="muted" style="margin:0">Todavía no administras ningún equipo.</p>'}
+  const avisoAdm = d.comoAdmin ? '<p class="bq-ay" style="background:#f5f3ff;color:#4c1d95;padding:11px 13px;border-radius:12px"><span>Como Administrador ve todo el CRM y todos los equipos, sin importar cuál marques.</span></p>' : '';
+  return `<div class="bq-st">Equipos, rol y subequipos<span>${cuenta}</span></div>${avisoAdm}${eqs || '<p class="muted" style="margin:0">Todavía no administras ningún equipo.</p>'}
     <p class="bq-ay">${BQ_INFO}<span>Marca el equipo para que reciba lo del equipo, y los subequipos para que reciba lo de cada uno. Puede estar en subequipos sin estar en el equipo.</span></p>`;
 }
 function bqResumen(k){
   const d = bqDueno(k) || {}, on = d[bqLista(k)] || [], subs = d.subs || {}, roles = d.roles || {};
+  if (d.comoAdmin) return '<span>Queda como Administrador</span>';
   const tags = equiposAdministrables().map(eq => {
     const ss = (subs[eq] || []).map(id => (subequiposDe(eq).find(s => s.id === id) || {}).n).filter(Boolean);
     const t = on.includes(eq) ? `${eq}${roles[eq] === 'lider' ? ' · líder' : ''}${ss.length ? ` · ${ss.join(', ')}` : ''}` : ss.length ? `Solo ${unirNombres(ss)} de ${eq}` : '';
@@ -366,7 +369,7 @@ document.getElementById('ov-x').addEventListener('click', e => {
   const ab = t.closest('[data-bq-ab]');
   if (ab) { const k = ab.dataset.bqAb; st.bqAb = st.bqAb === k ? null : k; bqPintar(k.split('|')[0]); return; }
   const ro = t.closest('[data-bq-rol]');
-  if (ro) { const [k, eq, r] = ro.dataset.bqRol.split('|'), d = bqDueno(k); if (!d) return; d.roles = {...(d.roles || {}), [eq]: r}; st.bqAb = null; bqPintar(k); return; }
+  if (ro) { const [k, eq, r] = ro.dataset.bqRol.split('|'), d = bqDueno(k); if (!d) return; if (r === 'admin') d.comoAdmin = true; else { d.comoAdmin = false; d.roles = {...(d.roles || {}), [eq]: r}; } st.bqAb = null; bqPintar(k); return; }
   if (st.bqAb && !t.closest('.eqr-menu')) { const k = st.bqAb.split('|')[0]; st.bqAb = null; bqPintar(k); return; }
   const qe = t.closest('[data-bq-eq]');
   if (qe) { const [k, eq] = qe.dataset.bqEq.split('|'), d = bqDueno(k); if (!d) return; const l = d[bqLista(k)] || []; d[bqLista(k)] = l.includes(eq) ? l.filter(y => y !== eq) : [...l, eq]; bqPintar(k); return; }
@@ -408,6 +411,9 @@ function bqConfirmar(p, items, alSi, alNo){
 // Agregar persona: con equipos o solo con subequipos; si deja lugares (alguien que ya estaba), pregunta antes.
 guardarAgregar = async function(confirmado){
   const A = st.pa; if (!A || !A.sel || A.guardando) return; leerPa();
+  // Como Administrador no queda en equipos: así ve todo el CRM.
+  if (A.comoAdmin && bqQuitados(A.sel.id, [], {}).length) { toast('Primero sácala de sus equipos: como Administrador no va en ninguno.'); return; }
+  if (A.comoAdmin) { A.guardando = true; crmApi('PATCH', `/usuarios/${encodeURIComponent(A.sel.id)}`, {role: 'ADMIN'}).then(() => { const n = A.sel.nombre; st.pa = null; cerrarDialogo(); render(); toast(`${n} ahora es Administrador`); }).catch(err => { A.guardando = false; toast(err.message); }); return; }
   const p = A.sel, d = A.datos, f = A.form || {}, cambios = {}, elegidos = (A.eqs || []).filter(puedeAdministrarEquipo), subs = A.subs || {};
   if (!elegidos.length && !Object.values(subs).some(l => l.length)) { toast('Elige al menos un equipo o un subequipo'); return; }
   const subsLimpio = o => JSON.stringify(Object.fromEntries(Object.entries(o).filter(([, l]) => l.length).map(([k, l]) => [k, [...l].sort()]).sort()));

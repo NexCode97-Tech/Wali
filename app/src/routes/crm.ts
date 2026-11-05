@@ -136,7 +136,7 @@ function unArchivo(maxMb: number) {
 /** Antes de recibir un archivo o gastar en IA: la ruta es solo de líderes (el controlador lo vuelve a mirar). */
 function soloLideres(que: string) {
   return (req: Request, _res: Response, next: NextFunction) =>
-    configura(req.userRole) ? next() : next(new ForbiddenError(`Solo los administradores y líderes pueden ${que}. Pídeselo a tu líder.`))
+    configura(req.userRole) ? next() : next(new ForbiddenError(`Solo los administradores pueden ${que}. Pídeselo a tu administrador.`))
 }
 
 /**

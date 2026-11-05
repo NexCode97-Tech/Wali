@@ -135,7 +135,7 @@ const agIna = a => ({tras:10, unidad:'minutos', accion:'pasar', ...(a.inactivo |
 function nuevoAgente(tpl){
   const t = AG_TPL[tpl];
   return {id:'ag' + Date.now().toString(36) + Math.floor(Math.random() * 1e4), tpl, nombre:t.n, presenta:'', estado:'borrador', que:t.que.join('\n'),
-    acc:{datos:true, equipo:true, etapa:tpl === 'ventas', nota:true, inactivas:tpl === 'ventas', finalizar:tpl === 'soporte'}, destino:'Ventas',
+    acc:{datos:true, equipo:true, etapa:tpl === 'ventas', nota:true, inactivas:tpl === 'ventas', finalizar:false}, destino:'Ventas',
     tono:AG_TONOS[0], largo:'Cortas, de 1 a 3 líneas', emojis:true,
     pasa:{listo:true, persona:true, molesto:true, mensajes:true, enlace:true}, nMsj:'6',
     temas:[['Productos, precios y cómo comprar', 'Ventas'], ['Pagos, cuotas, reembolsos y entrega de lo que compró', 'Soporte de ventas'], ['Dudas de uso o algo que no funciona', 'Soporte']],

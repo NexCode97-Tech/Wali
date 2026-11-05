@@ -408,30 +408,38 @@ const invitarSchema = z.object({
   nombre: z.string().trim().min(2, 'Escribe el nombre completo').max(80),
   email: z.string().trim().toLowerCase().email('Ese correo no parece completo').max(200),
   telefono: z.string().trim().regex(/^\+?\d{7,15}$/, 'El teléfono está incompleto').optional().or(z.literal('')),
+  rol: z.literal('ADMIN').optional(),
 })
 export async function invitarPersona(req: Request, res: Response) {
   exigirEscritura(req)
   await exigirAdminEquipos(req, 'invitar personas al CRM')
   const p = invitarSchema.safeParse(req.body, { errorMap: errorEs })
   if (!p.success) throw new ValidationError(p.error.issues[0].message)
+  // Solo un administrador nombra administradores, y solo a una cuenta nueva: el rol es de toda la cuenta.
+  if (p.data.rol === 'ADMIN' && req.userRole !== 'ADMIN') throw new ForbiddenError('Solo un administrador puede invitar a otro administrador.')
   const { nombre, email } = p.data, telefono = p.data.telefono ? '+' + p.data.telefono.replace(/\D/g, '') : null
   const espacio = espacioActual()
   const miembros = await prismaGlobal.crmMiembro.findMany({ where: { espacioId: espacio }, select: { userId: true } })
   const existe = await prismaGlobal.user.findFirst({ where: { email: { equals: email, mode: 'insensitive' } }, select: { id: true, nombre: true, email: true, role: true, image: true, suspendido: true } })
   if (existe && miembros.some(m => m.userId === existe.id)) throw new ValidationError('Esa persona ya está en el CRM: búscala por su nombre o su correo.')
   if (existe?.suspendido) throw new ValidationError('Esa cuenta está suspendida. Escríbenos para revisarla.')
+  if (existe && p.data.rol === 'ADMIN') throw new ValidationError('Esa persona ya tiene cuenta en Wali: agrégala y cámbiale el rol desde Usuarios.')
   const tope = await limiteUsuarios(espacio)
   // El límite es de la cuenta: personas sumadas entre todos sus espacios de trabajo (alguien de otro espacio no suma).
   const enCuenta = await usuariosDeCuenta(await cuentaDe(espacio))
   if (!(existe && enCuenta.includes(existe.id)) && enCuenta.length >= tope) throw new ForbiddenError(`Tu plan incluye ${tope} usuarios y ya están en uso. Sube de plan en Ajustes, Plan y pagos, para agregar más.`)
   const u = existe ?? await prismaGlobal.user.create({
     // Sin contraseña que alguien conozca: la crea la persona con el enlace del correo.
-    data: { nombre, email, telefono, role: 'AGENTE', passwordHash: await cifrarClave(crypto.randomBytes(32).toString('base64url')) },
+    data: { nombre, email, telefono, role: p.data.rol ?? 'AGENTE', passwordHash: await cifrarClave(crypto.randomBytes(32).toString('base64url')) },
     select: { id: true, nombre: true, email: true, role: true, image: true, suspendido: true },
   })
   await prismaGlobal.crmMiembro.create({ data: { espacioId: espacio, userId: u.id } })
   olvidarGenteCrm()
   await usuariosCrm(true)
+  if (p.data.rol === 'ADMIN') {
+    const [e, yo] = await Promise.all([prismaGlobal.crmEspacio.findUnique({ where: { id: espacio }, select: { nombre: true } }), prismaGlobal.user.findUnique({ where: { id: req.userId! }, select: { nombre: true, email: true } })])
+    await invitar(u.id, [], e?.nombre || 'tu empresa', (yo?.nombre || yo?.email || 'Tu administrador').trim())
+  }
   return ApiResponse.created(res, { id: u.id, nombre: (u.nombre || u.email).trim(), email: u.email, foto: u.image, rol: u.role, rolNombre: NOMBRE_ROL[u.role] ?? u.role, cargo: null, enCrm: true, porRol: entraPorRol(u.role), nueva: !existe })
 }
 
@@ -517,7 +525,7 @@ export async function guardarAjusteRuta(req: Request, res: Response) {
   // de la configuración, la configuración general (rol ADMIN o LIDER_VENTAS), como siempre.
   const alcance = clave === 'equipos' ? await alcanceDe(req) : null
   if (alcance && !alcance.todo && !alcance.lidera.length) throw new ForbiddenError('Solo los líderes de cada equipo y los administradores cambian los equipos. Pídeselo a tu líder.')
-  if (!alcance && !esLider(req) && !DE_ASESORAS.has(clave)) throw new ForbiddenError(`Solo los líderes de Ventas cambian «${clave}». Pídeselo a tu líder.`)
+  if (!alcance && !esLider(req) && !DE_ASESORAS.has(clave)) throw new ForbiddenError(`Solo los administradores cambian «${clave}». Pídeselo a tu administrador.`)
   const { valor: crudo, base } = ajusteSchema.parse(req.body)
   if (crudo === undefined) throw new ValidationError('Falta «valor» con el ajuste a guardar.')
   const crudoTam = JSON.stringify(crudo ?? null).length

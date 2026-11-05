@@ -170,7 +170,7 @@ export async function procesarAsesoresFuera(): Promise<number> {
 }
 
 export async function procesarCierreAutomatico(): Promise<number> {
-  const cv = { auto: true, n: '3', u: 'días', sinAsesor: false, ...obj(await leerAjuste('cvcfg')) }
+  const cv = { auto: false, n: '3', u: 'días', sinAsesor: false, ...obj(await leerAjuste('cvcfg')) }
   if (cv.auto === false) return 0
   const n = Number(String(cv.n ?? '').replace(/\D/g, ''))
   if (!Number.isFinite(n) || n <= 0) return 0
