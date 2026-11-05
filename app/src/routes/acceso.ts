@@ -255,7 +255,7 @@ router.get('/google/regreso', limiteEnlace, asyncHandler(async (req: Request, re
       throw e
     }
     // La cuenta de operador elige entre el CRM y el panel (panelAcceso.ts).
-    return res.redirect(BASE + (esOperador(user) ? '/entrar?elegir=1' : '/'))
+    return res.redirect(BASE + (esOperador(user) ? '/entrar?elegir=1' : '/entrar?intro=1'))
   }
   if (!registroAbierto()) return volver('error=google-sin-cuenta')
   const foto = p.picture && /^https:\/\/[^\s"'<>]+$/.test(p.picture) ? p.picture.slice(0, 500) : null

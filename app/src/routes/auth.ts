@@ -116,6 +116,14 @@ router.post('/panel', limitePanel, asyncHandler(async (req: Request, res: Respon
   return ApiResponse.success(res, { url: `${BASE}/admin` })
 }))
 
+/** El nombre de pila para la intro de bienvenida. */
+router.get('/saludo', asyncHandler(async (req: Request, res: Response) => {
+  const u = await sesionDePagina(req)
+  if (!u) throw new UnauthorizedError('Inicia sesión')
+  res.setHeader('Cache-Control', 'no-store')
+  return ApiResponse.success(res, { nombre: (u.nombre ?? '').trim().split(/\s+/)[0] || '' })
+}))
+
 /** El token corto del API, a cambio de la cookie de la sesión. */
 router.get('/token', asyncHandler(async (req: Request, res: Response) => {
   const cookie = (req.cookies as Record<string, string> | undefined)?.[COOKIE_SESION]
