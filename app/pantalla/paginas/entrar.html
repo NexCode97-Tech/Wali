@@ -160,9 +160,7 @@ body.eligiendo .izq{opacity:0;pointer-events:none;transition:opacity .3s cubic-b
 body.eligiendo .der{position:fixed;inset:0;z-index:1}
 body.eligiendo .der blockquote,body.eligiendo .der .degradado{display:none}
 .el-cab{position:relative;z-index:2;text-align:center;padding:40px 16px 0}
-.el-op{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;border:1px solid rgba(255,210,31,.35);background:rgba(255,210,31,.08);color:var(--amarillo);font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;line-height:1}
-.el-op svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.el-cab h1{margin:12px 0 0;font-size:26px;letter-spacing:-.02em}
+.el-cab h1{margin:0;font-size:26px;letter-spacing:-.02em}
 .el-lados{position:relative;flex:1;display:flex;min-height:0}
 .el-lado{position:relative;flex:1 1 0;display:flex;flex-direction:column;justify-content:center;gap:22px;padding:0 120px 0 72px;text-align:left;overflow:hidden;transition:flex-grow .5s cubic-bezier(.2,0,0,1),opacity .3s}
 .el-lado.der-l{padding:0 72px 0 120px;align-items:flex-end}
@@ -203,7 +201,28 @@ body.eligiendo .der blockquote,body.eligiendo .der .degradado{display:none}
 @keyframes el-sube{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 .elegir.va .el-lado:not(.va){opacity:0}
 .elegir.va .el-lado.va{flex-grow:4}
-@media (max-width:860px){.el-lados{flex-direction:column}.el-lado,.el-lado.der-l{padding:24px 16px;align-items:stretch}.el-costura{display:none}.el-cab{padding-top:28px}.el-tx b{font-size:26px}}
+.el-dato{display:none}
+/* Celular (maqueta C aprobada el 5-nov): dos filas que se tocan completas, con un dato en vez del vistazo. */
+@media (max-width:860px){
+  .elegir{overflow-y:auto;background:radial-gradient(ellipse at 15% 25%,rgba(124,58,237,.14),transparent 55%),radial-gradient(ellipse at 85% 75%,rgba(255,210,31,.1),transparent 55%),var(--fondo)}
+  .el-cab{padding:28px 16px 0}.el-costura{display:none}
+  .el-lados{flex:1 0 auto;flex-direction:column;justify-content:center;gap:12px;padding:20px 16px}
+  .el-lado,.el-lado.der-l{flex:none;display:grid;grid-template-columns:minmax(0,1fr) 44px;align-items:center;gap:4px 12px;min-height:92px;padding:14px;border-radius:18px;border:1px solid var(--linea);background:rgba(18,18,23,.82);transition:border-color .24s,opacity .3s}
+  .el-lado > *,.el-lado.der-l > *{width:auto;max-width:none}
+  .el-lado.sel{border-color:rgba(255,210,31,.55)}.el-lado::before{display:none}
+  .el-tx{display:contents}.el-etq,.el-tx small{display:none}
+  .el-tx b{grid-column:1;grid-row:1;align-self:end;font-size:18px;letter-spacing:-.015em;line-height:1.2}
+  .el-vista{grid-column:1;grid-row:2;align-self:start;display:block}
+  .el-vista > *:not(.el-dato){display:none}
+  .el-dato{display:block;font-size:12.5px;line-height:1.35;color:var(--texto-2)}
+  .el-ir{grid-column:2;grid-row:1/3;justify-content:center;width:44px;height:44px;padding:0;font-size:0;gap:0}
+  .el-lado.sel .el-ir svg{transform:none}
+  .el-pie{flex:none;gap:6px 8px;padding:14px 16px 20px;font-size:12px;text-align:center;color:var(--texto-2)}.el-pie button{width:100%;height:32px;color:var(--texto)}
+  .elegir.va .el-lado.va{flex-grow:0}
+}
+@media (max-width:860px) and (max-height:700px){
+  .el-cab{padding-top:18px}.el-lados{padding-top:12px;padding-bottom:12px}.el-pie{padding:8px 16px 10px}.el-pie button{height:28px}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -404,7 +423,7 @@ body.eligiendo .der blockquote,body.eligiendo .der .degradado{display:none}
 </div>
 
 <div class="elegir" id="elegir" hidden role="dialog" aria-modal="true" aria-labelledby="el-t">
-  <div class="el-cab el-sube"><span class="el-op"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6Z"/></svg>Operador de Wali</span><h1 id="el-t">¿A dónde vas hoy?</h1></div>
+  <div class="el-cab el-sube"><h1 id="el-t">¿A dónde vas hoy?</h1></div>
   <div class="el-lados">
     <button type="button" class="el-lado" data-elegir="crm">
       <span class="el-tx el-sube" style="animation-delay:.08s"><span class="el-etq"><svg class="el-tecla" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect x=".5" y=".5" width="19" height="19" rx="5" fill="none" stroke="#33333e"/><text x="10" y="10" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="700" fill="#6f6f7c" font-family="Inter,system-ui,sans-serif">1</text></svg>Tu equipo</span>
@@ -711,12 +730,13 @@ async function elegirDestino(){
     elPoner('el-crm-v', d.crm.recientes.length
       ? d.crm.recientes.map(c => `<span class="el-fila">${elAvatar(c.nombre, c.id)}<span><b>${elEsc(c.nombre)}</b><small>${c.sinLeer ? `${Number(c.sinLeer)} ${c.sinLeer === 1 ? 'mensaje nuevo' : 'mensajes nuevos'}` : 'Al día'}</small></span>${c.sinLeer ? elGlobo(c.sinLeer) : ''}</span>`).join('')
       : `<span class="el-vacio">${d.crm.abiertas ? `${Number(d.crm.abiertas)} conversaciones abiertas en tu equipo.` : 'No tienes conversaciones abiertas ahora.'}</span>`);
+    $('el-crm-v').insertAdjacentHTML('beforeend', `<span class="el-dato">${Number(d.crm.abiertas)} ${d.crm.abiertas === 1 ? 'conversación abierta' : 'conversaciones abiertas'}</span>`);
     // Sesión vieja: sin cifras hasta confirmar la contraseña.
-    if (!d.panel) { elPoner('el-panel-v', '<span class="el-vacio">Por seguridad te pediremos tu contraseña para abrirlo.</span>'); return; }
+    if (!d.panel) { elPoner('el-panel-v', '<span class="el-vacio">Por seguridad te pediremos tu contraseña para abrirlo.</span><span class="el-dato">Te pediremos tu contraseña</span>'); return; }
     const s = d.panel.serie.length > 1 ? d.panel.serie.map(Number) : [0, Number(d.panel.mrr) || 0], mx = Math.max(...s, 1), W = 240, H = 78;
     const pts = s.map((v, i) => `${(i * W / (s.length - 1)).toFixed(1)},${(H - 4 - v / mx * (H - 10)).toFixed(1)}`).join(' ');
     elPoner('el-panel-v', `<span class="el-mrr"><small>Ingreso mensual recurrente</small><b>${elUsd(d.panel.mrr)}</b><svg viewBox="0 0 ${W} ${H}" aria-hidden="true"><defs><linearGradient id="el-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD21F" stop-opacity=".35"/><stop offset="1" stop-color="#FFD21F" stop-opacity="0"/></linearGradient></defs><polygon points="0,${H} ${pts} ${W},${H}" fill="url(#el-g)"/><polyline points="${pts}" fill="none" stroke="#FFD21F" stroke-width="2.2" stroke-linejoin="round"/></svg>
-      <span class="el-chips"><span>Empresas<b>${Number(d.panel.empresas)}</b></span><span>Soporte<b>${Number(d.panel.soporte)}</b></span><span>Cupones<b>${Number(d.panel.cupones)}</b></span></span></span>`);
+      <span class="el-chips"><span>Empresas<b>${Number(d.panel.empresas)}</b></span><span>Soporte<b>${Number(d.panel.soporte)}</b></span><span>Cupones<b>${Number(d.panel.cupones)}</b></span></span></span><span class="el-dato">${Number(d.panel.empresas)} ${d.panel.empresas === 1 ? 'empresa' : 'empresas'} · ${Number(d.panel.soporte)} ${d.panel.soporte === 1 ? 'solicitud' : 'solicitudes'} de soporte</span>`);
   } catch { /* sin vistazo: los dos destinos siguen sirviendo */ }
 }
 async function irDestino(cual){
