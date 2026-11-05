@@ -5,8 +5,10 @@ import { BASE } from '../../utils/base'
 
 /**
  * Acceso al panel de superadministrador (maqueta B «pantalla dividida» aprobada el 31-oct): el panel no abre con un
- * enlace. Solo se entra desde la pantalla que sale al iniciar sesión con una cuenta de operador, y elegir «Panel» deja
- * un pase de 12 horas (cookie httpOnly). Sin pase, /admin lleva al inicio de sesión y el API del panel responde 404.
+ * enlace. Solo se entra desde la pantalla de elegir, que sale al iniciar sesión con una cuenta de operador y también
+ * cada vez que abre /entrar con la sesión ya abierta (botón «Ingresar» del sitio). Elegir «Panel» deja un pase de 12
+ * horas (cookie httpOnly); si no hay pase y la sesión no es reciente, primero pide la contraseña. Sin pase, /admin lleva
+ * al inicio de sesión y el API del panel responde 404.
  */
 export const COOKIE_PANEL = 'wali_panel'
 const HORAS_PANEL = 12
@@ -17,16 +19,30 @@ export const esOperador = (u: { operador: boolean; role: string } | null | undef
 
 const cookiePanel = () => ({ httpOnly: true, sameSite: 'strict' as const, secure: process.env.NODE_ENV === 'production', path: BASE || '/', maxAge: HORAS_PANEL * 3_600_000 })
 
-/** La persona de la sesión si la abrió hace menos de 15 minutos y es operadora; si no, null. */
-export async function operadorRecien(req: Request) {
+/** La persona de la sesión si es operadora, sin importar cuándo la abrió; si no, null. */
+export async function operadorDeSesion(req: Request) {
   const cookie = (req.cookies as Record<string, string> | undefined)?.[COOKIE_SESION]
   if (!cookie) return null
   try {
-    const p = jwt.verify(cookie, secreto()) as { iat?: number }
-    if (!p.iat || Date.now() / 1000 - p.iat > MINUTOS_FRESCA * 60) return null
+    jwt.verify(cookie, secreto())
     const u = await usuarioDeToken(cookie)
     return esOperador(u) ? u : null
   } catch { return null }
+}
+
+/** Si la sesión de la petición se abrió hace menos de 15 minutos. */
+export function sesionReciente(req: Request): boolean {
+  const cookie = (req.cookies as Record<string, string> | undefined)?.[COOKIE_SESION]
+  if (!cookie) return false
+  try {
+    const p = jwt.verify(cookie, secreto()) as { iat?: number }
+    return !!p.iat && Date.now() / 1000 - p.iat <= MINUTOS_FRESCA * 60
+  } catch { return false }
+}
+
+/** La persona de la sesión si la abrió hace menos de 15 minutos y es operadora; si no, null. */
+export async function operadorRecien(req: Request) {
+  return sesionReciente(req) ? operadorDeSesion(req) : null
 }
 
 export function darPase(res: Response, userId: string) {

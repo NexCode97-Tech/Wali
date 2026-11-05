@@ -15,7 +15,7 @@ import { enEspacio, espacioDeUsuario } from '../services/crm/espacio'
 import { usuariosCrm } from '../services/crm/usuarios'
 import { emitirCrm } from '../services/crm/tiempoReal'
 import { BASE } from '../utils/base'
-import { esOperador, operadorRecien, darPase, quitarPase } from '../services/crm/panelAcceso'
+import { esOperador, operadorDeSesion, sesionReciente, paseValido, darPase, quitarPase } from '../services/crm/panelAcceso'
 import { resumenPanel } from '../services/crm/superadminFinanzas'
 
 /**
@@ -81,31 +81,36 @@ router.post('/logout', (_req: Request, res: Response) => {
   return ApiResponse.success(res, { ok: true })
 })
 
-/* ── CRM o panel (maqueta B aprobada el 31-oct): solo justo después de iniciar sesión con una cuenta de operador ── */
+/* ── CRM o panel (maqueta B aprobada el 31-oct): cuentas de operador, al iniciar sesión o al abrir /entrar con sesión ── */
 const limitePanel = rateLimit({ windowMs: 15 * 60_000, max: 30, standardHeaders: true, legacyHeaders: false })
 // Lo que se ve en cada lado de la pantalla dividida: un vistazo real del CRM de la persona y del panel.
 router.get('/elegir', limitePanel, asyncHandler(async (req: Request, res: Response) => {
-  const u = await operadorRecien(req)
+  const u = await operadorDeSesion(req)
   if (!u) return res.status(404).json({ success: false, error: 'Ruta no encontrada' })
   const espacioId = await espacioDeUsuario(u.id)
+  // Las cifras del panel solo con la contraseña reciente o el pase vigente: una sesión vieja ve únicamente su CRM.
+  const abierto = sesionReciente(req) || paseValido(req, u.id)
   const [espacio, abiertas, recientes, empresas, soporte, cupones, r] = await Promise.all([
     espacioId ? prisma.crmEspacio.findUnique({ where: { id: espacioId }, select: { nombre: true } }) : null,
     espacioId ? prisma.crmConversacion.count({ where: { espacioId, estado: 'abiertas' } }) : 0,
     espacioId ? prisma.crmConversacion.findMany({ where: { espacioId, estado: 'abiertas', asignadoId: u.id }, orderBy: { ultimoMensajeAt: { sort: 'desc', nulls: 'last' } }, take: 3, select: { id: true, noLeidos: true, contacto: { select: { nombre: true, telefono: true } } } }) : [],
-    prisma.crmEspacio.count({ where: { cuentaId: null } }),
-    prisma.crmSolicitud.count({ where: { estado: { not: 'resuelta' } } }),
-    prisma.crmCupon.count({ where: { estado: 'activo' } }),
-    resumenPanel('12m'),
+    abierto ? prisma.crmEspacio.count({ where: { cuentaId: null } }) : 0,
+    abierto ? prisma.crmSolicitud.count({ where: { estado: { not: 'resuelta' } } }) : 0,
+    abierto ? prisma.crmCupon.count({ where: { estado: 'activo' } }) : 0,
+    abierto ? resumenPanel('12m') : null,
   ])
   return ApiResponse.success(res, {
     nombre: (u.nombre ?? u.email).split(' ')[0],
     crm: { espacio: espacio?.nombre ?? '', abiertas, recientes: recientes.map(c => ({ id: c.id, nombre: c.contacto.nombre || c.contacto.telefono || 'Cliente', sinLeer: c.noLeidos })) },
-    panel: { mrr: r.mrr, serie: r.serie.map(p => p.mrr), empresas, soporte, cupones },
+    panel: r ? { mrr: r.mrr, serie: r.serie.map(p => p.mrr), empresas, soporte, cupones } : null,
   })
 }))
 router.post('/panel', limitePanel, asyncHandler(async (req: Request, res: Response) => {
-  const u = await operadorRecien(req)
+  const u = await operadorDeSesion(req)
   if (!u) return res.status(404).json({ success: false, error: 'Ruta no encontrada' })
+  // Con el pase vigente sigue derecho (sin alargarlo); sin pase y con la sesión vieja, primero la contraseña.
+  if (paseValido(req, u.id)) return ApiResponse.success(res, { url: `${BASE}/admin` })
+  if (!sesionReciente(req)) return ApiResponse.success(res, { url: `${BASE}/entrar?ir=panel` })
   darPase(res, u.id)
   auditLog(req, 'LOGIN', 'panel', u.id)
   return ApiResponse.success(res, { url: `${BASE}/admin` })

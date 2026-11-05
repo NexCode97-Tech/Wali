@@ -8,7 +8,7 @@ import { espacioDeUsuario } from './services/crm/espacio'
 import { configura } from './utils/roles'
 import { PAISES } from './data/paises'
 import { BASE } from './utils/base'
-import { esOperador, operadorRecien, paseValido } from './services/crm/panelAcceso'
+import { esOperador, operadorDeSesion, operadorRecien, paseValido } from './services/crm/panelAcceso'
 
 /**
  * Las pantallas. Todas son HTML con su CSS y su código dentro, servidas por aquí (y no como archivos sueltos)
@@ -69,9 +69,10 @@ function html(res: Response, cuerpo: string) {
 const router = Router()
 
 router.get('/entrar', asyncHandler(async (req: Request, res: Response) => {
-  // La cuenta de operador recién entrada (Google) elige entre el CRM y el panel; quien viene del panel sin pase vuelve
-  // a iniciar sesión aunque tenga la del CRM abierta (panelAcceso.ts).
-  const elegir = req.query.elegir === '1' && !!(await operadorRecien(req))
+  // La cuenta de operador recién entrada (Google) elige entre el CRM y el panel, y también al abrir /entrar sin nada más
+  // con la sesión ya abierta (botón «Ingresar» del sitio). Quien viene del panel sin pase vuelve a iniciar sesión aunque
+  // tenga la del CRM abierta (panelAcceso.ts).
+  const elegir = (req.query.elegir === '1' && !!(await operadorRecien(req))) || (Object.keys(req.query).length === 0 && !!(await operadorDeSesion(req)))
   const alPanel = req.query.ir === 'panel'
   // Con sesión ya abierta se va al CRM; si viene de la página de precios con un plan, el plan sigue en la dirección.
   if (!elegir && !alPanel && await sesionDePagina(req)) {

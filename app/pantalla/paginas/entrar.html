@@ -683,8 +683,8 @@ async function api(ruta, datos){
   if (!r.ok) throw new Error((j.errors && j.errors[0] && j.errors[0].message) || j.error || 'No se pudo completar. Revisa tu conexión e intenta de nuevo.');
   return j.data;
 }
-let OPC = {registro: true, google: true, recuperar: true}, DESTINO = '', TOKEN = '', CON_GOOGLE = false, CORREO_RECUPERAR = '';
-/* ── CRM o panel: solo cuentas de operador, justo después de iniciar sesión (panelAcceso.ts en el servidor) ── */
+let OPC = {registro: true, google: true, recuperar: true}, DESTINO = '', TOKEN = '', CON_GOOGLE = false, CORREO_RECUPERAR = '', AL_PANEL = false;
+/* ── CRM o panel: solo cuentas de operador, al iniciar sesión o al abrir esta página con sesión (panelAcceso.ts en el servidor) ── */
 const EL_COLORES = ['#2563eb', '#7c3aed', '#0d9488', '#db2777', '#ea580c', '#0891b2', '#4f46e5', '#65a30d'];
 const elEsc = t => String(t ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 // Iniciales y números en SVG, centrados por coordenadas (regla del 31-oct: nunca corridos).
@@ -711,6 +711,8 @@ async function elegirDestino(){
     elPoner('el-crm-v', d.crm.recientes.length
       ? d.crm.recientes.map(c => `<span class="el-fila">${elAvatar(c.nombre, c.id)}<span><b>${elEsc(c.nombre)}</b><small>${c.sinLeer ? `${Number(c.sinLeer)} ${c.sinLeer === 1 ? 'mensaje nuevo' : 'mensajes nuevos'}` : 'Al día'}</small></span>${c.sinLeer ? elGlobo(c.sinLeer) : ''}</span>`).join('')
       : `<span class="el-vacio">${d.crm.abiertas ? `${Number(d.crm.abiertas)} conversaciones abiertas en tu equipo.` : 'No tienes conversaciones abiertas ahora.'}</span>`);
+    // Sesión vieja: sin cifras hasta confirmar la contraseña.
+    if (!d.panel) { elPoner('el-panel-v', '<span class="el-vacio">Por seguridad te pediremos tu contraseña para abrirlo.</span>'); return; }
     const s = d.panel.serie.length > 1 ? d.panel.serie.map(Number) : [0, Number(d.panel.mrr) || 0], mx = Math.max(...s, 1), W = 240, H = 78;
     const pts = s.map((v, i) => `${(i * W / (s.length - 1)).toFixed(1)},${(H - 4 - v / mx * (H - 10)).toFixed(1)}`).join(' ');
     elPoner('el-panel-v', `<span class="el-mrr"><small>Ingreso mensual recurrente</small><b>${elUsd(d.panel.mrr)}</b><svg viewBox="0 0 ${W} ${H}" aria-hidden="true"><defs><linearGradient id="el-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD21F" stop-opacity=".35"/><stop offset="1" stop-color="#FFD21F" stop-opacity="0"/></linearGradient></defs><polygon points="0,${H} ${pts} ${W},${H}" fill="url(#el-g)"/><polyline points="${pts}" fill="none" stroke="#FFD21F" stroke-width="2.2" stroke-linejoin="round"/></svg>
@@ -761,7 +763,7 @@ $('f-entrar').addEventListener('submit', async e => {
   if (!correoOk(c)) return error('entrar', 'Escribe un correo válido.', 'en-correo');
   if (!k) return error('entrar', 'Escribe tu contraseña.', 'en-clave');
   cargando('f-entrar', true);
-  try { const r = await api('login', {email: c, password: k}); if (r && r.elegir) { cargando('f-entrar', false); elegirDestino(); } else alCrm(); }
+  try { const r = await api('login', {email: c, password: k}); if (r && r.elegir && AL_PANEL) { location.href = (await api('panel', {})).url; } else if (r && r.elegir) { cargando('f-entrar', false); elegirDestino(); } else alCrm(); }
   catch (err) { cargando('f-entrar', false); error('entrar', err.message, 'en-clave'); }
 });
 $('f-registro').addEventListener('submit', async e => {
@@ -816,6 +818,7 @@ const ERRORES = {
 (async () => {
   // Lo que trae la dirección (el enlace del correo, el regreso de Google) se lee una vez y se quita de la barra.
   const q = new URLSearchParams(location.search), token = q.get('clave'), err = q.get('error'), google = q.get('google'), registro = q.has('registro');
+  AL_PANEL = q.get('ir') === 'panel';
   ['clave', 'error', 'google', 'registro', 'elegir', 'ir'].forEach(k => q.delete(k));
   // (el cupón se guarda abajo y no sigue en la dirección)
   // Viene de nexcode97.com/precios con un plan: se guarda en la pestaña (sobrevive a la ida y vuelta de Google) y,
@@ -832,6 +835,7 @@ const ERRORES = {
   ir(registro ? 'registro' : 'entrar');
   // Volvió de Google con una cuenta de operador: elige entre el CRM y el panel.
   if (window.ENTRAR && window.ENTRAR.elegir) elegirDestino();
+  else if (AL_PANEL) toast('Por seguridad, confirma tu contraseña para entrar al panel');
   api('opciones').then(o => {
     OPC = o;
     if (!o.registro) document.querySelectorAll('#v-entrar .alterna').forEach(x => { x.hidden = true; });

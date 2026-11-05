@@ -12,7 +12,7 @@ export function CabeceraWali() {
           </svg>
           <span style={{ fontFamily: "var(--font-bricolage), sans-serif", fontWeight: 800, fontSize: 28, letterSpacing: "-0.02em", color: "#FFF8E6", lineHeight: 1 }}>wali</span>
         </a>
-        <a href="/crm/" style={{ background: "#FFD21F", color: "#09090e", fontWeight: 600, fontSize: 14, borderRadius: 999, padding: "9px 18px", textDecoration: "none", fontFamily: "var(--font-inter), system-ui, sans-serif" }}>Ingresar</a>
+        <a href="/crm/entrar" style={{ background: "#FFD21F", color: "#09090e", fontWeight: 600, fontSize: 14, borderRadius: 999, padding: "9px 18px", textDecoration: "none", fontFamily: "var(--font-inter), system-ui, sans-serif" }}>Ingresar</a>
       </nav>
     </header>
   );
