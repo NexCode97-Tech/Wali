@@ -333,7 +333,7 @@
   // Se cierra tocando afuera (antes que cualquier otro menú se abra con ese mismo toque).
   document.addEventListener('click', e => { if (cuAbierto() && !cuMenu.contains(e.target) && !cuBtn.contains(e.target)) cuCerrar(false); }, true);
   window.addEventListener('resize', () => { if (cuAbierto()) cuPosicion(); });
-  document.addEventListener('scroll', () => { if (cuAbierto()) cuPosicion(); }, true);
+  document.addEventListener('scroll', () => { if (cuAbierto()) cuPosicion(); }, {capture: true, passive: true});
 
   // El estado que llega de otra sesión o de Mis ajustes también se ve aquí (y en el menú, si está abierto).
   const pintarYoSinCuenta = pintarYo;

@@ -164,7 +164,7 @@ document.addEventListener('click', e => {
 }, true);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.querySelector('.ck-flmenu')) { ckCerrarFlotantes(); st.ckPill = null; } });
 window.addEventListener('resize', ckCerrarFlotantes);
-document.addEventListener('scroll', e => { if (document.querySelector('.ck-flmenu') && !(e.target instanceof Element && e.target.closest('.ck-flmenu'))) ckCerrarFlotantes(); }, true);
+document.addEventListener('scroll', e => { if (document.querySelector('.ck-flmenu') && !(e.target instanceof Element && e.target.closest('.ck-flmenu'))) ckCerrarFlotantes(); }, {capture: true, passive: true});
 
 /* ── Modal «Nuevo segmento» ── */
 function ckSegNuevo(){

@@ -446,7 +446,8 @@ const ICONOS_MAQ = {
 const icCanal = (canal, cls = 'i') => canal === 'wa' ? `<svg class="${esc(cls)}" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12Z"/></svg>` : I(CANALES[canal].ic, cls);
 const LISTA_INICIO = 50, LISTA_LOTE = 20;
 // Bandeja: 50 al entrar y 20 más al llegar abajo; el marcador solo existe si quedan por dibujar.
-document.addEventListener('scroll', () => { const s = document.getElementById('l-carga'); if (!s || s.getBoundingClientRect().top > innerHeight + 200) return; st.lTope = (st.lTope || LISTA_INICIO) + LISTA_LOTE; lista(); }, true);
+let lPend = false;
+document.addEventListener('scroll', () => { if (lPend) return; lPend = true; requestAnimationFrame(() => { lPend = false; const s = document.getElementById('l-carga'); if (!s || s.getBoundingClientRect().top > innerHeight + 200) return; st.lTope = (st.lTope || LISTA_INICIO) + LISTA_LOTE; lista(); }); }, {capture: true, passive: true});
 function lista(){
   const qi = document.getElementById('q'); if (qi.value !== st.q) qi.value = st.q; document.getElementById('q-x').hidden = !st.q;
   const fa = filtroActivo();
@@ -2693,13 +2694,14 @@ document.querySelector('.box .bar').addEventListener('click', e => {
 }, true);
 
 // Los interruptores sin nombre toman el de su fila (Lunes, Flujo activo…), para que los lectores de pantalla digan qué prenden.
-new MutationObserver(() => {
+let swPend = false;
+new MutationObserver(() => { if (swPend) return; swPend = true; requestAnimationFrame(() => { swPend = false;
   document.querySelectorAll('[role="switch"]:not([aria-label]):not([aria-labelledby])').forEach(s => {
     const f = s.closest('.row2, .tgr, .opt, li'), t = f && f.querySelector('span, b');
     const n = t ? ([...t.childNodes].find(x => x.nodeType === 3 && x.textContent.trim()) || t.firstElementChild || t).textContent.trim() : '';
     if (n) s.setAttribute('aria-label', n);
   });
-}).observe(document.body, {childList: true, subtree: true});
+}); }).observe(document.body, {childList: true, subtree: true});
 
 /* Ayuda al pasar el cursor o al llegar con el teclado (data-tip): qué hace cada botón del chat. */
 (() => {
@@ -2718,7 +2720,7 @@ new MutationObserver(() => {
   document.addEventListener('focusout', ocultar);
   document.addEventListener('mousedown', ocultar);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') ocultar(); });
-  document.addEventListener('scroll', ocultar, true);
+  document.addEventListener('scroll', ocultar, {capture: true, passive: true});
 })();
 
 // Buscar persona en Transferir: la lista se repinta sin perder lo escrito.

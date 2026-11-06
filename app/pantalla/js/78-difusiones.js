@@ -205,7 +205,7 @@ dfPanel.addEventListener('click', e => {
   dfCerrarPanel(); ctAbrirConv(id);
 });
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if (!dfMenu.hidden) dfCerrarMenu(); else dfCerrarPanel(); });
-addEventListener('scroll', dfCerrarMenu, true);
+addEventListener('scroll', dfCerrarMenu, {capture: true, passive: true});
 addEventListener('resize', dfCerrarMenu);
 
 document.head.insertAdjacentHTML('beforeend', `<style>
