@@ -16,7 +16,15 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .wpg-lst{margin:0;padding:0;list-style:none;display:grid;gap:9px}.wpg-lst li{display:flex;gap:9px;color:#374151;font-size:13.5px}.wpg-lst svg{width:16px;height:16px;color:#16a34a;margin-top:2px;flex:none}
 .wpg-tot{border-top:1px solid #eef0f4;padding-top:14px;display:grid;gap:8px;font-size:13.5px}.wpg-tot div{display:flex;justify-content:space-between;gap:12px;color:#4b5563}.wpg-tot .t{color:#111827;font-weight:700;font-size:15px}
 .wpg-dato{display:flex;gap:10px;padding:12px 13px;border-radius:12px;background:#f7f8fa;font-size:13px;color:#374151;text-align:left}.wpg-dato svg{width:17px;height:17px;color:#6b7280;margin-top:1px;flex:none}
-.wpg-pago h3{margin:0;font-size:16px}.wpg-whop{min-height:420px}.wpg-cargando{min-height:420px;display:grid;place-items:center;color:#6b7280;font-size:13.5px}
+.wpg-pago h3{margin:0;font-size:16px}.wpg-whop{min-height:300px}.wpg-cargando{min-height:420px;display:grid;place-items:center;color:#6b7280;font-size:13.5px}
+.wpg-pagar{position:relative;min-height:52px;border-radius:12px;background:#FFD21F;color:#0a0a0d;font-weight:700;font-size:15.5px;display:flex;align-items:center;justify-content:center;gap:10px;width:100%;transition:transform .18s cubic-bezier(.22,1,.36,1),background .18s,box-shadow .18s;box-shadow:0 8px 18px -12px rgba(180,140,0,.7)}
+.wpg-pagar:hover{background:#f5c800}.wpg-pagar:active{transform:scale(.97)}.wpg-pagar:focus-visible{outline:2px solid #0a0a0d;outline-offset:3px}
+.wpg-pagar:disabled{cursor:progress}.wpg-giro{display:none;width:16px;height:16px;border-radius:50%;border:2.2px solid rgba(10,10,13,.25);border-top-color:#0a0a0d;animation:wpg-gira .7s linear infinite}
+.wpg-pagar.cargando .wpg-giro{display:block}@keyframes wpg-gira{to{transform:rotate(360deg)}}
+.wpg-error{margin:0;padding:10px 12px;border-radius:10px;background:var(--red-soft,#fee2e2);color:var(--red-ink,#b91c1c);font-size:13.5px;font-weight:500}
+.wpg-error.sacude{animation:wpg-sacude .36s cubic-bezier(.36,.07,.19,.97)}@keyframes wpg-sacude{20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+.wpg-legal{margin:0;text-align:center;color:#6b7280;font-size:12.5px}.wpg-marca:empty{display:none}
+@media (prefers-reduced-motion:reduce){.wpg-pagar,.wpg-error.sacude,.wpg-giro{animation:none;transition:none}}
 .wpg-seg-pie{display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;color:#6b7280}.wpg-seg-pie svg{width:14px;height:14px}
 .wpg-resu{max-width:520px;margin:56px auto 0;text-align:center;display:grid;gap:14px;justify-items:center}
 .wpg-cir{width:72px;height:72px;border-radius:50%;display:grid;place-items:center}.wpg-cir svg{width:34px;height:34px;stroke-width:2.4}.wpg-cir.ok{background:#FFD21F;color:#0a0a0d}.wpg-cir.mal{background:#fee2e2;color:#dc2626}
@@ -487,7 +495,7 @@ paginaCfg = function(k){ return k === 'plan' ? paginaPlan() : paginaCfgPl(k); };
    Whop. Si quedan días de la prueba o del periodo pagado, el primer cobro espera a que terminen. El plan se activa con
    el aviso de Whop al servidor, nunca desde el navegador. */
 const PP_SCRIPT = 'https://cdn.whop.com/elements/amber/elements.js';
-let ppMontado = '', ppElemento = null;
+let ppMontado = '';
 const ppDinero = c => `USD ${(c / 100).toLocaleString('es-CO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 const ppHoyEsCobro = x => new Date(x.primerCobro).getTime() - Date.now() < 36e5;
 function ppCupon(){
@@ -507,7 +515,12 @@ function plPaginaPago(P){
     ${lst.length ? `<ul class="wpg-lst">${lst.map(t => `<li>${I('check')}${esc(t)}</li>`).join('')}</ul>` : ''}
     <div class="wpg-tot"><div><span>${esc(p.nombre)} ${anual ? 'anual' : 'mensual'}</span><span>${esc(ppDinero(x.total))}</span></div><div><span>Impuestos</span><span>Se calculan al pagar</span></div><div class="t"><span>Hoy pagas</span><span>${esc(ppDinero(hoy ? x.total : 0))}</span></div></div>
     <div class="wpg-dato">${I('calendar')}<span>${hoy ? `Se renueva el <b>${esc(plFecha(sig, true))}</b> por ${esc(ppDinero(x.total))}.` : `Tu primer cobro es el <b>${esc(fecha)}</b> por ${esc(ppDinero(x.total))}, cuando terminan los días que ya tienes.`} Cancelas cuando quieras desde Plan y pagos.</span></div></div>`;
-  const pago = `<div class="wpg-pago" aria-label="Pago"><h3>Pago</h3><div class="wpg-whop" id="wpg-whop"><div class="wpg-cargando">Cargando el pago seguro…</div></div><div class="wpg-seg-pie">${I('lock')}Pago seguro procesado por Whop</div></div>`;
+  const pago = `<div class="wpg-pago" aria-label="Pago"><h3>Pago</h3><div class="wpg-whop" id="wpg-whop"><div class="wpg-cargando">Cargando el pago seguro…</div></div>
+    <p class="wpg-error" id="wpg-error" role="alert" hidden></p>
+    <button type="button" class="wpg-pagar" id="wpg-pagar" data-wpg-pagar="1"><span class="wpg-pagar-t">Suscribirse</span><span class="wpg-giro" aria-hidden="true"></span></button>
+    <p class="wpg-legal">Al suscribirte, aceptas los términos y condiciones de WaliCRM. ${hoy ? '' : 'Hoy no se cobra nada.'}</p>
+    <div class="wpg-marca" id="wpg-marca"></div>
+    <div class="wpg-seg-pie">${I('lock')}Pago seguro procesado por Whop</div></div>`;
   return `<div class="ajw ancho wpg" id="wpg-raiz">${cab}<div class="wpg-ca">${res}${pago}</div></div>`;
 }
 function plPaginaResultado(P){
@@ -535,29 +548,55 @@ function ppCargarScript(){
   });
   return ppCargarScript.p;
 }
-// Monta el checkout de Whop una sola vez por pago: mientras se paga, la página no se vuelve a pintar (render, abajo).
+// Monta el formulario de pago de Whop una sola vez por pago (maqueta «Checkout» aprobada el 6-nov): los medios van en
+// lista, uno debajo del otro (tarjeta, Google Pay o Apple Pay según el equipo, PayPal), y el botón es de Wali.
+let ppPagos = null, ppWhop = null, ppCompleto = false, ppPagando = false;
 async function ppMontar(){
   const x = st.plPago, caja = document.getElementById('wpg-whop');
-  if (!x || !caja || ppMontado === x.checkout) return;
-  ppMontado = x.checkout;
+  if (!x || !caja || ppMontado === x.variante) return;
+  ppMontado = x.variante; ppCompleto = false; ppPagando = false;
   try {
     await ppCargarScript();
     if (st.plPago !== x) return;
-    if (ppElemento && ppElemento.unmount) try { ppElemento.unmount(); } catch { /* ya no estaba */ }
+    if (ppPagos && ppPagos.destroy) try { ppPagos.destroy(); } catch { /* ya no estaba */ }
     caja.replaceChildren();
-    const handle = window.WhopElements().checkout.create({
-      checkoutConfiguration: x.checkout,
-      // El cupón del enlace (?cupon=…, guardado 30 días) va ya escrito en el checkout de Whop.
-      ...(ppCupon() ? {promoCode: ppCupon()} : {}),
-      returnUrl: `${location.origin}__BASE__/?ir=cfg-plan&pago=whop`,
-      locale: 'es',
-      // El resumen del plan ya está a la izquierda: de Whop quedan el total con impuestos, el código de descuento y el pago.
-      appearance: {theme: {appearance: 'light', accentColor: 'yellow', grayColor: 'gray', dangerColor: 'red'}, variables: {'--radius': '10px'},
-        classes: {'whop-CheckoutSummaryHead': {display: 'none'}, 'whop-CheckoutItem': {display: 'none'}, 'whop-CheckoutPrice': {display: 'none'}, 'whop-CheckoutPayButton': {background: '#FFD21F', color: '#0a0a0d', fontWeight: '700'}}},
-      onComplete: c => { if (st.plPago !== x) return; st.plResultado = {ok: true, plan: x.plan, periodo: x.periodo, total: x.total, primerCobro: x.primerCobro, pago: c && c.paymentId}; st.plPago = null; ppMontado = ''; render(); plEsperarActivo(x.plan); },
-    });
-    ppElemento = handle.create('checkout', {buyerEmail: x.email || undefined}); ppElemento.mount('#wpg-whop');
+    const apariencia = {theme: {appearance: 'light', accentColor: 'yellow', grayColor: 'gray', dangerColor: 'red'}, variables: {'--radius': '10px'}};
+    ppWhop = window.WhopElements({locale: 'es', appearance: apariencia});
+    ppPagos = ppWhop.payments.create({accountId: x.cuenta, plan: x.variante, returnUrl: ppRegreso(), locale: 'es', appearance: apariencia});
+    ppPagos.create('payment', {layout: 'accordion', onChange: ev => { ppCompleto = !!(ev && ev.complete); if (ppCompleto) ppError(''); }}).mount('#wpg-whop');
+    ppPagos.create('branding').mount('#wpg-marca');
   } catch (err) { ppMontado = ''; caja.replaceChildren(); caja.insertAdjacentHTML('beforeend', `<div class="wpg-cargando">${esc(err.message)}</div>`); }
+}
+const ppRegreso = () => `${location.origin}__BASE__/?ir=cfg-plan&pago=whop`;
+function ppError(t){ const e = document.getElementById('wpg-error'); if (!e) return; e.textContent = t; e.hidden = !t; if (t) { e.classList.remove('sacude'); void e.offsetWidth; e.classList.add('sacude'); } }
+function ppBoton(cargando){ const b = document.getElementById('wpg-pagar'); if (!b) return; b.classList.toggle('cargando', cargando); b.disabled = cargando; b.querySelector('.wpg-pagar-t').textContent = cargando ? 'Procesando el pago…' : 'Suscribirse'; }
+function ppListo(x, pendiente){
+  st.plResultado = {ok: true, plan: x.plan, periodo: x.periodo, total: x.total, primerCobro: x.primerCobro};
+  if (pendiente) st.pagoOk = true;
+  st.plPago = null; ppMontado = ''; ppPagando = false; render(); plEsperarActivo(x.plan);
+}
+// Suscribirse: el formulario arma un token (Google Pay y Apple Pay abren su hoja aquí), el servidor cobra y, si el banco
+// pide un paso más (3D Secure), Whop lo muestra. El plan lo activa el aviso de Whop al servidor, no el navegador.
+async function ppPagar(){
+  const x = st.plPago; if (!x || ppPagando) return;
+  if (!ppPagos) { ppError('El pago todavía está cargando. Espera un momento e intenta otra vez.'); return; }
+  if (!ppCompleto) { ppError('Completa los datos de pago.'); return; }
+  ppPagando = true; ppError(''); ppBoton(true);
+  try {
+    const {confirmationToken} = await ppPagos.createConfirmationToken({billingDetails: {email: x.email || undefined}});
+    const r = await crmApi('POST', '/crm/plan/cobrar', {plan: x.plan, periodo: x.periodo, variante: x.variante, token: confirmationToken, regreso: ppRegreso(), ...(ppCupon() ? {cupon: ppCupon()} : {})});
+    if (['paid', 'succeeded', 'trialing', 'active'].includes(r.status)) return ppListo(x, false);
+    if (!r.client_secret) return ppListo(x, true);
+    const res = await ppWhop.payments.handleNextAction({clientSecret: r.client_secret, returnUrl: ppRegreso()});
+    if (res && res.redirected) return;
+    if (res && res.status === 'succeeded') return ppListo(x, false);
+    if (res && res.status === 'processing') return ppListo(x, true);
+    throw new Error((res && res.lastPaymentError && res.lastPaymentError.message) || 'El pago no se completó. Revisa los datos o intenta con otro medio de pago.');
+  } catch (err) {
+    ppPagando = false; ppBoton(false);
+    if (err && (err.code === 'payment_request_cancelled' || err.message === 'payment_request_cancelled')) return;
+    ppError(err.message || 'No se pudo procesar el pago. Intenta de nuevo.');
+  }
 }
 async function ppPreparar(plan, periodo){
   const r = await crmApi('POST', '/crm/plan/pagar', {plan, periodo});
@@ -671,6 +710,7 @@ document.getElementById('page').addEventListener('click', e => {
   if (t.closest('[data-pl-reintentar]')) { st.plError = ''; render(); return; }
   if (t.closest('[data-pp-volver]')) { st.plPago = null; st.plResultado = null; ppMontado = ''; render(); return; }
   if (t.closest('[data-pp-crm]')) { st.plResultado = null; st.pagina = ''; render(); return; }
+  if (t.closest('[data-wpg-pagar]')) { ppPagar(); return; }
   if (t.closest('[data-wpg-recibo]')) { const h = (PLAN.historial || []).find(y => y.estado === 'pagado'); if (h) plRecibo(h.numero); return; }
   if (t.closest('[data-pp-reintentar]')) { const r = st.plResultado || {}; st.plResultado = null; ppPreparar(r.plan || PLAN.plan, r.periodo || st.plPeriodo).catch(err => toast(err.message)); return; }
   const pd = t.closest('[data-pp-periodo]'); if (pd && st.plPago && pd.dataset.ppPeriodo !== st.plPago.periodo) { st.plPeriodo = pd.dataset.ppPeriodo; ppPreparar(st.plPago.plan, pd.dataset.ppPeriodo).catch(err => toast(err.message)); return; }
@@ -690,7 +730,7 @@ document.getElementById('page').addEventListener('click', e => {
 const renderPl = render;
 let plAntes = '';
 render = function(){
-  if (st.pagina === 'cfg-plan' && st.plPago && ppMontado === st.plPago.checkout && document.getElementById('wpg-raiz')) { nav(); return; }
+  if (st.pagina === 'cfg-plan' && st.plPago && ppMontado === st.plPago.variante && document.getElementById('wpg-raiz')) { nav(); return; }
   if (st.pagina !== 'cfg-plan') { st.plPago = null; ppMontado = ''; }
   const entra = st.pagina === 'cfg-plan' && plAntes !== 'cfg-plan';
   plAntes = st.pagina;

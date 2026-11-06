@@ -28,7 +28,7 @@ import { accesoCrm, alcanceDe } from '../services/crm/alcance'
 import { borrarEnlace, crearEnlace, editarEnlace, listarEnlaces } from '../services/crm/enlaces'
 import { ApiResponse } from '../utils/response'
 import { z } from 'zod'
-import { estadoPlan, historialPagos, pagarPlan, pagoDeEspacio, planesDelSitio, portalPagos, usoDeCuenta, PLANES, type Plan } from '../services/crm/plan'
+import { estadoPlan, historialPagos, pagarPlan, cobrarPlan, pagoDeEspacio, planesDelSitio, portalPagos, usoDeCuenta, PLANES, type Plan } from '../services/crm/plan'
 import { nombreRecibo, reciboPdf } from '../services/crm/recibo'
 import { crearEspacio, renombrarEspacio, eliminarEspacio, entrarAEspacio, listarEspacios } from '../services/crm/espacios'
 import { leerAjuste } from '../services/crm/ajustes'
@@ -98,6 +98,18 @@ router.post('/plan/pagar', asyncHandler(async (req: Request, res: Response) => {
   const d = z.object({ plan: z.enum(PLANES as [Plan, ...Plan[]]), periodo: z.enum(['mensual', 'anual']), cupon: z.string().regex(/^[A-Za-z0-9]{3,30}$/).optional() }).parse(req.body)
   const u = await prisma.user.findUnique({ where: { id: req.userId }, select: { email: true } })
   return ApiResponse.success(res, await pagarPlan(req.espacioId!, d.plan, d.periodo, u?.email ?? ''))
+}))
+// El formulario de pago de Whop arma un token en el navegador; aquí se cobra (maqueta «Checkout», aprobada el 6-nov).
+router.post('/plan/cobrar', asyncHandler(async (req: Request, res: Response) => {
+  if (req.userRole !== 'ADMIN' || req.soloLectura) throw new ForbiddenError('Solo el administrador del espacio puede cambiar el plan.')
+  const d = z.object({
+    plan: z.enum(PLANES as [Plan, ...Plan[]]), periodo: z.enum(['mensual', 'anual']),
+    variante: z.string().regex(/^plan_[A-Za-z0-9]{6,40}$/), token: z.string().regex(/^ctok_[A-Za-z0-9_]{6,300}$/),
+    regreso: z.string().url().max(500).refine(u => { try { const x = new URL(u); return x.protocol === 'https:' && ['walicrm.com', 'www.walicrm.com', 'www.nexcode97.com', 'nexcode97.com'].includes(x.hostname) } catch { return false } }, 'Dirección de regreso no válida'),
+    cupon: z.string().regex(/^[A-Za-z0-9]{3,30}$/).optional(),
+  }).parse(req.body)
+  const u = await prisma.user.findUnique({ where: { id: req.userId }, select: { email: true } })
+  return ApiResponse.success(res, await cobrarPlan(req.espacioId!, d, u?.email ?? ''))
 }))
 router.post('/plan/portal', asyncHandler(async (req: Request, res: Response) => {
   if (req.userRole !== 'ADMIN' || req.soloLectura) throw new ForbiddenError('Solo el administrador del espacio puede ver los pagos.')

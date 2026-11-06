@@ -125,7 +125,7 @@ function fechaDe(v: unknown): Date | null {
  * Whop cobra los planes (reemplaza a Creem). La empresa paga dentro de Wali con el checkout incrustado de Whop:
  * el servidor crea la configuración del pago y la pantalla la monta con `checkoutConfiguration`.
  *
- * - WHOP_API_KEY: clave de la empresa WaliCRM en Whop (permisos: checkout_configuration:create, plan:create,
+ * - WHOP_API_KEY: clave de la empresa WaliCRM en Whop (permisos: checkout_configuration:create, plan:create, plan:basic:read, payment:create,
  *   plan:basic:read, payment:basic:read, member:basic:read, member:email:read, membership:cancel, membership:update, promo_code:create,
  *   promo_code:basic:read, promo_code:delete).
  * - WHOP_WEBHOOK_SECRET: el secreto ws_… de los avisos (POST /api/pagos/whop).
@@ -174,9 +174,25 @@ const DIA = 864e5
  * Prepara el pago de un plan y devuelve la configuración que monta el checkout de la pantalla.
  * Si todavía hay días cubiertos (la prueba o el periodo ya pagado), el primer cobro espera a que terminen.
  */
-export async function pagarPlan(espacioDado: string, plan: Plan, periodo: Periodo, email: string): Promise<{ checkout: string; plan: Plan; periodo: Periodo; total: number; primerCobro: string; email: string }> {
+export async function pagarPlan(espacioDado: string, plan: Plan, periodo: Periodo, email: string): Promise<{ variante: string; cuenta: string; plan: Plan; periodo: Periodo; total: number; primerCobro: string; email: string }> {
   if (!pagosListos()) throw new AppError('Los pagos todavía no están activos. Escríbenos y te activamos el plan.', 503)
   const espacioId = await cuentaDe(espacioDado)
+  const c = await condicionesDePago(espacioId, plan, periodo)
+  // Con días ya cubiertos, el plan de esta compra lleva esos días de prueba: el primer cobro espera a que terminen.
+  const variante = c.dias ? (await whop<{ id: string }>('/plans', {
+    account_id: WHOP_CUENTA(), product_id: WHOP_PRODUCTO(), title: `${NOMBRE[plan]} ${periodo}`, billing_type: 'renewal',
+    initial_price: 0, renewal_price: c.precio, billing_period: periodo === 'anual' ? 365 : 30, currency: 'usd',
+    trial_period_days: c.dias, visibility: 'hidden', unlimited_stock: true, metadata: { plan, periodo, espacio: espacioId },
+    payment_method_configuration: METODOS,
+  })).id : c.variante
+  logger.info({ evento: 'PAGO_PREPARADO', espacioId, plan, periodo, dias: c.dias })
+  return { variante, cuenta: WHOP_CUENTA(), plan, periodo, total: c.precio * 100, primerCobro: new Date(Date.now() + c.dias * DIA).toISOString(), email }
+}
+
+// ACH es transferencia de bancos de Estados Unidos: no les sirve a los clientes de Wali. PayPal siempre que Whop lo apruebe.
+const METODOS = { disabled: ['us_bank_account'], enabled: ['paypal'], include_platform_defaults: true }
+
+async function condicionesDePago(espacioId: string, plan: Plan, periodo: Periodo) {
   const variante = VARIANTES[`${plan}-${periodo}`]
   if (!variante) throw new ValidationError('Ese plan no está disponible.')
   const e = await prisma.crmEspacio.findUnique({ where: { id: espacioId }, select: { creemSuscripcion: true, estadoPlan: true, plan: true, periodo: true, pruebaHasta: true, renuevaEl: true, cancelaAlFinal: true } })
@@ -188,22 +204,42 @@ export async function pagarPlan(espacioDado: string, plan: Plan, periodo: Period
   const hasta = e.estadoPlan === 'prueba' && e.pruebaHasta && e.pruebaHasta.getTime() > ahora ? e.pruebaHasta : pagado ? e.renuevaEl! : null
   const dias = hasta ? Math.min(365, Math.max(1, Math.ceil((hasta.getTime() - ahora) / DIA))) : 0
   const anterior = pagado && e.estadoPlan !== 'cancelado' && e.creemSuscripcion ? e.creemSuscripcion : ''
-  const precio = PRECIOS[plan][periodo]
-  const cuerpo = {
-    account_id: WHOP_CUENTA(),
-    metadata: { espacio: espacioId, plan, periodo, ...(anterior ? { anterior } : {}) },
-    // ACH es transferencia de bancos de Estados Unidos: no les sirve a los clientes de Wali. PayPal siempre visible.
-    payment_method_configuration: { disabled: ['us_bank_account'], enabled: ['paypal'], include_platform_defaults: true },
-    ...(dias
-      ? { variant: { product_id: WHOP_PRODUCTO(), title: `${NOMBRE[plan]} ${periodo}`, billing_type: 'renewal', initial_price: 0, renewal_price: precio, billing_period: periodo === 'anual' ? 365 : 30, currency: 'usd', trial_period_days: dias, visibility: 'hidden', unlimited_stock: true, metadata: { plan, periodo } } }
-      : { variant_id: variante }),
-  }
-  const ch = await whop<{ id: string }>('/checkout_configurations', cuerpo)
-  logger.info({ evento: 'PAGO_PREPARADO', espacioId, plan, periodo, dias })
-  return { checkout: ch.id, plan, periodo, total: precio * 100, primerCobro: new Date(ahora + dias * DIA).toISOString(), email }
+  return { variante, dias, anterior, precio: PRECIOS[plan][periodo] }
 }
 
-/** Dónde gestiona la empresa su suscripción en Whop (tarjeta, facturas y cancelación). */
+/**
+ * Cobra el plan con el token que armó el formulario de pago de Whop en el navegador (tarjeta, Google Pay, Apple Pay o
+ * PayPal). Solo acepta el plan fijo de ese plan y periodo, o uno oculto que Wali creó para este espacio con el mismo
+ * precio: el navegador no puede cambiar lo que se cobra. La membresía queda enlazada al espacio de una vez.
+ */
+export async function cobrarPlan(espacioDado: string, d: { plan: Plan; periodo: Periodo; variante: string; token: string; regreso: string; cupon?: string }, email: string): Promise<{ id: string; status: string; client_secret: string | null }> {
+  if (!pagosListos()) throw new AppError('Los pagos todavía no están activos. Escríbenos y te activamos el plan.', 503)
+  const espacioId = await cuentaDe(espacioDado)
+  const c = await condicionesDePago(espacioId, d.plan, d.periodo)
+  if (d.variante !== c.variante) {
+    const v = await whop<Obj>(`/plans/${encodeURIComponent(d.variante)}`).catch(() => null)
+    const meta = obj(v?.metadata), producto = idDe(v?.product)
+    const ok = !!v && producto === WHOP_PRODUCTO() && txt(meta.espacio) === espacioId && txt(meta.plan) === d.plan && txt(meta.periodo) === d.periodo
+      && centavos(v.renewal_price) === c.precio * 100 && (centavos(v.initial_price) ?? 0) === 0
+    if (!ok) throw new ValidationError('Ese pago ya no es válido. Vuelve a abrir el pago del plan.')
+  }
+  const metadata = { espacio: espacioId, plan: d.plan, periodo: d.periodo, ...(c.anterior ? { anterior: c.anterior } : {}) }
+  const pago = await whop<Obj>('/payments', {
+    account_id: WHOP_CUENTA(), variant_id: d.variante, confirmation_token: d.token, email, return_url: d.regreso, metadata,
+    ...(d.cupon ? { promo_code: d.cupon } : {}),
+  })
+  logger.info({ evento: 'PAGO_COBRADO', espacioId, plan: d.plan, periodo: d.periodo, id: txt(pago.id), estado: txt(pago.status) })
+  const membresia = txt(pago.membership_id)
+  if (membresia) await enlazarMembresia(membresia, metadata).catch(err => logger.warn({ evento: 'WHOP_ENLACE_FALLO', espacioId, err: (err as Error).message }))
+  return { id: txt(pago.id), status: txt(pago.status), client_secret: txt(pago.client_secret) || null }
+}
+
+/** La membresía de un pago se trata como si su aviso trajera el espacio (los pagos llevan la metadata; la membresía no). */
+async function enlazarMembresia(membresia: string, meta: Obj) {
+  const m = await whop<Obj>(`/memberships/${encodeURIComponent(membresia)}`)
+  await avisoMembresia({ ...m, metadata: { ...obj(m.metadata), ...meta } })
+}
+
 export async function portalPagos(espacioDado: string): Promise<{ url: string }> {
   const espacioId = await cuentaDe(espacioDado)
   const e = await prisma.crmEspacio.findUnique({ where: { id: espacioId }, select: { creemSuscripcion: true } })
@@ -289,9 +325,15 @@ async function avisoMembresia(m: Obj) {
 async function avisoPago(p: Obj, estado: 'pagado' | 'rechazado') {
   const id = txt(p.id), meta = obj(p.metadata), membresia = txt(p.membership_id)
   const total = centavos(p.total) ?? 0
-  if (!id || (estado === 'pagado' && total <= 0)) return
+  if (!id) return
   const espacio = await espacioDeMembresia(meta, membresia)
   if (!espacio) { logger.warn({ evento: 'WHOP_PAGO_SIN_ESPACIO', id }); return }
+  // Un pago enlaza su membresía si el espacio todavía no la tiene (llegó antes que el aviso de la membresía).
+  if (estado === 'pagado' && membresia && txt(meta.espacio)) {
+    const ya = await prisma.crmEspacio.findUnique({ where: { id: espacio }, select: { creemSuscripcion: true } })
+    if (ya?.creemSuscripcion !== membresia) await enlazarMembresia(membresia, meta).catch(err => logger.warn({ evento: 'WHOP_ENLACE_FALLO', espacio, err: (err as Error).message }))
+  }
+  if (estado === 'pagado' && total <= 0) return
   const e = await prisma.crmEspacio.findUnique({ where: { id: espacio }, select: { plan: true, periodo: true } })
   const producto = planDeAviso(meta, txt(p.variant_id)) ?? { plan: (esPlan(e?.plan ?? '') ? e!.plan : 'starter') as Plan, periodo: (e?.periodo === 'anual' ? 'anual' : 'mensual') as Periodo }
   // El periodo que cubre el cobro sale de la membresía; si Whop no responde, el recibo va sin periodo.
