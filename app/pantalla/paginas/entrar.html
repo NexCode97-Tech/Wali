@@ -193,7 +193,6 @@ body.eligiendo .der blockquote,body.eligiendo .der .degradado{display:none}
 .el-chips{display:flex;gap:6px;margin-top:10px}.el-chips span{flex:1;padding:7px 8px;border-radius:9px;background:#18181f;font-size:11px;color:var(--texto-2)}.el-chips b{display:block;font-size:13px;color:var(--texto)}
 .el-vacio{padding:12px;border-radius:12px;border:1px dashed var(--linea-2);font-size:12.5px;color:var(--texto-2)}
 .el-costura{position:relative;flex:none;width:0;z-index:2}
-.el-costura::before{content:"";position:absolute;top:30px;bottom:30px;left:0;width:1px;background:linear-gradient(transparent,#33333e 20%,#33333e 80%,transparent)}
 .el-costura .astro{position:absolute;left:0;top:50%;width:300px;transform:translate(-50%,-50%)}
 .el-pie{position:relative;z-index:2;display:flex;justify-content:center;align-items:center;gap:16px;padding:0 16px 28px;font-size:12.5px;color:var(--texto-3);flex-wrap:wrap}
 .el-pie svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8}
@@ -622,6 +621,8 @@ function poseActual(){
 }
 // Hacia dónde mira: al campo donde escribes (el formulario está a la izquierda), a lo que sostiene o a tu cursor.
 function objetivoMirada(pose){
+  // Al elegir destino mira hacia la opción que tiene el cursor (o el foco): el CRM a la izquierda, el panel a la derecha.
+  if (EL) { const s = document.querySelector('.el-lado.sel'); if (s) return [s.dataset.elegir === 'panel' ? 1.6 : -1.6, .15]; }
   const c = campoActivo();
   if (c && pose === 'trabajar') { const r = c.getBoundingClientRect(), a = SVG.getBoundingClientRect(); return [-1, lim((r.top + r.height / 2 - (a.top + a.height * .3)) / (innerHeight * .5), -1, 1)]; }
   if (pose === 'linterna') return [.9, .45];
