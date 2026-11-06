@@ -169,7 +169,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 let PLAN = null, planCargando = null;
 st.plPeriodo = '';
 const PL_NOMBRE = {starter:'Starter', growth:'Growth', business:'Business'};
-// El correo de soporte de los cobros (Creem exige que se vea dentro del producto).
+// El correo de soporte de los cobros (debe verse dentro del producto).
 const PL_SOPORTE = 'nexcode97@gmail.com';
 // Si el sitio no respondió, la pantalla muestra al menos el nombre y el precio de cada plan.
 const PL_RESPALDO = [
@@ -311,6 +311,10 @@ const PP_SCRIPT = 'https://cdn.whop.com/elements/amber/elements.js';
 let ppMontado = '', ppElemento = null;
 const ppDinero = c => `USD ${(c / 100).toLocaleString('es-CO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 const ppHoyEsCobro = x => new Date(x.primerCobro).getTime() - Date.now() < 36e5;
+function ppCupon(){
+  try { const c = JSON.parse(localStorage.getItem('wali-cupon') || 'null'); return c && c.hasta > Date.now() && /^[A-Z0-9]{3,30}$/.test(c.c) ? c.c : ''; } catch { return ''; }
+}
+
 function plPaginaPago(P){
   const x = st.plPago, p = plDe(x.plan), anual = x.periodo === 'anual';
   const vol = `<button type="button" class="volver" data-pp-volver="1">${I('back')}Plan y pagos</button>`;
@@ -364,6 +368,8 @@ async function ppMontar(){
     caja.replaceChildren();
     const handle = window.WhopElements().checkout.create({
       checkoutConfiguration: x.checkout,
+      // El cupón del enlace (?cupon=…, guardado 30 días) va ya escrito en el checkout de Whop.
+      ...(ppCupon() ? {promoCode: ppCupon()} : {}),
       returnUrl: `${location.origin}__BASE__/?ir=cfg-plan&pago=whop`,
       locale: 'es',
       // El resumen del plan ya está a la izquierda: de Whop quedan el total con impuestos, el código de descuento y el pago.
@@ -392,7 +398,7 @@ async function plPortal(){
   try { const r = await crmApi('POST', '/crm/plan/portal'); if (w) { w.opener = null; w.location.href = r.url; } else window.top.location.href = r.url; }
   catch (err) { if (w) w.close(); toast(err.message); }
 }
-// Después de pagar, Creem avisa al servidor en unos segundos: se vuelve a preguntar hasta ver el plan activo.
+// Después de pagar, Whop avisa al servidor en unos segundos: se vuelve a preguntar hasta ver el plan activo.
 function plEsperarActivo(esperado, intento = 0){
   cargarPlan().then(P => {
     plAvisarMarco();
@@ -499,7 +505,7 @@ document.getElementById('page').addEventListener('click', e => {
   else if (a === 'planes') { const s = document.getElementById('pl-planes'); if (s) s.scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block:'start'}); }
 });
 
-// Al entrar a la página se trae el plan fresco (el uso y los cobros cambian); al volver de pagar, se espera a Creem.
+// Al entrar a la página se trae el plan fresco (el uso y los cobros cambian); al volver de pagar, se espera a Whop.
 const renderPl = render;
 let plAntes = '';
 render = function(){
@@ -512,7 +518,7 @@ render = function(){
   renderPl();
   if (st.pagina === 'cfg-plan' && st.plPago) ppMontar();
 };
-// Al cargar: si vuelve de pagar, se espera a Creem; si eligió un plan en nexcode97.com/precios (lo guardan
+// Al cargar: si vuelve de pagar, se espera a Whop; si eligió un plan en nexcode97.com/precios (lo guardan
 // entrar.html o abrirDesdeAviso en la pestaña), se abre Plan y pagos y se lleva al pago de ese plan, una sola vez.
 crmListo.then(() => {
   let pend = null;

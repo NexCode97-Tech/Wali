@@ -850,7 +850,7 @@ function abrirDesdeAviso(q, avisarSiNo){
     document.getElementById('est-l').textContent = {abiertas:'Abiertas', pendientes:'Pendientes', finalizadas:'Finalizadas'}[st.est] || 'Abiertas';
     return true;
   }
-  // Al volver de pagar en Creem: /?ir=cfg-plan&pago=ok (70-plan.js espera a que el plan quede activo).
+  // Al volver de pagar en Whop: /?ir=cfg-plan&pago=whop (70-plan.js espera a que el plan quede activo).
   if (ir === 'cfg-plan' && q.get('pago') === 'ok') st.pagoOk = true;
   // Al volver de un paso fuera de Wali en el pago de Whop (banco, PayPal): /?ir=cfg-plan&pago=whop&status=…
   if (ir === 'cfg-plan' && q.get('pago') === 'whop') st.plVuelta = q.get('status') || 'processing';

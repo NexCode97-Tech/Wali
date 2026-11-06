@@ -2,7 +2,7 @@ import { prisma } from '../../config/prisma'
 
 /**
  * Las cifras de dinero del panel de superadministrador (maqueta B aprobada el 31-oct): MRR, su historia, cómo se
- * movió en el mes, ingresos, cobros fallidos y planes. Todo sale de los cobros que Creem avisó (crm_pagos) y del plan
+ * movió en el mes, ingresos, cobros fallidos y planes. Todo sale de los cobros que Whop avisó (crm_pagos) y del plan
  * de cada cuenta (crm_espacios). Las cuentas internas (NexCode97) no cuentan.
  *
  * MRR de una cuenta en una fecha: lo que pagó en el cobro cuyo periodo cubre esa fecha, sin impuestos, llevado a un
@@ -193,7 +193,7 @@ export async function atencion() {
   ])
   const filas: { empresaId: string; empresa: string; logo: string | null; que: string; detalle: string; nivel: 'urgente' | 'revisar'; en: number }[] = []
   for (const c of cuentas) {
-    if (c.estadoPlan === 'pago-pendiente') filas.push({ empresaId: c.id, empresa: c.nombre, logo: c.logo, que: 'Cobro rechazado', detalle: 'Creem reintenta el cobro', nivel: 'urgente', en: 0 })
+    if (c.estadoPlan === 'pago-pendiente') filas.push({ empresaId: c.id, empresa: c.nombre, logo: c.logo, que: 'Cobro rechazado', detalle: 'Whop reintenta el cobro', nivel: 'urgente', en: 0 })
     else if (c.estadoPlan === 'prueba' && c.pruebaHasta) filas.push({ empresaId: c.id, empresa: c.nombre, logo: c.logo, que: 'Prueba por vencer', detalle: c.pruebaHasta.toISOString(), nivel: 'revisar', en: 1 })
     else if (c.cancelaAlFinal) filas.push({ empresaId: c.id, empresa: c.nombre, logo: c.logo, que: 'Cancela al final del periodo', detalle: c.renuevaEl?.toISOString() ?? '', nivel: 'revisar', en: 2 })
   }

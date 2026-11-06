@@ -500,7 +500,7 @@ function vFinanzas(){
   const D = S.finanzas;
   const meses = D ? D.meses : [];
   const selMes = dd('mes', mesLargo(S.mes || (D && D.mes) || new Date().toISOString().slice(0, 7)), meses.map(m => [m, mesLargo(m)]), S.mes || (D && D.mes), IC.cal);
-  const cab = `<div class="cab ent"><div><h1>Finanzas</h1><p class="sub">Lo que entra, lo que se descuenta y cómo se mueve el MRR. Los cobros vienen de Creem.</p></div><div class="der">${selMes}<button type="button" class="btn" data-exportar="cobros">${IC.dl}Exportar CSV</button></div></div>`;
+  const cab = `<div class="cab ent"><div><h1>Finanzas</h1><p class="sub">Lo que entra, lo que se descuenta y cómo se mueve el MRR. Los cobros vienen de Whop.</p></div><div class="der">${selMes}<button type="button" class="btn" data-exportar="cobros">${IC.dl}Exportar CSV</button></div></div>`;
   if (!D) return cab + '<div class="vacio">Cargando…</div>';
   const m = D.este, a = D.antes, nombre = MESES[+D.mes.slice(5) - 1];
   const rel = (x, y) => y ? pct(Math.abs((x - y) / y)) : '';
@@ -511,7 +511,7 @@ function vFinanzas(){
     ['Ingreso promedio por empresa', usd(D.arpa, 0), D.arpa, cambio(D.arpa, D.arpaAntes, () => rel(D.arpa, D.arpaAntes)), 'ARPA'],
   ].map(([l, v, raw, d, s], i) => `<div class="k ent" style="--d:${40 + i * 40}ms"><div class="lbl">${l}</div><div class="big">${cuenta(raw, 'usd', v)}</div><div style="display:flex;gap:8px;align-items:center;margin-top:2px">${d}<span class="lbl">${s}</span></div></div>`).join('');
   const mov = D.movimiento, neto = mov.cierre - mov.inicio;
-  const pyg = [['Ingresos cobrados', usd(m.bruto), ''], ['Impuestos (Creem los declara)', '− ' + usd(m.impuestos), 'mut'], ['Reembolsos', '− ' + usd(m.reembolsos), 'mut'], ['Ingreso neto', usd(m.neto), 'tot']]
+  const pyg = [['Ingresos cobrados', usd(m.bruto), ''], ['Impuestos (Whop los declara)', '− ' + usd(m.impuestos), 'mut'], ['Reembolsos', '− ' + usd(m.reembolsos), 'mut'], ['Ingreso neto', usd(m.neto), 'tot']]
     .map(([t, v, k]) => `<div class="pyg ${k === 'tot' ? 'tot' : ''}"><span class="${k === 'tot' ? '' : 't2'}">${t}</span><span class="${k === 'mut' ? 'mut' : ''}">${v}</span></div>`).join('');
   const totalPlan = D.mrrPorPlan.reduce((s, p) => s + p.mrr, 0);
   const porPlan = D.mrrPorPlan.map(p => `<div style="display:grid;grid-template-columns:90px 1fr 130px;gap:10px;align-items:center;font-size:13px;padding:7px 0"><span style="display:flex;align-items:center;gap:7px"><i style="width:10px;height:10px;border-radius:3px;background:var(--c-${p.plan})"></i>${esc(PLAN[p.plan])}</span><div class="bar"><b style="width:${totalPlan ? p.mrr / totalPlan * 100 : 0}%;background:var(--c-${p.plan})"></b></div><span style="text-align:right;font-variant-numeric:tabular-nums"><b>${usd(p.mrr, 0)}</b> <span class="mut">${totalPlan ? pct(p.mrr / totalPlan) : ''}</span></span></div>`).join('');
@@ -595,7 +595,7 @@ function vCupones(){
   const C = S.cupones;
   const activos = C ? C.cupones.filter(c => c.estado === 'activo') : [];
   const copiar = dd('copiar', 'Copiar enlace con cupón', activos.length ? activos.map(c => [c.codigo, c.codigo]) : [['', 'No hay cupones activos']], '', IC.link);
-  const cab = `<div class="cab ent"><div><h1>Cupones</h1><p class="sub">Códigos de descuento para la página de pago de Creem.</p></div><div class="der">${copiar}<button type="button" class="btn pri" data-c-nuevo="1"${C && !C.pagosListos ? ' disabled title="Los pagos con Creem todavía no están activos"' : ''}>${IC.plus}Nuevo cupón</button></div></div>`;
+  const cab = `<div class="cab ent"><div><h1>Cupones</h1><p class="sub">Códigos de descuento para el checkout de Whop.</p></div><div class="der">${copiar}<button type="button" class="btn pri" data-c-nuevo="1"${C && !C.pagosListos ? ' disabled title="Los pagos con Whop todavía no están activos"' : ''}>${IC.plus}Nuevo cupón</button></div></div>`;
   if (!C) return cab + '<div class="vacio">Cargando…</div>';
   const kps = [
     ['Cupones activos', cuenta(C.activos, 'n', num(C.activos)), `<span class="lbl">de ${num(C.creados)} ${C.creados === 1 ? 'creado' : 'creados'}</span>`],
@@ -612,8 +612,8 @@ function vCupones(){
     const [et, ek] = C_ESTADO[c.estado] || [c.estado, 'g'], tope = c.maxUsos || Math.max(c.usos, 1) * 2;
     const vig = c.vence ? `${new Date(c.vence) < new Date() ? 'Venció el' : 'Hasta el'} ${fecha(c.vence)}` : 'Sin fecha';
     const menu = S.fila === c.id ? `<div class="menu" role="menu">${S.confirma === c.id
-      ? `<p style="margin:4px 8px 8px;font-size:12.5px;max-width:220px;white-space:normal" class="t2">Se elimina también en Creem y no se puede deshacer. Los cobros que ya hizo se quedan.</p><button type="button" role="menuitem" data-c-borrar="${esc(c.id)}" style="color:#dc2626;font-weight:600">Sí, eliminar ${esc(c.codigo)}</button>`
-      : c.estado !== 'eliminado' ? `<button type="button" role="menuitem" data-c-copiar="${esc(c.codigo)}">Copiar enlace</button><button type="button" role="menuitem" data-c-confirmar="${esc(c.id)}" style="color:#dc2626">Eliminar</button>` : '<p class="lbl" style="margin:6px 8px">Eliminado en Creem.</p>'}</div>` : '';
+      ? `<p style="margin:4px 8px 8px;font-size:12.5px;max-width:220px;white-space:normal" class="t2">Se elimina también en Whop y no se puede deshacer. Los cobros que ya hizo se quedan.</p><button type="button" role="menuitem" data-c-borrar="${esc(c.id)}" style="color:#dc2626;font-weight:600">Sí, eliminar ${esc(c.codigo)}</button>`
+      : c.estado !== 'eliminado' ? `<button type="button" role="menuitem" data-c-copiar="${esc(c.codigo)}">Copiar enlace</button><button type="button" role="menuitem" data-c-confirmar="${esc(c.id)}" style="color:#dc2626">Eliminar</button>` : '<p class="lbl" style="margin:6px 8px">Eliminado en Whop.</p>'}</div>` : '';
     return `<tr data-cupon="${esc(c.id)}"><td><span class="cod">${esc(c.codigo)}</span></td><td>${esc(textoDescuento(c))}</td><td class="mut">${esc(textoPlanes(c.planes))}</td>
       <td><div style="display:flex;align-items:center;gap:10px;min-width:150px"><div class="bar" style="flex:1"><b style="width:${Math.min(100, c.usos / tope * 100)}%;background:var(--ink)"></b></div><span>${num(c.usos)}${c.maxUsos ? '/' + num(c.maxUsos) : ''}</span></div></td>
       <td style="font-weight:600">${c.ingreso ? usd(c.ingreso, 0) : '—'}</td><td class="mut">${esc(vig)}</td><td><span class="est ${ek}">${et}</span></td>
@@ -621,7 +621,7 @@ function vCupones(){
   };
   const tabla = fs.length ? `<div class="k tw ent" style="--d:200ms;padding:2px 6px;overflow:visible"><table class="t"><thead><tr><th>Código</th><th>Descuento</th><th>Planes</th><th>Usos</th><th>Ingreso</th><th>Vigencia</th><th>Estado</th><th></th></tr></thead><tbody>${fs.map(fila).join('')}</tbody></table></div>`
     : `<div class="k vacio ent" style="--d:200ms">${C.cupones.length ? 'Ningún cupón con esos filtros.' : 'Todavía no hay cupones. Crea el primero con «Nuevo cupón».'}</div>`;
-  return cab + `<div class="g4">${kps}</div>` + busca + tabla + (C.pagosListos ? '' : '<p class="lbl" style="margin-top:12px">Los pagos con Creem todavía no están activos en el servidor: los cupones se podrán crear cuando lo estén.</p>');
+  return cab + `<div class="g4">${kps}</div>` + busca + tabla + (C.pagosListos ? '' : '<p class="lbl" style="margin-top:12px">Los pagos con Whop todavía no están activos en el servidor: los cupones se podrán crear cuando lo estén.</p>');
 }
 
 /* El panel «Nuevo cupón»: entra desde la derecha y muestra cómo queda el precio. */
@@ -641,7 +641,7 @@ function vistaPrevia(n){
   if (!plan || !v) return 'Escribe el valor para ver cómo queda el precio.';
   const antes = precios[plan], despues = n.tipo === 'porcentaje' ? Math.round(antes * (1 - Math.min(v, 100) / 100)) : Math.max(0, antes - Math.round(v * 100));
   const cuando = n.dura === 'once' ? 'el primer mes' : n.dura === 'forever' ? 'siempre' : `los primeros ${n.dura} ${n.dura === '1' ? 'mes' : 'meses'}`;
-  return `${esc(PLAN[plan])} mensual pasa de <b>${usd(antes)}</b> a <b>${usd(despues)}</b> ${cuando}. Se crea también en Creem.`;
+  return `${esc(PLAN[plan])} mensual pasa de <b>${usd(antes)}</b> a <b>${usd(despues)}</b> ${cuando}. Se crea también en Whop.`;
 }
 function pintarNuevo(){
   const n = S.nuevo; if (!n) return;
@@ -655,7 +655,7 @@ function pintarNuevo(){
       <div class="dos"><label>Vence<input id="c-vence" type="date" value="${esc(n.vence)}" min="${new Date(Date.now() + 864e5).toISOString().slice(0, 10)}"></label><label>Usos máximos<input id="c-max" inputmode="numeric" value="${esc(n.maxUsos)}" placeholder="Sin límite"></label></div>
       <div class="prev" id="c-prev">${vistaPrevia(n)}</div>
       ${n.error ? `<p class="err" role="alert">${esc(n.error)}</p>` : ''}
-      <button type="submit" class="btn pri" style="justify-content:center;height:42px"${n.enviando ? ' disabled' : ''}>${n.enviando ? 'Creando en Creem…' : 'Crear cupón'}</button>
+      <button type="submit" class="btn pri" style="justify-content:center;height:42px"${n.enviando ? ' disabled' : ''}>${n.enviando ? 'Creando en Whop…' : 'Crear cupón'}</button>
     </form>`;
   $('fm-cupon').addEventListener('submit', ev => { ev.preventDefault(); crearCupon(); });
 }
@@ -676,7 +676,7 @@ async function crearCupon(){
   try {
     await api('/cupones', 'POST', {codigo: n.codigo, tipo: n.tipo, valor: n.tipo === 'porcentaje' ? Math.round(v) : Math.round(v * 100), ...dura, planes: n.planes,
       ...(n.vence ? {vence: new Date(n.vence + 'T23:59:59-05:00').toISOString()} : {}), ...(n.maxUsos ? {maxUsos: +n.maxUsos} : {})});
-    const codigo = n.codigo; cerrarNuevo(); alertar(`Cupón ${codigo} creado en Creem`); await cargar('cupones');
+    const codigo = n.codigo; cerrarNuevo(); alertar(`Cupón ${codigo} creado en Whop`); await cargar('cupones');
   } catch (err) { if (S.nuevo) { n.enviando = false; n.error = err.message; pintarNuevo(); } }
 }
 function eventoCupones(t){

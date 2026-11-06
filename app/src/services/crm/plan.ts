@@ -5,12 +5,7 @@ import { AppError, ValidationError } from '../../utils/errors'
 import { cuentaDe, espaciosDeCuenta, usuariosDeCuenta } from './espacio'
 
 /**
- * El plan de cada espacio. El cobro lo hace Whop (ver «Pagar con Whop» más abajo); Creem queda solo para los cupones
- * viejos del panel de superadministrador (creem(), CREEM_PRODUCTOS) mientras se pasan a códigos de Whop.
- *
- * - CREEM_API_KEY: llave de la API (creem_test_… en pruebas). CREEM_API_URL: https://test-api.creem.io o https://api.creem.io.
- * - CREEM_WEBHOOK_SECRET: firma de los avisos (POST /api/pagos/creem).
- * - CREEM_PRODUCTOS: JSON con el id de producto de cada plan y periodo, p. ej. {"growth-mensual":"prod_…", …}.
+ * El plan de cada espacio. El cobro, las suscripciones y los cupones los hace Whop (ver «Pagar con Whop» más abajo).
  *
  * WhatsApp y la IA no se cobran aquí: cada empresa los paga directo a su proveedor.
  */
@@ -27,31 +22,6 @@ export const LIMITES: Record<Plan, { usuarios: number; agentesIA: number; espaci
   starter: { usuarios: 5, agentesIA: 0, espacios: 1 },
   growth: { usuarios: 10, agentesIA: 2, espacios: 3 },
   business: { usuarios: Infinity, agentesIA: Infinity, espacios: 6 },
-}
-
-const API = () => (process.env.CREEM_API_URL || 'https://test-api.creem.io').replace(/\/+$/, '')
-function productos(): Record<string, string> {
-  try { return JSON.parse(process.env.CREEM_PRODUCTOS || '{}') as Record<string, string> } catch { return {} }
-}
-
-/** Productos de Creem de cada plan (sus dos periodos), según CREEM_PRODUCTOS. */
-export function productosDePlan(plan: string): string[] {
-  return Object.entries(productos()).filter(([k]) => k.startsWith(plan + '-')).map(([, id]) => id)
-}
-
-export async function creem<T>(ruta: string, cuerpo?: unknown, metodo?: 'GET' | 'POST' | 'DELETE'): Promise<T> {
-  const r = await fetch(`${API()}/v1${ruta}`, {
-    method: metodo ?? (cuerpo === undefined ? 'GET' : 'POST'),
-    headers: { 'x-api-key': process.env.CREEM_API_KEY ?? '', ...(cuerpo === undefined ? {} : { 'Content-Type': 'application/json' }) },
-    body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
-    signal: AbortSignal.timeout(15_000),
-  })
-  const texto = await r.text()
-  if (!r.ok) {
-    logger.error({ evento: 'CREEM_ERROR', ruta, status: r.status, cuerpo: texto.slice(0, 300) })
-    throw new AppError('No se pudo conectar con la pasarela de pagos. Intenta de nuevo en un momento.', 502)
-  }
-  return JSON.parse(texto) as T
 }
 
 // ─── Los planes de la página de precios ─────────────────────────────────────
@@ -156,7 +126,8 @@ function fechaDe(v: unknown): Date | null {
  * el servidor crea la configuración del pago y la pantalla la monta con `checkoutConfiguration`.
  *
  * - WHOP_API_KEY: clave de la empresa WaliCRM en Whop (permisos: checkout_configuration:create, plan:create,
- *   plan:basic:read, payment:basic:read, member:basic:read, member:email:read, membership:cancel, membership:update).
+ *   plan:basic:read, payment:basic:read, member:basic:read, member:email:read, membership:cancel, membership:update, promo_code:create,
+ *   promo_code:basic:read, promo_code:delete).
  * - WHOP_WEBHOOK_SECRET: el secreto ws_… de los avisos (POST /api/pagos/whop).
  *
  * El primer cobro espera a que termine la prueba gratis, o el periodo que ya está pagado si cambia de plan: el plan de
@@ -166,10 +137,10 @@ function fechaDe(v: unknown): Date | null {
  */
 const WHOP_API = 'https://api.whop.com/api/v1'
 const WHOP_VERSION = '2026-11-05-1'
-const WHOP_CUENTA = () => process.env.WHOP_CUENTA || 'biz_QCxhCFgBRJnw7V'
-const WHOP_PRODUCTO = () => process.env.WHOP_PRODUCTO || 'prod_jhPZ6ykLDThWs'
+export const WHOP_CUENTA = () => process.env.WHOP_CUENTA || 'biz_QCxhCFgBRJnw7V'
+export const WHOP_PRODUCTO = () => process.env.WHOP_PRODUCTO || 'prod_jhPZ6ykLDThWs'
 /** Los planes de Wali en Whop (ocultos, renovables, precio inicial 0: el primer cobro es el de la renovación). */
-const VARIANTES: Record<string, string> = {
+export const VARIANTES: Record<string, string> = {
   'starter-mensual': 'plan_7lAfeZkgFJepz', 'starter-anual': 'plan_72eLZ2Ejynk5p',
   'growth-mensual': 'plan_t0djqeyHgmKGn', 'growth-anual': 'plan_VZQYof0XPyN3K',
   'business-mensual': 'plan_EebIGQK97fZne', 'business-anual': 'plan_SgjfYh73trzEw',
@@ -182,7 +153,7 @@ const NOMBRE: Record<Plan, string> = { starter: 'Starter', growth: 'Growth', bus
 
 export const pagosListos = () => !!process.env.WHOP_API_KEY
 
-export async function whop<T>(ruta: string, cuerpo?: unknown, metodo?: 'GET' | 'POST' | 'PATCH'): Promise<T> {
+export async function whop<T>(ruta: string, cuerpo?: unknown, metodo?: 'GET' | 'POST' | 'PATCH' | 'DELETE'): Promise<T> {
   const r = await fetch(`${WHOP_API}${ruta}`, {
     method: metodo ?? (cuerpo === undefined ? 'GET' : 'POST'),
     headers: { Authorization: `Bearer ${process.env.WHOP_API_KEY ?? ''}`, 'Api-Version-Date': WHOP_VERSION, ...(cuerpo === undefined ? {} : { 'Content-Type': 'application/json' }) },
@@ -261,8 +232,9 @@ export function firmaWhopValida(cuerpo: Buffer, id: string | undefined, marca: s
   })
 }
 
-/** Whop manda los montos en dólares (59 o "59.00"): aquí se guardan en centavos. */
+/** Whop manda los montos en dólares (59, "59.00" o { amount: "59.00", currency }): aquí se guardan en centavos. */
 const centavos = (v: unknown): number | null => {
+  if (v && typeof v === 'object' && 'amount' in v) v = (v as { amount: unknown }).amount
   const n = typeof v === 'number' ? v : typeof v === 'string' && v.trim() ? Number(v) : NaN
   return Number.isFinite(n) ? Math.round(n * 100) : null
 }
@@ -325,9 +297,13 @@ async function avisoPago(p: Obj, estado: 'pagado' | 'rechazado') {
   // El periodo que cubre el cobro sale de la membresía; si Whop no responde, el recibo va sin periodo.
   const m = estado === 'pagado' && membresia ? await whop<Obj>(`/memberships/${encodeURIComponent(membresia)}`).catch(() => null) : null
   const impuestos = centavos(p.tax_amount) ?? 0
+  const subtotal = centavos(p.subtotal) ?? Math.max(0, total - impuestos)
+  // El cupón: Whop manda el id del código (promo_); el panel lo cuenta por su código.
+  const promo = txt(p.promo_code_id)
+  const cupon = promo ? (await prisma.crmCupon.findUnique({ where: { id: promo }, select: { codigo: true } }))?.codigo ?? null : null
   const datos = {
-    plan: producto.plan, periodo: producto.periodo, estado, total, impuestos,
-    subtotal: centavos(p.subtotal) ?? Math.max(0, total - impuestos),
+    plan: producto.plan, periodo: producto.periodo, estado, total, impuestos, subtotal,
+    cupon, descuento: cupon ? Math.max(0, subtotal - (total - impuestos)) : 0,
     moneda: (txt(p.currency) || 'usd').toUpperCase(),
     desde: m ? fechaDe(m.current_period_start) : null, hasta: m ? fechaDe(m.current_period_end) : null,
     fecha: fechaDe(p.paid_at) ?? fechaDe(p.created_at) ?? new Date(),

@@ -1,12 +1,17 @@
 import { prisma } from '../../config/prisma'
 import { logger } from '../../utils/logger'
 import { ValidationError } from '../../utils/errors'
-import { creem, productosDePlan, pagosListos, planesDelSitio } from './plan'
+import { whop, pagosListos, planesDelSitio, PLANES, VARIANTES, WHOP_CUENTA, WHOP_PRODUCTO } from './plan'
 
 /**
- * Cupones de descuento del panel de superadministrador (maqueta B aprobada el 31-oct). El descuento se crea y se
- * borra en Creem (POST /v1/discounts, DELETE /v1/discounts/:id/delete); aquí se guarda para listarlo y para contar lo
- * que trajo: cada cobro pagado con cupón queda con su código (crm_pagos.cupon, desde la metadata del pago).
+ * Cupones de descuento del panel de superadministrador (maqueta B aprobada el 31-oct). El descuento es un código
+ * promocional de Whop (POST /promo_codes, DELETE /promo_codes/:id; id = promo_…) que el cliente escribe en el checkout;
+ * aquí se guarda para listarlo y para contar lo que trajo: cada cobro con cupón queda con su código (crm_pagos.cupon,
+ * desde el promo_code_id del pago).
+ *
+ * En Whop: amount_off es el porcentaje (25) o dólares; promo_duration_months 0 = siempre, 1 = una vez, N = N meses.
+ * Un cupón de todos los planes vale para el producto entero (también los planes con días de prueba que crea el
+ * checkout); uno de planes sueltos vale solo para esos planes, así que no aplica mientras quedan días de prueba.
  */
 
 export interface NuevoCupon {
@@ -21,29 +26,28 @@ export interface NuevoCupon {
   maxUsos?: number
 }
 
-type Descuento = { id?: string; status?: string; redeem_count?: number }
+type Descuento = { id?: string; status?: string; uses?: number }
 
-// Los usos los lleva Creem: se preguntan una vez por minuto como mucho.
+// Los usos los lleva Whop: se preguntan una vez por minuto como mucho.
 let usosCache: { en: number; usos: Map<string, { usos: number; estado: string }> } | null = null
-async function usosEnCreem(ids: string[]): Promise<Map<string, { usos: number; estado: string }>> {
+async function usosEnWhop(ids: string[]): Promise<Map<string, { usos: number; estado: string }>> {
   if (usosCache && Date.now() - usosCache.en < 60_000 && ids.every(id => usosCache!.usos.has(id))) return usosCache.usos
   const usos = new Map<string, { usos: number; estado: string }>()
   await Promise.all(ids.map(async id => {
     try {
-      const d = await creem<Descuento>(`/discounts?discount_id=${encodeURIComponent(id)}`)
-      usos.set(id, { usos: typeof d.redeem_count === 'number' ? d.redeem_count : 0, estado: d.status ?? '' })
-    } catch { /* si Creem no responde, el cupón se muestra sin usos */ }
+      const d = await whop<Descuento>(`/promo_codes/${encodeURIComponent(id)}`)
+      usos.set(id, { usos: typeof d.uses === 'number' ? d.uses : 0, estado: d.status ?? '' })
+    } catch { /* si Whop no responde, el cupón se muestra sin usos */ }
   }))
   usosCache = { en: Date.now(), usos }
   return usos
 }
 
-/** El estado que se muestra: Creem manda (vencido, agotado, eliminado) y si no responde, se deduce de las fechas. */
-function estadoDe(c: { estado: string; vence: Date | null; maxUsos: number | null }, usos: number, creemEstado: string) {
-  if (c.estado === 'eliminado' || creemEstado === 'deleted') return 'eliminado'
+/** El estado que se muestra: Whop manda (archivado o inactivo) y si no responde, se deduce de las fechas y los usos. */
+function estadoDe(c: { estado: string; vence: Date | null; maxUsos: number | null }, usos: number, whopEstado: string) {
+  if (c.estado === 'eliminado' || whopEstado === 'archived') return 'eliminado'
   if (c.maxUsos != null && usos >= c.maxUsos) return 'agotado'
-  if (creemEstado === 'expired' || (c.vence && c.vence.getTime() < Date.now())) return 'vencido'
-  if (creemEstado === 'scheduled') return 'programado'
+  if (whopEstado === 'inactive' || (c.vence && c.vence.getTime() < Date.now())) return 'vencido'
   return 'activo'
 }
 
@@ -54,7 +58,7 @@ export async function listaCupones() {
   const cupones = await prisma.crmCupon.findMany({ orderBy: { createdAt: 'desc' } })
   const vivos = cupones.filter(c => c.estado !== 'eliminado').map(c => c.id)
   const [usos, porCupon, delMes, precios] = await Promise.all([
-    vivos.length ? usosEnCreem(vivos) : Promise.resolve(new Map<string, { usos: number; estado: string }>()),
+    vivos.length ? usosEnWhop(vivos) : Promise.resolve(new Map<string, { usos: number; estado: string }>()),
     prisma.crmPago.groupBy({ by: ['cupon'], where: { cupon: { not: null }, estado: { in: ['pagado', 'reembolsado'] } }, _sum: { total: true, descuento: true }, _count: { _all: true } }),
     prisma.crmPago.count({ where: { cupon: { not: null }, estado: 'pagado', fecha: { gte: inicioMes() } } }),
     preciosMensuales(),
@@ -90,21 +94,23 @@ async function preciosMensuales(): Promise<Record<string, number>> {
   return precios
 }
 
-/** Crea el cupón en Creem y lo guarda. El código va en mayúsculas, solo letras y números. */
+/** Crea el código en Whop y lo guarda. El código va en mayúsculas, solo letras y números. */
 export async function crearCupon(d: NuevoCupon, quien: string) {
   const codigo = d.codigo.trim().toUpperCase()
   if (!/^[A-Z0-9]{3,30}$/.test(codigo)) throw new ValidationError('El código lleva de 3 a 30 letras o números, sin espacios.')
   if (await prisma.crmCupon.findUnique({ where: { codigo } })) throw new ValidationError('Ya existe un cupón con ese código.')
-  const productos = [...new Set(d.planes.flatMap(productosDePlan))]
-  if (!productos.length) throw new ValidationError('Los productos de Creem de esos planes no están configurados.')
-  const r = await creem<{ id: string }>('/discounts', {
-    name: codigo, code: codigo,
-    type: d.tipo === 'porcentaje' ? 'percentage' : 'fixed',
-    ...(d.tipo === 'porcentaje' ? { percentage: d.valor } : { amount: d.valor, currency: 'USD' }),
-    duration: d.duracion, ...(d.duracion === 'repeating' ? { duration_in_months: d.meses } : {}),
-    applies_to_products: productos,
-    ...(d.vence ? { expiry_date: new Date(d.vence).toISOString() } : {}),
-    ...(d.maxUsos ? { max_redemptions: d.maxUsos } : {}),
+  const planes = [...new Set(d.planes)].filter(p => (PLANES as string[]).includes(p))
+  if (!planes.length) throw new ValidationError('Elige al menos un plan.')
+  const todos = PLANES.every(p => planes.includes(p))
+  const r = await whop<{ id: string }>('/promo_codes', {
+    account_id: WHOP_CUENTA(), code: codigo,
+    promo_type: d.tipo === 'porcentaje' ? 'percentage' : 'flat_amount',
+    amount_off: d.tipo === 'porcentaje' ? d.valor : d.valor / 100, base_currency: 'usd',
+    promo_duration_months: d.duracion === 'forever' ? 0 : d.duracion === 'once' ? 1 : Math.max(1, d.meses ?? 1),
+    new_users_only: false, one_per_customer: true,
+    ...(todos ? { product_id: WHOP_PRODUCTO() } : { variant_ids: planes.flatMap(p => [VARIANTES[`${p}-mensual`], VARIANTES[`${p}-anual`]]) }),
+    ...(d.vence ? { expires_at: new Date(d.vence).toISOString() } : {}),
+    ...(d.maxUsos ? { stock: d.maxUsos, unlimited_stock: false } : { unlimited_stock: true }),
   })
   const cupon = await prisma.crmCupon.create({ data: {
     id: r.id, codigo, tipo: d.tipo, valor: d.valor, duracion: d.duracion, meses: d.duracion === 'repeating' ? d.meses ?? null : null,
@@ -115,11 +121,11 @@ export async function crearCupon(d: NuevoCupon, quien: string) {
   return cupon
 }
 
-/** Elimina el cupón en Creem (no se puede deshacer) y lo marca como eliminado; su historial de cobros se queda. */
+/** Elimina el código en Whop (no se puede deshacer) y lo marca como eliminado; su historial de cobros se queda. */
 export async function eliminarCupon(id: string, quien: string) {
   const c = await prisma.crmCupon.findUnique({ where: { id } })
   if (!c || c.estado === 'eliminado') throw new ValidationError('Ese cupón no existe.')
-  await creem(`/discounts/${encodeURIComponent(id)}/delete`, undefined, 'DELETE')
+  await whop(`/promo_codes/${encodeURIComponent(id)}`, undefined, 'DELETE')
   await prisma.crmCupon.update({ where: { id }, data: { estado: 'eliminado' } })
   usosCache = null
   logger.info({ evento: 'CUPON_ELIMINADO', codigo: c.codigo, por: quien })

@@ -12,7 +12,7 @@ import { paseValido } from '../services/crm/panelAcceso'
 
 /**
  * API del panel de superadministrador (/api/admin), solo para el operador de la plataforma. Todo es de lectura salvo los
- * cupones (crear y eliminar en Creem) y las respuestas de soporte. A cualquier otra persona, con o sin sesión, le responde 404, como si no existiera.
+ * cupones (crear y eliminar en Whop) y las respuestas de soporte. A cualquier otra persona, con o sin sesión, le responde 404, como si no existiera.
  */
 const router = Router()
 
