@@ -221,8 +221,8 @@ export async function pagarPlan(espacioDado: string, plan: Plan, periodo: Period
   const cuerpo = {
     account_id: WHOP_CUENTA(),
     metadata: { espacio: espacioId, plan, periodo, ...(anterior ? { anterior } : {}) },
-    // ACH es transferencia de bancos de Estados Unidos: no les sirve a los clientes de Wali.
-    payment_method_configuration: { disabled: ['us_bank_account'], enabled: [], include_platform_defaults: true },
+    // ACH es transferencia de bancos de Estados Unidos: no les sirve a los clientes de Wali. PayPal siempre visible.
+    payment_method_configuration: { disabled: ['us_bank_account'], enabled: ['paypal'], include_platform_defaults: true },
     ...(dias
       ? { variant: { product_id: WHOP_PRODUCTO(), title: `${NOMBRE[plan]} ${periodo}`, billing_type: 'renewal', initial_price: 0, renewal_price: precio, billing_period: periodo === 'anual' ? 365 : 30, currency: 'usd', trial_period_days: dias, visibility: 'hidden', unlimited_stock: true, metadata: { plan, periodo } } }
       : { variant_id: variante }),
