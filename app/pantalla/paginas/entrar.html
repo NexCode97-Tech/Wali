@@ -747,6 +747,10 @@ async function elegirDestino(){
   if (EL) return;
   EL = {yendo: false};
   document.body.classList.add('eligiendo');
+  // El login queda debajo: sin foco y desactivado, para que el navegador no ofrezca las contraseñas guardadas aquí.
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  document.querySelectorAll('form input').forEach(i => { i.disabled = true; });
+  document.querySelectorAll('form').forEach(f => { f.inert = true; f.setAttribute('autocomplete', 'off'); });
   const caja = $('elegir'), cos = $('el-costura'), astro = document.querySelector('.der .astro');
   if (astro && cos) cos.appendChild(astro);
   caja.hidden = false; requestAnimationFrame(() => caja.classList.add('ver'));
