@@ -3,7 +3,7 @@ import type { CrmPago } from '@prisma/client'
 
 /**
  * El recibo en PDF de un cobro del plan (Ajustes → Plan y pagos → Descargar). Es un comprobante del pago: la
- * factura con impuestos la emite Creem, que cobra como Merchant of Record, y está en su portal de pagos.
+ * factura y la tarjeta se gestionan en Whop, que procesa el cobro.
  */
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 /** Colombia no cambia de hora: UTC-5. */
@@ -74,7 +74,7 @@ export function reciboPdf(p: CrmPago, empresa: string, correo: string): Buffer {
   // Nota legal.
   y += 16
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8.8); doc.setTextColor(...gris)
-  doc.text(doc.splitTextToSize('Este recibo es un comprobante del pago de tu plan del CRM. El cobro lo procesa Creem como Merchant of Record: la factura con los impuestos de tu país la emite Creem y la encuentras en el CRM, en Ajustes > Plan y pagos > Facturas y tarjeta.', ancho - 2 * m), m, y)
+  doc.text(doc.splitTextToSize('Este recibo es un comprobante del pago de tu plan del CRM. El cobro lo procesa Whop; tu tarjeta y tus facturas se gestionan en el CRM, en Ajustes > Plan y pagos > Facturas y tarjeta.', ancho - 2 * m), m, y)
 
   // Pie.
   doc.setFontSize(8.5); doc.text('NexCode97 · www.nexcode97.com · ¿Dudas con un cobro? Escríbenos a nexcode97@gmail.com', ancho / 2, doc.internal.pageSize.getHeight() - 14, { align: 'center' })

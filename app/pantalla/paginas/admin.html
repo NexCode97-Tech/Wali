@@ -298,7 +298,7 @@ function vence(e){
   const hasta = e.pruebaHasta && new Date(e.pruebaHasta);
   if (e.estado === 'prueba') { if (!hasta) return ''; const d = Math.ceil((hasta - Date.now()) / DIA); return d < 0 ? `Venció el ${fecha(hasta)}` : d === 0 ? 'Vence hoy' : `Vence en ${d} ${d === 1 ? 'día' : 'días'}`; }
   if (e.estado === 'activo') return e.renuevaEl ? `${e.cancelaAlFinal ? 'Termina el' : 'Renueva'} ${fecha(e.renuevaEl)}` : '';
-  if (e.estado === 'pago-pendiente') return 'Creem reintenta el cobro';
+  if (e.estado === 'pago-pendiente') return 'Se reintenta el cobro';
   if (e.estado === 'vencido' || e.estado === 'cancelado') { const d = e.renuevaEl || e.pruebaHasta; return d ? `Desde el ${fecha(d)}` : ''; }
   if (e.estado === 'interno') return 'Sin cobro';
   return '';

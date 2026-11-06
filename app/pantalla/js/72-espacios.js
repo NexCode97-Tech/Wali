@@ -64,7 +64,7 @@ function espCargar(){
 }
 const espActual = () => (ESP.lista || []).find(e => e.actual) || {n: ESPACIO.nombre || 'CRM'};
 function espAviso(e){
-  if (e.estado === 'pago-pendiente') return 'El último cobro no pasó. Creem lo reintenta en unos días.';
+  if (e.estado === 'pago-pendiente') return 'El último cobro no pasó. Lo reintentamos en unos días.';
   if (!e.lineas) return 'Todavía no conecta su línea de WhatsApp.';
   return '';
 }

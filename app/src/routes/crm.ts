@@ -46,7 +46,7 @@ const router = Router()
 // Ventas entra por su rol; cualquier otra persona, si un líder la agregó a un equipo (alcance.ts).
 router.use(authenticate, accesoCrm, conEspacio)
 
-// Plan y pagos (Creem). Van antes de la guarda: con el plan vencido hay que poder ver el plan y pagar.
+// Plan y pagos (Whop). Van antes de la guarda: con el plan vencido hay que poder ver el plan y pagar.
 router.get('/plan', asyncHandler(async (req: Request, res: Response) => {
   // El uso es de la cuenta: personas y agentes sumados entre todos sus espacios de trabajo (6-oct).
   const [estado, historial, catalogo, uso] = await Promise.all([
@@ -97,8 +97,7 @@ router.post('/plan/pagar', asyncHandler(async (req: Request, res: Response) => {
   if (req.userRole !== 'ADMIN' || req.soloLectura) throw new ForbiddenError('Solo el administrador del espacio puede cambiar el plan.')
   const d = z.object({ plan: z.enum(PLANES as [Plan, ...Plan[]]), periodo: z.enum(['mensual', 'anual']), cupon: z.string().regex(/^[A-Za-z0-9]{3,30}$/).optional() }).parse(req.body)
   const u = await prisma.user.findUnique({ where: { id: req.userId }, select: { email: true } })
-  const volver = `${urlPublica() ?? ''}/?ir=cfg-plan&pago=ok`
-  return ApiResponse.success(res, await pagarPlan(req.espacioId!, d.plan, d.periodo, u?.email ?? '', volver, d.cupon?.toUpperCase()))
+  return ApiResponse.success(res, await pagarPlan(req.espacioId!, d.plan, d.periodo, u?.email ?? ''))
 }))
 router.post('/plan/portal', asyncHandler(async (req: Request, res: Response) => {
   if (req.userRole !== 'ADMIN' || req.soloLectura) throw new ForbiddenError('Solo el administrador del espacio puede ver los pagos.')

@@ -5,7 +5,8 @@ import { AppError, ValidationError } from '../../utils/errors'
 import { cuentaDe, espaciosDeCuenta, usuariosDeCuenta } from './espacio'
 
 /**
- * El plan de cada espacio y el cobro con Creem (Merchant of Record: cobra, factura y declara impuestos).
+ * El plan de cada espacio. El cobro lo hace Whop (ver «Pagar con Whop» más abajo); Creem queda solo para los cupones
+ * viejos del panel de superadministrador (creem(), CREEM_PRODUCTOS) mientras se pasan a códigos de Whop.
  *
  * - CREEM_API_KEY: llave de la API (creem_test_… en pruebas). CREEM_API_URL: https://test-api.creem.io o https://api.creem.io.
  * - CREEM_WEBHOOK_SECRET: firma de los avisos (POST /api/pagos/creem).
@@ -32,7 +33,6 @@ const API = () => (process.env.CREEM_API_URL || 'https://test-api.creem.io').rep
 function productos(): Record<string, string> {
   try { return JSON.parse(process.env.CREEM_PRODUCTOS || '{}') as Record<string, string> } catch { return {} }
 }
-export const pagosListos = () => !!(process.env.CREEM_API_KEY && Object.keys(productos()).length)
 
 /** Productos de Creem de cada plan (sus dos periodos), según CREEM_PRODUCTOS. */
 export function productosDePlan(plan: string): string[] {
@@ -91,7 +91,7 @@ export interface EstadoPlan {
   vigente: boolean
   limites: { usuarios: number | null; agentesIA: number | null; espacios: number | null }
   pagos: boolean
-  /** Ya pagó alguna vez: tiene portal de Creem (facturas, tarjeta y cancelación). */
+  /** Ya pagó alguna vez: puede gestionar su suscripción en Whop (tarjeta, facturas y cancelación). */
   portal: boolean
 }
 
@@ -140,173 +140,210 @@ export async function limiteUsuarios(espacioDado: string): Promise<number> {
   return limitesDe(e).usuarios
 }
 
-// ─── Pagar, cambiar de plan y portal ────────────────────────────────────────
-
-/**
- * Lleva al pago de un plan. Si el espacio ya tiene una suscripción, la cambia de plan (con prorrateo) en vez de
- * abrir otro pago. Devuelve la dirección a la que hay que enviar a la persona, o null si el cambio ya quedó hecho.
- */
-export async function pagarPlan(espacioDado: string, plan: Plan, periodo: Periodo, email: string, volverA: string, cupon?: string): Promise<{ url: string | null }> {
-  if (!pagosListos()) throw new AppError('Los pagos todavía no están activos. Escríbenos y te activamos el plan.', 503)
-  const espacioId = await cuentaDe(espacioDado)
-  const producto = productos()[`${plan}-${periodo}`]
-  if (!producto) throw new ValidationError('Ese plan no está disponible.')
-  const e = await prisma.crmEspacio.findUnique({ where: { id: espacioId }, select: { creemSuscripcion: true, estadoPlan: true } })
-  if (e?.creemSuscripcion && ['activo', 'pago-pendiente'].includes(e.estadoPlan)) {
-    await creem(`/subscriptions/${encodeURIComponent(e.creemSuscripcion)}/upgrade`, { product_id: producto, update_behavior: 'proration-charge-immediately' })
-    logger.info({ evento: 'PLAN_CAMBIO', espacioId, plan, periodo })
-    return { url: null }
-  }
-  const pago = (codigo?: string) => creem<{ checkout_url: string }>('/checkouts', {
-    product_id: producto,
-    request_id: `${espacioId}-${crypto.randomBytes(6).toString('hex')}`,
-    customer: { email },
-    success_url: volverA,
-    ...(codigo ? { discount_code: codigo } : {}),
-    metadata: { espacio: espacioId, plan, periodo, ...(codigo ? { cupon: codigo } : {}) },
-  })
-  // Un cupón vencido, agotado o de otro plan no debe frenar el pago: se abre sin él y en Creem se puede escribir otro.
-  if (cupon) {
-    try { return { url: (await pago(cupon)).checkout_url } }
-    catch { logger.warn({ evento: 'CUPON_NO_APLICO', cupon, plan, periodo }) }
-  }
-  return { url: (await pago()).checkout_url }
-}
-
-/** El portal del cliente en Creem: facturas, tarjeta y cancelación. */
-export async function portalPagos(espacioDado: string): Promise<{ url: string }> {
-  const espacioId = await cuentaDe(espacioDado)
-  const e = await prisma.crmEspacio.findUnique({ where: { id: espacioId }, select: { creemCliente: true } })
-  if (!e?.creemCliente) throw new ValidationError('Todavía no tienes pagos registrados.')
-  const r = await creem<{ customer_portal_link: string }>('/customers/billing', { customer_id: e.creemCliente })
-  return { url: r.customer_portal_link }
-}
-
-// ─── Avisos de Creem ────────────────────────────────────────────────────────
-
-/** Verifica la firma del aviso: HMAC-SHA256 del cuerpo exacto con CREEM_WEBHOOK_SECRET, en hexadecimal. */
-export function firmaValida(cuerpo: Buffer, firma: string | undefined): boolean {
-  const secreto = process.env.CREEM_WEBHOOK_SECRET
-  if (!secreto || !firma) return false
-  const esperada = crypto.createHmac('sha256', secreto).update(cuerpo).digest('hex')
-  return esperada.length === firma.length && crypto.timingSafeEqual(Buffer.from(esperada), Buffer.from(firma))
-}
-
 type Obj = Record<string, unknown>
 const txt = (v: unknown) => (typeof v === 'string' ? v : '')
 const idDe = (v: unknown) => (typeof v === 'string' ? v : v && typeof v === 'object' ? txt((v as Obj).id) : '')
-
-/** El plan y el periodo de un producto de Creem, según CREEM_PRODUCTOS. */
-function planDeProducto(productoId: string): { plan: Plan; periodo: Periodo } | null {
-  const clave = Object.entries(productos()).find(([, id]) => id === productoId)?.[0]
-  const [plan, periodo] = (clave ?? '').split('-')
-  return esPlan(plan) && (periodo === 'mensual' || periodo === 'anual') ? { plan, periodo } : null
-}
-
-const ESTADOS: Record<string, string> = {
-  'subscription.active': 'activo', 'subscription.paid': 'activo', 'subscription.update': '',
-  'subscription.past_due': 'pago-pendiente', 'subscription.unpaid': 'vencido',
-  'subscription.canceled': 'cancelado', 'subscription.expired': 'vencido', 'subscription.scheduled_cancel': '',
-}
-
 const obj = (v: unknown): Obj => (v && typeof v === 'object' && !Array.isArray(v) ? v as Obj : {})
-const entero = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? Math.round(v) : null)
-/** Creem manda fechas como texto ISO o como milisegundos. */
 function fechaDe(v: unknown): Date | null {
-  const d = typeof v === 'number' ? new Date(v) : typeof v === 'string' && v ? new Date(v) : null
+  const d = typeof v === 'number' ? new Date(v < 1e12 ? v * 1000 : v) : typeof v === 'string' && v ? new Date(v) : null
   return d && !Number.isNaN(d.getTime()) ? d : null
 }
 
-/** El espacio de un aviso: la metadata del pago o, si no viene, la suscripción que ya conocemos. */
-async function espacioDeAviso(meta: Obj, suscripcion: string): Promise<string> {
-  const espacio = txt(meta.espacio)
-  if (espacio || !suscripcion) return espacio
-  return (await prisma.crmEspacio.findFirst({ where: { creemSuscripcion: suscripcion }, select: { id: true } }))?.id ?? ''
-}
-
-/** La transacción de Creem con sus montos e impuestos. Si la API no responde, null: el cobro se guarda con el precio. */
-async function transaccion(id: string): Promise<Obj | null> {
-  if (!id) return null
-  try {
-    const r = await creem<Obj>(`/transactions?transaction_id=${encodeURIComponent(id)}`)
-    return Array.isArray(r.items) ? obj(r.items[0]) : r
-  } catch { return null }
-}
+// ─── Pagar con Whop (5-nov) ──────────────────────────────────────────────────
 
 /**
- * Guarda en el historial el cobro de una suscripción: pagado (subscription.paid, con su transacción) o rechazado
- * (subscription.past_due). Idempotente por la transacción: si Creem repite el aviso, no se duplica.
+ * Whop cobra los planes (reemplaza a Creem). La empresa paga dentro de Wali con el checkout incrustado de Whop:
+ * el servidor crea la configuración del pago y la pantalla la monta con `checkoutConfiguration`.
+ *
+ * - WHOP_API_KEY: clave de la empresa WaliCRM en Whop (permisos: checkout_configuration:create, plan:create,
+ *   plan:basic:read, payment:basic:read, member:basic:read, member:email:read, membership:cancel, membership:update).
+ * - WHOP_WEBHOOK_SECRET: el secreto ws_… de los avisos (POST /api/pagos/whop).
+ *
+ * El primer cobro espera a que termine la prueba gratis, o el periodo que ya está pagado si cambia de plan: el plan de
+ * esa compra lleva esos días de prueba en Whop. Al activarse una suscripción nueva, la anterior se cancela.
+ * En la base, los campos creem_* guardan lo de Whop: creemSuscripcion = la membresía (mem_), creemCliente = el
+ * miembro (mber_) y crm_pagos.creem_id = el pago (pay_).
  */
-async function registrarCobro(espacioId: string, sub: Obj, estado: 'pagado' | 'rechazado', producto: { plan: Plan; periodo: Periodo } | null) {
-  const e = producto ? null : await prisma.crmEspacio.findUnique({ where: { id: espacioId }, select: { plan: true, periodo: true } })
-  const plan = producto?.plan ?? e?.plan ?? 'starter', periodo = producto?.periodo ?? e?.periodo ?? 'mensual'
-  const prod = obj(sub.product), precio = entero(prod.price) ?? 0
-  const tr = estado === 'pagado' ? await transaccion(txt(sub.last_transaction_id)) : null
-  const subtotal = entero(tr?.amount) ?? precio
-  const total = entero(tr?.amount_paid) ?? subtotal
-  const creemId = estado === 'pagado'
-    ? txt(sub.last_transaction_id) || `${txt(sub.id)}:${txt(sub.current_period_start_date)}`
-    : `${txt(sub.id)}:${txt(sub.next_transaction_date) || txt(sub.current_period_end_date)}:rechazado`
-  const cupon = txt(obj(sub.metadata).cupon).toUpperCase() || null
-  const datos = {
-    plan, periodo, estado, subtotal, total, cupon, descuento: estado === 'pagado' ? entero(tr?.discount_amount) ?? 0 : 0,
-    impuestos: entero(tr?.tax_amount) ?? Math.max(0, total - subtotal),
-    moneda: (txt(tr?.currency) || txt(prod.currency) || 'USD').toUpperCase(),
-    desde: estado === 'pagado' ? fechaDe(tr?.period_start) ?? fechaDe(sub.current_period_start_date) : null,
-    hasta: estado === 'pagado' ? fechaDe(tr?.period_end) ?? fechaDe(sub.current_period_end_date) : null,
-    fecha: fechaDe(tr?.created_at) ?? fechaDe(sub.last_transaction_date) ?? new Date(),
+const WHOP_API = 'https://api.whop.com/api/v1'
+const WHOP_VERSION = '2026-11-05-1'
+const WHOP_CUENTA = () => process.env.WHOP_CUENTA || 'biz_QCxhCFgBRJnw7V'
+const WHOP_PRODUCTO = () => process.env.WHOP_PRODUCTO || 'prod_jhPZ6ykLDThWs'
+/** Los planes de Wali en Whop (ocultos, renovables, precio inicial 0: el primer cobro es el de la renovación). */
+const VARIANTES: Record<string, string> = {
+  'starter-mensual': 'plan_7lAfeZkgFJepz', 'starter-anual': 'plan_72eLZ2Ejynk5p',
+  'growth-mensual': 'plan_t0djqeyHgmKGn', 'growth-anual': 'plan_VZQYof0XPyN3K',
+  'business-mensual': 'plan_EebIGQK97fZne', 'business-anual': 'plan_SgjfYh73trzEw',
+}
+/** Precio en USD de cada plan y periodo (el mismo de la página de precios y de Whop). */
+export const PRECIOS: Record<Plan, Record<Periodo, number>> = {
+  starter: { mensual: 59, anual: 566 }, growth: { mensual: 139, anual: 1334 }, business: { mensual: 259, anual: 2486 },
+}
+const NOMBRE: Record<Plan, string> = { starter: 'Starter', growth: 'Growth', business: 'Business' }
+
+export const pagosListos = () => !!process.env.WHOP_API_KEY
+
+export async function whop<T>(ruta: string, cuerpo?: unknown, metodo?: 'GET' | 'POST' | 'PATCH'): Promise<T> {
+  const r = await fetch(`${WHOP_API}${ruta}`, {
+    method: metodo ?? (cuerpo === undefined ? 'GET' : 'POST'),
+    headers: { Authorization: `Bearer ${process.env.WHOP_API_KEY ?? ''}`, 'Api-Version-Date': WHOP_VERSION, ...(cuerpo === undefined ? {} : { 'Content-Type': 'application/json' }) },
+    body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
+    signal: AbortSignal.timeout(15_000),
+  })
+  const texto = await r.text()
+  if (!r.ok) {
+    logger.error({ evento: 'WHOP_ERROR', ruta, status: r.status, cuerpo: texto.slice(0, 300) })
+    throw new AppError('No se pudo conectar con la pasarela de pagos. Intenta de nuevo en un momento.', 502)
   }
-  if (estado === 'rechazado') datos.fecha = new Date()
-  await prisma.crmPago.upsert({ where: { creemId }, create: { espacioId, creemId, ...datos }, update: datos })
+  return JSON.parse(texto) as T
 }
 
-/** Un reembolso (refund.created): el cobro queda reembolsado con lo devuelto. Si no estaba en el historial, se crea. */
-async function registrarReembolso(o: Obj) {
-  const tr = obj(o.transaction), sub = obj(o.subscription), creemId = txt(tr.id)
-  if (!creemId) return
-  const devuelto = entero(tr.refunded_amount) ?? entero(o.refund_amount) ?? 0
-  const ya = await prisma.crmPago.findUnique({ where: { creemId } })
-  if (ya) { await prisma.crmPago.update({ where: { creemId }, data: { estado: 'reembolsado', reembolso: devuelto } }); return }
-  const espacioId = await espacioDeAviso(obj(sub.metadata), txt(sub.id))
-  if (!espacioId) { logger.warn({ evento: 'CREEM_REEMBOLSO_SIN_ESPACIO', creemId }); return }
-  const producto = planDeProducto(idDe(sub.product)), subtotal = entero(tr.amount) ?? 0, total = entero(tr.amount_paid) ?? subtotal
-  await prisma.crmPago.create({ data: {
-    espacioId, creemId, plan: producto?.plan ?? 'starter', periodo: producto?.periodo ?? 'mensual', estado: 'reembolsado',
-    subtotal, total, impuestos: entero(tr.tax_amount) ?? 0, reembolso: devuelto, moneda: (txt(tr.currency) || 'USD').toUpperCase(),
-    desde: fechaDe(tr.period_start), hasta: fechaDe(tr.period_end), fecha: fechaDe(tr.created_at) ?? new Date(),
-  } })
+const DIA = 864e5
+
+/**
+ * Prepara el pago de un plan y devuelve la configuración que monta el checkout de la pantalla.
+ * Si todavía hay días cubiertos (la prueba o el periodo ya pagado), el primer cobro espera a que terminen.
+ */
+export async function pagarPlan(espacioDado: string, plan: Plan, periodo: Periodo, email: string): Promise<{ checkout: string; plan: Plan; periodo: Periodo; total: number; primerCobro: string; email: string }> {
+  if (!pagosListos()) throw new AppError('Los pagos todavía no están activos. Escríbenos y te activamos el plan.', 503)
+  const espacioId = await cuentaDe(espacioDado)
+  const variante = VARIANTES[`${plan}-${periodo}`]
+  if (!variante) throw new ValidationError('Ese plan no está disponible.')
+  const e = await prisma.crmEspacio.findUnique({ where: { id: espacioId }, select: { creemSuscripcion: true, estadoPlan: true, plan: true, periodo: true, pruebaHasta: true, renuevaEl: true, cancelaAlFinal: true } })
+  if (!e) throw new ValidationError('Espacio no encontrado')
+  const ahora = Date.now()
+  const pagado = ['activo', 'pago-pendiente', 'cancelado'].includes(e.estadoPlan) && !!e.renuevaEl && e.renuevaEl.getTime() > ahora
+  if (pagado && e.estadoPlan !== 'cancelado' && !e.cancelaAlFinal && e.plan === plan && (e.periodo ?? 'mensual') === periodo) throw new ValidationError(`Ya tienes el plan ${NOMBRE[plan]} ${periodo}.`)
+  // Días ya cubiertos: los de la prueba, o los del periodo pagado si cambia de plan o lo renueva antes de que venza.
+  const hasta = e.estadoPlan === 'prueba' && e.pruebaHasta && e.pruebaHasta.getTime() > ahora ? e.pruebaHasta : pagado ? e.renuevaEl! : null
+  const dias = hasta ? Math.min(365, Math.max(1, Math.ceil((hasta.getTime() - ahora) / DIA))) : 0
+  const anterior = pagado && e.estadoPlan !== 'cancelado' && e.creemSuscripcion ? e.creemSuscripcion : ''
+  const precio = PRECIOS[plan][periodo]
+  const cuerpo = {
+    account_id: WHOP_CUENTA(),
+    metadata: { espacio: espacioId, plan, periodo, ...(anterior ? { anterior } : {}) },
+    // ACH es transferencia de bancos de Estados Unidos: no les sirve a los clientes de Wali.
+    payment_method_configuration: { disabled: ['us_bank_account'], enabled: [], include_platform_defaults: true },
+    ...(dias
+      ? { variant: { product_id: WHOP_PRODUCTO(), title: `${NOMBRE[plan]} ${periodo}`, billing_type: 'renewal', initial_price: 0, renewal_price: precio, billing_period: periodo === 'anual' ? 365 : 30, currency: 'usd', trial_period_days: dias, visibility: 'hidden', unlimited_stock: true, metadata: { plan, periodo } } }
+      : { variant_id: variante }),
+  }
+  const ch = await whop<{ id: string }>('/checkout_configurations', cuerpo)
+  logger.info({ evento: 'PAGO_PREPARADO', espacioId, plan, periodo, dias })
+  return { checkout: ch.id, plan, periodo, total: precio * 100, primerCobro: new Date(ahora + dias * DIA).toISOString(), email }
 }
 
-/** Aplica un aviso de Creem al espacio. Idempotente: guarda el estado, no suma ni resta nada. */
-export async function procesarAvisoCreem(evento: Obj): Promise<void> {
-  const tipo = txt(evento.eventType)
-  const o = (evento.object ?? {}) as Obj
-  const meta = (o.metadata ?? {}) as Obj
-  if (tipo === 'refund.created') { await registrarReembolso(o); return }
-  if (tipo === 'checkout.completed') {
-    // La suscripción llega en sus propios avisos; aquí solo se anota el cliente de Creem.
-    const espacio = txt(meta.espacio), cliente = idDe(o.customer)
-    if (espacio && cliente) await prisma.crmEspacio.updateMany({ where: { id: espacio }, data: { creemCliente: cliente } })
-    return
-  }
-  if (!(tipo in ESTADOS)) { logger.info({ evento: 'CREEM_AVISO_IGNORADO', tipo }); return }
-  const suscripcion = txt(o.id)
-  const espacio = await espacioDeAviso(meta, suscripcion)
-  if (!espacio) { logger.warn({ evento: 'CREEM_AVISO_SIN_ESPACIO', tipo, suscripcion }); return }
-  const producto = planDeProducto(idDe(o.product))
-  const fin = txt(o.current_period_end_date)
-  const data: Record<string, unknown> = { creemSuscripcion: suscripcion || undefined }
-  if (idDe(o.customer)) data.creemCliente = idDe(o.customer)
+/** Dónde gestiona la empresa su suscripción en Whop (tarjeta, facturas y cancelación). */
+export async function portalPagos(espacioDado: string): Promise<{ url: string }> {
+  const espacioId = await cuentaDe(espacioDado)
+  const e = await prisma.crmEspacio.findUnique({ where: { id: espacioId }, select: { creemSuscripcion: true } })
+  if (!e?.creemSuscripcion) throw new ValidationError('Todavía no tienes pagos registrados.')
+  const m = await whop<{ manage_url?: string | null }>(`/memberships/${encodeURIComponent(e.creemSuscripcion)}`)
+  return { url: m.manage_url || 'https://whop.com/@me/settings/memberships/' }
+}
+
+// ─── Avisos de Whop ─────────────────────────────────────────────────────────
+
+/**
+ * Verifica la firma (Standard Webhooks, como el SDK de Whop): HMAC-SHA256 de «id.timestamp.cuerpo» con los bytes del
+ * secreto ws_… tal cual, en base64; el encabezado trae «v1,firma» (una o varias). Avisos de más de 5 minutos, fuera.
+ */
+export function firmaWhopValida(cuerpo: Buffer, id: string | undefined, marca: string | undefined, firmas: string | undefined): boolean {
+  const secreto = process.env.WHOP_WEBHOOK_SECRET
+  if (!secreto || !id || !marca || !firmas) return false
+  const t = Number(marca)
+  if (!Number.isFinite(t) || Math.abs(Date.now() / 1000 - t) > 300) return false
+  const esperada = crypto.createHmac('sha256', Buffer.from(secreto, 'utf8')).update(`${id}.${marca}.`).update(cuerpo).digest()
+  return firmas.split(' ').some(f => {
+    const [v, b64] = f.split(',')
+    if (v !== 'v1' || !b64) return false
+    const dada = Buffer.from(b64, 'base64')
+    return dada.length === esperada.length && crypto.timingSafeEqual(dada, esperada)
+  })
+}
+
+/** Whop manda los montos en dólares (59 o "59.00"): aquí se guardan en centavos. */
+const centavos = (v: unknown): number | null => {
+  const n = typeof v === 'number' ? v : typeof v === 'string' && v.trim() ? Number(v) : NaN
+  return Number.isFinite(n) ? Math.round(n * 100) : null
+}
+
+/** Plan y periodo: la metadata del pago o, si no viene, la del plan de Whop o su id. */
+function planDeAviso(meta: Obj, varianteId: string): { plan: Plan; periodo: Periodo } | null {
+  const plan = txt(meta.plan), periodo = txt(meta.periodo)
+  if (esPlan(plan) && (periodo === 'mensual' || periodo === 'anual')) return { plan, periodo }
+  const clave = Object.entries(VARIANTES).find(([, id]) => id === varianteId)?.[0] ?? ''
+  const [p, q] = clave.split('-')
+  return esPlan(p) && (q === 'mensual' || q === 'anual') ? { plan: p, periodo: q } : null
+}
+
+async function espacioDeMembresia(meta: Obj, membresia: string): Promise<string> {
+  const espacio = txt(meta.espacio)
+  if (espacio || !membresia) return espacio
+  return (await prisma.crmEspacio.findFirst({ where: { creemSuscripcion: membresia }, select: { id: true } }))?.id ?? ''
+}
+
+/** Una membresía cambió: activa, en prueba (el primer cobro espera), con cobro pendiente, cancelada o vencida. */
+async function avisoMembresia(m: Obj) {
+  const id = txt(m.id), estado = txt(m.status), meta = obj(m.metadata)
+  const espacio = await espacioDeMembresia(meta, id)
+  if (!espacio) { logger.warn({ evento: 'WHOP_MEMBRESIA_SIN_ESPACIO', id, estado }); return }
+  const e = await prisma.crmEspacio.findUnique({ where: { id: espacio }, select: { creemSuscripcion: true, estadoPlan: true } })
+  if (!e || e.estadoPlan === 'interno') return
+  const viva = ['active', 'trialing', 'canceling', 'past_due'].includes(estado)
+  // El aviso de una membresía vieja (la que se reemplazó al cambiar de plan) no toca el plan de hoy.
+  if (e.creemSuscripcion && e.creemSuscripcion !== id && !viva) { logger.info({ evento: 'WHOP_MEMBRESIA_VIEJA', espacio, id, estado }); return }
+  const producto = planDeAviso(meta, txt(m.variant_id) || idDe(m.variant))
+  const fin = fechaDe(m.current_period_end) ?? fechaDe(m.expires_at)
+  const data: Record<string, unknown> = { creemSuscripcion: id }
+  if (txt(m.member_id)) data.creemCliente = txt(m.member_id)
   if (producto) { data.plan = producto.plan; data.periodo = producto.periodo }
-  if (fin && !Number.isNaN(Date.parse(fin))) data.renuevaEl = new Date(fin)
-  const estado = ESTADOS[tipo]
-  if (estado) data.estadoPlan = estado
-  if (tipo === 'subscription.scheduled_cancel') data.cancelaAlFinal = true
-  if (tipo === 'subscription.active' || tipo === 'subscription.paid') data.cancelaAlFinal = false
-  const { count } = await prisma.crmEspacio.updateMany({ where: { id: espacio, NOT: { estadoPlan: 'interno' } }, data })
-  if (count && tipo === 'subscription.paid') await registrarCobro(espacio, o, 'pagado', producto)
-  if (count && tipo === 'subscription.past_due') await registrarCobro(espacio, o, 'rechazado', producto)
-  logger.info({ evento: 'CREEM_AVISO', tipo, espacio, plan: producto?.plan, estado })
+  if (fin) data.renuevaEl = fin
+  data.cancelaAlFinal = m.cancel_at_period_end === true || estado === 'canceling'
+  if (estado === 'active' || estado === 'trialing' || estado === 'canceling') data.estadoPlan = 'activo'
+  else if (estado === 'past_due') data.estadoPlan = 'pago-pendiente'
+  else if (['canceled', 'expired', 'completed'].includes(estado)) data.estadoPlan = fin && fin.getTime() > Date.now() ? 'cancelado' : 'vencido'
+  else { logger.info({ evento: 'WHOP_MEMBRESIA_IGNORADA', espacio, id, estado }); return }
+  await prisma.crmEspacio.updateMany({ where: { id: espacio, NOT: { estadoPlan: 'interno' } }, data })
+  // Al cambiar de plan, la suscripción anterior se cancela ya: la nueva arranca a cobrar cuando vencía la vieja.
+  const anterior = txt(meta.anterior)
+  if (viva && anterior && anterior !== id) {
+    await whop(`/memberships/${encodeURIComponent(anterior)}/cancel`, { cancel_at_period_end: false, reason: 'Cambió de plan en Wali' })
+      .catch(err => logger.warn({ evento: 'WHOP_ANTERIOR_NO_CANCELADA', espacio, anterior, err: (err as Error).message }))
+  }
+  logger.info({ evento: 'WHOP_MEMBRESIA', espacio, id, estado, plan: producto?.plan })
+}
+
+/** Un cobro: pagado o rechazado. Idempotente por el id del pago. Los de 0 (la tarjeta guardada para después) no van. */
+async function avisoPago(p: Obj, estado: 'pagado' | 'rechazado') {
+  const id = txt(p.id), meta = obj(p.metadata), membresia = txt(p.membership_id)
+  const total = centavos(p.total) ?? 0
+  if (!id || (estado === 'pagado' && total <= 0)) return
+  const espacio = await espacioDeMembresia(meta, membresia)
+  if (!espacio) { logger.warn({ evento: 'WHOP_PAGO_SIN_ESPACIO', id }); return }
+  const e = await prisma.crmEspacio.findUnique({ where: { id: espacio }, select: { plan: true, periodo: true } })
+  const producto = planDeAviso(meta, txt(p.variant_id)) ?? { plan: (esPlan(e?.plan ?? '') ? e!.plan : 'starter') as Plan, periodo: (e?.periodo === 'anual' ? 'anual' : 'mensual') as Periodo }
+  // El periodo que cubre el cobro sale de la membresía; si Whop no responde, el recibo va sin periodo.
+  const m = estado === 'pagado' && membresia ? await whop<Obj>(`/memberships/${encodeURIComponent(membresia)}`).catch(() => null) : null
+  const impuestos = centavos(p.tax_amount) ?? 0
+  const datos = {
+    plan: producto.plan, periodo: producto.periodo, estado, total, impuestos,
+    subtotal: centavos(p.subtotal) ?? Math.max(0, total - impuestos),
+    moneda: (txt(p.currency) || 'usd').toUpperCase(),
+    desde: m ? fechaDe(m.current_period_start) : null, hasta: m ? fechaDe(m.current_period_end) : null,
+    fecha: fechaDe(p.paid_at) ?? fechaDe(p.created_at) ?? new Date(),
+  }
+  const creemId = estado === 'pagado' ? id : `${id}:rechazado`
+  await prisma.crmPago.upsert({ where: { creemId }, create: { espacioId: espacio, creemId, ...datos }, update: datos })
+  logger.info({ evento: 'WHOP_PAGO', espacio, id, estado, total })
+}
+
+/** Aplica un aviso de Whop. Idempotente: guarda estados, no suma ni resta nada. */
+export async function procesarAvisoWhop(evento: Obj): Promise<void> {
+  const tipo = txt(evento.type), d = obj(evento.data)
+  if (tipo === 'membership.activated' || tipo === 'membership.updated') { await avisoMembresia(d); return }
+  if (tipo === 'payment.succeeded') { await avisoPago(d, 'pagado'); return }
+  if (tipo === 'payment.failed') { await avisoPago(d, 'rechazado'); return }
+  logger.info({ evento: 'WHOP_AVISO_IGNORADO', tipo })
 }
 
 // ─── Historial y recibos ────────────────────────────────────────────────────

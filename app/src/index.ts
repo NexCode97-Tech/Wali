@@ -59,15 +59,15 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc:     ["'self'"],
-      scriptSrc:      ["'self'", "'unsafe-inline'", 'https://connect.facebook.net'],
+      scriptSrc:      ["'self'", "'unsafe-inline'", 'https://connect.facebook.net', 'https://cdn.whop.com'],
       styleSrc:       ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       fontSrc:        ["'self'", 'data:', 'https://fonts.gstatic.com'],
       imgSrc:         ["'self'", 'data:', 'blob:', 'https:'],
       mediaSrc:       ["'self'", 'blob:', 'https:'],
       // Solo a donde la pantalla de verdad llama (revisión de seguridad 8-oct): el propio CRM, los archivos de la nube
       // (base de conocimiento) y el botón de Meta. Antes era cualquier https:, por donde un script colado podía sacar datos.
-      connectSrc:     ["'self'", 'https://res.cloudinary.com', 'https://*.facebook.com', 'https://*.facebook.net'],
-      frameSrc:       ["'self'", 'https://www.facebook.com', 'https://web.facebook.com', 'https://staticxx.facebook.com'],
+      connectSrc:     ["'self'", 'https://res.cloudinary.com', 'https://*.facebook.com', 'https://*.facebook.net', 'https://*.whop.com'],
+      frameSrc:       ["'self'", 'https://www.facebook.com', 'https://web.facebook.com', 'https://staticxx.facebook.com', 'https://*.whop.com', 'https://whop.com'],
       frameAncestors: ["'self'"],
       objectSrc:      ["'none'"],
       ...(process.env.NODE_ENV === 'production' ? { upgradeInsecureRequests: [] } : { upgradeInsecureRequests: null }),
@@ -96,7 +96,7 @@ app.use('/api/crm/web', (req: Request, res: Response, next: NextFunction) => {
 app.use('/api/crm/whatsapp/webhook', express.raw({ type: '*/*', limit: '5mb' }))
 app.use('/api/crm/meta/webhook', express.raw({ type: '*/*', limit: '5mb' }))
 app.use('/api/crm/tiktok/webhook', express.raw({ type: '*/*', limit: '5mb' }))
-app.use('/api/pagos/creem', express.raw({ type: '*/*', limit: '1mb' }))
+app.use('/api/pagos/whop', express.raw({ type: '*/*', limit: '1mb' }))
 
 // El tiempo real (/api/eventos) no se comprime: gzip retiene cada escritura y el navegador no recibiría nada.
 // Se mira `originalUrl` porque la compresión decide al enviar las cabeceras, ya dentro del router.
@@ -147,7 +147,7 @@ app.get('/health', async (_req, res) => {
 // ─── API ─────────────────────────────────────────────────────────────────────
 app.use('/api/auth',           authRoutes)
 app.use('/api/auth',           accesoRoutes)
-app.use('/api/pagos/creem',     pagosRoutes) // avisos de Creem (firmados) // registro, recuperar la contraseña y Google (sin sesión)
+app.use('/api/pagos/whop',      pagosRoutes) // avisos de Whop (firmados) // registro, recuperar la contraseña y Google (sin sesión)
 app.use('/api/admin',          adminRoutes) // panel de superadministrador (solo el operador)
 app.use('/api/partners',       partnersRoutes) // formulario de walicrm.com/partners (público)
 app.use('/api/usuarios',       usuariosRoutes)
