@@ -33,8 +33,8 @@ function flLista(){
       <button type="button" class="tg" role="switch" data-fl-on="${esc(x.id)}" aria-checked="${x.on}" aria-label="Activar ${esc(x.n)}"></button>
       <div class="tp-acc"><button type="button" class="tp-mas" data-fl-menu="${esc(x.id)}" aria-haspopup="menu" aria-expanded="${ab}" aria-label="Más acciones de ${esc(x.n)}">${I('more')}</button>
         <div class="tp-menu" role="menu" ${ab ? '' : 'hidden'}><button type="button" role="menuitem" data-fl-abrir="${esc(x.id)}">${TP_IC.editar}Editar</button><button type="button" role="menuitem" class="tp-peligro" data-fl-borrar="${esc(x.id)}">${TP_IC.borrar}Eliminar</button></div></div></div>
-      <div class="rs"><span class="k">Equipos</span>${eqs.length ? eqs.map(flChipEq).join('') : '<span class="v">Todos</span>'}<span class="k">Cuándo</span><span class="v">${esc(x.cuando)}</span>
-        <span class="k">Por dónde</span>${vs.length ? vs.map(v => `<span class="cv">${flLogo(v.canal)}${esc(v.n)}</span>`).join('') : '<span class="v">Ninguna línea ni cuenta</span>'}</div></div>`;
+      <div class="rs"><span class="par"><span class="k">Equipos</span>${eqs.length ? eqs.map(flChipEq).join('') : '<span class="v">Todos</span>'}</span><span class="par"><span class="k">Cuándo</span><span class="v">${esc(x.cuando)}</span></span>
+        <span class="par"><span class="k">Por dónde</span>${vs.length ? vs.map(v => `<span class="cv">${flLogo(v.canal)}${esc(v.n)}</span>`).join('') : '<span class="v">Ninguna línea ni cuenta</span>'}</span></div></div>`;
   };
   return `<div class="ajw ancho"><button type="button" class="volver" data-ir="ajustes-crm">${I('back')}Ajustes del CRM</button>
     <div class="pg-h"><div><h2>Flujos</h2><p class="sub">Lo que pasa antes de que el lead llegue al asesor: saludar, preguntar su nombre, mostrar opciones y pasarlo al reparto. Así el asesor lo recibe ya con su nombre.</p></div>
@@ -122,6 +122,8 @@ document.addEventListener('click', e => {
 
 document.head.insertAdjacentHTML('beforeend', `<style>
 .fl-cab-acc{display:flex;gap:10px;align-items:center;flex:none;margin-left:auto}
+.pg-h > .fl-cab-acc{flex:none}
+.flujo .rs .par{display:contents}
 .fl-cab-acc .fl-eqf{min-width:170px!important}
 .flujo{border:1px solid var(--line);border-radius:14px;background:#fff;padding:14px 16px;display:grid;gap:10px}
 .flujo .rh{display:flex;align-items:center;gap:10px}
@@ -132,6 +134,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .flujo .rs .k{color:var(--ink3);font-weight:500}
 .flujo .rs .k + *{margin-left:2px}
 .flujo .rs .v + .k,.flujo .rs .eqc + .k,.flujo .rs .cv + .k{margin-left:10px}
+.flujo .rs .par + .par > .k{margin-left:10px}
 .flujo .rs .v{color:var(--ink)}
 .eqc{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:999px;background:var(--bg3);font-size:12px;font-weight:500;color:var(--ink2);white-space:nowrap}
 .eqc i{width:7px;height:7px;border-radius:50%;flex:none}
@@ -183,5 +186,26 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .paso .ph .acc [data-fl-del]{color:#dc2626}
 .fprev .fl-probar{width:420px;justify-content:center;margin-top:18px}
 @media (max-width:1180px){.flw:has(.fl-tel){grid-template-columns:1fr}}
-@media (max-width:760px){.pdl{grid-template-columns:1fr}.fl-tel{transform:scale(.8);transform-origin:top center;margin-bottom:-180px}.fprev .fl-probar{width:100%}.fl-cab-acc{margin-left:0;flex-wrap:wrap}}
+@media (max-width:760px){.pdl{grid-template-columns:1fr}.fl-tel{transform:scale(.8);transform-origin:top center;margin-bottom:-180px}.fprev .fl-probar{width:100%}.fl-cab-acc{margin-left:0;flex-wrap:wrap}
+  /* Celular (maqueta «Flujos: Nuevo flujo a la derecha», aprobada el 6-nov): «+» de solo ícono en la fila del título,
+     la descripción debajo; en cada flujo el nombre con el interruptor y el ⋯ arriba, las etiquetas debajo desde el borde
+     y cada «Equipos / Cuándo / Por dónde» en su renglón. */
+  #page .ajw .pg-h:has([data-fl-nuevo]){display:grid;grid-template-columns:minmax(0,1fr) 44px;align-items:center;column-gap:12px;row-gap:6px}
+  #page .ajw .pg-h:has([data-fl-nuevo]) > div:first-child,#page .ajw .pg-h > .fl-cab-acc{display:contents}
+  #page .ajw .pg-h:has([data-fl-nuevo]) h2{grid-column:1;grid-row:1}
+  #page .ajw .pg-h:has([data-fl-nuevo]) .sub{grid-column:1 / -1;grid-row:2;margin:0}
+  #page .ajw .pg-h [data-fl-nuevo]{grid-column:2;grid-row:1;width:44px;height:44px;min-height:44px;padding:0;gap:0;font-size:0;justify-content:center;border-radius:12px;animation:fl-pop .32s cubic-bezier(.22,1,.36,1) both}
+  #page .ajw .pg-h [data-fl-nuevo] svg{width:20px;height:20px;margin:0}
+  #page .ajw .pg-h .fl-eqf{grid-column:1 / -1;grid-row:3;width:100%}
+  .flujo .rh{flex-wrap:wrap;row-gap:8px}
+  .flujo .rh > svg{order:0}.flujo .rh > b{order:1;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .flujo .rh > .tg{order:2;margin-left:auto}.flujo .rh > .tp-acc{order:3}
+  .flujo .rh::after{content:"";order:4;flex-basis:100%;height:0}
+  .flujo .rh > .pill{order:5}
+  .flujo .rs{display:grid;gap:6px}
+  .flujo .rs .par{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+  .flujo .rs .par + .par > .k{margin-left:0}
+}
+@keyframes fl-pop{from{opacity:0;transform:scale(.6)}}
+@media (prefers-reduced-motion:reduce){#page .ajw .pg-h [data-fl-nuevo]{animation:none}}
 </style>`);
