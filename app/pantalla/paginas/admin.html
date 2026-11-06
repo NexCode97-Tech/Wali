@@ -30,7 +30,7 @@ svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 .tab{display:inline-flex;align-items:center;gap:7px;height:59px;padding:0 15px;font-size:13.5px;font-weight:500;color:var(--t3);transition:color 120ms var(--e-std)}
 .tab:hover{color:var(--ink)}
 .tab[aria-selected="true"]{color:var(--ink);font-weight:600}
-.ind{position:absolute;bottom:-1px;height:2px;background:var(--ink);border-radius:2px;transition:left 240ms var(--e-std),width 240ms var(--e-std)}
+.ind{position:absolute;bottom:-1px;left:0;width:1px;height:2px;background:var(--ink);transform-origin:0 0;transition:transform 240ms var(--e-std)}
 .yo{justify-self:end;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--t2)}
 .yo button{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--t2)}
 .yo button:hover{background:#f6f7f9;color:var(--ink)}
@@ -76,9 +76,9 @@ table.t tr:last-child td{border-bottom:0}
 .fila-at > div{flex:1;min-width:0}
 .graf{position:relative}
 .graf svg{display:block;width:100%;overflow:visible}
-.cross{position:absolute;top:0;width:0;border-left:1px dashed #9ca3af;pointer-events:none;transition:left 120ms var(--e-std),opacity 120ms var(--e-std)}
-.punto{position:absolute;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 3px #fff;pointer-events:none;transition:left 120ms var(--e-std),top 120ms var(--e-std),opacity 120ms var(--e-std)}
-.tip{position:absolute;min-width:150px;padding:8px 12px;border-radius:9px;background:#fff;border:1px solid var(--line);box-shadow:0 10px 24px -12px rgba(15,23,42,.3);font-size:11.5px;color:var(--t3);pointer-events:none;white-space:nowrap;transition:left 120ms var(--e-std),top 120ms var(--e-std),opacity 120ms var(--e-std)}
+.cross{position:absolute;top:0;left:0;width:0;border-left:1px dashed #9ca3af;pointer-events:none;transition:transform 120ms var(--e-std),opacity 120ms var(--e-std)}
+.punto{position:absolute;left:0;top:0;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 3px #fff;pointer-events:none;transition:transform 120ms var(--e-std),opacity 120ms var(--e-std)}
+.tip{position:absolute;left:0;top:0;min-width:150px;padding:8px 12px;border-radius:9px;background:#fff;border:1px solid var(--line);box-shadow:0 10px 24px -12px rgba(15,23,42,.3);font-size:11.5px;color:var(--t3);pointer-events:none;white-space:nowrap;transition:transform 120ms var(--e-std),opacity 120ms var(--e-std)}
 .tip b{display:block;font-size:13px;color:var(--ink)}
 .tip .tl{display:flex;justify-content:space-between;gap:14px;font-size:11.5px}
 .tip .tl i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px}
@@ -308,6 +308,8 @@ const color = id => COLORES[[...String(id)].reduce((a, c) => a + c.charCodeAt(0)
 const iniciales = n => String(n || '').trim().split(/\s+/).slice(0, 2).map(p => p[0] || '').join('').toUpperCase() || '·';
 const LOGO_OK = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
 /** El avatar de una empresa o persona. Las iniciales van en SVG, centradas por coordenadas (regla del 31-oct). */
+// Lo que sigue al cursor en las gráficas: al aparecer se pone en su sitio sin deslizarse desde la esquina; después viaja.
+const mover = (el, css) => { const ent = el.style.opacity !== '1'; el.style.cssText = css + (ent ? ';transition:opacity 120ms var(--e-std)' : ''); };
 function avatar(nombre, id, logo, tam = 28, redondo = false){
   const r = redondo ? tam / 2 : tam <= 30 ? 8 : 11;
   if (LOGO_OK.test(logo || '')) return `<img class="av" src="${logo}" alt="" width="${tam}" height="${tam}" style="border-radius:${r}px;object-fit:cover">`;
@@ -321,7 +323,7 @@ const S = {soporte: null, sinEntender: null, stab: 'abierta', ssel: null, sdet: 
 /* ── Pestañas con indicador que se desliza ── */
 function moverInd(){
   const b = document.querySelector(`.tab[data-tab="${S.tab}"]`), ind = $('ind');
-  if (!b) return; ind.style.left = b.offsetLeft + 'px'; ind.style.width = b.offsetWidth + 'px';
+  if (!b) return; ind.style.transform = `translateX(${b.offsetLeft}px) scaleX(${b.offsetWidth})`;
 }
 function irA(tab){
   S.tab = tab; cerrarPanel(true);
@@ -419,11 +421,11 @@ function montarArea(){
   const svg = cont.querySelector('svg'), cross = cont.querySelector('.cross'), punto = cont.querySelector('.punto'), tip = cont.querySelector('.tip');
   const mostrar = i => {
     const r = svg.getBoundingClientRect(), k = r.width / w, x = X(i) * k, y = Y(R.serie[i].mrr) * k;
-    cross.style.cssText = `left:${x}px;top:${pt * k}px;height:${(h - pt - pb) * k}px;opacity:1`;
-    punto.style.cssText = `left:${x}px;top:${y}px;opacity:1`;
+    mover(cross, `transform:translate(${x}px,${pt * k}px);height:${(h - pt - pb) * k}px;opacity:1`);
+    mover(punto, `transform:translate(${x}px,${y}px);opacity:1`);
     tip.innerHTML = `${diario ? FL.format(new Date(R.serie[i].t)) : mesLargo(R.serie[i].t.slice(0, 7))}<b>${usd(R.serie[i].mrr, 0)} MRR</b>`;
     const derecha = x > r.width - 180;
-    tip.style.cssText = `left:${derecha ? x - 166 : x + 14}px;top:${Math.max(0, y - 62)}px;opacity:1`;
+    mover(tip, `transform:translate(${derecha ? x - 166 : x + 14}px,${Math.max(0, y - 62)}px);opacity:1`);
   };
   svg.addEventListener('mousemove', e => {
     const r = svg.getBoundingClientRect(), xv = (e.clientX - r.left) / r.width * w;
@@ -577,7 +579,7 @@ function tipBarras(e){
   const i = +t.dataset.barra, m = S.finanzas.porPlan[i], svg = cont.querySelector('svg'), r = svg.getBoundingClientRect(), k = r.width / 640;
   const tot = m.planes.starter + m.planes.growth + m.planes.business, x = (56 + (i + .5) * (640 - 64) / 12) * k;
   tip.innerHTML = `${mesLargo(m.mes)}${['starter', 'growth', 'business'].map(p => `<div class="tl"><span><i style="background:var(--c-${p})"></i>${PLAN[p]}</span><span style="color:var(--ink);font-weight:600">${usd(m.planes[p], 0).replace('US$ ', '')}</span></div>`).join('')}<div class="tl" style="border-top:1px solid var(--line);margin-top:4px;padding-top:4px"><b>Total</b><b>${usd(tot, 0)}</b></div>`;
-  tip.style.cssText = `left:${x > r.width - 190 ? x - 180 : x + 14}px;top:20px;opacity:1`;
+  mover(tip, `transform:translate(${x > r.width - 190 ? x - 180 : x + 14}px,20px);opacity:1`);
 }
 
 /* ═════════════ Cupones ═════════════ */
