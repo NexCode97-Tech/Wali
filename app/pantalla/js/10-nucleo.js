@@ -9,6 +9,8 @@ const LINEAS = [];
 /** El espacio de trabajo (la empresa) en que corre el CRM; lo trae /crm/inicio. */
 const ESPACIO = {id: ((window.CRM_INICIO || {}).espacio || {}).id || '', nombre: ((window.CRM_INICIO || {}).espacio || {}).nombre || ''};
 /** El nombre de la empresa, arriba del menú. */
+// Superadministradores: el logo de arriba lleva a elegir entre el CRM y el panel de superadministrador.
+if (CRM_YO.operador) { const lg = document.querySelector('.brand .w-logo'); if (lg) { lg.setAttribute('role', 'link'); lg.tabIndex = 0; lg.setAttribute('aria-label', 'Elegir entre el CRM y el superadmin'); lg.title = 'Elegir CRM o Superadmin'; lg.style.cursor = 'pointer'; const ir = () => { window.top.location.href = '__BASE__/entrar'; }; lg.addEventListener('click', ir); lg.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ir(); } }); } }
 function pintarMarca(){ const el = document.getElementById('brand-n'); if (el) el.textContent = ESPACIO.nombre || 'CRM'; }
 pintarMarca();
 const ETQ = [['Nuevo lead','#EC87C0'],['Contactado','#5D9CEC'],['Caliente','#FC6E51'],['En seguimiento','#AC92EC'],['No interesado/perdido','#434A54'],['Pagado','#A0D468'],['Link errado','#AAB2BD'],['Sin respuesta','#C9CED6']];
