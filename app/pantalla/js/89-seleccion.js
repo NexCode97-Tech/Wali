@@ -14,7 +14,7 @@
     chk: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5.5 12.5 4.2 4.2 8.8-9.4"/></svg>',
     x: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
     trans: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l5 5-5 5"/><path d="M20 10H9a5 5 0 0 0-5 5v4"/></svg>',
-    etapa: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="4.5" height="16" rx="1.5"/><rect x="9.75" y="4" width="4.5" height="11" rx="1.5"/><rect x="16" y="4" width="4.5" height="7" rx="1.5"/></svg>',
+    etapa: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="9.5" y="10" width="5" height="10" rx="1.5"/><rect x="16" y="7" width="5" height="13" rx="1.5"/></svg>',
     tag: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12.2V4.5a1 1 0 0 1 1-1h7.7l8.3 8.3a1.4 1.4 0 0 1 0 2l-6.2 6.2a1.4 1.4 0 0 1-2 0z"/><circle cx="8" cy="8" r="1.4"/></svg>',
     fin: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m8.3 12.3 2.6 2.6 4.9-5.4"/></svg>',
     mas: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18.5" cy="12" r="1.6"/></svg>',
@@ -33,9 +33,12 @@
 .sm-selb:hover{background:var(--hover)}.sm-selb:active,.sm-cab button:active,.sm-menu button:active{transform:scale(.94)}
 .sm-selb[aria-pressed="true"]{background:#0b0b10;color:#fff}
 .it .tj-foto{position:relative}
-.sm-chk{position:absolute;inset:0;border-radius:50%;display:grid;place-items:center;background:#fff;border:2px solid #c7ccd4;opacity:0;transform:scale(.55) rotate(-8deg);transition:opacity .22s cubic-bezier(.22,1,.36,1),transform .32s cubic-bezier(.22,1,.36,1),background .2s,border-color .2s,box-shadow .2s;pointer-events:none;z-index:2}
+.sm-chk{position:absolute;inset:0;border-radius:50%;display:grid;place-items:center;background:#fff;border:2px solid #c7ccd4;opacity:0;transform:scale(.3);transition:opacity .22s cubic-bezier(.22,1,.36,1),transform .32s cubic-bezier(.22,1,.36,1),background .2s,border-color .2s,box-shadow .2s;pointer-events:none;z-index:2}
 .sm-chk svg{width:62%;height:62%;fill:none;stroke:#0b0b10;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:24;stroke-dashoffset:24;transition:stroke-dashoffset .26s cubic-bezier(.22,1,.36,1) .05s}
-.sm-modo .it .sm-chk{opacity:1;transform:none}
+/* Casilla pequeña en la esquina de la foto; elegida, se llena en amarillo con el chulo sin taparla (6-nov). */
+.sm-chk{transform-origin:0 0!important;border-width:4.4px!important}
+.sm-modo .it .sm-chk{opacity:1;transform:translate(-4px,-4px) scale(.46)}
+.sm-modo .it.sm-sel .sm-chk{transform:translate(-4px,-4px) scale(.46);box-shadow:0 0 0 6px #fff}
 .sm-modo .it{cursor:pointer}
 .it.sm-sel .sm-chk{background:#FFD21F;border-color:#FFD21F;box-shadow:0 0 0 4px #FFF6CC}
 .it.sm-sel .sm-chk svg{stroke-dashoffset:0}
@@ -59,10 +62,18 @@
 .sm-n{font-size:13.5px;font-weight:600;white-space:nowrap}.sm-n span{display:inline-block;min-width:1ch;color:#FFD21F;font-variant-numeric:tabular-nums;animation:sm-pop .3s cubic-bezier(.22,1,.36,1)}
 @keyframes sm-pop{from{transform:scale(1.5);opacity:.4}}
 .sm-esp{flex:1}
+/* Compacta: el conteo en una sola línea y la X roja sin recuadro (6-nov). */
+.sm-cab{gap:2px;padding:0 8px 0 6px}.sm-cab button{width:32px;height:32px;flex:none}
+.sm-n{font-size:13px;margin:0 2px}.sm-cab .sm-x:hover{background:none;color:#ff8f8f}
 /* Menús: bajan de la barra (en el celular suben como hoja, con velo) */
 .sm-velo{position:fixed;inset:0;z-index:58;background:transparent}
-.sm-menu{position:absolute;z-index:61;left:12px;top:66px;min-width:230px;max-width:290px;max-height:420px;overflow:auto;padding:6px;border-radius:14px;background:#fff;color:var(--ink);box-shadow:0 0 0 1px var(--line),0 24px 48px -18px rgba(0,0,0,.35);display:grid;gap:1px;transform-origin:0 0;animation:sm-abre .2s cubic-bezier(.22,1,.36,1) both}
+.sm-menu{position:absolute;z-index:61;left:12px;top:66px;min-width:230px;max-width:290px;padding:6px;border-radius:14px;background:#fff;color:var(--ink);box-shadow:0 0 0 1px var(--line),0 24px 48px -18px rgba(0,0,0,.35);display:grid;gap:1px;transform-origin:0 0;animation:sm-abre .2s cubic-bezier(.22,1,.36,1) both}
 @keyframes sm-abre{from{opacity:0;transform:translateY(-6px) scale(.96)}}
+.sm-lista{display:grid;gap:1px;max-height:420px;overflow:auto}
+@media (min-width:761px){
+  .sm-menu{transform-origin:var(--c,24px) 0}
+  .sm-menu::after{content:"";position:absolute;top:-6px;left:calc(var(--c,24px) - 6px);width:12px;height:12px;background:#fff;transform:rotate(45deg);border-radius:2px;box-shadow:-1px -1px 0 0 var(--line)}
+}
 .sm-mh{margin:4px 10px 6px;font-size:11.5px;font-weight:600;color:var(--ink3);letter-spacing:.03em;text-transform:uppercase}
 .sm-menu button{display:flex;align-items:center;gap:10px;min-height:40px;padding:0 10px;border-radius:9px;font-size:13.5px;color:var(--ink);text-align:left;transition:background .14s,transform .16s cubic-bezier(.22,1,.36,1)}
 .sm-menu button:hover{background:var(--hover)}.sm-menu hr{border:0;border-top:1px solid var(--line);margin:4px 6px}
@@ -135,7 +146,19 @@
     if (k === 'mas') h = `<button type="button" data-sm-x="leidas">${ICS.leida}Marcar como leídas</button><button type="button" data-sm-x="fav">${ICS.fav}Agregar a Favoritos</button><button type="button" data-sm-x="fuego">${ICS.fuego}Marcar como calientes</button><button type="button" data-sm-x="mute">${ICS.mute}Silenciar</button><button type="button" data-sm-x="exp">${ICS.exp}Exportar los chats</button><hr><button type="button" class="sm-rojo" data-sm-x="spam">${ICS.spam}Marcar como spam</button>`;
     const enHoja = movil();
     document.body.insertAdjacentHTML('beforeend', '<div class="sm-velo" id="sm-velo"></div>');
-    (enHoja ? document.body : listaH).insertAdjacentHTML('beforeend', `<div class="sm-menu" id="sm-menu" role="menu">${h}</div>`);
+    (enHoja ? document.body : listaH).insertAdjacentHTML('beforeend', `<div class="sm-menu" id="sm-menu" role="menu"><div class="sm-lista">${h}</div></div>`);
+    // En escritorio y tablet el menú sale pegado a su botón: debajo, alineado a su borde derecho (o al izquierdo si no
+    // cabe) y con la flecha apuntando al centro del botón; crece desde ahí. En el celular es hoja desde abajo.
+    if (!enHoja) {
+      const bt = document.querySelector(`#sm-cab [data-sm-menu="${k}"]`), menu = document.getElementById('sm-menu');
+      if (bt && menu) {
+        const r = bt.getBoundingClientRect(), base = listaH.getBoundingClientRect(), w = menu.offsetWidth;
+        let left = r.right - base.left - w + 4;
+        if (left < 4) left = r.left - base.left - 4;
+        menu.style.left = `${Math.round(left)}px`; menu.style.top = `${Math.round(r.bottom - base.top + 10)}px`;
+        menu.style.setProperty('--c', `${Math.round(r.left + r.width / 2 - base.left - left)}px`);
+      }
+    }
     document.getElementById('sm-menu').querySelector('button')?.focus({preventScroll: true});
   }
 
