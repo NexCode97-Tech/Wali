@@ -37,3 +37,4 @@
 - Se borró el artifact viejo de muestra (Qu8rGiYawxsRSFwi1RXUJV).
 - Sitio: `@vercel/analytics` agregado al layout. Falta que el usuario encienda Web Analytics en el panel de Vercel (proyecto wali).
 - Decidido: finalizar en lote no manda la encuesta.
+- Desplegado en Railway el commit dc39573 (arreglo de Finalizar en lote y la configuración nueva). /health responde ok.
