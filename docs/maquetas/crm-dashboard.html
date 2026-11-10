@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maqueta · NexCode97 CRM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+:root{
+  --amarillo:#FFF200; --amarillo-osc:#d9cc00; --violeta:#7c3aed; --violeta-cl:#a78bfa;
+  --negro:#0b0b10; --negro-2:#15151c; --negro-3:#1f1f29;
+  --fondo:#e9eef2; --panel:#f3f5f7; --card:#fff; --linea:#e7eaee;
+  --tinta:#0f1115; --tinta-2:#4b5563; --tinta-3:#8a93a0;
+  --verde:#16a34a; --rojo:#dc2626;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--fondo);color:var(--tinta);display:grid;place-items:center;padding:28px}
+svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.marco{width:min(1440px,100%);height:min(880px,calc(100vh - 56px));display:grid;grid-template-columns:250px 1fr;background:var(--negro);border-radius:28px;padding:10px;box-shadow:0 40px 80px -40px rgba(15,23,42,.45)}
+
+/* ── Barra lateral ── */
+.lat{display:flex;flex-direction:column;padding:18px 14px 14px;color:#d4d4dc;min-height:0}
+.marca{display:flex;align-items:center;gap:10px;padding:2px 6px 22px}
+.marca img{width:34px;height:34px;border-radius:50%}
+.marca b{font-weight:700;font-size:16px;color:#fff;letter-spacing:-.01em}
+.marca span{font-size:11px;color:#8b8b98;display:block;font-weight:500}
+.marca .col{margin-left:auto;color:#6b6b78}
+.nueva{display:flex;align-items:center;justify-content:center;gap:8px;height:40px;border-radius:12px;background:var(--amarillo);color:var(--negro);font-weight:700;font-size:13.5px;border:0;margin:0 4px 18px;cursor:pointer}
+.nav{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:12px;color:#c9c9d3;text-decoration:none;font-size:13.5px;font-weight:500;position:relative}
+.nav a:hover{background:var(--negro-2)}
+.nav a.act{background:var(--negro-3);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
+.nav a.act::after{content:"";position:absolute;right:12px;top:50%;width:60px;height:18px;transform:translateY(-50%);background:radial-gradient(closest-side,rgba(255,242,0,.55),transparent);filter:blur(6px)}
+.nav .n{margin-left:auto;font-size:11px;font-weight:700;background:var(--amarillo);color:var(--negro);border-radius:999px;padding:1px 7px;position:relative;z-index:1}
+.sub{list-style:none;margin:2px 0 6px 21px;padding:0 0 0 14px;border-left:1px solid #2a2a35}
+.sub a{font-size:12.5px;padding:7px 10px;color:#9a9aa6}
+.sub .p{width:7px;height:7px;border-radius:50%;flex:none}
+.sec{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#6b6b78;margin:14px 12px 6px;font-weight:600}
+.lat .pie{margin-top:auto;display:flex;flex-direction:column;gap:2px}
+.tog{margin-left:auto;width:34px;height:20px;border-radius:999px;background:#2a2a35;position:relative}
+.tog::after{content:"";position:absolute;left:3px;top:3px;width:14px;height:14px;border-radius:50%;background:#fff}
+
+/* ── Contenido ── */
+.cont{background:var(--panel);border-radius:22px;padding:18px 22px 22px;display:flex;flex-direction:column;gap:16px;min-height:0;overflow:auto}
+.top{display:flex;align-items:center;gap:10px}
+.buscar{display:flex;align-items:center;gap:10px;height:42px;width:360px;padding:0 10px 0 14px;border-radius:14px;background:#e8ecf0;color:var(--tinta-3);font-size:13.5px}
+.buscar kbd{margin-left:auto;font:600 11px Inter;color:var(--tinta-3);background:#fff;border-radius:7px;padding:3px 7px}
+.top .sep{flex:1}
+.ic{width:40px;height:40px;border-radius:50%;background:#fff;display:grid;place-items:center;color:var(--tinta);position:relative;border:0}
+.ic .g{position:absolute;top:8px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--rojo);border:2px solid #fff}
+.yo{display:flex;align-items:center;gap:10px;margin-left:6px}
+.av{width:40px;height:40px;border-radius:50%;background:var(--violeta);color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px}
+.yo b{display:block;font-size:13.5px;font-weight:600}
+.yo span{font-size:11.5px;color:var(--tinta-3)}
+
+.cab{display:flex;align-items:flex-end;gap:20px}
+.cab h1{margin:0;font-size:26px;font-weight:700;letter-spacing:-.02em}
+.cab p{margin:4px 0 0;font-size:13px;color:var(--tinta-3)}
+.kpis{margin-left:auto;display:flex;gap:26px}
+.kpi{display:flex;align-items:center;gap:10px}
+.kpi i{width:42px;height:42px;border-radius:50%;background:var(--negro);display:grid;place-items:center;color:var(--amarillo);box-shadow:0 0 0 3px rgba(255,242,0,.18)}
+.kpi b{font-size:20px;font-weight:700;letter-spacing:-.02em;display:block;line-height:1.1}
+.kpi small{font-size:11.5px;color:var(--tinta-3)}
+.chip{font-size:11px;font-weight:700;border-radius:6px;padding:1px 6px;margin-left:4px}
+.chip.up{background:#dcfce7;color:var(--verde)}.chip.down{background:#fee2e2;color:var(--rojo)}
+
+.fila{display:grid;gap:16px}
+.f1{grid-template-columns:1fr 1fr 1fr}
+.f2{grid-template-columns:1.55fr 1fr;flex:1;min-height:300px}
+.card{background:var(--card);border-radius:20px;padding:18px;border:1px solid var(--linea);min-height:0}
+.card h3{margin:0;font-size:14.5px;font-weight:600;display:flex;align-items:center;gap:8px}
+.card h3 .ver{margin-left:auto;font-size:12px;color:var(--tinta-2);text-decoration:underline;font-weight:500}
+.card h3 svg{width:16px;height:16px;color:var(--tinta-3)}
+
+/* Dona */
+.dona{display:flex;align-items:center;gap:18px;margin-top:14px}
+.dona .c{position:relative;width:150px;height:150px;flex:none}
+.dona .c b{position:absolute;inset:0;display:grid;place-content:center;text-align:center;font-size:24px;font-weight:700;letter-spacing:-.02em}
+.dona .c b small{font-size:11px;color:var(--tinta-3);font-weight:500}
+.ley{display:flex;flex-direction:column;gap:10px}
+.ley div{font-size:11.5px;color:var(--tinta-3)}
+.ley div b{display:block;font-size:20px;color:var(--tinta);font-weight:700;letter-spacing:-.02em}
+.ley i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px}
+
+/* Asesores */
+.ases{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.as{display:flex;align-items:center;gap:12px;padding:10px;border-radius:14px;background:#f7f8fa}
+.as .av{width:38px;height:38px;font-size:12px}
+.as b{font-size:13.5px;font-weight:600;display:block}
+.as span{font-size:11.5px;color:var(--tinta-3)}
+.as .pct{margin-left:auto;font-size:12px;font-weight:700}
+
+/* Actividad */
+.act{display:flex;flex-direction:column;gap:14px;margin-top:14px}
+.ev{display:flex;align-items:center;gap:12px}
+.ev svg{width:16px;height:16px;color:var(--tinta-2)}
+.ev b{font-size:13px;font-weight:600;display:block}
+.ev span{font-size:11.5px;color:var(--tinta-3)}
+.est{margin-left:auto;font-size:11.5px;font-weight:600;border-radius:8px;padding:3px 9px}
+.e-ok{background:#dcfce7;color:var(--verde)}.e-ia{background:#fefce8;color:#a16207}.e-no{background:#fee2e2;color:var(--rojo)}.e-vi{background:#ede9fe;color:var(--violeta)}
+
+/* Embudo */
+.emb .nums{display:grid;grid-template-columns:repeat(5,1fr);margin-top:14px}
+.emb .nums div{padding:0 12px;border-left:1px solid var(--linea)}
+.emb .nums div:first-child{border-left:0;padding-left:0}
+.emb .nums b{font-size:20px;font-weight:700;letter-spacing:-.02em;display:block}
+.emb .nums small{font-size:11.5px;color:var(--tinta-3)}
+.emb .nums small i{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.barras{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;align-items:end;height:calc(100% - 92px);min-height:170px;margin-top:14px}
+.ba{position:relative;height:100%;border-radius:16px;background:repeating-linear-gradient(135deg,#f1f3f5 0 6px,#e8ebee 6px 7px);display:flex;align-items:flex-end}
+.ba span{position:absolute;top:8px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:600;color:var(--tinta-3);background:#fff;border-radius:999px;padding:3px 8px}
+.ba i{display:block;width:100%;border-radius:16px}
+
+/* Agente IA */
+.ia{background:var(--negro);color:#fff;border-color:var(--negro);display:flex;flex-direction:column;align-items:center;position:relative;overflow:hidden}
+.ia::before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.12) 1px,transparent 1px);background-size:22px 22px;opacity:.35}
+.ia>*{position:relative}
+.ia .cab2{width:100%;display:flex;align-items:center;justify-content:space-between}
+.ia .cab2 b{font-size:14.5px;font-weight:600}
+.ia .bt{width:30px;height:30px;border-radius:50%;background:var(--negro-3);display:grid;place-items:center;color:#cfcfd8}
+.orbe{width:118px;height:118px;border-radius:50%;margin:20px 0 10px;background:radial-gradient(circle at 35% 30%,#fffbb0 0,#FFF200 30%,#b8ad00 62%,#3d3900 100%);box-shadow:0 0 50px 8px rgba(255,242,0,.35),inset 0 -10px 30px rgba(0,0,0,.35);display:grid;place-items:center}
+.orbe svg{width:46px;height:46px;stroke:var(--negro);stroke-width:2.2}
+.ia p{margin:0 0 16px;font-size:12px;color:#9a9aa6}
+.ia .acc{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.ia .acc span{display:flex;align-items:center;gap:7px;font-size:12px;color:#d4d4dc;background:var(--negro-2);border:1px solid #262630;border-radius:12px;padding:8px 12px}
+.ia .acc svg{width:14px;height:14px}
+.ia .preg{margin-top:auto;width:100%;display:flex;align-items:center;gap:10px;height:46px;padding:0 6px 0 16px;border-radius:14px;background:var(--negro-2);border:1px solid #262630;font-size:13px;color:#7c7c88}
+.ia .preg i{margin-left:auto;width:34px;height:34px;border-radius:50%;background:var(--amarillo);display:grid;place-items:center;color:var(--negro)}
+</style>
+</head>
+<body>
+<div class="marco">
+  <!-- ── Barra lateral ── -->
+  <aside class="lat">
+    <div class="marca"><img src="../../web/public/icon-192.png" alt=""><div><b>NexCode97</b><span>CRM</span></div><svg class="col" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg></div>
+    <button class="nueva"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Conversación nueva</button>
+    <ul class="nav">
+      <li><a class="act" href="#"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Inicio</a></li>
+      <li><a href="#"><svg viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/></svg>Mi bandeja<span class="n">12</span></a></li>
+      <li><a href="#"><svg viewBox="0 0 24 24"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12Z"/></svg>Conversaciones</a></li>
+      <li><a href="#"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.3a6.5 6.5 0 0 1 3.5 5.7"/></svg>Contactos</a></li>
+      <li><a href="#"><svg viewBox="0 0 24 24"><path d="M3 4h18l-7 9v6l-4 2v-8z"/></svg>Embudo</a></li>
+    </ul>
+    <div class="sec">Equipos</div>
+    <ul class="nav sub">
+      <li><a href="#"><i class="p" style="background:#FFF200"></i>Ventas</a></li>
+      <li><a href="#"><i class="p" style="background:#a78bfa"></i>Soporte</a></li>
+      <li><a href="#"><i class="p" style="background:#38bdf8"></i>Cobranza</a></li>
+    </ul>
+    <ul class="nav">
+      <li><a href="#"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="5"/><circle cx="9.5" cy="11" r="1"/><circle cx="14.5" cy="11" r="1"/><path d="M9.5 15h5M12 1.5V4"/></svg>Agentes IA</a></li>
+      <li><a href="#"><svg viewBox="0 0 24 24"><path d="M3 20h18M6 16V9M11 16V5M16 16v-4M21 16V8"/></svg>Informes</a></li>
+    </ul>
+    <div class="pie">
+      <ul class="nav">
+        <li><a href="#"><svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>Modo oscuro<span class="tog"></span></a></li>
+        <li><a href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Ajustes</a></li>
+        <li><a href="#"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Cerrar sesión</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <!-- ── Contenido ── -->
+  <main class="cont">
+    <div class="top">
+      <div class="buscar"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Buscar lead, teléfono o mensaje<kbd>Ctrl K</kbd></div>
+      <div class="sep"></div>
+      <button class="ic" aria-label="Avisos"><svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><i class="g"></i></button>
+      <button class="ic" aria-label="Ajustes"><svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></button>
+      <div class="yo"><span class="av">HG</span><div><b>Hotman Guevara</b><span>Administrador</span></div><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
+    </div>
+
+    <div class="cab">
+      <div><h1>Resumen de atención</h1><p>Lo que está pasando hoy en tus canales, equipos y agentes IA.</p></div>
+      <div class="kpis">
+        <div class="kpi"><i><svg viewBox="0 0 24 24"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12Z"/></svg></i><div><b>248</b><small>Abiertas <span class="chip up">+12%</span></small></div></div>
+        <div class="kpi"><i><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg></i><div><b>3 min</b><small>1ª respuesta <span class="chip up">−40s</span></small></div></div>
+        <div class="kpi"><i><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg></i><div><b>4,7</b><small>Satisfacción <span class="chip down">−0,1</span></small></div></div>
+      </div>
+    </div>
+
+    <section class="fila f1">
+      <div class="card">
+        <h3><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v9h9"/></svg>Conversaciones por canal<a class="ver">Ver detalle</a></h3>
+        <div class="dona">
+          <div class="c">
+            <svg viewBox="0 0 42 42" style="width:150px;height:150px;transform:rotate(-90deg)">
+              <circle cx="21" cy="21" r="15.9" stroke="#eef1f4" stroke-width="5.5"/>
+              <circle cx="21" cy="21" r="15.9" stroke="#7c3aed" stroke-width="5.5" stroke-dasharray="58 42" stroke-linecap="butt"/>
+              <circle cx="21" cy="21" r="15.9" stroke="#FFF200" stroke-width="5.5" stroke-dasharray="26 74" stroke-dashoffset="-59"/>
+              <circle cx="21" cy="21" r="15.9" stroke="#0b0b10" stroke-width="5.5" stroke-dasharray="14 86" stroke-dashoffset="-86"/>
+            </svg>
+            <b>1.284<small>conversaciones</small></b>
+          </div>
+          <div class="ley">
+            <div><i style="background:#7c3aed"></i>WhatsApp<b>58%</b></div>
+            <div><i style="background:#FFF200;box-shadow:0 0 0 1px #d9cc00"></i>Instagram<b>26%</b></div>
+            <div><i style="background:#0b0b10"></i>Chat web<b>14%</b></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h3><svg viewBox="0 0 24 24"><path d="M3 20h18M6 16V9M11 16V5M16 16v-4"/></svg>Rendimiento de asesores<a class="ver">Ver detalle</a></h3>
+        <div class="ases">
+          <div class="as"><span class="av" style="background:#7c3aed">LM</span><div><b>Laura Martínez</b><span>64 cerradas · 2 min</span></div><span class="pct">98%</span></div>
+          <div class="as"><span class="av" style="background:#0b0b10">JR</span><div><b>Juan Rojas</b><span>51 cerradas · 4 min</span></div><span class="pct">94%</span></div>
+          <div class="as"><span class="av" style="background:#d9cc00;color:#0b0b10">IA</span><div><b>Sofía (Agente IA)</b><span>212 atendidas · 8 s</span></div><span class="pct">91%</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3><svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>Actividad reciente<a class="ver">Filtrar</a></h3>
+        <div class="act">
+          <div class="ev"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg><div><b>Venta cerrada · Plan anual</b><span>Hoy · 11:53 a. m.</span></div><span class="est e-ok">Ganada</span></div>
+          <div class="ev"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="5"/><path d="M9.5 15h5"/></svg><div><b>Agente IA pasó a Ventas</b><span>Hoy · 10:20 a. m.</span></div><span class="est e-ia">IA</span></div>
+          <div class="ev"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></svg><div><b>Lead descartado</b><span>Ayer · 4:21 p. m.</span></div><span class="est e-no">Perdida</span></div>
+          <div class="ev"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"/></svg><div><b>Conversación reabierta</b><span>Ayer · 1:26 p. m.</span></div><span class="est e-vi">Reabierta</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="fila f2">
+      <div class="card emb">
+        <h3><svg viewBox="0 0 24 24"><path d="M3 4h18l-7 9v6l-4 2v-8z"/></svg>Embudo de ventas<a class="ver">Ver detalle</a></h3>
+        <div class="nums">
+          <div><b>1.284</b><small><i style="background:#FFF200;box-shadow:0 0 0 1px #d9cc00"></i>Nuevos</small></div>
+          <div><b>1.102</b><small><i style="background:#0b0b10"></i>Contactados</small></div>
+          <div><b>584</b><small><i style="background:#7c3aed"></i>Propuesta</small></div>
+          <div><b>412</b><small><i style="background:#a78bfa"></i>Ganados</small></div>
+          <div><b>96</b><small><i style="background:#cbd5e1"></i>Recompra</small></div>
+        </div>
+        <div class="barras">
+          <div class="ba"><span>100%</span><i style="height:100%;background:#FFF200"></i></div>
+          <div class="ba"><span>86%</span><i style="height:86%;background:#0b0b10"></i></div>
+          <div class="ba"><span>53%</span><i style="height:53%;background:#7c3aed"></i></div>
+          <div class="ba"><span>71%</span><i style="height:71%;background:#ddd6fe"></i></div>
+          <div class="ba"><span>23%</span><i style="height:23%;background:#e2e8f0"></i></div>
+        </div>
+      </div>
+      <div class="card ia">
+        <div class="cab2"><span class="bt">−</span><b>Agente IA NexCode97</b><span class="bt">+</span></div>
+        <div class="orbe"><svg viewBox="0 0 24 24"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12Z"/></svg></div>
+        <p>Analizando tus conversaciones de hoy…</p>
+        <div class="acc">
+          <span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v9h9"/></svg>Análisis rápido</span>
+          <span><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>Generar informe</span>
+        </div>
+        <div class="preg">Pregúntale algo a tu CRM…<i><svg viewBox="0 0 24 24"><path d="M12 3v12M8 9v6M16 9v6M4 12v3M20 12v3"/></svg></i></div>
+      </div>
+    </section>
+  </main>
+</div>
+</body>
+</html>
