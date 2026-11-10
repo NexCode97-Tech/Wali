@@ -58,3 +58,4 @@
 - Desplegado 5d07ace (chat abierto al responder en la bandeja y soporte que no cambia de pestaña al responder). /health ok.
 - Maqueta «Soporte del superadmin como la bandeja del CRM» publicada (lista de solicitudes con tarjetas y franjas de espera, chat con burbujas y cuadro de responder, ficha como la de contacto, cifras en una franja; MacBook, iPad y iPhone). Pendiente de aprobación.
 - Maqueta del superadmin: módulos en barra lateral como la del CRM (en iPad y celular con menú); las cifras de soporte salen de Soporte y se propone llevarlas a Resumen. Pendiente de aprobación.
+- Maqueta del superadmin: módulo nuevo «Analíticas» en la barra lateral (después de Resumen) con las cifras de soporte en las mismas tarjetas de cifras del superadmin. La barra lateral aplica a todo el superadmin (aprobado). Pendiente de aprobación final de la maqueta.
