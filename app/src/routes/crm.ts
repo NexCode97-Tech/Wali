@@ -28,7 +28,7 @@ import { accesoCrm, alcanceDe } from '../services/crm/alcance'
 import { borrarEnlace, crearEnlace, editarEnlace, listarEnlaces } from '../services/crm/enlaces'
 import { ApiResponse } from '../utils/response'
 import { z } from 'zod'
-import { estadoPlan, historialPagos, pagarPlan, cobrarPlan, cotizarUsuarios, aprobarUsuarios, bajarUsuarios, USUARIOS_MIN, USUARIOS_MAX, pagoDeEspacio, planesDelSitio, portalPagos, usoDeCuenta, PLANES, type Plan } from '../services/crm/plan'
+import { estadoPlan, historialPagos, pagarPlan, cobrarPlan, cotizarUsuarios, usuariosParaInvitar, aprobarUsuarios, bajarUsuarios, precioUsuarios, USUARIOS_MIN, USUARIOS_MAX, pagoDeEspacio, planesDelSitio, portalPagos, usoDeCuenta, PLANES, type Plan } from '../services/crm/plan'
 import { nombreRecibo, reciboPdf } from '../services/crm/recibo'
 import { crearEspacio, renombrarEspacio, eliminarEspacio, entrarAEspacio, listarEspacios } from '../services/crm/espacios'
 import { leerAjuste } from '../services/crm/ajustes'
@@ -52,8 +52,18 @@ router.get('/plan', asyncHandler(async (req: Request, res: Response) => {
   const [estado, historial, catalogo, uso] = await Promise.all([
     estadoPlan(req.espacioId!), historialPagos(req.espacioId!), planesDelSitio(), usoDeCuenta(req.espacioId!),
   ])
+  // Cobro por usuarios (10-nov): el precio de cada plan de la página de precios, para los usuarios de esta cuenta
+  // (el mínimo del plan o los que ya están, lo que sea mayor). La pantalla muestra lo que se cobra, con la misma fórmula.
+  const MIN: Record<Plan, number> = { starter: 3, growth: 6, business: 11 }
+  const conPrecio = (catalogo as Array<Record<string, unknown>>).map(p => {
+    const id = String(p.id) as Plan
+    if (!PLANES.includes(id)) return p
+    const n = Math.max(MIN[id], uso.usuarios, USUARIOS_MIN)
+    const anual = precioUsuarios(n, 'anual')
+    return { ...p, usuarios: n, mensual: precioUsuarios(n, 'mensual'), anual: anual.toLocaleString('es-CO'), equivaleMes: `USD ${Math.round(anual / 12)}` }
+  })
   return ApiResponse.success(res, {
-    ...estado, historial, catalogo, uso,
+    ...estado, historial, catalogo: conPrecio, uso,
     administra: req.userRole === 'ADMIN' && !req.soloLectura,
   })
 }))
@@ -119,6 +129,12 @@ router.post('/plan/usuarios/cotizar', asyncHandler(async (req: Request, res: Res
   if (req.userRole !== 'ADMIN' || req.soloLectura) throw new ForbiddenError('Solo el administrador del espacio puede cambiar los usuarios del plan.')
   const d = z.object({ usuarios: z.number().int().min(USUARIOS_MIN).max(USUARIOS_MAX) }).parse(req.body)
   return ApiResponse.success(res, await cotizarUsuarios(req.espacioId!, d.usuarios))
+}))
+// Antes de invitar: si la persona ocupa un usuario más de los pagados, la cotización para aprobarla en el modal de invitar.
+router.post('/plan/usuarios/para-invitar', asyncHandler(async (req: Request, res: Response) => {
+  if (req.userRole !== 'ADMIN' || req.soloLectura) throw new ForbiddenError('Solo el administrador del espacio puede aprobar pagos.')
+  const d = z.object({ email: z.string().trim().toLowerCase().email().max(200) }).parse(req.body)
+  return ApiResponse.success(res, await usuariosParaInvitar(req.espacioId!, d.email))
 }))
 router.post('/plan/usuarios/aprobar', asyncHandler(async (req: Request, res: Response) => {
   if (req.userRole !== 'ADMIN' || req.soloLectura) throw new ForbiddenError('Solo el administrador del espacio puede aprobar pagos.')

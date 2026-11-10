@@ -317,6 +317,17 @@ dlgAgregarPersona = function(){
       <label>Correo<input id="pa-inv-c" type="email" value="${esc(v.email || '')}" autocomplete="off" placeholder="nombre@empresa.com"></label>
       <div class="fld">Teléfono (opcional)${campoTel('pa-inv-t', v.telefono || '', {placeholder: '300 123 4567'})}</div>
       <small class="muted" style="font-weight:400">Le llega un correo con el enlace para crear su contraseña y entrar.</small>`;
+    // Cobro por usuarios (maqueta aprobada el 10-nov): si ocupa un usuario más de los pagados, el permiso del pago va entre
+    // las columnas y el pie (el mismo bloque de «Cambiar los usuarios del plan», 70-usuarios.js) y el pie pide aprobarlo.
+    if (v.permiso) {
+      const q = v.permiso, nom = (v.nombre || '').trim().split(/\s+/)[0] || 'Esta persona';
+      const dinero = c => `USD ${(c / 100).toLocaleString('es-CO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+      const quien = `<div class="pu-quien"><span class="pu-quien-av">${esc(ini(v.nombre || v.email || '') || '·')}</span><span><b>${esc(v.nombre || '')}</b><small>${esc(v.email || '')}</small></span></div>`;
+      return `<div class="bq-h"><h3>Invitar por correo</h3><p>Escribe sus datos y elige en qué equipos queda, con qué rol y en qué subequipos.</p></div>`
+        + `<div class="bq-cols pu-oculta"><div class="bq-izq">${izq}</div><div class="bq-der">${bqHTML('pa-inv')}</div></div>${quien}`
+        + `<div class="pu-en-inv">${plPermisoHTML(q, `${nom} necesita un usuario más`, `Tienes ${q.enUso} de ${q.actual} usuarios en uso. Si cancelas, no se invita y nada cambia.`)}</div>`
+        + `<div class="bq-pie"><span class="bq-res">${bqResumen('pa-inv')}</span><button type="button" class="btn" data-pa-perm-cancelar="1"${v.fase === 'cobrando' ? ' disabled' : ''}>Cancelar</button>${plBotonAprobar(`Aprobar ${dinero(q.hoy)} e invitar`, v.fase, 'data-pa-aprobar="1"')}</div>`;
+    }
     return bqMarco('Invitar por correo', 'Escribe sus datos y elige en qué equipos queda, con qué rol y en qué subequipos.', izq, 'pa-inv',
       `<button type="button" class="btn" data-pa-inv-cerrar="1">Cancelar</button><button type="button" class="btn pri" data-pa-invitar="1"${v.enviando ? ' disabled' : ''}>${I('send')}${v.enviando ? 'Enviando…' : 'Enviar invitación'}</button>`);
   }

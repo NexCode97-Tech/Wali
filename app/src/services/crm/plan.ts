@@ -1,7 +1,7 @@
 import crypto from 'crypto'
 import { prisma } from '../../config/prisma'
 import { logger } from '../../utils/logger'
-import { AppError, ValidationError } from '../../utils/errors'
+import { AppError, ForbiddenError, ValidationError } from '../../utils/errors'
 import { cuentaDe, espaciosDeCuenta, usuariosDeCuenta } from './espacio'
 
 /**
@@ -343,6 +343,22 @@ export async function cotizarUsuarios(espacioDado: string, pedidos: number): Pro
   const c = await cambioDeUsuarios(espacioId, pedidos)
   const t = c.hoy > 0 ? await tarjetaGuardada(c.e.creemCliente!) : null
   return { actual: c.actual, usuarios: pedidos, plan: c.plan, periodo: c.periodo, precio: c.precio, hoy: c.hoy, dias: c.dias, renuevaEl: c.e.renuevaEl!.toISOString(), tarjeta: t ? { marca: t.marca, ultimos: t.ultimos } : null, enUso: c.enUso }
+}
+
+/**
+ * Antes de invitar a alguien: ¿ocupa un usuario más de los pagados? Si ya está en la cuenta o quedan usuarios libres,
+ * no; si no quedan y el plan se paga por usuarios, devuelve la cotización de uno más para que el administrador la apruebe.
+ */
+export async function usuariosParaInvitar(espacioDado: string, email: string): Promise<{ necesita: false } | ({ necesita: true } & CotizacionUsuarios)> {
+  const espacioId = await cuentaDe(espacioDado)
+  const [tope, enCuenta, existe] = await Promise.all([
+    limiteUsuarios(espacioId), usuariosDeCuenta(espacioId),
+    email ? prisma.user.findFirst({ where: { email: { equals: email, mode: 'insensitive' } }, select: { id: true } }) : Promise.resolve(null),
+  ])
+  if ((existe && enCuenta.includes(existe.id)) || enCuenta.length < tope) return { necesita: false }
+  const e = await prisma.crmEspacio.findUnique({ where: { id: espacioId }, select: { usuarios: true } })
+  if (e?.usuarios == null) throw new ForbiddenError(topeUsuariosTexto(tope))
+  return { necesita: true, ...(await cotizarUsuarios(espacioId, enCuenta.length + 1)) }
 }
 
 /** Crea la membresía nueva con el precio de esos usuarios. Al subir, cobra hoy `hoy` centavos con la tarjeta guardada. */

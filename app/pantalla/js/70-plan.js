@@ -301,7 +301,9 @@ const plFecha = (iso, larga) => {
 const plDinero = (centavos, moneda = 'USD') => `${moneda} ${(centavos / 100).toLocaleString('es-CO', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
 const plCatalogo = () => (PLAN && Array.isArray(PLAN.catalogo) && PLAN.catalogo.length ? PLAN.catalogo : PL_RESPALDO);
 const plDe = id => plCatalogo().find(p => p.id === id) || PL_RESPALDO.find(p => p.id === id) || PL_RESPALDO[0];
-const plPrecioTxt = (id, periodo) => { const p = plDe(id); return periodo === 'anual' ? `USD ${p.anual} al año` : `USD ${p.mensual} al mes`; };
+// Cobro por usuarios (10-nov): el precio del plan propio es el de sus usuarios pagados (lo calcula el servidor).
+const plUsuPrecio = (id, periodo) => PLAN && PLAN.usuarios && PLAN.usuarios.precio != null && id === PLAN.plan && (periodo || 'mensual') === (PLAN.periodo || 'mensual') ? PLAN.usuarios.precio : null;
+const plPrecioTxt = (id, periodo) => { const u = plUsuPrecio(id, periodo); if (u != null) return `USD ${u.toLocaleString('es-CO')} ${periodo === 'anual' ? 'al año' : 'al mes'}`; const p = plDe(id); return periodo === 'anual' ? `USD ${p.anual} al año` : `USD ${p.mensual} al mes`; };
 
 function cargarPlan(){
   if (planCargando) return planCargando;
@@ -339,7 +341,7 @@ function planVista(P){
   if (P.estado === 'pago-pendiente') return {sello:nombre[0], nombre, chip:['aviso', 'Pago pendiente'], texto:['No pudimos cobrar tu tarjeta. Lo volvemos a intentar en los próximos días; ', ['actualízala para no perder el acceso'], '.'],
     medidas:[mUsuarios, mAgentes, ['Próximo intento', plFecha(P.renuevaEl) || 'Pronto', null, null, plPrecioTxt(P.plan, P.periodo)]], acciones:[['pri', 'Actualizar tarjeta', 'portal']]};
   return {sello:nombre[0], nombre, chip: noRenueva ? ['aviso', 'No se renueva'] : ['activo', `Activo · ${P.periodo === 'anual' ? 'Anual' : 'Mensual'}`],
-    texto: noRenueva ? ['Tu plan sigue activo hasta el ', [plFecha(P.renuevaEl, true)], ' y no se renueva.'] : [[plPrecioTxt(P.plan, P.periodo)], ' · se renueva solo, sin que hagas nada.'],
+    texto: noRenueva ? ['Tu plan sigue activo hasta el ', [plFecha(P.renuevaEl, true)], ' y no se renueva.'] : [[plPrecioTxt(P.plan, P.periodo)], P.usuarios && P.usuarios.pagados ? ` · ${P.usuarios.pagados} usuarios` : '', ' · se renueva solo, sin que hagas nada.'],
     medidas:[mUsuarios, mAgentes, [noRenueva ? 'Activo hasta' : 'Próximo cobro', plFecha(P.renuevaEl) || '—', null, null, noRenueva ? 'Sin más cobros' : plPrecioTxt(P.plan, P.periodo)]],
     acciones: noRenueva ? [['pri', `Renovar ${nombre}`, 'renovar']] : P.portal ? [['', 'Facturas y tarjeta', 'portal']] : []};
 }
@@ -355,7 +357,8 @@ function plaLado(P, v){
   if (P.estado === 'interno') return {k:'Cobro', u:'', n:null, txt:'Sin cobro', sub:'Espacio interno de NexCode97'};
   if (P.estado === 'prueba' && P.vigente) return {k:'Prueba gratis', u:'', n:P.diasPrueba ?? 0, unidad:(P.diasPrueba === 1 ? 'día' : 'días'), sub:`Termina el ${plFecha(P.pruebaHasta, true)}`};
   if (!P.vigente) return {k:'Venció', u:'', n:null, txt:plFecha(P.estado === 'prueba' ? P.pruebaHasta : P.renuevaEl) || '—', sub:'No se borró nada'};
-  const precio = String(per === 'anual' ? plDe(P.plan).anual : plDe(P.plan).mensual), n = /^\d+$/.test(precio) ? +precio : null;
+  const propio = plUsuPrecio(P.plan, per);
+  const precio = propio != null ? String(propio) : String(per === 'anual' ? plDe(P.plan).anual : plDe(P.plan).mensual), n = /^\d+$/.test(precio) ? +precio : null;
   if (P.estado === 'pago-pendiente') return {k:'Próximo intento', u:'USD', n, txt:precio, sub:P.renuevaEl ? plFechaDia(P.renuevaEl) : 'En los próximos días'};
   if (noRenueva) return {k:'Activo hasta', u:'', n:null, txt:plFecha(P.renuevaEl) || '—', sub:'Sin más cobros'};
   return {k:'Próximo cobro', u:'USD', n, txt:precio, sub:P.renuevaEl ? plFechaDia(P.renuevaEl) : ''};
@@ -406,7 +409,19 @@ function plaUso(P){
   const ag = lim.agentesIA === 0
     ? fila('Agentes de IA', `<span class="pla-cand">${I('lock')}Llegan con Growth</span>`, '—', true)
     : fila('Agentes de IA', barra(uso.agentesIA, lim.agentesIA || 0), `<b>${uso.agentesIA}</b>${lim.agentesIA ? ` de ${lim.agentesIA}` : ' · sin límite'}`);
-  return `<section class="pla-uso pla-e pla-e4" aria-label="Uso">${personas}${esp}${ag}</section>`;
+  // Cobro por usuarios (maqueta aprobada el 10-nov): con el plan pagado por usuarios, el encabezado trae «Invitar persona»
+  // (el mismo modal de Personas) y el selector − N + que abre «Cambiar los usuarios del plan» (70-usuarios.js).
+  const U = P.usuarios || {}, porUsuarios = U.pagados != null && P.estado === 'activo' && !P.cancelaAlFinal;
+  let cab = '', tope = '';
+  if (porUsuarios) {
+    const base = U.prox != null ? U.prox : U.pagados, min = Math.max(3, uso.usuarios), adm = P.administra;
+    const MENOS = '<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg>';
+    cab = `<div class="pu-h pla-e pla-e4"><div><h3>Usuarios</h3><p>Pagas por cada persona que entra al CRM. El plan sale solo según cuántos son.</p></div>
+      ${adm ? `<div class="pu-c"><button type="button" class="btn pu-inv" data-pl-invitar="1">${I('user-plus')}Invitar persona</button>
+        <div class="pu-paso" role="group" aria-label="Usuarios del plan"><button type="button" aria-label="Quitar un usuario" data-pl-usu="${base - 1}" ${base <= min ? 'disabled' : ''}>${MENOS}</button><b>${base}</b><button type="button" aria-label="Agregar un usuario" data-pl-usu="${base + 1}">${I('plus')}</button></div></div>` : ''}</div>`;
+    if (adm && base <= min && base === uso.usuarios) tope = `<p class="pu-tope"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/></svg>Para pagar menos, primero quita a alguien del equipo en Usuarios.</p>`;
+  }
+  return `${cab}<section class="pla-uso pla-e pla-e4" aria-label="Uso">${personas}${esp}${ag}</section>${tope}`;
 }
 
 // Escalera de planes: un escalón por plan; el elegido abre lo que ganas frente al tuyo.
@@ -446,9 +461,14 @@ function plaEscalera(P){
 
 function plaPagos(P){
   const H = P.historial || [];
-  const filas = H.length ? H.map(h => `<div class="pla-led-f">
+  // Cobro por usuarios: «1 usuario adicional» (los que sumó frente al cobro anterior) o «Starter mensual · 4 usuarios».
+  const quePago = (h, i) => {
+    if (h.concepto === 'usuarios') { const ant = H.slice(i + 1).find(x => x.usuarios != null && x.estado === 'pagado'), mas = ant && h.usuarios ? h.usuarios - ant.usuarios : 0; return mas > 0 ? (mas === 1 ? '1 usuario adicional' : `${mas} usuarios adicionales`) : 'Usuarios adicionales'; }
+    return `${PL_NOMBRE[h.plan] || h.plan} ${h.periodo === 'anual' ? 'anual' : 'mensual'}`;
+  };
+  const filas = H.length ? H.map((h, i) => `<div class="pla-led-f">
       <span class="pla-lf">${esc(plFecha(h.fecha))}</span>
-      <span class="pla-ld">${esc(PL_NOMBRE[h.plan] || h.plan)} ${h.periodo === 'anual' ? 'anual' : 'mensual'}${h.desde && h.hasta ? ` <span class="pla-per">· ${esc(plFecha(h.desde).replace(/ \d{4}$/, ''))} a ${esc(plFecha(h.hasta).replace(/ \d{4}$/, ''))}</span>` : ''}${h.cupon ? ` <span class="pla-per">· cupón ${esc(h.cupon)}</span>` : ''}</span>
+      <span class="pla-ld">${esc(quePago(h, i))}${h.concepto !== 'usuarios' && h.usuarios ? ` <span class="pla-per">· ${h.usuarios} usuarios</span>` : ''}${h.desde && h.hasta ? ` <span class="pla-per">· ${esc(plFecha(h.desde).replace(/ \d{4}$/, ''))} a ${esc(plFecha(h.hasta).replace(/ \d{4}$/, ''))}</span>` : ''}${h.cupon ? ` <span class="pla-per">· cupón ${esc(h.cupon)}</span>` : ''}</span>
       <span class="pla-dots" aria-hidden="true"></span>
       <span class="pla-lm">${esc(plDinero(h.total, h.moneda))}</span>
       <span class="pl-pago ${esc(h.estado)}"><i></i>${esc({pagado:'Pagado', rechazado:'Rechazado', reembolsado:'Reembolsado'}[h.estado] || h.estado)}</span>
@@ -478,9 +498,10 @@ function paginaPlan(){
     <div class="pla-ext-a"><p class="pla-kick">Tu plan</p><h3 class="pla-nom">${esc(v.nombre)}</h3>
       <p class="pla-vivo ${tono}"><i></i>${esc(v.chip[1])}</p>
       <p class="pla-texto">${v.texto.map(x => Array.isArray(x) ? `<b>${esc(x[0])}</b>` : esc(x)).join('')}</p>
+      ${P.usuarios && P.usuarios.prox != null ? `<p class="pla-prox">${I('calendar')}${esc(`Desde el ${plFecha(P.usuarios.proxDesde, true).replace(/ de \d{4}$/, '')} pagas por ${P.usuarios.prox} usuarios.`)}</p>` : ''}
       ${acciones ? `<div class="pla-acc">${acciones}</div>` : ''}</div>
     <div class="pla-ext-b"><p class="pla-kick">${esc(lado.k)}</p><p class="pla-monto">${lado.u ? `<span class="pla-u">${lado.u}</span>` : ''}${grande}</p>${lado.sub ? `<p class="pla-cuando">${['Próximo cobro', 'Próximo intento', 'Prueba gratis'].includes(lado.k) ? I('calendar') : ''}${esc(lado.sub)}</p>` : ''}</div></section>`;
-  return `<div class="ajw ancho pl pla${quieto ? ' pla-quieto' : ''}">${cab}${ok}${extracto}${plaRegla(P)}${plaUso(P)}${plaEscalera(P)}${plaPagos(P)}
+  return `<div class="ajw ancho pl pla${quieto ? ' pla-quieto' : ''}">${cab}${ok}${extracto}${plaRegla(P)}${plaUso(P)}${P.usuarios && P.usuarios.pagados != null && P.estado === 'activo' && !P.cancelaAlFinal ? '' : plaEscalera(P)}${plaPagos(P)}
     <footer class="pla-fin pla-e pla-e7"><p class="pla-nota">${I('chat')}<span><b>WhatsApp y la IA se pagan aparte, directo a cada proveedor.</b> Meta cobra los mensajes en tu propia cuenta y la IA en tu cuenta del proveedor, sin recargo de NexCode97.</span></p>
     <p class="pl-soporte">¿Dudas con tu plan o un cobro? Escríbenos a <a href="mailto:${PL_SOPORTE}">${PL_SOPORTE}</a> y te respondemos en máximo 3 días hábiles.</p></footer>
   </div>`;
@@ -513,7 +534,7 @@ function plPaginaPago(P){
     <div class="wpg-seg" role="radiogroup" aria-label="Periodo"><button type="button" role="radio" aria-checked="${!anual}" data-pp-periodo="mensual">Mensual</button><button type="button" role="radio" aria-checked="${anual}" data-pp-periodo="anual">Anual <em>−20 %</em></button></div>
     <div class="wpg-precio"><b>USD ${esc(anual ? p.anual : String(p.mensual))}</b><small>${anual ? 'al año' : 'al mes'}</small></div>
     ${lst.length ? `<ul class="wpg-lst">${lst.map(t => `<li>${I('check')}${esc(t)}</li>`).join('')}</ul>` : ''}
-    <div class="wpg-tot"><div><span>${esc(p.nombre)} ${anual ? 'anual' : 'mensual'}</span><span>${esc(ppDinero(x.total))}</span></div><div><span>Impuestos</span><span>Se calculan al pagar</span></div><div class="t"><span>Hoy pagas</span><span>${esc(ppDinero(hoy ? x.total : 0))}</span></div></div>
+    <div class="wpg-tot"><div><span>${esc(p.nombre)} ${anual ? 'anual' : 'mensual'}${x.usuarios ? ` · ${x.usuarios} usuarios` : ''}</span><span>${esc(ppDinero(x.total))}</span></div><div><span>Impuestos</span><span>Se calculan al pagar</span></div><div class="t"><span>Hoy pagas</span><span>${esc(ppDinero(hoy ? x.total : 0))}</span></div></div>
     <div class="wpg-dato">${I('calendar')}<span>${hoy ? `Se renueva el <b>${esc(plFecha(sig, true))}</b> por ${esc(ppDinero(x.total))}.` : `Tu primer cobro es el <b>${esc(fecha)}</b> por ${esc(ppDinero(x.total))}, cuando terminan los días que ya tienes.`} Cancelas cuando quieras desde Plan y pagos.</span></div></div>`;
   const pago = `<div class="wpg-pago" aria-label="Pago"><h3>Pago</h3><div class="wpg-whop" id="wpg-whop"><div class="wpg-cargando">Cargando el pago seguro…</div></div>
     <p class="wpg-error" id="wpg-error" role="alert" hidden></p>
@@ -584,7 +605,7 @@ async function ppPagar(){
   ppPagando = true; ppError(''); ppBoton(true);
   try {
     const {confirmationToken} = await ppPagos.createConfirmationToken({billingDetails: {email: x.email || undefined}});
-    const r = await crmApi('POST', '/crm/plan/cobrar', {plan: x.plan, periodo: x.periodo, variante: x.variante, token: confirmationToken, regreso: ppRegreso(), ...(ppCupon() ? {cupon: ppCupon()} : {})});
+    const r = await crmApi('POST', '/crm/plan/cobrar', {usuarios: x.usuarios, periodo: x.periodo, variante: x.variante, token: confirmationToken, regreso: ppRegreso(), ...(ppCupon() ? {cupon: ppCupon()} : {})});
     if (['paid', 'succeeded', 'trialing', 'active'].includes(r.status)) return ppListo(x, false);
     if (!r.client_secret) return ppListo(x, true);
     const res = await ppWhop.payments.handleNextAction({clientSecret: r.client_secret, returnUrl: ppRegreso()});
@@ -598,8 +619,8 @@ async function ppPagar(){
     ppError(err.message || 'No se pudo procesar el pago. Intenta de nuevo.');
   }
 }
-async function ppPreparar(plan, periodo){
-  const r = await crmApi('POST', '/crm/plan/pagar', {plan, periodo});
+async function ppPreparar(plan, periodo, usuarios){
+  const r = await crmApi('POST', '/crm/plan/pagar', {plan, periodo, ...(usuarios ? {usuarios} : {})});
   st.plPago = r; st.plResultado = null; ppMontado = ''; render();
 }
 /* ── Pagar, cambiar de plan y el portal ── */
@@ -607,7 +628,9 @@ async function plPagar(id){
   const P = PLAN, periodo = st.plPeriodo, nombre = PL_NOMBRE[id];
   const cambio = P.vigente && ['activo', 'pago-pendiente'].includes(P.estado) && !P.cancelaAlFinal;
   if (cambio && !(await plConfirmar(`Cambiar a ${nombre}`, `Tu plan pasa a ${nombre} ${periodo} (${plPrecioTxt(id, periodo)}). Lo que ya pagaste se respeta: el nuevo plan empieza a cobrarse cuando termina tu periodo actual.`, `Cambiar a ${nombre}`))) return;
-  try { toast('Abriendo el pago seguro…'); await ppPreparar(id, periodo); window.scrollTo(0, 0); }
+  // Renovar el plan propio conserva sus usuarios pagados; elegir otro plan parte del mínimo de ese plan (o los que ya están).
+  const usu = id === P.plan && P.usuarios && P.usuarios.pagados ? P.usuarios.pagados : undefined;
+  try { toast('Abriendo el pago seguro…'); await ppPreparar(id, periodo, usu); window.scrollTo(0, 0); }
   catch (err) { toast(err.message); }
 }
 async function plPortal(){
@@ -713,8 +736,18 @@ document.getElementById('page').addEventListener('click', e => {
   if (t.closest('[data-wpg-pagar]')) { ppPagar(); return; }
   if (t.closest('[data-wpg-recibo]')) { const h = (PLAN.historial || []).find(y => y.estado === 'pagado'); if (h) plRecibo(h.numero); return; }
   if (t.closest('[data-pp-reintentar]')) { const r = st.plResultado || {}; st.plResultado = null; ppPreparar(r.plan || PLAN.plan, r.periodo || st.plPeriodo).catch(err => toast(err.message)); return; }
-  const pd = t.closest('[data-pp-periodo]'); if (pd && st.plPago && pd.dataset.ppPeriodo !== st.plPago.periodo) { st.plPeriodo = pd.dataset.ppPeriodo; ppPreparar(st.plPago.plan, pd.dataset.ppPeriodo).catch(err => toast(err.message)); return; }
+  const pd = t.closest('[data-pp-periodo]'); if (pd && st.plPago && pd.dataset.ppPeriodo !== st.plPago.periodo) { st.plPeriodo = pd.dataset.ppPeriodo; ppPreparar(st.plPago.plan, pd.dataset.ppPeriodo, st.plPago.usuarios).catch(err => toast(err.message)); return; }
   if (t.closest('[data-pl-periodo]')) { st.plPeriodo = st.plPeriodo === 'anual' ? 'mensual' : 'anual'; render(); return; }
+  // Cobro por usuarios: el selector abre «Cambiar los usuarios del plan»; «Invitar persona» abre el mismo modal de Personas.
+  const pu = t.closest('[data-pl-usu]'); if (pu && !pu.disabled) { plAbrirUsuarios(+pu.dataset.plUsu); return; }
+  if (t.closest('[data-pl-invitar]')) {
+    if (typeof TEL_PAIS === 'object') delete TEL_PAIS['pa-inv-t'];
+    const adm = typeof equiposAdministrables === 'function' ? equiposAdministrables() : [];
+    st.pa = {q: '', res: [], cargando: true, sel: null, eqs: [], inv: {nombre: '', email: '', eqs: adm.length === 1 ? [...adm] : []}};
+    abrirDialogo(dlgAgregarPersona(), 'dlg-per'); if (typeof cargarPa === 'function') cargarPa('');
+    setTimeout(() => { const x = document.getElementById('pa-inv-n'); if (x) x.focus(); }, 30);
+    return;
+  }
   const pv = t.closest('[data-pl-ver]'); if (pv) { st.plVer = pv.dataset.plVer; render(); return; }
   const pp = t.closest('[data-pl-per]'); if (pp) { st.plPeriodo = pp.dataset.plPer; render(); return; }
   const pg = t.closest('[data-pl-pagar]'); if (pg && !pg.disabled) { plPagar(pg.dataset.plPagar); return; }

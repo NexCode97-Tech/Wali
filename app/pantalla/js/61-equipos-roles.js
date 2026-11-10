@@ -813,12 +813,38 @@ document.getElementById('ov-x').addEventListener('click', e => {
   const comoAdmin = !!A.inv.comoAdmin;
   if (!comoAdmin && !eqs.length && !Object.values(subsInv).some(l => l.length)) { toast('Elige al menos un equipo o un subequipo'); return; }
   A.inv.enviando = true; pintarPa();
-  // Como Administrador no queda en equipos: entra con el correo que manda el servidor y ve todo el CRM.
-  if (comoAdmin) { crmApi('POST', '/crm/personas/invitar', {nombre, email, telefono: telefono.replace(/[^\d+]/g, ''), rol: 'ADMIN'}).then(() => { st.pa = null; cerrarDialogo(); render(); toast(`Invitación enviada a ${email}`); }).catch(err => { if (st.pa !== A) return; A.inv.enviando = false; pintarPa(); toast(err.message || 'No se pudo invitar'); }); return; }
-  // Al quedar en un equipo le llega el correo de invitación (invitaciones.ts, al guardar los equipos).
-  crmApi('POST', '/crm/personas/invitar', {nombre, email, telefono: telefono.replace(/[^\d+]/g, '')})
-    .then(p => { if (st.pa !== A) return; PERSONAS_EXTRA[p.id] = {...(PERSONAS_EXTRA[p.id] || {}), nombre: p.nombre, rol: p.rol, foto: p.foto || null}; eqrMembresias(p.id, eqs); paAplicarRoles(p.id, eqs, A.inv.roles || {}); subAplicar(p.id, subsInv); st.pa = null; cerrarDialogo(); render(); toast(`Le enviamos la invitación a ${p.nombre} (${email})`); })
+  const enviar = pagado => {
+    const listo = txt => { st.pa = null; cerrarDialogo(); render(); toast((pagado ? 'Pago aprobado. ' : '') + txt); };
+    const falla = err => { if (st.pa !== A) return; A.inv.enviando = false; A.inv.fase = ''; A.inv.permiso = null; pintarPa(); toast(err.message || 'No se pudo invitar'); };
+    // Como Administrador no queda en equipos: entra con el correo que manda el servidor y ve todo el CRM.
+    if (comoAdmin) { crmApi('POST', '/crm/personas/invitar', {nombre, email, telefono: telefono.replace(/[^\d+]/g, ''), rol: 'ADMIN'}).then(() => listo(`Invitación enviada a ${email}`)).catch(falla); return; }
+    // Al quedar en un equipo le llega el correo de invitación (invitaciones.ts, al guardar los equipos).
+    crmApi('POST', '/crm/personas/invitar', {nombre, email, telefono: telefono.replace(/[^\d+]/g, '')})
+      .then(p => { if (st.pa !== A) return; PERSONAS_EXTRA[p.id] = {...(PERSONAS_EXTRA[p.id] || {}), nombre: p.nombre, rol: p.rol, foto: p.foto || null}; eqrMembresias(p.id, eqs); paAplicarRoles(p.id, eqs, A.inv.roles || {}); subAplicar(p.id, subsInv); listo(`Le enviamos la invitación a ${p.nombre} (${email})`); })
+      .catch(falla);
+  };
+  A.inv.enviar = enviar;
+  // Cobro por usuarios (10-nov): si ocupa un usuario más de los pagados, primero el permiso del pago en este mismo
+  // modal; solo al aprobarlo se cobra y se invita. Si no ocupa uno más, se invita como siempre.
+  if (CRM_YO.rol !== 'ADMIN') { enviar(false); return; }
+  crmApi('POST', '/crm/plan/usuarios/para-invitar', {email})
+    .then(q => { if (st.pa !== A) return; if (!q.necesita) { enviar(false); return; } A.inv.enviando = false; A.inv.permiso = q; A.inv.fase = ''; pintarPa(); })
     .catch(err => { if (st.pa !== A) return; A.inv.enviando = false; pintarPa(); toast(err.message || 'No se pudo invitar'); });
+});
+// El permiso del pago dentro del modal de invitar: Cancelar (no se invita ni se cobra) y Aprobar (cobra y después invita).
+document.getElementById('ov-x').addEventListener('click', async e => {
+  const A = st.pa; if (!A || !A.inv || !A.inv.permiso) return;
+  if (e.target.closest('[data-pa-perm-cancelar]')) { if (A.inv.fase === 'cobrando') return; A.inv.permiso = null; A.inv.fase = ''; pintarPa(); return; }
+  if (!e.target.closest('[data-pa-aprobar]') || A.inv.fase) return;
+  const q = A.inv.permiso; A.inv.fase = 'cobrando'; pintarPa();
+  try {
+    if (!(await plAprobarUsuarios(q))) return;
+    if (st.pa !== A) return;
+    A.inv.fase = 'listo'; pintarPa();
+    await plEsperarUsuarios(q.usuarios);
+    if (st.pa !== A) return;
+    A.inv.enviar(true);
+  } catch (err) { if (st.pa !== A) return; A.inv.fase = ''; pintarPa(); toast(err.message || 'No se pudo hacer el cobro. No te cobramos nada.'); }
 });
 
 /* Invitación pendiente (maqueta aprobada «invitaciones y sus correos», 14-oct): reenviar el correo o cancelarla. */

@@ -2730,3 +2730,16 @@ document.getElementById('ov-x').addEventListener('input', e => {
   const pos = e.target.selectionStart; dlgTransferir();
   const q = document.getElementById('tr-q'); if (q) { q.focus(); q.selectionStart = q.selectionEnd = pos; }
 });
+
+/* Modales en el área de contenido (10-nov): el ancho de la barra lateral queda en --crm-nav-w y los fondos de los modales
+   corren su centro esa distancia. Cuando la barra no está (tablet, celular) o se abre encima como menú, cuenta 0. */
+(() => {
+  const nav = document.querySelector('#app > .nav'); if (!nav) return;
+  const medir = () => {
+    const cs = getComputedStyle(nav), w = cs.display === 'none' || cs.position === 'fixed' ? 0 : Math.round(nav.getBoundingClientRect().width);
+    document.documentElement.style.setProperty('--crm-nav-w', w + 'px');
+  };
+  medir();
+  if (window.ResizeObserver) new ResizeObserver(medir).observe(nav);
+  addEventListener('resize', medir);
+})();

@@ -1177,6 +1177,13 @@ h4 .marca.mini{margin-right:2px}
 @keyframes wc-aparece{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @keyframes wc-corre{from{transform:translateX(-110%)}to{transform:translateX(280%)}}
 @media (prefers-reduced-motion: reduce){.w-carga .c-burbuja,.w-carga .c-esc circle,.w-carga .c-onda,.w-carga .c-barra i{animation:none !important}.w-carga .c-punto,.w-carga .c-txt,.w-carga .c-barra{animation-duration:.01s !important;animation-delay:0s !important}}
+/* Modales en el área de contenido (10-nov, aprobado en la maqueta de cobro por usuarios): la barra lateral no cuenta.
+   --crm-nav-w lo mide 10-nucleo.js (0 cuando la barra no está en pantalla, como en tablet y celular). */
+:root{--crm-nav-w:0px}
+.ov{padding-left:calc(var(--crm-nav-w) + 16px)}
+.pl-fondo{padding-left:calc(var(--crm-nav-w) + 16px)!important}
+.pp-ov{padding-left:calc(var(--crm-nav-w) + 16px)!important}
+.ppm-ov{padding-left:calc(var(--crm-nav-w) + 24px)!important}
 </style>
 
 <div class="w-carga" id="w-carga" role="status" aria-live="polite" aria-label="Cargando wali"><div class="c-centro"><div class="c-burbuja"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M22 10h56a18 18 0 0 1 18 18v36a18 18 0 0 1-18 18H40L20 98V82a18 18 0 0 1-16-18V28A18 18 0 0 1 22 10z" fill="#FFD21F"/><g class="c-esc" fill="#17140F"><circle cx="34" cy="46" r="6.5"/><circle cx="50" cy="46" r="6.5"/><circle cx="66" cy="46" r="6.5"/></g><circle class="c-onda" cx="92" cy="12" r="11"/><circle class="c-punto" cx="92" cy="12" r="11" fill="#FF4D1A" stroke="#17140F" stroke-width="5"/></svg></div><div class="c-barra" aria-hidden="true"><i></i></div><div class="c-txt" id="w-carga-t">Cargando tus conversaciones…</div></div></div>
