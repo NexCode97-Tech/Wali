@@ -14,3 +14,15 @@
 - Proyecto de Google nuevo para que la cuenta de servicio del calendario diga Wali.
 - Partners: forma de pago de comisiones, panel de referidos, destino del formulario.
 - Autoridad SEO: Perfil de Empresa en Google, directorios, enlace desde nexcode97.com.
+
+## 2026-10-20 / 2026-11-10
+- Pagos: Whop reemplazó a Creem. Checkout incrustado con tarjeta, Google Pay, Apple Pay y PayPal (este último pendiente de aprobación de Whop); página de Plan y pagos rediseñada; cupones en Whop.
+- Bandeja: selección múltiple con barra de acciones (transferir, etapa, etiqueta, finalizar y más), menús pegados a su botón y hoja inferior en el celular.
+- Flujos de equipo: botón «Nuevo flujo» en la fila del título; en el celular solo el ícono.
+- Login: al elegir destino ya no ofrece autocompletar.
+- Imagen para compartir de walicrm.com con el letrero real.
+
+## Pendientes (10-nov)
+- PayPal en Whop, cobro por número de usuarios, registrar reembolsos.
+- Probar en producción las acciones en lote que faltan.
+- Migrar la configuración de Railway antes del 2026-12-01.
