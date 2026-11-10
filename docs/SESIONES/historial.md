@@ -32,3 +32,8 @@
 - Railway: se generó `.railway/railway.ts` con `railway config migrate` (SDK `railway` 3.16.0 instalado solo en `.railway/` con pnpm). El plan no cambia nada real. Falta el paso de corte (`config migrate cutover` y `config apply`), que espera la aprobación del usuario.
 - Whop: la membresía de prueba `mem_AZaSdP8gg3PkM7` sigue activa y se renueva sola el 2026-12-06.
 - Las pruebas en producción de las acciones en lote quedaron pendientes porque la extensión de Chrome no estaba conectada.
+- Railway: configuración pasada a infraestructura como código (`.railway/railway.ts`), aplicada y al día; se borró `app/railway.json`.
+- Whop: la membresía de prueba `mem_AZaSdP8gg3PkM7` quedó cancelada al final del periodo (sigue activa hasta el 2026-12-06 y no se renueva). El espacio de NexCode97 es «interno» y no lo toca.
+- Se borró el artifact viejo de muestra (Qu8rGiYawxsRSFwi1RXUJV).
+- Sitio: `@vercel/analytics` agregado al layout. Falta que el usuario encienda Web Analytics en el panel de Vercel (proyecto wali).
+- Decidido: finalizar en lote no manda la encuesta.
