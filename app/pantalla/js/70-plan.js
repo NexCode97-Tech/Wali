@@ -343,7 +343,8 @@ function planVista(P){
   return {sello:nombre[0], nombre, chip: noRenueva ? ['aviso', 'No se renueva'] : ['activo', `Activo · ${P.periodo === 'anual' ? 'Anual' : 'Mensual'}`],
     texto: noRenueva ? ['Tu plan sigue activo hasta el ', [plFecha(P.renuevaEl, true)], ' y no se renueva.'] : [[plPrecioTxt(P.plan, P.periodo)], P.usuarios && P.usuarios.pagados ? ` · ${P.usuarios.pagados} usuarios` : '', ' · se renueva solo, sin que hagas nada.'],
     medidas:[mUsuarios, mAgentes, [noRenueva ? 'Activo hasta' : 'Próximo cobro', plFecha(P.renuevaEl) || '—', null, null, noRenueva ? 'Sin más cobros' : plPrecioTxt(P.plan, P.periodo)]],
-    acciones: noRenueva ? [['pri', `Renovar ${nombre}`, 'renovar']] : P.portal ? [['', 'Facturas y tarjeta', 'portal']] : []};
+    // «Facturas y tarjeta» vive solo en el encabezado de Pagos (10-nov): un botón por función.
+    acciones: noRenueva ? [['pri', `Renovar ${nombre}`, 'renovar']] : []};
 }
 
 /* ── Opción A «Estado de cuenta» (maqueta aprobada el 6-nov): el plan se lee como un extracto, con la regla del
