@@ -28,7 +28,7 @@ import { accesoCrm, alcanceDe } from '../services/crm/alcance'
 import { borrarEnlace, crearEnlace, editarEnlace, listarEnlaces } from '../services/crm/enlaces'
 import { ApiResponse } from '../utils/response'
 import { z } from 'zod'
-import { estadoPlan, historialPagos, pagarPlan, cobrarPlan, cotizarUsuarios, usuariosParaInvitar, aprobarUsuarios, bajarUsuarios, precioUsuarios, USUARIOS_MIN, USUARIOS_MAX, pagoDeEspacio, planesDelSitio, portalPagos, usoDeCuenta, PLANES, type Plan } from '../services/crm/plan'
+import { estadoPlan, historialPagos, pagarPlan, cobrarPlan, cotizarUsuarios, usuariosParaInvitar, medioDePago, prepararMedio, guardarMedio, confirmarMedio, cancelarPlan, reanudarPlan, aprobarUsuarios, bajarUsuarios, precioUsuarios, USUARIOS_MIN, USUARIOS_MAX, pagoDeEspacio, planesDelSitio, portalPagos, usoDeCuenta, PLANES, type Plan } from '../services/crm/plan'
 import { nombreRecibo, reciboPdf } from '../services/crm/recibo'
 import { crearEspacio, renombrarEspacio, eliminarEspacio, entrarAEspacio, listarEspacios } from '../services/crm/espacios'
 import { leerAjuste } from '../services/crm/ajustes'
@@ -49,8 +49,8 @@ router.use(authenticate, accesoCrm, conEspacio)
 // Plan y pagos (Whop). Van antes de la guarda: con el plan vencido hay que poder ver el plan y pagar.
 router.get('/plan', asyncHandler(async (req: Request, res: Response) => {
   // El uso es de la cuenta: personas y agentes sumados entre todos sus espacios de trabajo (6-oct).
-  const [estado, historial, catalogo, uso] = await Promise.all([
-    estadoPlan(req.espacioId!), historialPagos(req.espacioId!), planesDelSitio(), usoDeCuenta(req.espacioId!),
+  const [estado, historial, catalogo, uso, medio] = await Promise.all([
+    estadoPlan(req.espacioId!), historialPagos(req.espacioId!), planesDelSitio(), usoDeCuenta(req.espacioId!), medioDePago(req.espacioId!).catch(() => null),
   ])
   // Cobro por usuarios (10-nov): el precio de cada plan de la página de precios, para los usuarios de esta cuenta
   // (el mínimo del plan o los que ya están, lo que sea mayor). La pantalla muestra lo que se cobra, con la misma fórmula.
@@ -63,7 +63,7 @@ router.get('/plan', asyncHandler(async (req: Request, res: Response) => {
     return { ...p, usuarios: n, mensual: precioUsuarios(n, 'mensual'), anual: anual.toLocaleString('es-CO'), equivaleMes: `USD ${Math.round(anual / 12)}` }
   })
   return ApiResponse.success(res, {
-    ...estado, historial, catalogo: conPrecio, uso,
+    ...estado, historial, catalogo: conPrecio, uso, medio,
     administra: req.userRole === 'ADMIN' && !req.soloLectura,
   })
 }))
@@ -145,6 +145,31 @@ router.post('/plan/usuarios/bajar', asyncHandler(async (req: Request, res: Respo
   if (req.userRole !== 'ADMIN' || req.soloLectura) throw new ForbiddenError('Solo el administrador del espacio puede cambiar los usuarios del plan.')
   const d = z.object({ usuarios: z.number().int().min(USUARIOS_MIN).max(USUARIOS_MAX) }).parse(req.body)
   return ApiResponse.success(res, await bajarUsuarios(req.espacioId!, d.usuarios))
+}))
+// Medio de pago y cancelar, dentro de Wali (maqueta aprobada el 10-nov). Cambiar el medio no cobra.
+router.post('/plan/medio/preparar', asyncHandler(async (req: Request, res: Response) => {
+  if (req.userRole !== 'ADMIN' || req.soloLectura) throw new ForbiddenError('Solo el administrador del espacio puede cambiar el plan y sus pagos.')
+  return ApiResponse.success(res, await prepararMedio(req.espacioId!))
+}))
+router.post('/plan/medio/guardar', asyncHandler(async (req: Request, res: Response) => {
+  if (req.userRole !== 'ADMIN' || req.soloLectura) throw new ForbiddenError('Solo el administrador del espacio puede cambiar el plan y sus pagos.')
+  const d = z.object({ token: z.string().regex(/^ctok_[A-Za-z0-9_]{6,300}$/), regreso: z.string().url().max(500).refine(u => { try { const x = new URL(u); return x.protocol === 'https:' && ['walicrm.com', 'www.walicrm.com', 'www.nexcode97.com', 'nexcode97.com'].includes(x.hostname) } catch { return false } }, 'Dirección de regreso no válida') }).parse(req.body)
+  return ApiResponse.success(res, await guardarMedio(req.espacioId!, d.token, d.regreso))
+}))
+router.post('/plan/medio/confirmar', asyncHandler(async (req: Request, res: Response) => {
+  if (req.userRole !== 'ADMIN' || req.soloLectura) throw new ForbiddenError('Solo el administrador del espacio puede cambiar el plan y sus pagos.')
+  const d = z.object({ setup: z.string().regex(/^sint_[A-Za-z0-9_]{4,80}$/) }).parse(req.body)
+  return ApiResponse.success(res, await confirmarMedio(req.espacioId!, d.setup))
+}))
+router.post('/plan/cancelar', asyncHandler(async (req: Request, res: Response) => {
+  if (req.userRole !== 'ADMIN' || req.soloLectura) throw new ForbiddenError('Solo el administrador del espacio puede cambiar el plan y sus pagos.')
+  await cancelarPlan(req.espacioId!)
+  return ApiResponse.success(res, { ok: true })
+}))
+router.post('/plan/reanudar', asyncHandler(async (req: Request, res: Response) => {
+  if (req.userRole !== 'ADMIN' || req.soloLectura) throw new ForbiddenError('Solo el administrador del espacio puede cambiar el plan y sus pagos.')
+  await reanudarPlan(req.espacioId!)
+  return ApiResponse.success(res, { ok: true })
 }))
 router.post('/plan/portal', asyncHandler(async (req: Request, res: Response) => {
   if (req.userRole !== 'ADMIN' || req.soloLectura) throw new ForbiddenError('Solo el administrador del espacio puede ver los pagos.')

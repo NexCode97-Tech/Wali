@@ -332,10 +332,82 @@ async function cambioDeUsuarios(espacioId: string, pedidos: number) {
 /** La tarjeta guardada del miembro en Whop (la más reciente). */
 async function tarjetaGuardada(miembro: string): Promise<{ id: string; marca: string; ultimos: string } | null> {
   const r = await whop<{ data?: Obj[] }>(`/payment_methods?member_id=${encodeURIComponent(miembro)}`).catch(() => null)
-  const l = (r?.data ?? []).filter(x => txt(x.id))
+  // La membresía no dice con qué medio cobra: es el más reciente del miembro (el que se guardó al cambiarlo).
+  const l = (r?.data ?? []).filter(x => txt(x.id)).sort((a, b) => (txt(b.created_at) > txt(a.created_at) ? 1 : -1))
   if (!l.length) return null
   const m = l[0], card = obj(m.card)
-  return { id: txt(m.id), marca: txt(card.brand) || txt(m.payment_method_type) || txt(m.type) || 'Tarjeta', ultimos: txt(card.last4) || txt(m.last4) }
+  return { id: txt(m.id), marca: nombreMedio(txt(card.brand) || txt(m.payment_method_type) || txt(m.type)), ultimos: txt(card.last4) || txt(m.last4) }
+}
+const MEDIOS: Record<string, string> = { visa: 'Visa', mastercard: 'Mastercard', amex: 'Amex', american_express: 'Amex', discover: 'Discover', diners: 'Diners', jcb: 'JCB', paypal: 'PayPal', google_pay: 'Google Pay', apple_pay: 'Apple Pay', card: 'Tarjeta' }
+const nombreMedio = (v: string) => MEDIOS[v.toLowerCase()] ?? (v ? v[0].toUpperCase() + v.slice(1) : 'Tarjeta')
+
+// ─── Medio de pago y cancelar, dentro de Wali (maqueta aprobada el 10-nov) ─────────────────────────────────────
+// Cambiar el medio no cobra: el formulario seguro de Whop en modo setup arma un token, el servidor lo guarda con un
+// setup intent y la suscripción queda cobrando a ese medio (si había un cobro vencido, Whop lo reintenta con él).
+
+async function membresiaActiva(espacioId: string) {
+  const e = await prisma.crmEspacio.findUnique({ where: { id: espacioId }, select: { creemSuscripcion: true, creemCliente: true, estadoPlan: true, renuevaEl: true, cancelaAlFinal: true } })
+  if (!e?.creemSuscripcion || !e.creemCliente) throw new ValidationError('Todavía no tienes un plan pagado.')
+  return e as typeof e & { creemSuscripcion: string; creemCliente: string }
+}
+
+/** El medio con que se cobra hoy, para el renglón de Pagos. */
+export async function medioDePago(espacioDado: string): Promise<{ marca: string; ultimos: string } | null> {
+  const e = await prisma.crmEspacio.findUnique({ where: { id: await cuentaDe(espacioDado) }, select: { creemCliente: true } })
+  if (!e?.creemCliente || !pagosListos()) return null
+  const t = await tarjetaGuardada(e.creemCliente)
+  return t ? { marca: t.marca, ultimos: t.ultimos } : null
+}
+
+/** Lo que necesita el formulario en modo setup: la cuenta de Whop y el correo del miembro (el medio queda a su nombre). */
+export async function prepararMedio(espacioDado: string): Promise<{ cuenta: string; email: string }> {
+  const e = await membresiaActiva(await cuentaDe(espacioDado))
+  const m = await whop<Obj>(`/members/${encodeURIComponent(e.creemCliente)}`)
+  return { cuenta: WHOP_CUENTA(), email: txt(m.email) || txt(obj(m.user).email) }
+}
+
+async function asignarMedio(espacioId: string, membresia: string, medio: string) {
+  await whop(`/memberships/${encodeURIComponent(membresia)}`, { payment_method_id: medio }, 'PATCH')
+  logger.info({ evento: 'MEDIO_CAMBIADO', espacioId, membresia })
+}
+
+/** Guarda el medio nuevo (sin cobrar) y lo deja para la suscripción. Si el banco pide un paso más, devuelve su secreto. */
+export async function guardarMedio(espacioDado: string, token: string, regreso: string): Promise<{ status: string; id: string; client_secret: string | null }> {
+  const espacioId = await cuentaDe(espacioDado)
+  const e = await membresiaActiva(espacioId)
+  const { email } = await prepararMedio(espacioId)
+  const s = await whop<Obj>('/setup_intents', { account_id: WHOP_CUENTA(), confirmation_token: token, ...(email ? { email } : {}), return_url: regreso, metadata: { espacio: espacioId } })
+  const estado = txt(s.status), medio = txt(s.payment_method_id)
+  if (estado === 'succeeded' && medio) await asignarMedio(espacioId, e.creemSuscripcion, medio)
+  return { status: estado, id: txt(s.id), client_secret: txt(s.client_secret) || null }
+}
+
+/** Después del paso del banco: si el setup quedó bien y es de este espacio, el medio pasa a la suscripción. */
+export async function confirmarMedio(espacioDado: string, setupId: string): Promise<{ ok: boolean }> {
+  const espacioId = await cuentaDe(espacioDado)
+  const e = await membresiaActiva(espacioId)
+  const s = await whop<Obj>(`/setup_intents/${encodeURIComponent(setupId)}`)
+  if (txt(obj(s.metadata).espacio) !== espacioId) throw new ValidationError('Ese medio de pago no es de este espacio.')
+  if (txt(s.status) !== 'succeeded' || !txt(s.payment_method_id)) return { ok: false }
+  await asignarMedio(espacioId, e.creemSuscripcion, txt(s.payment_method_id))
+  return { ok: true }
+}
+
+/** «Cancelar plan»: sigue activo hasta el fin del periodo y no se renueva. «Renovar» lo deshace (reanudarPlan). */
+export async function cancelarPlan(espacioDado: string): Promise<void> {
+  const espacioId = await cuentaDe(espacioDado)
+  const e = await membresiaActiva(espacioId)
+  await whop(`/memberships/${encodeURIComponent(e.creemSuscripcion)}/cancel`, { cancel_at_period_end: true, reason: 'Canceló desde Plan y pagos' })
+  await prisma.crmEspacio.update({ where: { id: espacioId }, data: { cancelaAlFinal: true } })
+  logger.info({ evento: 'PLAN_CANCELADO', espacioId })
+}
+export async function reanudarPlan(espacioDado: string): Promise<void> {
+  const espacioId = await cuentaDe(espacioDado)
+  const e = await membresiaActiva(espacioId)
+  if (!e.renuevaEl || e.renuevaEl.getTime() <= Date.now()) throw new ValidationError('Tu plan ya terminó. Elige un plan para volver.')
+  await whop(`/memberships/${encodeURIComponent(e.creemSuscripcion)}`, { cancel_at_period_end: false }, 'PATCH')
+  await prisma.crmEspacio.update({ where: { id: espacioId }, data: { cancelaAlFinal: false } })
+  logger.info({ evento: 'PLAN_REANUDADO', espacioId })
 }
 
 export async function cotizarUsuarios(espacioDado: string, pedidos: number): Promise<CotizacionUsuarios> {

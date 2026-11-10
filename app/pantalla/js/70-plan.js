@@ -475,7 +475,13 @@ function plaPagos(P){
       <span class="pl-pago ${esc(h.estado)}"><i></i>${esc({pagado:'Pagado', rechazado:'Rechazado', reembolsado:'Reembolsado'}[h.estado] || h.estado)}</span>
       ${h.estado === 'rechazado' || !P.administra ? '<span></span>' : `<button type="button" class="pla-rec" data-pl-recibo="${+h.numero}" aria-label="Descargar el recibo del ${esc(plFecha(h.fecha))}">${I('download')}</button>`}</div>`).join('')
     : '<p class="pla-vacio">Todavía no tienes pagos. Cuando elijas un plan, cada cobro aparecerá aquí con su recibo.</p>';
-  return `<section class="pla-led pla-e pla-e6" aria-label="Pagos"><div class="pla-led-h"><h3>Pagos</h3>${P.portal && P.administra ? `<button type="button" class="btn pla-fan" data-pl-acc="portal">${I('link')}Facturas y tarjeta</button>` : ''}</div>${filas}</section>`;
+  // Medio de pago y cancelar, dentro de Wali (maqueta aprobada el 10-nov): sin el botón de Whop, cada cobro ya trae su recibo.
+  const activo = P.estado === 'activo' && P.vigente && !P.cancelaAlFinal && P.portal && P.administra;
+  const cancelar = activo ? `<button type="button" class="btn pc-abrir" data-pl-acc="cancelar">Cancelar plan</button>` : '';
+  const medio = P.portal && P.administra && (P.medio || P.vigente) ? `<div class="pu-mp" role="group" aria-label="Medio de pago"><span class="pu-mp-ic">${I('card')}</span>
+      <span class="pu-mp-t"><b>${P.medio ? `<span class="pu-mp-marca">${esc(P.medio.marca)}</span> •••• ${esc(P.medio.ultimos || '')}` : 'Tu medio de pago'}</b><small>${I('calendar')}${esc(P.cancelaAlFinal ? 'Sin más cobros' : P.renuevaEl ? `Próximo cobro el ${plFecha(P.renuevaEl, true).replace(/ de \d{4}$/, '')}` : '')}</small></span>
+      <button type="button" class="btn" data-pl-acc="medio">Cambiar medio de pago</button></div>` : '';
+  return `<section class="pla-led pla-e pla-e6" aria-label="Pagos"><div class="pla-led-h"><h3>Pagos</h3>${cancelar}</div>${medio}${filas}</section>`;
 }
 
 function paginaPlan(){
@@ -491,7 +497,7 @@ function paginaPlan(){
   // La entrada corre al abrir la página; si se vuelve a dibujar (elegir escalón, mensual/anual) solo se anima lo que cambia.
   const quieto = !!document.querySelector('#page .pla-ext');
   const ok = st.pagoOk ? `<div class="pl-ok" role="status">${I('check')}${P.estado === 'activo' ? `¡Pago recibido! Tu plan ${esc(PL_NOMBRE[P.plan] || '')} quedó activo.` : 'Pago recibido. Estamos activando tu plan, tarda unos segundos…'}</div>` : '';
-  const acciones = P.administra ? v.acciones.filter(([, , a]) => a !== 'planes').map(([c, t, a]) => `<button type="button" class="btn ${c === 'pri' ? 'pla-pri' : ''}" data-pl-acc="${a}">${a === 'portal' ? I('link') : ''}${esc(t)}</button>`).join('')
+  const acciones = P.administra ? v.acciones.filter(([, , a]) => a !== 'planes').map(([c, t, a]) => `<button type="button" class="btn ${c === 'pri' ? 'pla-pri' : ''}" data-pl-acc="${a}">${a === 'portal' ? I('card') : ''}${esc(t)}</button>`).join('')
     : v.acciones.length ? '<span class="pl-nota">Solo el administrador del espacio puede pagar o cambiar el plan.</span>' : '';
   const tono = {activo:'ok', prueba:'aviso', aviso:'aviso', vencido:'mal'}[v.chip[0]] || 'neutro';
   const grande = lado.n != null ? `<span class="pla-cnt" style="--to:${lado.n}"></span>${lado.unidad ? `<span class="pla-u">${esc(lado.unidad)}</span>` : ''}` : `<span class="pla-txt">${esc(lado.txt)}</span>`;
@@ -755,8 +761,11 @@ document.getElementById('page').addEventListener('click', e => {
   const rc = t.closest('[data-pl-recibo]'); if (rc) { plRecibo(+rc.dataset.plRecibo); return; }
   const ac = t.closest('[data-pl-acc]'); if (!ac) return;
   const a = ac.dataset.plAcc;
-  if (a === 'portal') plPortal();
-  else if (a === 'renovar') plPagar(PLAN.plan);
+  // «Actualizar tarjeta» (cobro fallido) y «Cambiar medio de pago» son la misma función: el modal dentro de Wali.
+  if (a === 'portal' || a === 'medio') plAbrirMedio();
+  else if (a === 'cancelar') plAbrirCancelar();
+  // Renovar un plan cancelado que sigue vigente deshace la cancelación (sin volver a pagar); si ya venció, se paga.
+  else if (a === 'renovar') { if (PLAN.cancelaAlFinal && PLAN.vigente && PLAN.estado === 'activo') plReanudar(); else plPagar(PLAN.plan); }
   else if (a === 'planes') { const s = document.getElementById('pl-planes'); if (s) s.scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block:'start'}); }
 });
 

@@ -63,7 +63,25 @@
 .pu-tope{margin:10px 0 0;display:flex;gap:8px;align-items:center;color:var(--ink3);font-size:12.5px}.pu-tope svg{width:14px;height:14px;flex:none}
 .pla-prox{margin:8px 0 0;display:flex;gap:8px;align-items:center;font-size:13px;color:#92400e}.pla-prox svg{width:15px;height:15px}
 .pla-silla.nueva-ok{background:#FFD21F;color:#0b0b10}
+/* Medio de pago: el renglón de Pagos y su modal; cancelar plan. */
+.pu-mp{display:flex;align-items:center;gap:14px;padding:16px 0;border-bottom:1px solid var(--line2)}
+.pu-mp-ic{width:40px;height:40px;border-radius:11px;background:var(--bg2);display:grid;place-items:center;flex:none}.pu-mp-ic svg{width:19px;height:19px}
+.pu-mp-t{flex:1;min-width:0;display:grid;gap:2px}.pu-mp-t b{font-size:14.5px;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:8px}
+.pu-mp-t small{display:flex;align-items:center;gap:6px;color:var(--ink3);font-size:12.5px}.pu-mp-t small svg{width:14px;height:14px}
+.pu-mp-marca{display:inline-grid;place-items:center;height:20px;min-width:32px;padding:0 6px;border-radius:4px;font:700 10px/1 Inter,sans-serif;color:#fff;background:#1a1f71}
+.dlg-pm .pm-cuerpo{gap:14px;padding-bottom:10px}
+.pm-hoy{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:13px;color:var(--ink2);padding:10px 14px;border-radius:12px;background:var(--bg2)}
+.pm-hoy b{display:flex;align-items:center;gap:8px;color:var(--ink);font-size:13.5px}
+.pm-whop{min-height:240px}
+.pm-letra{margin:0;text-align:center;color:var(--ink3);font-size:12.5px}
+.pu-guardar{min-width:150px;justify-content:center}
+.pla-led-h .btn.pc-abrir{border-color:transparent;background:none;color:#dc2626}.pla-led-h .btn.pc-abrir:hover{background:#fef2f2}
+.btn.pc-sec{color:#dc2626}.btn.pc-sec:hover{background:#fef2f2;border-color:#fecaca}
+.pu-rueda.roja{border-color:rgba(220,38,38,.25);border-top-color:#dc2626}
+.pc-lista ul{list-style:none;margin:0;padding:0;display:grid;gap:12px}.pc-lista li{display:flex;gap:10px;font-size:13.5px;color:var(--ink2);line-height:1.45}.pc-lista li b{color:var(--ink)}.pc-lista li svg{width:17px;height:17px;flex:none;margin-top:1px;color:var(--ink)}
+.dlg-usu .pu-cuerpo .pu-perm{margin:0}
 @media (max-width:640px){
+  .pu-mp{flex-wrap:wrap}.pu-mp .btn{width:100%;justify-content:center}
   .pu-c{width:100%;justify-content:space-between}
   .dlg-usu .bq-pie{flex-wrap:wrap}.dlg-usu .bq-pie .btn{flex:1}.dlg-usu .bq-pie .bq-res{display:none}.btn.pu-apr{min-width:0;flex-basis:100%}
   .pu-lin{font-size:13px}
@@ -193,8 +211,111 @@
       } catch (err) { U.fase = ''; pintar(); toast(err.message || 'No se pudo guardar el cambio'); }
     }
   });
+  /* ── Medio de pago y cancelar plan, dentro de Wali (maqueta aprobada el 10-nov) ──
+     Cambiar el medio no cobra: el formulario seguro de Whop en modo setup (el mismo del pago del plan) arma un token y el
+     servidor lo guarda para la suscripción. Cancelar deja el plan activo hasta el fin del periodo; «Renovar» lo deshace. */
+  const M = {fase: '', pagos: null, whop: null, completo: false};
+  const marcaHTML = m => m ? `<span class="pu-mp-marca">${esc(m.marca)}</span> •••• ${esc(m.ultimos || '')}` : 'Tu medio guardado';
+  function pieMedio(){
+    const f = M.fase;
+    const boton = f === 'guardando' ? `<button type="button" class="btn pri pu-guardar" disabled><span class="pu-rueda" aria-hidden="true"></span>Guardando…</button>`
+      : f === 'listo' ? `<button type="button" class="btn pu-apr listo pu-guardar" disabled>${CHULO}Guardado</button>`
+      : `<button type="button" class="btn pri pu-guardar" data-pm-guardar="1">Guardar</button>`;
+    return `<span class="bq-res"></span><button type="button" class="btn" data-pm-cerrar="1" ${f ? 'disabled' : ''}>Cancelar</button>${boton}`;
+  }
+  async function abrirMedio(){
+    if (!PLAN) return;
+    M.fase = ''; M.completo = false;
+    abrirDialogo(`<div class="bq-h"><h3>Cambiar medio de pago</h3><p>Tarjeta, Google Pay o PayPal. Lo cambias aquí mismo, sin salir de Wali.</p></div>
+      <div class="pu-cuerpo pm-cuerpo">${PLAN.medio ? `<div class="pm-hoy"><span>Hoy se cobra a</span><b>${marcaHTML(PLAN.medio)}</b></div>` : ''}
+        <div class="pm-whop" id="pm-whop"><div class="wpg-cargando">Cargando el formulario seguro…</div></div>
+        <p class="wpg-error" id="pm-error" role="alert" hidden></p>
+        <p class="pm-letra">Tus próximos cobros salen de este medio. Hoy no se cobra nada.</p>
+        <div class="wpg-seg-pie">${I('lock')}Pago seguro procesado por Whop</div></div>
+      <div class="bq-pie" id="pm-pie">${pieMedio()}</div>`, 'dlg-usu dlg-pm');
+    try {
+      const x = await crmApi('POST', '/crm/plan/medio/preparar');
+      await ppCargarScript();
+      const caja = document.getElementById('pm-whop'); if (!caja) return;
+      caja.replaceChildren();
+      const apariencia = {theme: {appearance: 'light', accentColor: 'yellow', grayColor: 'gray', dangerColor: 'red'}, variables: {'--radius': '10px'}};
+      M.whop = window.WhopElements({locale: 'es', appearance: apariencia});
+      M.pagos = M.whop.payments.create({accountId: x.cuenta, mode: 'setup', currency: 'usd', returnUrl: regreso(), locale: 'es', appearance: apariencia});
+      M.email = x.email;
+      M.pagos.create('payment', {layout: 'accordion', onChange: ev => { M.completo = !!(ev && ev.complete); if (M.completo) errorMedio(''); }}).mount('#pm-whop');
+    } catch (err) {
+      const caja = document.getElementById('pm-whop'); if (caja) { caja.replaceChildren(); caja.insertAdjacentHTML('beforeend', `<div class="wpg-cargando">${esc(err.message || 'No se pudo cargar el formulario seguro.')}</div>`); }
+    }
+  }
+  function errorMedio(t){ const e = document.getElementById('pm-error'); if (!e) return; e.textContent = t; e.hidden = !t; }
+  function pintarPieMedio(){ const p = document.getElementById('pm-pie'); if (!p) return; p.replaceChildren(); p.insertAdjacentHTML('beforeend', pieMedio()); }
+  async function guardarMedio(){
+    if (M.fase) return;
+    if (!M.pagos) { errorMedio('El formulario todavía está cargando. Espera un momento.'); return; }
+    if (!M.completo) { errorMedio('Completa los datos del medio de pago.'); return; }
+    M.fase = 'guardando'; pintarPieMedio(); errorMedio('');
+    try {
+      const {confirmationToken} = await M.pagos.createConfirmationToken({billingDetails: {email: M.email || undefined}});
+      const r = await crmApi('POST', '/crm/plan/medio/guardar', {token: confirmationToken, regreso: regreso()});
+      if (r.status !== 'succeeded') {
+        if (!r.client_secret) throw new Error('No se pudo guardar. Prueba con otro medio de pago.');
+        // El banco pide un paso más: Whop lo muestra; luego el servidor deja el medio para la suscripción.
+        const res = await M.whop.payments.handleNextAction({clientSecret: r.client_secret, returnUrl: regreso()});
+        if (res && res.redirected) return;
+        if (!res || res.status !== 'succeeded') throw new Error((res && res.lastPaymentError && res.lastPaymentError.message) || 'Tu banco no aprobó el medio. Prueba con otro.');
+        const c = await crmApi('POST', '/crm/plan/medio/confirmar', {setup: r.id});
+        if (!c.ok) throw new Error('No se pudo guardar. Prueba con otro medio de pago.');
+      }
+      M.fase = 'listo'; pintarPieMedio();
+      await cargarPlan();
+      setTimeout(() => { M.fase = ''; cerrarDialogo(); if (st.pagina === 'cfg-plan') render(); toast(PLAN.medio ? `Listo. Tus próximos cobros salen de ${PLAN.medio.marca} •••• ${PLAN.medio.ultimos}.` : 'Listo. Guardamos tu nuevo medio de pago.'); }, 900);
+    } catch (err) {
+      M.fase = ''; pintarPieMedio();
+      if (err && (err.code === 'payment_request_cancelled' || err.message === 'payment_request_cancelled')) return;
+      errorMedio(err.message || 'No se pudo guardar. Intenta de nuevo.');
+    }
+  }
+  window.plAbrirMedio = abrirMedio;
+
+  // Cancelar plan: «Seguir con mi plan» es la acción principal; cancelar queda al lado, secundario y en rojo.
+  const C = {fase: ''};
+  function dlgCancelar(){
+    const hasta = PLAN && PLAN.renuevaEl ? fecha(PLAN.renuevaEl) : 'el fin de tu periodo';
+    return `<div class="bq-h"><h3>Cancelar el plan</h3><p>Antes de confirmar, esto es lo que pasa.</p></div>
+      <div class="pu-cuerpo"><div class="pu-perm gris pc-lista" role="region" aria-label="Qué pasa al cancelar"><ul>
+        <li>${I('calendar')}<span>Tu plan sigue activo hasta el <b>${esc(hasta)}</b>. Tu equipo trabaja normal hasta ese día.</span></li>
+        <li>${I('card')}<span>Después no se cobra más a tu tarjeta.</span></li>
+        <li>${I('shield-ok')}<span>No se borra nada. Tus conversaciones, contactos y ajustes quedan guardados por si vuelves.</span></li></ul></div>
+        <p class="pm-letra">Puedes deshacerlo antes del ${esc(hasta)} con Renovar.</p></div>
+      <div class="bq-pie"><span class="bq-res"></span><button type="button" class="btn pc-sec" data-pc-si="1" ${C.fase ? 'disabled' : ''}>${C.fase ? '<span class="pu-rueda roja" aria-hidden="true"></span>Cancelando…' : 'Cancelar plan'}</button><button type="button" class="btn pri" data-pc-no="1" ${C.fase ? 'disabled' : ''}>Seguir con mi plan</button></div>`;
+  }
+  function abrirCancelar(){ C.fase = ''; abrirDialogo(dlgCancelar(), 'dlg-usu dlg-pc'); }
+  window.plAbrirCancelar = abrirCancelar;
+  async function reanudar(){
+    try { await crmApi('POST', '/crm/plan/reanudar'); await cargarPlan(); if (st.pagina === 'cfg-plan') render(); toast(`Listo. Tu plan se renueva el ${fecha(PLAN.renuevaEl)}.`); }
+    catch (err) { toast(err.message || 'No se pudo renovar'); }
+  }
+  window.plReanudar = reanudar;
+
+  document.getElementById('ov-x').addEventListener('click', async e => {
+    const t = e.target;
+    if (document.querySelector('#dlg-x.dlg-pm')) {
+      if (t.closest('[data-pm-cerrar]') && !M.fase) { cerrarDialogo(); return; }
+      if (t.closest('[data-pm-guardar]')) guardarMedio();
+      return;
+    }
+    if (document.querySelector('#dlg-x.dlg-pc')) {
+      if (t.closest('[data-pc-no]') && !C.fase) { cerrarDialogo(); return; }
+      if (t.closest('[data-pc-si]') && !C.fase) {
+        C.fase = 'cancelando'; abrirDialogo(dlgCancelar(), 'dlg-usu dlg-pc');
+        try { await crmApi('POST', '/crm/plan/cancelar'); await cargarPlan(); C.fase = ''; cerrarDialogo(); if (st.pagina === 'cfg-plan') render(); toast(`Listo. Tu plan sigue activo hasta el ${fecha(PLAN.renuevaEl)} y no se renueva.`); }
+        catch (err) { C.fase = ''; abrirDialogo(dlgCancelar(), 'dlg-usu dlg-pc'); toast(err.message || 'No se pudo cancelar'); }
+      }
+    }
+  });
+
   // Ni Escape ni un clic afuera cierran mientras se cobra (aquí o en el modal de invitar).
-  const cobrando = () => U.fase === 'cobrando' || !!(st.pa && st.pa.inv && st.pa.inv.fase === 'cobrando');
+  const cobrando = () => U.fase === 'cobrando' || !!M.fase || !!C.fase || !!(st.pa && st.pa.inv && st.pa.inv.fase === 'cobrando');
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && cobrando()) e.stopImmediatePropagation(); }, true);
   document.getElementById('ov-x').addEventListener('click', e => { if (cobrando() && (e.target.id === 'ov-x' || e.target.closest('[data-cerrar-dlg]'))) e.stopImmediatePropagation(); }, true);
 })();
