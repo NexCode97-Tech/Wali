@@ -108,6 +108,8 @@ export async function listaSoporte() {
       // Espera respuesta desde: el último mensaje es de la persona y no está resuelta.
       espera: s.estado !== 'resuelta' && ultimo?.autor === 'cliente' ? ultimo.createdAt : null,
       nueva: !s.primeraRespuestaAt && s.estado === 'abierta',
+      // Para la tarjeta de la lista (como la bandeja del CRM): la vista previa y quién escribió de último.
+      ultimo: ultimo ? { autor: ultimo.autor, texto: ultimo.texto.slice(0, 160), en: ultimo.createdAt } : null,
     }
   })
   const recientes = ss.filter(s => s.primeraRespuestaAt && s.createdAt.getTime() >= semana)
