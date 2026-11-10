@@ -153,8 +153,9 @@ export async function responderSoporte(id: number, texto: string, quien: string)
   const s = await prisma.crmSolicitud.findUnique({ where: { id } })
   if (!s) throw new ValidationError('Esa solicitud no existe.')
   const nombre = quien.split(' ')[0] || 'Soporte'
+  // Responder no la cambia de pestaña (10-nov, pedido del usuario): sigue donde estaba hasta que se marque «En curso» o «Resolver».
   await prisma.crmSolicitud.update({ where: { id }, data: {
-    estado: s.estado === 'resuelta' ? 'resuelta' : 'en_curso', vista: false, primeraRespuestaAt: s.primeraRespuestaAt ?? new Date(),
+    vista: false, primeraRespuestaAt: s.primeraRespuestaAt ?? new Date(),
     mensajes: { create: { autor: 'soporte', autorNombre: nombre, texto: t } },
   } })
   broadcastUsuarios(new Set([s.userId]), 'soporte-respuesta', { id, numero: numero(id) })
