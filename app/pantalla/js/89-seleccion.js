@@ -182,7 +182,8 @@
     cerrarMenu();
     for (const c of L) items.querySelector(`.it[data-c="${c.id}"]`)?.classList.add('sm-sale');
     setTimeout(() => {
-      for (const c of L) { c.est = 'finalizadas'; c.motivo = motivo || null; }
+      // El mismo evento que deja «Finalizar» de a una (10-nucleo.js y 40-ajustes.js): «Finalizada por X · Motivo: Y».
+      for (const c of L) { c.est = 'finalizadas'; c.motivo = motivo || null; c.msgs.push({ev: 'check', t: motivo ? `Finalizada por ${yo} · Motivo: ${motivo}` : `Finalizada por ${yo} · ahora`}); }
       if (L.some(c => c.id === st.sel)) { const pr = visibles().find(x => !SL.sel.has(x.id)); st.sel = pr ? pr.id : 0; }
       crmSincronizar(); salir(); render();
       toast(cuantas(L.length, 'conversación finalizada', 'conversaciones finalizadas') + (motivo ? ` · ${motivo}` : ''));

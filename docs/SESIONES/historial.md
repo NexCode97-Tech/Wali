@@ -26,3 +26,9 @@
 - PayPal en Whop, cobro por número de usuarios, registrar reembolsos.
 - Probar en producción las acciones en lote que faltan.
 - Migrar la configuración de Railway antes del 2026-12-01.
+
+## 2026-11-10 (sesión en la carpeta Wali)
+- Bandeja › selección múltiple: «Finalizar» en lote ahora deja en cada chat el evento «Finalizada por X · Motivo: Y», igual que finalizar de a una (el servidor ya guardaba quién y el motivo). Falta desplegar.
+- Railway: se generó `.railway/railway.ts` con `railway config migrate` (SDK `railway` 3.16.0 instalado solo en `.railway/` con pnpm). El plan no cambia nada real. Falta el paso de corte (`config migrate cutover` y `config apply`), que espera la aprobación del usuario.
+- Whop: la membresía de prueba `mem_AZaSdP8gg3PkM7` sigue activa y se renueva sola el 2026-12-06.
+- Las pruebas en producción de las acciones en lote quedaron pendientes porque la extensión de Chrome no estaba conectada.
