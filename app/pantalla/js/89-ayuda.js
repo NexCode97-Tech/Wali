@@ -223,11 +223,19 @@
   const solDe = numero => (A.sol || []).find(s => s.numero === numero);
   const ESTADO_SOL = s => !s ? ['Recibida', 'ok'] : s.estado === 'resuelta' ? ['Resuelta', 'ok'] : s.mensajes.length && s.mensajes[s.mensajes.length - 1].autor === 'soporte' ? ['Respondida', 'w'] : ['Recibida', 'ok'];
   const horaCorta = iso => new Date(iso).toLocaleTimeString('es-CO', {hour: 'numeric', minute: '2-digit'});
+  // Adjuntos que manda soporte (10-nov): las imágenes se ven en el chat; los demás, con la tarjeta de la bandeja (.cm-fc).
+  function archivosSop(L){
+    L = (Array.isArray(L) ? L : []).filter(a => a && typeof a.url === 'string' && /^https:\/\/res\.cloudinary\.com\//.test(a.url));
+    if (!L.length) return '';
+    return `<div class="ay-sarch">${L.map(a => cmTipo(a) === 'imagen'
+      ? `<a class="ay-simg" href="${esc(a.url)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir ${esc(a.n)}"><img src="${esc(a.url)}" alt="${esc(a.n)}" loading="lazy"></a>`
+      : `<a class="cm-fc" href="${esc(a.url)}" target="_blank" rel="noopener noreferrer">${cmThumb(a, 'cm-th')}<span class="cm-tx"><span>${esc(a.n)}</span>${cmEtiquetaHtml(a)}</span></a>`).join('')}</div>`;
+  }
   function tarjetaSolicitud(p){
     const s = solDe(p.r), [et, ek] = ESTADO_SOL(s), tema = (TEMAS_SOP.find(x => x[0] === p.t) || [, 'Solicitud'])[1];
     const respuestas = s ? s.mensajes.slice(1) : [];
     const hilo = respuestas.map(m => m.autor === 'soporte'
-      ? `<div class="ay-sep">${esc(horaCorta(m.en))}</div><div class="ay-msj bot ay-equipo"><span class="ay-av">${esc(String(m.nombre || 'S').slice(0, 2).toUpperCase())}</span><div class="ay-msj-c"><small class="ay-quien"><b>${esc(m.nombre)}</b> · Soporte de Wali</small><div class="ay-resp">${esc(m.texto)}</div></div></div>`
+      ? `<div class="ay-sep">${esc(horaCorta(m.en))}</div><div class="ay-msj bot ay-equipo"><span class="ay-av">${esc(String(m.nombre || 'S').slice(0, 2).toUpperCase())}</span><div class="ay-msj-c"><small class="ay-quien"><b>${esc(m.nombre)}</b> · Soporte de Wali</small>${archivosSop(m.archivos)}${m.texto ? `<div class="ay-resp">${esc(m.texto)}</div>` : ''}</div></div>`
       : yoBurbuja(m.texto)).join('');
     const ultimo = respuestas[respuestas.length - 1];
     const acciones = s && s.estado !== 'resuelta' && ultimo && ultimo.autor === 'soporte'
@@ -416,7 +424,7 @@
     const m = [...s.mensajes].reverse().find(x => x.autor === 'soporte');
     if (!av) { document.body.insertAdjacentHTML('beforeend', '<div class="ay-aviso" id="ay-aviso" role="status"></div>'); av = document.getElementById('ay-aviso'); }
     av.replaceChildren();
-    av.insertAdjacentHTML('beforeend', `<div class="ay-av-c"><span class="ay-av">${esc(String(m ? m.nombre : 'S').slice(0, 2).toUpperCase())}</span><div><b>Soporte te respondió</b><small>${esc(m ? m.texto : '')}</small></div><button type="button" class="ay-av-x" data-ay-avisox="1" aria-label="Cerrar aviso">${IC.x}</button></div><button type="button" class="btn pri" data-ay-versol="${esc(s.numero)}">Ver respuesta</button>`);
+    av.insertAdjacentHTML('beforeend', `<div class="ay-av-c"><span class="ay-av">${esc(String(m ? m.nombre : 'S').slice(0, 2).toUpperCase())}</span><div><b>Soporte te respondió</b><small>${esc(m ? (m.texto || (Array.isArray(m.archivos) && m.archivos.length ? 'Te envió un archivo' : '')) : '')}</small></div><button type="button" class="ay-av-x" data-ay-avisox="1" aria-label="Cerrar aviso">${IC.x}</button></div><button type="button" class="btn pri" data-ay-versol="${esc(s.numero)}">Ver respuesta</button>`);
   }
   const yoBurbuja = t => `<div class="ay-msj yo"><p>${esc(t)}</p></div>`;
   /* Charla: saludos, gracias, quién es y despedidas no son preguntas de guías; se contestan como persona. Una pregunta
@@ -729,6 +737,8 @@ body:has(#ec-cajon.on) .ay-fab:not(.abierta){opacity:0;pointer-events:none;trans
 .ay-sep{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--ink4)}.ay-sep::before,.ay-sep::after{content:"";flex:1;height:1px;background:var(--line)}
 .ay-av{width:28px;height:28px;border-radius:50%;background:#0b0b10;color:#FFD21F;display:flex;align-items:center;justify-content:center;line-height:1;font-size:11px;font-weight:700;flex:none}
 .ay-quien{font-size:12px;color:var(--ink3)}.ay-quien b{color:#1f2937}
+.ay-sarch{display:flex;flex-direction:column;gap:6px;margin:2px 0 6px}.ay-sarch .cm-fc{color:inherit;text-decoration:none}
+.ay-simg{display:block;border-radius:10px;overflow:hidden;max-width:240px;border:1px solid #fde68a}.ay-simg img{display:block;width:100%;height:auto;max-height:260px;object-fit:cover}
 .ay-resp{border-radius:4px 14px 14px 14px;background:#fff8d6;border:1px solid #fde68a;padding:10px 12px;font-size:14px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
 .ay-equipo{animation:ay-sube .3s cubic-bezier(.05,.7,.1,1)}
 .ay-sacc{display:flex;gap:6px;margin-left:37px;flex-wrap:wrap}
