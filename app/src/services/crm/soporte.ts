@@ -70,7 +70,7 @@ export async function misSolicitudes(userId: string) {
     sinVer: ss.filter(s => !s.vista).length,
     solicitudes: ss.map(s => ({
       id: s.id, numero: numero(s.id), tema: s.tema, estado: s.estado, asunto: s.asunto, vista: s.vista, creada: s.createdAt, actualizada: s.updatedAt,
-      mensajes: s.mensajes.map(m => ({ autor: m.autor, nombre: m.autorNombre, texto: m.texto, en: m.createdAt })),
+      mensajes: s.mensajes.map(m => ({ autor: m.autor, nombre: m.autorNombre, texto: m.texto, archivos: archivosValidos(m.archivos), en: m.createdAt })),
     })),
   }
 }
@@ -143,30 +143,38 @@ export async function detalleSoporte(id: number) {
     persona: { nombre: u?.nombre ?? u?.email ?? '', correo: u?.email ?? '', rol: u?.role ?? '' },
     empresa: { id: cuentaId, nombre: s.espacio.nombre, logo: s.espacio.logo, plan: cuenta?.plan ?? '', periodo: cuenta?.periodo ?? null, estado: cuenta?.estadoPlan ?? '', cancelaAlFinal: !!cuenta?.cancelaAlFinal },
     caidas: caidas.map(l => ({ nombre: l.nombre, desde: l.updatedAt })),
-    mensajes: s.mensajes.map(m => ({ autor: m.autor, nombre: m.autorNombre, texto: m.texto, en: m.createdAt })),
+    mensajes: s.mensajes.map(m => ({ autor: m.autor, nombre: m.autorNombre, texto: m.texto, archivos: archivosValidos(m.archivos), en: m.createdAt })),
     antes: antes.map(a => ({ numero: numero(a.id), asunto: a.asunto, estado: a.estado, creada: a.createdAt, minutos: a.resueltaAt ? Math.round((a.resueltaAt.getTime() - a.createdAt.getTime()) / 60_000) : null })),
   }
 }
 
 /** La respuesta del equipo: queda en la conversación, avisa en vivo al asistente de la persona y le llega por correo. */
-export async function responderSoporte(id: number, texto: string, quien: string) {
-  const t = limpio(texto, 4000)
-  if (t.length < 2) throw new ValidationError('Escribe la respuesta.')
+/** Un adjunto de soporte: solo archivos que Wali subió a su nube (Cloudinary). */
+export type ArchivoSoporte = { url: string; n: string; mime: string; t: string }
+const archivosValidos = (l: unknown): ArchivoSoporte[] => (Array.isArray(l) ? l : []).slice(0, 10)
+  .map(a => (a && typeof a === 'object' ? a as Record<string, unknown> : {}))
+  .filter(a => typeof a.url === 'string' && /^https:\/\/res\.cloudinary\.com\//.test(a.url))
+  .map(a => ({ url: String(a.url).slice(0, 500), n: limpio(String(a.n ?? 'archivo'), 120) || 'archivo', mime: String(a.mime ?? '').slice(0, 80), t: String(a.t ?? '').slice(0, 20) }))
+
+export async function responderSoporte(id: number, texto: string, quien: string, adjuntos: unknown = []) {
+  const t = limpio(texto, 4000), archivos = archivosValidos(adjuntos)
+  // Con adjuntos basta el archivo (una captura puede ser toda la respuesta).
+  if (t.length < 2 && !archivos.length) throw new ValidationError('Escribe la respuesta o adjunta un archivo.')
   const s = await prisma.crmSolicitud.findUnique({ where: { id } })
   if (!s) throw new ValidationError('Esa solicitud no existe.')
   const nombre = quien.split(' ')[0] || 'Soporte'
   // Responder no la cambia de pestaña (10-nov, pedido del usuario): sigue donde estaba hasta que se marque «En curso» o «Resolver».
   await prisma.crmSolicitud.update({ where: { id }, data: {
     vista: false, primeraRespuestaAt: s.primeraRespuestaAt ?? new Date(),
-    mensajes: { create: { autor: 'soporte', autorNombre: nombre, texto: t } },
+    mensajes: { create: { autor: 'soporte', autorNombre: nombre, texto: t, archivos } },
   } })
   broadcastUsuarios(new Set([s.userId]), 'soporte-respuesta', { id, numero: numero(id) })
   const u = await prisma.user.findUnique({ where: { id: s.userId }, select: { email: true, nombre: true } })
   if (u?.email) {
     const ir = urlPublica() ? `${urlPublica()}/?ayuda=solicitudes` : ''
     void enviarCorreo(u.email, `Soporte de Wali te respondió (${numero(id)})`,
-      caja(`<p>Hola${u.nombre ? ', ' + esc(u.nombre.split(' ')[0]) : ''}. ${esc(nombre)}, del equipo de Wali, respondió tu solicitud <b>${numero(id)}</b>:</p><p style="white-space:pre-wrap;background:#fff8d6;border:1px solid #fde68a;border-radius:10px;padding:12px 14px">${esc(t)}</p>${ir ? `<p>También la ves en Wali, en el botón de ayuda. <a href="${esc(ir)}">Abrir Wali</a></p>` : ''}<p style="color:#6b7280;font-size:13px">Si sigues con el problema, respóndelo desde Wali o contesta este correo.</p>`),
-      `${nombre}, del equipo de Wali, respondió tu solicitud ${numero(id)}:\n\n${t}\n\n${ir}`)
+      caja(`<p>Hola${u.nombre ? ', ' + esc(u.nombre.split(' ')[0]) : ''}. ${esc(nombre)}, del equipo de Wali, respondió tu solicitud <b>${numero(id)}</b>:</p>${t ? `<p style="white-space:pre-wrap;background:#fff8d6;border:1px solid #fde68a;border-radius:10px;padding:12px 14px">${esc(t)}</p>` : ''}${archivos.length ? `<p>${archivos.length === 1 ? 'Te adjuntó un archivo' : `Te adjuntó ${archivos.length} archivos`}: ${archivos.map(a => `<a href="${esc(a.url)}">${esc(a.n)}</a>`).join(', ')}</p>` : ''}${ir ? `<p>También la ves en Wali, en el botón de ayuda. <a href="${esc(ir)}">Abrir Wali</a></p>` : ''}<p style="color:#6b7280;font-size:13px">Si sigues con el problema, respóndelo desde Wali o contesta este correo.</p>`),
+      `${nombre}, del equipo de Wali, respondió tu solicitud ${numero(id)}:\n\n${t}${archivos.length ? `\n\nAdjuntos:\n${archivos.map(a => `${a.n}: ${a.url}`).join('\n')}` : ''}\n\n${ir}`)
   }
 }
 

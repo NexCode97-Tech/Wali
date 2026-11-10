@@ -206,8 +206,8 @@ main.sop{max-width:none;margin:0;padding:10px;height:100%;display:flex}
 .sx-acc{display:flex;gap:8px;flex:none}.sx-acc .btn.on{background:#0b0b10;color:#fff;border-color:#0b0b10}
 .btn.ic{width:40px;padding:0;justify-content:center}.sx-volver,.sx-ver-ficha{display:none!important}
 .sx-msgs{flex:1;min-height:0;overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:10px;background:#f6f6f4 url(__BASE__/img/fondo-chat.png?v=gris) center/420px auto}
-.sx-b{max-width:68%;display:flex;gap:10px;align-items:flex-end;animation:sx-pop 360ms var(--e-in) both}
-.sx-bc{background:#fff;border-radius:16px 16px 16px 4px;padding:9px 13px 7px;box-shadow:0 1px 1px rgba(0,0,0,.05)}
+.sx-b{width:fit-content;max-width:100%;display:flex;gap:10px;align-items:flex-end;animation:sx-pop 360ms var(--e-in) both}
+.sx-bc{flex:1 1 auto;min-width:0;background:#fff;border-radius:16px 16px 16px 4px;padding:9px 13px 7px;box-shadow:0 1px 1px rgba(0,0,0,.05)}
 .sx-bc strong{display:block;color:#2563eb;font-size:12.5px;margin-bottom:2px}.sx-bc p{margin:0;font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}
 .sx-bc time{display:block;text-align:right;font-size:11px;color:var(--t3);margin-top:3px}
 .sx-b.yo{align-self:flex-end;flex-direction:row-reverse}.sx-b.yo .sx-bc{background:#FFD21F;border-radius:16px 16px 4px 16px}.sx-b.yo .sx-bc strong{color:#0b0b10}.sx-b.yo .sx-bc time{color:#5b4a00}
@@ -241,13 +241,13 @@ main.sop{max-width:none;margin:0;padding:10px;height:100%;display:flex}
   .sx-chn .sx-chip{display:none}
 }
 @keyframes sx-cajon{from{transform:translateX(110%)}}
-@media (max-width:1000px){main.sop{height:calc(100% - 56px)}.sx-b{max-width:85%}.sx-msgs{padding:16px}}
+@media (max-width:1000px){main.sop{height:calc(100% - 56px)}.sx-msgs{padding:16px}}
 /* Celular: una parte a la vez, como la bandeja en el celular */
 @media (max-width:760px){
   main.sop{padding:0}.sx{grid-template-columns:1fr;gap:0}.sx-panel{border-radius:0;box-shadow:none}
   .sx[data-v="lista"] .sx-det{display:none}.sx:not([data-v="lista"]) .sx-lista{display:none}
   .sx-ficha{position:static;width:auto;box-shadow:none}.sx[data-v="ficha"] .sx-chat{display:none}.sx[data-v="ficha"] .sx-ficha{display:flex}
-  .sx-volver{display:inline-flex!important}.sx-b{max-width:90%}
+  .sx-volver{display:inline-flex!important}
   /* Con un chat o la ficha abiertos, el chat toma toda la pantalla: sin la barra de arriba (menú y logo) */
   .zona:has(.sx:not([data-v="lista"])) .mtop{display:none}.zona:has(.sx:not([data-v="lista"])) main.sop{height:100%}.sx-msgs{padding:14px}.sx-ch{padding:10px 12px}
   .sx-comp{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 14px)}
