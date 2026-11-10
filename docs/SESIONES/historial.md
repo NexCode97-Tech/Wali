@@ -38,3 +38,4 @@
 - Sitio: `@vercel/analytics` agregado al layout. Falta que el usuario encienda Web Analytics en el panel de Vercel (proyecto wali).
 - Decidido: finalizar en lote no manda la encuesta.
 - Desplegado en Railway el commit dc39573 (arreglo de Finalizar en lote y la configuración nueva). /health responde ok.
+- Respuestas rápidas (rayo y /): ya no se pintan todas de una. Salen 20, y al deslizar o bajar con las flechas llegan de a 20. El buscador filtra mientras se escribe, también de a 20. Sin cambio visual. Commit sin push, pendiente de aprobación.

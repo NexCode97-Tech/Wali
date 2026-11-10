@@ -199,24 +199,50 @@ document.getElementById('b-tpl').addEventListener('click', () => {
 });
 document.getElementById('tplp').addEventListener('input', e => { if (e.target.id === 'cm-tpl-q') document.getElementById('cm-tpl-l').innerHTML = cmTplLista(e.target.value); });
 
-/* ── Respuestas rápidas (tablero 2): «Tuyas» (Mis ajustes) y «Del equipo»; el buscador trae lo escrito después de / ── */
-function cmQrLista(f){
+/* ── Respuestas rápidas (tablero 2): «Tuyas» (Mis ajustes) y «Del equipo»; el buscador trae lo escrito después de / ──
+   No se pintan todas de una (10-nov): salen 20 y, al deslizar (o bajar con las flechas), 20 más. El buscador filtra
+   mientras se escribe y lo que coincide también sale de a 20. */
+const CM_QR_LOTE = 20;
+const cmQr = {todas: [], marcada: null, n: 0};
+const cmQrFila = x => `<button type="button" class="cm-it cm-qri${x === cmQr.marcada ? ' cm-sel' : ''}" data-qrs="${esc(x[1])}"><span class="cm-tx"><b>/${esc(x[0].t)}</b><span>${esc(x[0].x)}</span></span>${cmAdjuntos(x[0].archivos)}</button>`;
+// Agrega el siguiente lote al final; el título del grupo («Tuyas», «Del equipo») sale donde empieza cada grupo.
+function cmQrMas(lista, hasta){
+  const T = cmQr.todas, fin = Math.min(T.length, Math.max(hasta || 0, cmQr.n + CM_QR_LOTE));
+  for (let i = cmQr.n; i < fin; i++) {
+    const g = T[i][1][0];
+    if (!i || T[i - 1][1][0] !== g) lista.insertAdjacentHTML('beforeend', `<div class="cm-gr">${g === 'm' ? 'Tuyas' : 'Del equipo'}</div><div class="cm-lst"></div>`);
+    const lst = lista.querySelectorAll('.cm-lst'); lst[lst.length - 1].insertAdjacentHTML('beforeend', cmQrFila(T[i]));
+  }
+  cmQr.n = fin;
+}
+// Si el lote no alcanza a llenar el menú (no habría cómo deslizar), se sigue cargando hasta llenarlo.
+function cmQrLlenar(lista){
+  while (cmQr.n < cmQr.todas.length && lista.scrollHeight - lista.scrollTop - lista.clientHeight < 160) cmQrMas(lista);
+}
+function cmQrPintar(lista, f){
   const q = norm(f || '').trim(), si = r => !q || norm(`${r.t} ${r.x}`).includes(q);
   // Cada fila lleva su atajo (m: tuyas, e: del equipo): si la lista cambia en vivo con el menú abierto, igual entra la que se ve.
-  const mias = (AJ.qr || []).filter(si).map(r => [r, 'm:' + r.t]), eq = QR.filter(si).map(r => [r, 'e:' + r.t]);
-  if (!mias.length && !eq.length) return cmVacio((AJ.qr || []).length + QR.length ? 'Nada coincide.' : 'Todavía no hay respuestas rápidas. Crea las tuyas en Mis ajustes; las del equipo las crea el líder.');
-  // Queda marcada la primera cuyo atajo empieza por lo escrito («/prec» marca /precio-g, como la maqueta); si ninguna, la primera.
-  const todas = [...mias, ...eq], marcada = todas.find(([r]) => norm(r.t).startsWith(q)) || todas[0];
-  const fila = x => `<button type="button" class="cm-it cm-qri${x === marcada ? ' cm-sel' : ''}" data-qrs="${esc(x[1])}"><span class="cm-tx"><b>/${esc(x[0].t)}</b><span>${esc(x[0].x)}</span></span>${cmAdjuntos(x[0].archivos)}</button>`;
-  return (mias.length ? `<div class="cm-gr">Tuyas</div><div class="cm-lst">${mias.map(fila).join('')}</div>` : '') + (eq.length ? `<div class="cm-gr">Del equipo</div><div class="cm-lst">${eq.map(fila).join('')}</div>` : '');
+  cmQr.todas = [...(AJ.qr || []).filter(si).map(r => [r, 'm:' + r.t]), ...QR.filter(si).map(r => [r, 'e:' + r.t])];
+  cmQr.n = 0; lista.replaceChildren(); lista.scrollTop = 0;
+  if (!cmQr.todas.length) { cmQr.marcada = null; lista.insertAdjacentHTML('beforeend', cmVacio((AJ.qr || []).length + QR.length ? 'Nada coincide.' : 'Todavía no hay respuestas rápidas. Crea las tuyas en Mis ajustes; las del equipo las crea el líder.')); return; }
+  // Queda marcada la primera cuyo atajo empieza por lo escrito («/prec» marca /precio-g, como la maqueta); si ninguna, la
+  // primera. El primer lote llega hasta ella aunque esté más abajo.
+  cmQr.marcada = cmQr.todas.find(([r]) => norm(r.t).startsWith(q)) || cmQr.todas[0];
+  cmQrMas(lista, cmQr.todas.indexOf(cmQr.marcada) + 1);
+  if (!qr.hidden) cmQrLlenar(lista);
 }
 abrirQR = function(f){
-  qr.innerHTML = `<div class="cm-ph"><b>Respuestas rápidas</b></div>${cmBuscador('cm-qr-q', 'Buscar respuesta', f, ' q4')}<div class="cm-scroll" id="cm-qr-l">${cmQrLista(f)}</div>`;
+  qr.replaceChildren();
+  qr.insertAdjacentHTML('beforeend', `<div class="cm-ph"><b>Respuestas rápidas</b></div>${cmBuscador('cm-qr-q', 'Buscar respuesta', f, ' q4')}<div class="cm-scroll" id="cm-qr-l"></div>`);
   qr.hidden = false; cmPosicionar(qr);
+  const lista = document.getElementById('cm-qr-l'); cmQrPintar(lista, f);
+  qr.querySelector('.cm-sel')?.scrollIntoView({block: 'nearest'});
 };
 // Abierto con el botón, se escribe en su buscador; abierto con /, el foco se queda en el mensaje.
 document.getElementById('b-qr').addEventListener('click', () => { if (!qr.hidden) document.getElementById('cm-qr-q').focus(); });
-qr.addEventListener('input', e => { if (e.target.id === 'cm-qr-q') document.getElementById('cm-qr-l').innerHTML = cmQrLista(e.target.value); });
+qr.addEventListener('input', e => { if (e.target.id === 'cm-qr-q') cmQrPintar(document.getElementById('cm-qr-l'), e.target.value); });
+// El scroll no sube: se escucha en captura. Cerca del final (o al bajar con las flechas) llega el siguiente lote.
+qr.addEventListener('scroll', e => { if (e.target.id === 'cm-qr-l') cmQrLlenar(e.target); }, true);
 qr.addEventListener('click', e => {
   const b = e.target.closest('[data-qrs]'); if (!b) return;
   const k = b.dataset.qrs, t = k.slice(2), r = (k[0] === 'm' ? AJ.qr || [] : QR).find(x => x.t === t); if (r) cmUsarQR(r);
