@@ -63,6 +63,8 @@ export interface EstadoPlan {
   pagos: boolean
   /** Ya pagó alguna vez: puede gestionar su suscripción en Whop (tarjeta, facturas y cancelación). */
   portal: boolean
+  /** Cobro por usuarios: los que cubre lo pagado, el precio de hoy y la bajada programada (si la hay). */
+  usuarios: { pagados: number | null; precio: number | null; prox: number | null; proxDesde: string | null }
 }
 
 const esPlan = (v: string): v is Plan => (PLANES as string[]).includes(v)
@@ -71,9 +73,12 @@ const esPlan = (v: string): v is Plan => (PLANES as string[]).includes(v)
  * Lo que permite una cuenta hoy (6-oct): en la prueba de 10 días, todo lo de Business (agentes IA, espacios, usuarios);
  * la prueba es de la cuenta y no se reinicia al crear espacios de trabajo. Después, lo de su plan.
  */
-export function limitesDe(e: { plan: string; estadoPlan: string; pruebaHasta?: Date | null }): { usuarios: number; agentesIA: number; espacios: number } {
+export function limitesDe(e: { plan: string; estadoPlan: string; pruebaHasta?: Date | null; usuarios?: number | null; usuariosProx?: number | null; usuariosProxDesde?: Date | null }): { usuarios: number; agentesIA: number; espacios: number } {
   const enPrueba = e.estadoPlan === 'prueba' && !!e.pruebaHasta && e.pruebaHasta.getTime() > Date.now()
-  return LIMITES[enPrueba ? 'business' : esPlan(e.plan) ? e.plan : 'starter']
+  const base = LIMITES[enPrueba ? 'business' : planEfectivo(e)]
+  // Cobro por usuarios (10-nov): con un pago que dice cuántos usuarios cubre, ese es el tope (no el del plan).
+  if (!enPrueba && e.usuarios != null) return { ...base, usuarios: usuariosPagados(e) }
+  return base
 }
 
 export async function estadoPlan(espacioDado: string): Promise<EstadoPlan> {
@@ -81,8 +86,8 @@ export async function estadoPlan(espacioDado: string): Promise<EstadoPlan> {
   const espacioId = await cuentaDe(espacioDado)
   const e = await prisma.crmEspacio.findUnique({ where: { id: espacioId } })
   if (!e) throw new ValidationError('Espacio no encontrado')
-  const plan: Plan = esPlan(e.plan) ? e.plan : 'starter'
   const ahora = Date.now()
+  const plan: Plan = planEfectivo(e, ahora)
   const enPrueba = e.estadoPlan === 'prueba' && !!e.pruebaHasta && e.pruebaHasta.getTime() > ahora
   const pagado = e.estadoPlan === 'activo' || e.estadoPlan === 'pago-pendiente'
     || (e.estadoPlan === 'cancelado' && !!e.renuevaEl && e.renuevaEl.getTime() > ahora)
@@ -99,13 +104,22 @@ export async function estadoPlan(espacioDado: string): Promise<EstadoPlan> {
     limites: { usuarios: Number.isFinite(lim.usuarios) ? lim.usuarios : null, agentesIA: Number.isFinite(lim.agentesIA) ? lim.agentesIA : null, espacios: e.estadoPlan === 'interno' ? null : lim.espacios },
     pagos: pagosListos(),
     portal: !!e.creemCliente,
+    usuarios: (() => {
+      if (e.estadoPlan === 'interno' || enPrueba || e.usuarios == null) return { pagados: null, precio: null, prox: null, proxDesde: null }
+      const n = usuariosPagados(e, ahora), per: Periodo = e.periodo === 'anual' ? 'anual' : 'mensual'
+      const prox = e.usuariosProx != null && e.usuariosProxDesde && e.usuariosProxDesde.getTime() > ahora ? e.usuariosProx : null
+      return { pagados: n, precio: precioUsuarios(n, per), prox, proxDesde: prox != null ? e.usuariosProxDesde!.toISOString() : null }
+    })(),
   }
 }
+
+/** El mismo aviso en todos los lugares que agregan a alguien (invitar, crear usuario, agregar a un equipo, espacio nuevo). */
+export const topeUsuariosTexto = (tope: number) => `Tu plan cubre ${tope} ${tope === 1 ? "usuario" : "usuarios"} y ya están en uso. Agrega usuarios en Ajustes, Plan y pagos, y vuelve a intentarlo.`
 
 /** Cuántos usuarios permite el plan del espacio (Infinity si no hay límite o es interno). */
 export async function limiteUsuarios(espacioDado: string): Promise<number> {
   const espacioId = await cuentaDe(espacioDado)
-  const e = await prisma.crmEspacio.findUnique({ where: { id: espacioId }, select: { plan: true, estadoPlan: true, pruebaHasta: true } })
+  const e = await prisma.crmEspacio.findUnique({ where: { id: espacioId }, select: { plan: true, estadoPlan: true, pruebaHasta: true, usuarios: true, usuariosProx: true, usuariosProxDesde: true } })
   if (!e || e.estadoPlan === 'interno') return Infinity
   return limitesDe(e).usuarios
 }
@@ -151,6 +165,36 @@ export const PRECIOS: Record<Plan, Record<Periodo, number>> = {
 }
 const NOMBRE: Record<Plan, string> = { starter: 'Starter', growth: 'Growth', business: 'Business' }
 
+// ─── Cobro por usuarios (10-nov, maqueta «Cobro por usuarios» opción A) ──────────────────────────────────────────
+// La misma fórmula de la página de precios (web/lib/precios-crm.ts, precioPorUsuarios): Starter 59 + 20 por usuario
+// desde 3; Growth 139 + 10 desde 6; Business 259 + 10 desde 11 hasta 15, y USD 20 por cada usuario desde el 16.
+// El anual es 12 meses con 20 % de descuento, redondeado como en la página (566, 1.334, 2.486…).
+export const USUARIOS_MIN = 3
+export const USUARIOS_MAX = 200
+export function precioMensual(n: number): number {
+  if (n <= 5) return 59 + 20 * (n - 3)
+  if (n <= 10) return 139 + 10 * (n - 6)
+  if (n <= 15) return 259 + 10 * (n - 11)
+  return 299 + 20 * (n - 15)
+}
+export const precioUsuarios = (n: number, periodo: Periodo): number => periodo === 'anual' ? Math.round(precioMensual(n) * 12 * 0.8) : precioMensual(n)
+export const planDeUsuarios = (n: number): Plan => (n <= 5 ? 'starter' : n <= 10 ? 'growth' : 'business')
+/** El tope de usuarios de un plan sin cobro por usuarios (los pagos de antes del 10-nov). */
+const TOPE_PLAN: Record<Plan, number> = { starter: 5, growth: 10, business: 15 }
+
+type ConUsuarios = { plan: string; usuarios?: number | null; usuariosProx?: number | null; usuariosProxDesde?: Date | null }
+/** Cuántos usuarios cubre lo pagado hoy: la bajada programada cuenta desde su fecha; sin dato, el tope de su plan. */
+export function usuariosPagados(e: ConUsuarios, ahora = Date.now()): number {
+  if (e.usuariosProx != null && e.usuariosProxDesde && e.usuariosProxDesde.getTime() <= ahora) return e.usuariosProx
+  if (e.usuarios != null) return e.usuarios
+  return TOPE_PLAN[esPlan(e.plan) ? e.plan : 'starter']
+}
+/** El plan de hoy: con una bajada que ya llegó a su fecha, el de esos usuarios. */
+export function planEfectivo(e: ConUsuarios, ahora = Date.now()): Plan {
+  if (e.usuariosProx != null && e.usuariosProxDesde && e.usuariosProxDesde.getTime() <= ahora) return planDeUsuarios(e.usuariosProx)
+  return esPlan(e.plan) ? e.plan : 'starter'
+}
+
 export const pagosListos = () => !!process.env.WHOP_API_KEY
 
 export async function whop<T>(ruta: string, cuerpo?: unknown, metodo?: 'GET' | 'POST' | 'PATCH' | 'DELETE'): Promise<T> {
@@ -171,64 +215,65 @@ export async function whop<T>(ruta: string, cuerpo?: unknown, metodo?: 'GET' | '
 const DIA = 864e5
 
 /**
- * Prepara el pago de un plan y devuelve la configuración que monta el checkout de la pantalla.
- * Si todavía hay días cubiertos (la prueba o el periodo ya pagado), el primer cobro espera a que terminen.
+ * Prepara el pago y devuelve lo que monta el checkout de la pantalla. Cobro por usuarios (10-nov): se paga por cuántos
+ * usuarios (mínimo 3 y nunca menos de los que ya están en la cuenta); el plan sale solo de ese número. Cada pago lleva su
+ * propio plan oculto en Whop con el precio de esos usuarios; si quedan días cubiertos (la prueba o el periodo pagado),
+ * el primer cobro espera a que terminen.
  */
-export async function pagarPlan(espacioDado: string, plan: Plan, periodo: Periodo, email: string): Promise<{ variante: string; cuenta: string; plan: Plan; periodo: Periodo; total: number; primerCobro: string; email: string }> {
+export async function pagarPlan(espacioDado: string, usuarios: number, periodo: Periodo, email: string): Promise<{ variante: string; cuenta: string; plan: Plan; periodo: Periodo; usuarios: number; total: number; primerCobro: string; email: string }> {
   if (!pagosListos()) throw new AppError('Los pagos todavía no están activos. Escríbenos y te activamos el plan.', 503)
   const espacioId = await cuentaDe(espacioDado)
-  const c = await condicionesDePago(espacioId, plan, periodo)
-  // Con días ya cubiertos, el plan de esta compra lleva esos días de prueba: el primer cobro espera a que terminen.
-  const variante = c.dias ? (await whop<{ id: string }>('/plans', {
-    account_id: WHOP_CUENTA(), product_id: WHOP_PRODUCTO(), title: `${NOMBRE[plan]} ${periodo}`, billing_type: 'renewal',
+  const c = await condicionesDePago(espacioId, usuarios, periodo)
+  const variante = (await whop<{ id: string }>('/plans', {
+    account_id: WHOP_CUENTA(), product_id: WHOP_PRODUCTO(), title: `${NOMBRE[c.plan]} ${periodo} · ${c.usuarios} usuarios`, billing_type: 'renewal',
     initial_price: 0, renewal_price: c.precio, billing_period: periodo === 'anual' ? 365 : 30, currency: 'usd',
-    trial_period_days: c.dias, visibility: 'hidden', unlimited_stock: true, metadata: { plan, periodo, espacio: espacioId },
-    payment_method_configuration: METODOS,
-  })).id : c.variante
-  logger.info({ evento: 'PAGO_PREPARADO', espacioId, plan, periodo, dias: c.dias })
-  return { variante, cuenta: WHOP_CUENTA(), plan, periodo, total: c.precio * 100, primerCobro: new Date(Date.now() + c.dias * DIA).toISOString(), email }
+    ...(c.dias ? { trial_period_days: c.dias } : {}), visibility: 'hidden', unlimited_stock: true,
+    metadata: { plan: c.plan, periodo, espacio: espacioId, usuarios: String(c.usuarios) }, payment_method_configuration: METODOS,
+  })).id
+  logger.info({ evento: 'PAGO_PREPARADO', espacioId, plan: c.plan, periodo, usuarios: c.usuarios, dias: c.dias })
+  return { variante, cuenta: WHOP_CUENTA(), plan: c.plan, periodo, usuarios: c.usuarios, total: c.precio * 100, primerCobro: new Date(Date.now() + c.dias * DIA).toISOString(), email }
 }
 
 // ACH es transferencia de bancos de Estados Unidos: no les sirve a los clientes de Wali. PayPal siempre que Whop lo apruebe.
 const METODOS = { disabled: ['us_bank_account'], enabled: ['paypal'], include_platform_defaults: true }
 
-async function condicionesDePago(espacioId: string, plan: Plan, periodo: Periodo) {
-  const variante = VARIANTES[`${plan}-${periodo}`]
-  if (!variante) throw new ValidationError('Ese plan no está disponible.')
-  const e = await prisma.crmEspacio.findUnique({ where: { id: espacioId }, select: { creemSuscripcion: true, estadoPlan: true, plan: true, periodo: true, pruebaHasta: true, renuevaEl: true, cancelaAlFinal: true } })
+async function condicionesDePago(espacioId: string, pedidos: number, periodo: Periodo) {
+  const e = await prisma.crmEspacio.findUnique({ where: { id: espacioId }, select: { creemSuscripcion: true, estadoPlan: true, plan: true, periodo: true, pruebaHasta: true, renuevaEl: true, cancelaAlFinal: true, usuarios: true, usuariosProx: true, usuariosProxDesde: true } })
   if (!e) throw new ValidationError('Espacio no encontrado')
+  const enUso = (await usuariosDeCuenta(espacioId)).length
+  if (!Number.isInteger(pedidos) || pedidos > USUARIOS_MAX) throw new ValidationError('Ese número de usuarios no es válido.')
+  const usuarios = Math.max(USUARIOS_MIN, enUso, pedidos)
+  const plan = planDeUsuarios(usuarios)
   const ahora = Date.now()
   const pagado = ['activo', 'pago-pendiente', 'cancelado'].includes(e.estadoPlan) && !!e.renuevaEl && e.renuevaEl.getTime() > ahora
-  if (pagado && e.estadoPlan !== 'cancelado' && !e.cancelaAlFinal && e.plan === plan && (e.periodo ?? 'mensual') === periodo) throw new ValidationError(`Ya tienes el plan ${NOMBRE[plan]} ${periodo}.`)
-  // Días ya cubiertos: los de la prueba, o los del periodo pagado si cambia de plan o lo renueva antes de que venza.
+  if (pagado && e.estadoPlan !== 'cancelado' && !e.cancelaAlFinal && e.usuarios != null && usuariosPagados(e) === usuarios && (e.periodo ?? 'mensual') === periodo) throw new ValidationError(`Ya tienes ${usuarios} usuarios en ${NOMBRE[plan]} ${periodo}.`)
+  // Días ya cubiertos: los de la prueba, o los del periodo pagado si cambia o lo renueva antes de que venza.
   const hasta = e.estadoPlan === 'prueba' && e.pruebaHasta && e.pruebaHasta.getTime() > ahora ? e.pruebaHasta : pagado ? e.renuevaEl! : null
   const dias = hasta ? Math.min(365, Math.max(1, Math.ceil((hasta.getTime() - ahora) / DIA))) : 0
   const anterior = pagado && e.estadoPlan !== 'cancelado' && e.creemSuscripcion ? e.creemSuscripcion : ''
-  return { variante, dias, anterior, precio: PRECIOS[plan][periodo] }
+  return { plan, usuarios, dias, anterior, precio: precioUsuarios(usuarios, periodo) }
 }
 
 /**
- * Cobra el plan con el token que armó el formulario de pago de Whop en el navegador (tarjeta, Google Pay, Apple Pay o
- * PayPal). Solo acepta el plan fijo de ese plan y periodo, o uno oculto que Wali creó para este espacio con el mismo
- * precio: el navegador no puede cambiar lo que se cobra. La membresía queda enlazada al espacio de una vez.
+ * Cobra con el token que armó el formulario de pago de Whop en el navegador (tarjeta, Google Pay, Apple Pay o PayPal).
+ * Solo acepta el plan oculto que Wali creó para este espacio con el precio de esos usuarios: el navegador no puede
+ * cambiar lo que se cobra. La membresía queda enlazada al espacio de una vez.
  */
-export async function cobrarPlan(espacioDado: string, d: { plan: Plan; periodo: Periodo; variante: string; token: string; regreso: string; cupon?: string }, email: string): Promise<{ id: string; status: string; client_secret: string | null }> {
+export async function cobrarPlan(espacioDado: string, d: { usuarios: number; periodo: Periodo; variante: string; token: string; regreso: string; cupon?: string }, email: string): Promise<{ id: string; status: string; client_secret: string | null }> {
   if (!pagosListos()) throw new AppError('Los pagos todavía no están activos. Escríbenos y te activamos el plan.', 503)
   const espacioId = await cuentaDe(espacioDado)
-  const c = await condicionesDePago(espacioId, d.plan, d.periodo)
-  if (d.variante !== c.variante) {
-    const v = await whop<Obj>(`/plans/${encodeURIComponent(d.variante)}`).catch(() => null)
-    const meta = obj(v?.metadata), producto = idDe(v?.product)
-    const ok = !!v && producto === WHOP_PRODUCTO() && txt(meta.espacio) === espacioId && txt(meta.plan) === d.plan && txt(meta.periodo) === d.periodo
-      && centavos(v.renewal_price) === c.precio * 100 && (centavos(v.initial_price) ?? 0) === 0
-    if (!ok) throw new ValidationError('Ese pago ya no es válido. Vuelve a abrir el pago del plan.')
-  }
-  const metadata = { espacio: espacioId, plan: d.plan, periodo: d.periodo, ...(c.anterior ? { anterior: c.anterior } : {}) }
+  const c = await condicionesDePago(espacioId, d.usuarios, d.periodo)
+  const v = await whop<Obj>(`/plans/${encodeURIComponent(d.variante)}`).catch(() => null)
+  const meta = obj(v?.metadata), producto = idDe(v?.product)
+  const ok = !!v && producto === WHOP_PRODUCTO() && txt(meta.espacio) === espacioId && txt(meta.plan) === c.plan && txt(meta.periodo) === d.periodo
+    && txt(meta.usuarios) === String(c.usuarios) && centavos(v.renewal_price) === c.precio * 100 && (centavos(v.initial_price) ?? 0) === 0
+  if (!ok) throw new ValidationError('Ese pago ya no es válido. Vuelve a abrir el pago del plan.')
+  const metadata = { espacio: espacioId, plan: c.plan, periodo: d.periodo, usuarios: String(c.usuarios), concepto: 'plan', ...(c.anterior ? { anterior: c.anterior } : {}) }
   const pago = await whop<Obj>('/payments', {
     account_id: WHOP_CUENTA(), variant_id: d.variante, confirmation_token: d.token, email, return_url: d.regreso, metadata,
     ...(d.cupon ? { promo_code: d.cupon } : {}),
   })
-  logger.info({ evento: 'PAGO_COBRADO', espacioId, plan: d.plan, periodo: d.periodo, id: txt(pago.id), estado: txt(pago.status) })
+  logger.info({ evento: 'PAGO_COBRADO', espacioId, plan: c.plan, periodo: d.periodo, usuarios: c.usuarios, id: txt(pago.id), estado: txt(pago.status) })
   const membresia = txt(pago.membership_id)
   if (membresia) await enlazarMembresia(membresia, metadata).catch(err => logger.warn({ evento: 'WHOP_ENLACE_FALLO', espacioId, err: (err as Error).message }))
   return { id: txt(pago.id), status: txt(pago.status), client_secret: txt(pago.client_secret) || null }
@@ -246,6 +291,99 @@ export async function portalPagos(espacioDado: string): Promise<{ url: string }>
   if (!e?.creemSuscripcion) throw new ValidationError('Todavía no tienes pagos registrados.')
   const m = await whop<{ manage_url?: string | null }>(`/memberships/${encodeURIComponent(e.creemSuscripcion)}`)
   return { url: m.manage_url || 'https://whop.com/@me/settings/memberships/' }
+}
+
+// ─── Subir o bajar de usuarios con el plan pagado (10-nov) ──────────────────────────────────────────────────────
+// Whop no deja cambiar el precio de una membresía viva: cada cambio es una membresía nueva con un plan oculto propio
+// (precio de los usuarios nuevos, días de prueba = lo que queda del periodo, así renueva el mismo día) y la vieja se
+// cancela con el aviso de la nueva («anterior», como al cambiar de plan). Subir cobra hoy la parte proporcional como
+// precio inicial de ese plan; bajar no cobra nada. NADA se cobra sin que el administrador lo apruebe en la pantalla:
+// cotizar solo calcula; aprobar es el botón «Aprobar pago de USD X».
+
+export interface CotizacionUsuarios {
+  actual: number; usuarios: number; plan: Plan; periodo: Periodo; precio: number
+  /** Lo que se cobra hoy, en centavos (0 al bajar). */
+  hoy: number; dias: number; renuevaEl: string
+  tarjeta: { marca: string; ultimos: string } | null
+  enUso: number
+}
+
+async function cambioDeUsuarios(espacioId: string, pedidos: number) {
+  const e = await prisma.crmEspacio.findUnique({ where: { id: espacioId }, select: { estadoPlan: true, plan: true, periodo: true, renuevaEl: true, cancelaAlFinal: true, creemSuscripcion: true, creemCliente: true, usuarios: true, usuariosProx: true, usuariosProxDesde: true, pruebaHasta: true } })
+  if (!e) throw new ValidationError('Espacio no encontrado')
+  const ahora = Date.now()
+  if (e.estadoPlan !== 'activo' || e.cancelaAlFinal || !e.renuevaEl || e.renuevaEl.getTime() <= ahora || !e.creemSuscripcion || !e.creemCliente)
+    throw new ValidationError('Para cambiar los usuarios, tu plan tiene que estar activo y con renovación. Revisa Plan y pagos.')
+  if (!Number.isInteger(pedidos) || pedidos < USUARIOS_MIN || pedidos > USUARIOS_MAX) throw new ValidationError('Ese número de usuarios no es válido.')
+  const enUso = (await usuariosDeCuenta(espacioId)).length
+  if (pedidos < enUso) throw new ValidationError(`Hoy hay ${enUso} usuarios en uso. Para pagar menos, primero quita a alguien del equipo en Usuarios.`)
+  const periodo: Periodo = e.periodo === 'anual' ? 'anual' : 'mensual'
+  const actual = usuariosPagados(e, ahora)
+  const largo = (periodo === 'anual' ? 365 : 30) * DIA
+  const resta = e.renuevaEl.getTime() - ahora
+  const dias = Math.min(365, Math.max(1, Math.ceil(resta / DIA)))
+  const dif = precioUsuarios(pedidos, periodo) - precioUsuarios(actual, periodo)
+  // La parte proporcional de lo que falta del periodo, en centavos; menos de 50 centavos no se cobra.
+  let hoy = pedidos > actual ? Math.round(dif * 100 * Math.min(1, resta / largo)) : 0
+  if (hoy > 0 && hoy < 50) hoy = 0
+  return { e, enUso, actual, periodo, dias, hoy, plan: planDeUsuarios(pedidos), precio: precioUsuarios(pedidos, periodo) }
+}
+
+/** La tarjeta guardada del miembro en Whop (la más reciente). */
+async function tarjetaGuardada(miembro: string): Promise<{ id: string; marca: string; ultimos: string } | null> {
+  const r = await whop<{ data?: Obj[] }>(`/payment_methods?member_id=${encodeURIComponent(miembro)}`).catch(() => null)
+  const l = (r?.data ?? []).filter(x => txt(x.id))
+  if (!l.length) return null
+  const m = l[0], card = obj(m.card)
+  return { id: txt(m.id), marca: txt(card.brand) || txt(m.payment_method_type) || txt(m.type) || 'Tarjeta', ultimos: txt(card.last4) || txt(m.last4) }
+}
+
+export async function cotizarUsuarios(espacioDado: string, pedidos: number): Promise<CotizacionUsuarios> {
+  const espacioId = await cuentaDe(espacioDado)
+  const c = await cambioDeUsuarios(espacioId, pedidos)
+  const t = c.hoy > 0 ? await tarjetaGuardada(c.e.creemCliente!) : null
+  return { actual: c.actual, usuarios: pedidos, plan: c.plan, periodo: c.periodo, precio: c.precio, hoy: c.hoy, dias: c.dias, renuevaEl: c.e.renuevaEl!.toISOString(), tarjeta: t ? { marca: t.marca, ultimos: t.ultimos } : null, enUso: c.enUso }
+}
+
+/** Crea la membresía nueva con el precio de esos usuarios. Al subir, cobra hoy `hoy` centavos con la tarjeta guardada. */
+async function nuevaMembresiaUsuarios(espacioId: string, pedidos: number, regreso: string, baja: boolean, hoyEsperado?: number) {
+  const c = await cambioDeUsuarios(espacioId, pedidos)
+  if (!baja && pedidos <= c.actual) throw new ValidationError('Ese cambio no sube los usuarios.')
+  // Lo aprobado en pantalla es lo que se cobra: si el valor cambió (pasó un día, otra persona cambió algo), se vuelve a mostrar.
+  if (!baja && hoyEsperado !== undefined && hoyEsperado !== c.hoy) throw new ValidationError('El valor cambió desde que lo viste. Revisa el nuevo valor y apruébalo otra vez.')
+  const t = await tarjetaGuardada(c.e.creemCliente!)
+  if (!t) throw new ValidationError('No encontramos tu tarjeta guardada. Actualízala en Facturas y tarjeta y vuelve a intentarlo.')
+  const meta = { plan: c.plan, periodo: c.periodo, espacio: espacioId, usuarios: String(pedidos), ...(baja ? { baja: '1' } : {}) }
+  const variante = (await whop<{ id: string }>('/plans', {
+    account_id: WHOP_CUENTA(), product_id: WHOP_PRODUCTO(), title: `${NOMBRE[c.plan]} ${c.periodo} · ${pedidos} usuarios`, billing_type: 'renewal',
+    initial_price: c.hoy / 100, renewal_price: c.precio, billing_period: c.periodo === 'anual' ? 365 : 30, currency: 'usd',
+    trial_period_days: c.dias, visibility: 'hidden', unlimited_stock: true, metadata: meta, payment_method_configuration: METODOS,
+  })).id
+  const metadata = { ...meta, concepto: baja ? 'plan' : 'usuarios', anterior: c.e.creemSuscripcion! }
+  // El administrador está en la pantalla y lo aprobó: cobro con el cliente presente (si el banco pide 3D Secure, se le muestra).
+  const pago = await whop<Obj>('/payments', {
+    account_id: WHOP_CUENTA(), variant_id: variante, member_id: c.e.creemCliente, payment_method_id: t.id,
+    off_session: baja, ...(baja ? {} : { return_url: regreso }), metadata,
+  })
+  logger.info({ evento: baja ? 'USUARIOS_BAJA' : 'USUARIOS_COBRO', espacioId, de: c.actual, a: pedidos, hoy: c.hoy, id: txt(pago.id), estado: txt(pago.status) })
+  const membresia = txt(pago.membership_id)
+  if (membresia) await enlazarMembresia(membresia, metadata).catch(err => logger.warn({ evento: 'WHOP_ENLACE_FALLO', espacioId, err: (err as Error).message }))
+  return { id: txt(pago.id), status: txt(pago.status), client_secret: txt(pago.client_secret) || null, usuarios: pedidos }
+}
+
+/** «Aprobar pago de USD X»: sube a `pedidos` usuarios y cobra hoy la parte proporcional que el administrador vio. */
+export function aprobarUsuarios(espacioDado: string, pedidos: number, hoy: number, regreso: string) {
+  return cuentaDe(espacioDado).then(id => nuevaMembresiaUsuarios(id, pedidos, regreso, false, hoy))
+}
+
+/** «Guardar cambio»: desde la renovación se pagan `pedidos` usuarios (o se deshace una bajada). Hoy no se cobra nada. */
+export async function bajarUsuarios(espacioDado: string, pedidos: number) {
+  const espacioId = await cuentaDe(espacioDado)
+  const e = await prisma.crmEspacio.findUnique({ where: { id: espacioId }, select: { usuarios: true, usuariosProx: true, usuariosProxDesde: true, plan: true } })
+  const pagados = e?.usuarios ?? null
+  if (pagados == null) throw new ValidationError('Tu plan es de antes del cobro por usuarios. Escríbenos y lo ajustamos.')
+  if (pedidos > pagados) throw new ValidationError('Para subir de usuarios hay que aprobar el pago.')
+  return nuevaMembresiaUsuarios(espacioId, pedidos, '', true)
 }
 
 // ─── Avisos de Whop ─────────────────────────────────────────────────────────
@@ -304,7 +442,17 @@ async function avisoMembresia(m: Obj) {
   const fin = fechaDe(m.current_period_end) ?? fechaDe(m.expires_at)
   const data: Record<string, unknown> = { creemSuscripcion: id }
   if (txt(m.member_id)) data.creemCliente = txt(m.member_id)
-  if (producto) { data.plan = producto.plan; data.periodo = producto.periodo }
+  // Cobro por usuarios: al subir, los usuarios valen desde hoy; al bajar, desde la renovación (hasta entonces sigue
+  // el plan y los usuarios que ya pagó, por eso no se toca `plan`).
+  const nUsu = Number(txt(meta.usuarios)), baja = txt(meta.baja) === '1'
+  const conUsuarios = viva && Number.isInteger(nUsu) && nUsu >= USUARIOS_MIN
+  if (producto && !(conUsuarios && baja)) { data.plan = producto.plan; data.periodo = producto.periodo }
+  if (conUsuarios && !baja) { data.usuarios = nUsu; data.usuariosProx = null; data.usuariosProxDesde = null }
+  if (conUsuarios && baja) {
+    const antes = await prisma.crmEspacio.findUnique({ where: { id: espacio }, select: { usuarios: true, renuevaEl: true } })
+    const desde = antes?.renuevaEl ?? fin
+    if (antes?.usuarios === nUsu) { data.usuariosProx = null; data.usuariosProxDesde = null } else { data.usuariosProx = nUsu; data.usuariosProxDesde = desde }
+  }
   if (fin) data.renuevaEl = fin
   data.cancelaAlFinal = m.cancel_at_period_end === true || estado === 'canceling'
   if (estado === 'active' || estado === 'trialing' || estado === 'canceling') data.estadoPlan = 'activo'
@@ -334,7 +482,7 @@ async function avisoPago(p: Obj, estado: 'pagado' | 'rechazado') {
     if (ya?.creemSuscripcion !== membresia) await enlazarMembresia(membresia, meta).catch(err => logger.warn({ evento: 'WHOP_ENLACE_FALLO', espacio, err: (err as Error).message }))
   }
   if (estado === 'pagado' && total <= 0) return
-  const e = await prisma.crmEspacio.findUnique({ where: { id: espacio }, select: { plan: true, periodo: true } })
+  const e = await prisma.crmEspacio.findUnique({ where: { id: espacio }, select: { plan: true, periodo: true, usuarios: true, usuariosProx: true, usuariosProxDesde: true } })
   const producto = planDeAviso(meta, txt(p.variant_id)) ?? { plan: (esPlan(e?.plan ?? '') ? e!.plan : 'starter') as Plan, periodo: (e?.periodo === 'anual' ? 'anual' : 'mensual') as Periodo }
   // El periodo que cubre el cobro sale de la membresía; si Whop no responde, el recibo va sin periodo.
   const m = estado === 'pagado' && membresia ? await whop<Obj>(`/memberships/${encodeURIComponent(membresia)}`).catch(() => null) : null
@@ -349,6 +497,9 @@ async function avisoPago(p: Obj, estado: 'pagado' | 'rechazado') {
     moneda: (txt(p.currency) || 'usd').toUpperCase(),
     desde: m ? fechaDe(m.current_period_start) : null, hasta: m ? fechaDe(m.current_period_end) : null,
     fecha: fechaDe(p.paid_at) ?? fechaDe(p.created_at) ?? new Date(),
+    // Cobro por usuarios: cuántos cubre (la renovación no trae la metadata: los que tiene pagados) y de qué es.
+    usuarios: Number(txt(meta.usuarios)) || (e && e.usuarios != null ? usuariosPagados(e) : null),
+    concepto: txt(meta.concepto) === 'usuarios' ? 'usuarios' : 'plan',
   }
   const creemId = estado === 'pagado' ? id : `${id}:rechazado`
   await prisma.crmPago.upsert({ where: { creemId }, create: { espacioId: espacio, creemId, ...datos }, update: datos })
@@ -369,6 +520,7 @@ export async function procesarAvisoWhop(evento: Obj): Promise<void> {
 export interface PagoHistorial {
   numero: number; fecha: string; plan: string; periodo: string; estado: string
   desde: string | null; hasta: string | null; subtotal: number; impuestos: number; total: number; reembolso: number; moneda: string
+  usuarios: number | null; concepto: string
 }
 
 /**
@@ -392,6 +544,7 @@ export async function historialPagos(espacioDado: string, limite = 24): Promise<
   return filas.map(p => ({
     numero: p.numero, fecha: p.fecha.toISOString(), plan: p.plan, periodo: p.periodo, estado: p.estado,
     desde: p.desde?.toISOString() ?? null, hasta: p.hasta?.toISOString() ?? null, subtotal: p.subtotal, impuestos: p.impuestos, total: p.total, reembolso: p.reembolso, moneda: p.moneda,
+    usuarios: p.usuarios, concepto: p.concepto || 'plan',
   }))
 }
 

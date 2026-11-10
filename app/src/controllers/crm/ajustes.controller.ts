@@ -18,7 +18,7 @@ import { alcanceDe, alcanceDePersona, alcanceParaFront, entraPorRol, puedeAdmini
 import { conGenteDeSubequipos, normalizarEquipos, type EquiposNorm } from '../../services/crm/equipos'
 import { conectarShopify, conectarCalendario, conectarHotmart, desconectar, estadoIntegraciones } from '../../services/crm/integraciones'
 import { invitar, invitarNuevos } from '../../services/crm/invitaciones'
-import { limiteUsuarios } from '../../services/crm/plan'
+import { limiteUsuarios, topeUsuariosTexto } from '../../services/crm/plan'
 import { cuentaDe, usuariosDeCuenta } from '../../services/crm/espacio'
 import { cifrarClave } from '../../routes/auth'
 import crypto from 'node:crypto'
@@ -427,7 +427,7 @@ export async function invitarPersona(req: Request, res: Response) {
   const tope = await limiteUsuarios(espacio)
   // El límite es de la cuenta: personas sumadas entre todos sus espacios de trabajo (alguien de otro espacio no suma).
   const enCuenta = await usuariosDeCuenta(await cuentaDe(espacio))
-  if (!(existe && enCuenta.includes(existe.id)) && enCuenta.length >= tope) throw new ForbiddenError(`Tu plan incluye ${tope} usuarios y ya están en uso. Sube de plan en Ajustes, Plan y pagos, para agregar más.`)
+  if (!(existe && enCuenta.includes(existe.id)) && enCuenta.length >= tope) throw new ForbiddenError(topeUsuariosTexto(tope))
   const u = existe ?? await prismaGlobal.user.create({
     // Sin contraseña que alguien conozca: la crea la persona con el enlace del correo.
     data: { nombre, email, telefono, role: p.data.rol ?? 'AGENTE', passwordHash: await cifrarClave(crypto.randomBytes(32).toString('base64url')) },

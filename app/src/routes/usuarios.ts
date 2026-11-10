@@ -10,7 +10,7 @@ import { cerrarDe } from '../utils/sseManager'
 import { TODOS } from '../utils/roles'
 import { cuentaDe, enEspacio, espacioDeUsuario, usuariosDeCuenta, usuariosDeEspacio } from '../services/crm/espacio'
 import { usuariosCrm } from '../services/crm/usuarios'
-import { limiteUsuarios } from '../services/crm/plan'
+import { limiteUsuarios, topeUsuariosTexto } from '../services/crm/plan'
 import { cifrarClave, claveValida } from './auth'
 
 /**
@@ -49,7 +49,7 @@ router.post('/', asyncHandler(async (req: Request, res: Response) => {
   }).parse(req.body)
   if (await prisma.user.findFirst({ where: { email: { equals: d.email, mode: 'insensitive' } }, select: { id: true } })) throw new ConflictError('Ya hay una cuenta con ese correo')
   const tope = await limiteUsuarios(espacio)
-  if ((await usuariosDeCuenta(await cuentaDe(espacio))).length >= tope) throw new ForbiddenError(`Tu plan incluye ${tope} usuarios y ya están en uso. Sube de plan en Ajustes → Plan y pagos para agregar más.`)
+  if ((await usuariosDeCuenta(await cuentaDe(espacio))).length >= tope) throw new ForbiddenError(topeUsuariosTexto(tope))
   const u = await prisma.$transaction(async tx => {
     const nuevo = await tx.user.create({ data: { nombre: d.nombre, email: d.email, role: d.role as never, passwordHash: await cifrarClave(d.password) }, select: publica })
     await tx.crmMiembro.create({ data: { espacioId: espacio, userId: nuevo.id } })

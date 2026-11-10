@@ -301,6 +301,11 @@ model CrmEspacio {
   renuevaEl      DateTime?         @map("renueva_el")
   /// Canceló pero el plan sigue hasta renuevaEl.
   cancelaAlFinal Boolean           @default(false) @map("cancela_al_final")
+  /// Cobro por usuarios (10-nov): cuántos usuarios cubre lo pagado. null = de antes (el tope de su plan).
+  usuarios       Int?
+  /// Bajó de usuarios: desde `usuariosProxDesde` (la renovación) quedan `usuariosProx`; hasta entonces, `usuarios`.
+  usuariosProx   Int?              @map("usuarios_prox")
+  usuariosProxDesde DateTime?      @map("usuarios_prox_desde")
   creemCliente   String?           @map("creem_cliente")
   creemSuscripcion String?         @map("creem_suscripcion")
   /// Espacios de trabajo (6-oct): la cuenta que paga el plan. null = este espacio es la cuenta (tiene el plan).
@@ -350,6 +355,9 @@ model CrmPago {
   /// El cupón con que se pagó (su código) y cuánto descontó, en centavos (31-oct).
   cupon      String?
   descuento  Int        @default(0)
+  /// Cobro por usuarios (10-nov): cuántos usuarios cubre este cobro y de qué es («plan» o «usuarios», los adicionales).
+  usuarios   Int?
+  concepto   String?
   createdAt  DateTime   @default(now()) @map("created_at")
 
   @@index([espacioId, fecha])

@@ -1,6 +1,6 @@
 import { prisma as base } from '../../config/prisma'
-import { cuentaDe, espaciosDeCuenta } from './espacio'
-import { estadoPlan } from './plan'
+import { cuentaDe, espaciosDeCuenta, usuariosDeCuenta } from './espacio'
+import { estadoPlan, limiteUsuarios, topeUsuariosTexto } from './plan'
 import { invitar } from './invitaciones'
 import { ajustesIniciales } from './inicial'
 import { cifrarClave } from '../../routes/auth'
@@ -83,6 +83,11 @@ export async function crearEspacio(userId: string, actual: string, d: { nombre: 
   const correo = (d.adminCorreo ?? '').trim().toLowerCase()
   if (correo && !/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(correo)) throw new ValidationError('El correo del administrador no parece completo.')
   if (!correo && !d.yo) throw new ValidationError('Invita a su administrador o quédate tú como administrador del espacio.')
+  // Cobro por usuarios (10-nov): el administrador invitado ocupa un usuario de la cuenta si todavía no está en ella.
+  if (correo) {
+    const [tope, enCuenta, existe] = await Promise.all([limiteUsuarios(cuenta), usuariosDeCuenta(cuenta), base.user.findFirst({ where: { email: { equals: correo, mode: 'insensitive' } }, select: { id: true } })])
+    if (!(existe && enCuenta.includes(existe.id)) && enCuenta.length >= tope) throw new ForbiddenError(topeUsuariosTexto(tope))
+  }
   const id = await idDeEspacio(nombre)
   let invitado: string | null = null
   await base.$transaction(async tx => {

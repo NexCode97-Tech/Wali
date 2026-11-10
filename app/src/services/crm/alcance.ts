@@ -184,6 +184,14 @@ export async function sincronizarMiembros(ids: Record<string, string[]>): Promis
   const actuales = await base.crmMiembro.findMany({ where: { espacioId: espacio }, select: { userId: true } })
   const yaEstan = new Set(actuales.map(m => m.userId))
   const agregados = porEquipo.filter(id => !yaEstan.has(id))
+  // Cobro por usuarios (10-nov): quien entra a la cuenta por un equipo también ocupa un usuario pagado.
+  if (agregados.length) {
+    const { limiteUsuarios, topeUsuariosTexto } = await import('./plan')
+    const { cuentaDe, usuariosDeCuenta } = await import('./espacio')
+    const [tope, enCuenta] = await Promise.all([limiteUsuarios(espacio), cuentaDe(espacio).then(usuariosDeCuenta)])
+    const nuevos = agregados.filter(id => !enCuenta.includes(id)).length
+    if (nuevos && enCuenta.length + nuevos > tope) throw new ForbiddenError(topeUsuariosTexto(tope))
+  }
   if (agregados.length) await base.crmMiembro.createMany({ data: agregados.map(userId => ({ espacioId: espacio, userId })), skipDuplicates: true })
   // Los miembros son la base del espacio: salir de un equipo no saca a nadie del CRM (eso es suspender la cuenta).
   const quitados: string[] = []
