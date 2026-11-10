@@ -57,3 +57,4 @@
 - Bandeja (reporte de soporte S-1002 de Tatiana): al responder, el chat pasa a Respondidas de una vez pero sigue abierto en pantalla hasta que se abra otra conversación o se cierre; se quitó la espera de 10 s que saltaba a la siguiente. Soporte del superadmin: responder ya no pasa la solicitud a «En curso»; solo la mueven los botones. Sin push.
 - Desplegado 5d07ace (chat abierto al responder en la bandeja y soporte que no cambia de pestaña al responder). /health ok.
 - Maqueta «Soporte del superadmin como la bandeja del CRM» publicada (lista de solicitudes con tarjetas y franjas de espera, chat con burbujas y cuadro de responder, ficha como la de contacto, cifras en una franja; MacBook, iPad y iPhone). Pendiente de aprobación.
+- Maqueta del superadmin: módulos en barra lateral como la del CRM (en iPad y celular con menú); las cifras de soporte salen de Soporte y se propone llevarlas a Resumen. Pendiente de aprobación.
