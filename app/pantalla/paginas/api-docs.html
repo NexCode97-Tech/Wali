@@ -41,7 +41,7 @@ article{min-width:0}
 <main>
 <nav class="ind" aria-label="Contenido">
   <a href="#inicio">Para empezar</a><a href="#claves">Claves y permisos</a><a href="#limites">Límites y errores</a><a href="#paginas">Páginas</a>
-  <a href="#conversaciones">Conversaciones</a><a href="#asignar">Asignar en lote</a><a href="#contactos">Contactos</a><a href="#catalogos">Equipos, miembros y etapas</a>
+  <a href="#conversaciones">Conversaciones</a><a href="#asignar">Asignar en lote</a><a href="#contactos">Contactos</a><a href="#catalogos">Equipos, miembros y etapas</a><a href="#robots">Flujos y agentes de IA</a>
 </nav>
 <article>
 <h1 id="inicio">API de Wali</h1>
@@ -54,9 +54,9 @@ article{min-width:0}
 <h2 id="claves">Claves y permisos</h2>
 <p>Un administrador crea las claves en <b>Ajustes del CRM › API</b>. La clave se muestra completa una sola vez. Guárdala en el sistema que la va a usar.</p>
 <ul>
-  <li>Cada clave ve solo su espacio de trabajo y nunca toca pagos, la cuenta ni los ajustes.</li>
+  <li>Cada clave ve solo su espacio de trabajo y nunca toca pagos ni la cuenta. De los ajustes, solo enciende o apaga flujos y agentes de IA.</li>
   <li><b>Solo lectura</b>. Lee todo lo de esta página que empieza con <code>GET</code>.</li>
-  <li><b>Lectura y acciones</b>. Además asigna, cambia la etapa, pone etiquetas, finaliza y crea o edita contactos.</li>
+  <li><b>Lectura y acciones</b>. Además asigna, cambia la etapa, pone etiquetas, finaliza, crea o edita contactos y enciende o apaga flujos y agentes de IA.</li>
   <li>Las acciones se hacen en nombre del administrador que creó la clave, con las mismas reglas que en la pantalla, y quedan registradas.</li>
   <li>La clave deja de funcionar si la revocas, si vence o si quien la creó ya no es administrador del espacio.</li>
 </ul>
@@ -69,6 +69,7 @@ article{min-width:0}
 <tr><td><code>401</code></td><td>La clave no es válida, venció o fue revocada.</td></tr>
 <tr><td><code>403</code></td><td>La clave es de solo lectura, o el plan del espacio no está activo (queda en solo lectura).</td></tr>
 <tr><td><code>404</code></td><td>Eso no existe en este espacio.</td></tr>
+<tr><td><code>409</code></td><td>Alguien cambió lo mismo en el CRM al mismo tiempo. Vuelve a intentarlo.</td></tr>
 <tr><td><code>429</code></td><td>Pasaste el límite de llamadas por minuto.</td></tr></table>
 <p>Los errores llegan como <code>{ "error": "…" }</code> y las respuestas buenas como <code>{ "data": … }</code>.</p>
 
@@ -123,6 +124,16 @@ GET /conversaciones?limite=100&amp;cursor=4521</code></pre>
 <tr><td><code>GET /etiquetas</code></td><td>Las etiquetas del espacio.</td></tr>
 <tr><td><code>GET /lineas</code></td><td>Las líneas de WhatsApp conectadas.</td></tr>
 <tr><td><code>GET /yo</code></td><td>El espacio, el nombre y el permiso de la clave.</td></tr></table>
+<h2 id="robots">Flujos y agentes de IA</h2>
+<p>Lee los flujos automáticos y los agentes de IA del espacio, y enciéndelos o apágalos. Por ejemplo, apaga el agente fuera de una campaña y vuelve a encenderlo después. Crearlos o editarlos se hace en el CRM.</p>
+<div class="ruta"><span class="m">GET</span><code>/flujos</code><span class="tag lec">Lectura</span></div>
+<pre><code>{ "data": [ { "id": "bienvenida", "nombre": "Bienvenida", "encendido": true, "cuando": "nueva", "equipos": null } ] }</code></pre>
+<div class="ruta"><span class="m patch">PATCH</span><code>/flujos/:id</code><span class="tag">Acciones</span></div>
+<div class="ruta"><span class="m">GET</span><code>/agentes</code><span class="tag lec">Lectura</span></div>
+<pre><code>{ "data": [ { "id": "ag_1", "nombre": "Sofía", "encendido": false, "estado": "pausado", "canales": ["wa"] } ] }</code></pre>
+<div class="ruta"><span class="m patch">PATCH</span><code>/agentes/:id</code><span class="tag">Acciones</span></div>
+<p>Manda <code>encendido</code> en <code>true</code> o <code>false</code>. Para encender un agente, el espacio necesita un canal conectado y el agente, un canal marcado en «Dónde atiende». Si alguien cambia lo mismo en el CRM en ese momento, la respuesta es <code>409</code>. Vuelve a intentarlo.</p>
+<pre><code>curl -X PATCH https://walicrm.com/crm/api/v1/agentes/ag_1   -H "Authorization: Bearer wali_live_TU_CLAVE" -H "Content-Type: application/json"   -d '{ "encendido": true }'</code></pre>
 </article>
 </main>
 </body>

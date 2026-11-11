@@ -8,7 +8,9 @@ import { leerAjuste } from '../services/crm/ajustes'
 import { usuariosCrm } from '../services/crm/usuarios'
 import { leerEquipos } from '../services/crm/equipos'
 import { auditLog } from '../utils/auditLogger'
-import { NotFoundError, ValidationError } from '../utils/errors'
+import { ConflictError, NotFoundError, ValidationError } from '../utils/errors'
+import { FLUJOS_DEFECTO } from '../services/crm/flujos'
+import * as ajustes from '../controllers/crm/ajustes.controller'
 import * as conv from '../controllers/crm/conversaciones.controller'
 import * as contactos from '../controllers/crm/contactos.controller'
 
@@ -16,7 +18,7 @@ import * as contactos from '../controllers/crm/contactos.controller'
  * API pública de Wali, versión 1 (11-nov). Base: https://walicrm.com/crm/api/v1. Va con
  * `Authorization: Bearer wali_live_…` (la clave de Ajustes del CRM › API). Todo dentro del espacio de la clave.
  *
- * Lectura: conversaciones (con filtros y sus mensajes), contactos, equipos, miembros, etapas, etiquetas y líneas.
+ * Lectura: conversaciones (con filtros y sus mensajes), contactos, equipos, miembros, etapas, etiquetas, líneas, flujos y agentes.
  * Acciones (clave de lectura y acciones): asignar (también en lote, hasta 100), cambiar la etapa, poner o quitar
  * etiquetas, finalizar o reabrir, y crear o editar contactos. Las acciones pasan por los mismos controladores que la
  * pantalla: mismos permisos, validaciones, avisos en vivo y registro. Respuestas: { data, siguiente? } o { error }.
@@ -209,6 +211,65 @@ router.patch('/contactos/:id', asyncHandler(async (req: Request, res: Response) 
   if (!Object.keys(d).length) throw new ValidationError('No mandaste ningún cambio.')
   await llamar(contactos.editarContacto, req, { id: String(Number(req.params.id) || 0) }, { cambios: aPantalla(d) })
   res.json({ data: { id: Number(req.params.id) } })
+}))
+
+// ── Flujos y agentes de IA (11-nov): leerlos y encenderlos o apagarlos. Crearlos o editarlos sigue siendo solo en la
+// pantalla, para que un error de otro sistema no deje respondiendo mal a todos los clientes. El guardado pasa por el
+// mismo controlador de Ajustes (permisos, forma, aviso en vivo) y no pisa lo que alguien guardó al mismo tiempo.
+const encenderSchema = z.object({ encendido: z.boolean() })
+
+/** Guarda un ajuste con el controlador de la pantalla, a partir de la versión que se leyó. */
+async function guardarComoPantalla(req: Request, clave: 'flujos' | 'agentes', valor: unknown, base: Date | null) {
+  const r = Object.assign(Object.create(Object.getPrototypeOf(req)), req, { params: { clave }, body: { valor, base: base ? base.toISOString() : null }, query: {} }) as Request
+  let estado = 200
+  const res = { statusCode: 200, status(c: number) { estado = c; return this }, json() { return this }, send() { return this }, setHeader() { return this } }
+  await ajustes.guardarAjusteRuta(r, res as unknown as Response)
+  if (estado === 409) throw new ConflictError('Alguien cambió esto en el CRM al mismo tiempo. Vuelve a intentarlo.')
+}
+const filaAjuste = (clave: string) => prisma.crmAjuste.findFirst({ where: { clave }, select: { valor: true, updatedAt: true } })
+
+const flujoDe = (f: Json) => ({ id: String(f.id), nombre: String(f.n ?? ''), encendido: f.on === true, cuando: f.cuando ?? null, equipos: Array.isArray(f.equipos) ? f.equipos : null })
+async function flujosGuardados() {
+  const fila = await filaAjuste('flujos')
+  const lista = Array.isArray(fila?.valor) ? (fila!.valor as unknown[]).map(obj) : (FLUJOS_DEFECTO as unknown as Json[])
+  return { lista: lista.filter(f => f.id), base: fila?.updatedAt ?? null }
+}
+router.get('/flujos', asyncHandler(async (_req: Request, res: Response) => {
+  res.json({ data: (await flujosGuardados()).lista.map(flujoDe) })
+}))
+router.patch('/flujos/:id', asyncHandler(async (req: Request, res: Response) => {
+  const d = encenderSchema.parse(req.body)
+  const { lista, base } = await flujosGuardados()
+  const f = lista.find(x => String(x.id) === String(req.params.id))
+  if (!f) throw new NotFoundError('Ese flujo no existe en este espacio.')
+  if ((f.on === true) !== d.encendido) await guardarComoPantalla(req, 'flujos', lista.map(x => (x === f ? { ...x, on: d.encendido } : x)), base)
+  auditLog(req, 'UPDATE', 'api_flujo', String(f.id), { clave: req.apiClave?.id, encendido: d.encendido })
+  res.json({ data: flujoDe({ ...f, on: d.encendido }) })
+}))
+
+/** Dónde atiende el agente: los canales marcados en su editor (sin ninguno, no contesta). */
+const canalesAgente = (a: Json) => (Array.isArray(a.canales) ? a.canales.map(String) : Object.entries(obj(a.canales)).filter(([, v]) => v === true).map(([k]) => k))
+const agenteDe = (a: Json) => ({ id: String(a.id), nombre: String(a.nombre ?? ''), encendido: a.estado === 'activo', estado: String(a.estado ?? 'borrador'), canales: canalesAgente(a) })
+router.get('/agentes', asyncHandler(async (_req: Request, res: Response) => {
+  const fila = await filaAjuste('agentes')
+  res.json({ data: (Array.isArray(fila?.valor) ? (fila!.valor as unknown[]).map(obj) : []).filter(a => a.id).map(agenteDe) })
+}))
+router.patch('/agentes/:id', asyncHandler(async (req: Request, res: Response) => {
+  const d = encenderSchema.parse(req.body)
+  const fila = await filaAjuste('agentes')
+  const lista = Array.isArray(fila?.valor) ? (fila!.valor as unknown[]).map(obj) : []
+  const a = lista.find(x => String(x.id) === String(req.params.id))
+  if (!a) throw new NotFoundError('Ese agente no existe en este espacio.')
+  // Las mismas condiciones que el botón de encendido de la pantalla.
+  if (d.encendido) {
+    const conectados = (await prisma.crmLinea.count({ where: { estado: 'conectada' } })) + (await prisma.crmConexion.count({ where: { estado: 'conectada', tipo: { not: 'whatsapp' } } }))
+    if (!conectados) throw new ValidationError('Conecta un canal al CRM (Ajustes del CRM, Canales) para encender el agente.')
+    if (!canalesAgente(a).length) throw new ValidationError(`Marca un canal en «Dónde atiende» de ${String(a.nombre ?? 'el agente')} para encenderlo.`)
+  }
+  const estado = d.encendido ? 'activo' : 'pausado'
+  if (a.estado !== estado) await guardarComoPantalla(req, 'agentes', lista.map(x => (x === a ? { ...x, estado } : x)), fila?.updatedAt ?? null)
+  auditLog(req, 'UPDATE', 'api_agente', String(a.id), { clave: req.apiClave?.id, encendido: d.encendido })
+  res.json({ data: agenteDe({ ...a, estado }) })
 }))
 
 router.use((_req: Request, res: Response) => { res.status(404).json({ error: 'Esa ruta no existe en la API v1. Revisa la documentación.' }) })
