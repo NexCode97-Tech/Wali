@@ -590,7 +590,9 @@ async function ppMontar(){
     caja.replaceChildren();
     const apariencia = {theme: {appearance: 'light', accentColor: 'yellow', grayColor: 'gray', dangerColor: 'red'}, variables: {'--radius': '10px'}};
     ppWhop = window.WhopElements({locale: 'es', appearance: apariencia});
-    ppPagos = ppWhop.payments.create({accountId: x.cuenta, plan: x.variante, returnUrl: ppRegreso(), locale: 'es', appearance: apariencia});
+    // Con días de prueba hoy se cobran USD 0 y Whop filtra los medios por ese monto: sin offerAmounts no ofrece
+    // ninguno («No hay métodos de pago disponibles»). Se filtran con el valor de la renovación, que es lo que se cobrará.
+    ppPagos = ppWhop.payments.create({accountId: x.cuenta, plan: x.variante, offerAmounts: {feeInclusive: x.total, feeFree: x.total}, returnUrl: ppRegreso(), locale: 'es', appearance: apariencia});
     ppPagos.create('payment', {layout: 'accordion', onChange: ev => { ppCompleto = !!(ev && ev.complete); if (ppCompleto) ppError(''); }}).mount('#wpg-whop');
     ppPagos.create('branding').mount('#wpg-marca');
   } catch (err) { ppMontado = ''; caja.replaceChildren(); caja.insertAdjacentHTML('beforeend', `<div class="wpg-cargando">${esc(err.message)}</div>`); }
