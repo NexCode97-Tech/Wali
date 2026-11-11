@@ -126,15 +126,14 @@ async function api(metodo, ruta, cuerpo){
   }
 }
 
-/* ── El CRM se dibuja a 1600 px de ancho lógico y se encoge entero en pantallas de escritorio más angostas, así
-      se ven sus cuatro columnas. En celular (menos de 760 px) no se escala: ahí tiene su diseño de una columna. ── */
-const ANCHO = 1600, MINIMO = 0.7, CELULAR = 760;
+/* ── El CRM ocupa la pantalla tal cual, sin encogerse (11-nov: antes se dibujaba a 1600 px y se encogía entero en
+      pantallas más angostas, y se veía con un ancho fijo). Las barras y la lista conservan su ancho y el chat toma el
+      resto; cada tamaño tiene su acomodo en crm.html (la ficha se abre encima por debajo de 1361 px, una columna en
+      celular). `escala` queda en 1 para los menús de la campana y de tu cuenta. ── */
 const caja = $('caja'), marco = $('marco');
 let escala = 1;
 function medir(){
-  const w = caja.clientWidth, h = caja.clientHeight;
-  const s = escala = w < CELULAR ? 1 : Math.max(MINIMO, Math.min(1, w / ANCHO));
-  marco.style.width = (w / s) + 'px'; marco.style.height = (h / s) + 'px'; marco.style.transform = s === 1 ? '' : `scale(${s})`;
+  marco.style.width = caja.clientWidth + 'px'; marco.style.height = caja.clientHeight + 'px'; marco.style.transform = '';
 }
 medir(); new ResizeObserver(medir).observe(caja);
 
