@@ -27,7 +27,7 @@ svg.i{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-widt
 .seg button{padding:5px 12px;border-radius:6px;font-size:12.5px;font-weight:500;color:var(--ink2)}
 .seg button[aria-pressed="true"]{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(15,23,42,.08)}
 
-.app{height:100vh;height:100dvh;min-height:0;display:grid;grid-template-columns:236px 380px minmax(0,1fr) 320px;background:var(--bg);overflow:hidden}
+.app{height:100vh;height:100dvh;min-height:0;display:grid;grid-template-columns:236px calc(var(--wb-lista,357px) + 23px) minmax(0,1fr) calc(var(--wb-ficha,297px) + 23px);background:var(--bg);overflow:hidden}
 .page{display:none;grid-column:2 / -1;overflow-y:auto;padding:24px 28px;background:var(--bg)}
 .app.pg .list,.app.pg .chat,.app.pg .panel{display:none}
 .app.pg .page{display:block}
@@ -187,8 +187,8 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 .pg-h .sub{margin:2px 0 0}
 .empty{padding:60px 20px;text-align:center;color:var(--ink3);font-size:13.5px;display:grid;justify-items:center;gap:8px}
 .empty svg{width:32px;height:32px;color:var(--ink4)}
-@media (max-width:1360px){.app{grid-template-columns:220px 340px minmax(0,1fr)}.panel{display:none}}
-@media (max-width:1000px){.app{grid-template-columns:320px minmax(0,1fr)}}
+@media (max-width:1360px){.app{grid-template-columns:220px calc(var(--wb-lista,317px) + 23px) minmax(0,1fr)}.panel{display:none}}
+@media (max-width:1000px){.app{grid-template-columns:var(--wb-lista,320px) minmax(0,1fr)}}
 /* Celular: menos de 760 px (CELULAR en puenteCrm.ts, donde el marco deja de escalarse): una sola columna, lista o chat. */
 @media (max-width:759.98px){.app{grid-template-columns:minmax(0,1fr)}.chat{min-width:0}.app.open .list{display:none}.app:not(.open) .chat{display:none}}
 
@@ -388,7 +388,7 @@ svg.ix{color:#dc2626!important;stroke-width:2.6}
 .fld input:focus,.fld textarea:focus{outline:0;border-color:var(--blue)}
 .fld .sel,.dsel .menu button{font-weight:400}
 .kc{cursor:pointer}
-.app.panel-min{grid-template-columns:236px 380px minmax(0,1fr) 0}
+.app.panel-min{grid-template-columns:236px calc(var(--wb-lista,357px) + 23px) minmax(0,1fr) 0}
 .ptitle button{display:grid;place-items:center;width:26px;height:26px;border-radius:6px}
 .ptitle button:hover{background:var(--hover)}
 .list-h .t .ic{margin-left:auto;display:flex;gap:2px}

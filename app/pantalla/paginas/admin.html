@@ -173,8 +173,8 @@ tr.borrando td{transition:opacity 240ms var(--e-out),padding 240ms var(--e-out);
 @media (max-width:768px){.kp{grid-template-columns:repeat(2,minmax(0,1fr))}.busca{flex-wrap:wrap}.campo{flex-basis:100%}.hero{font-size:40px}}
 /* ── Soporte como la bandeja del CRM (maqueta aprobada el 10-nov) ── */
 main.sop{max-width:none;margin:0;padding:10px;height:100%;display:flex}
-.sx{flex:1;min-height:0;display:grid;grid-template-columns:320px minmax(0,1fr);gap:10px}
-.sx-det{min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 297px;gap:10px;position:relative}
+.sx{flex:1;min-height:0;display:grid;grid-template-columns:var(--wb-lista) minmax(0,1fr);gap:10px}
+.sx-det{min-height:0;display:grid;grid-template-columns:minmax(0,1fr) var(--wb-ficha);gap:10px;position:relative}
 .sx-panel{background:#fff;border-radius:16px;box-shadow:0 0 0 1px #eef0f3;min-height:0;display:flex;flex-direction:column;overflow:hidden}
 .sx-vacio{padding:24px;text-align:center;color:var(--t3);font-size:13px;margin:auto}
 .sx-lh{padding:16px 16px 12px;display:grid;gap:12px;border-bottom:1px solid #eef0f3}
@@ -267,7 +267,7 @@ main.sop{max-width:none;margin:0;padding:10px;height:100%;display:flex}
 .an-sec{margin:26px 0 12px;font-size:15px;font-weight:700}
 /* Pantalla mediana: la ficha se abre encima con su botón */
 @media (max-width:1360px){
-  .sx{grid-template-columns:320px minmax(0,1fr)}.sx-det{grid-template-columns:minmax(0,1fr)}
+  .sx-det{grid-template-columns:minmax(0,1fr)}
   .sx-ficha{display:none;position:absolute;right:0;top:0;bottom:0;width:330px;z-index:30;box-shadow:0 30px 60px -20px rgba(0,0,0,.35)}
   .sx-det.ficha-abierta .sx-ficha{display:flex;animation:sx-cajon 400ms cubic-bezier(.32,.72,0,1) both}
   .sx-ver-ficha{display:inline-flex!important}.sx-fx{display:grid}
@@ -295,20 +295,28 @@ body{display:flex;height:100vh;height:100dvh;overflow:hidden}
 .lat-marca{display:flex;align-items:center;gap:8px;padding:2px 8px 16px}
 .lat .marca{display:flex;align-items:center;gap:8px;color:inherit;text-decoration:none}.lat .marca img{width:34px;height:34px;border-radius:9px;display:block}
 .lat .marca b{font-family:"Bricolage Grotesque",Inter,sans-serif;font-weight:800;font-size:27px;line-height:1;letter-spacing:-.02em;color:#FFF8E6}
-.lat .tag{display:inline-flex;align-items:center;height:22px;padding:0 8px;border:1px solid #2a2a33;border-radius:6px;font-size:11px;font-weight:600;letter-spacing:0;text-transform:none;color:#a3a6b0}
 .lat-x{display:none;margin-left:auto;width:34px;height:34px;border-radius:9px;place-items:center;color:#ff6b6b}
 .lat .tabs{display:grid;gap:2px}
 .lat .tab{position:relative;display:flex;align-items:center;gap:12px;width:100%;height:auto;padding:10px 12px;border-radius:10px;font-size:14px;font-weight:500;color:#d5d7de;text-align:left;transition:background 180ms var(--e-std),transform 140ms var(--e-std)}
 .lat .tab svg.i{width:18px;height:18px;color:#a3a6b0}.lat .tab:hover{background:#15151b;color:#fff}.lat .tab:active{transform:scale(.98)}
 .lat .tab[aria-selected="true"]{background:#1b1b22;color:#fff;font-weight:600}.lat .tab[aria-selected="true"] svg.i{color:#fff}
 .lat .tab[aria-selected="true"]::before{content:"";position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:2px;background:#FFD21F}
-.lat .tab-n{margin-left:auto;min-width:20px;height:20px;border-radius:10px;background:#dc2626;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 6px;font-variant-numeric:tabular-nums}
+.lat .tab-n{margin-left:auto;min-width:20px;height:20px;box-sizing:border-box;border-radius:10px;background:#dc2626;color:#fff;font-size:11px;font-weight:700;line-height:normal;display:grid;place-items:center;padding:0 5px}
 .lat .tab-n[hidden]{display:none}
 .lat .yo{margin-top:auto;justify-self:auto;display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;background:#15151b;font-size:13px}
 .yo-av{width:34px;height:34px;border-radius:50%;background:#7c5cff;color:#fff;display:grid;place-items:center;font:600 12px/1 Inter,sans-serif;flex:none}
 .yo-t{display:grid;min-width:0}.yo-t b{color:#fff;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.yo-t small{color:#8b8d97;font-size:12px}
 .lat .yo button{margin-left:auto;width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:#22222b;color:#fff}.lat .yo button:hover{background:#2c2c36}
 .mtop{display:none}
+/* Barra plegada (computador): franja de 76 px con íconos; animación, globito y botón en compartido/bandeja.js */
+@media (min-width:1001px){
+  .lat.wb-plegada{width:76px;padding:18px 10px}
+  .lat.wb-plegada .lat-marca{padding:2px 6px 16px}.lat.wb-plegada .marca b{position:absolute}
+  .lat.wb-plegada .wb-plegar{left:6px;top:2px;width:34px;height:34px}
+  .lat.wb-plegada .tab{padding:10px 0 10px 19px;gap:0}.lat.wb-plegada .tab > span:not(.tab-n){position:absolute}
+  .lat.wb-plegada .tab-n{position:absolute;top:5px;left:33px;min-width:16px;height:16px;font-size:10px;padding:0 4px}
+  .lat.wb-plegada .yo{padding:10px 11px;background:transparent}.lat.wb-plegada .yo-t,.lat.wb-plegada #salir{position:absolute;opacity:0;pointer-events:none}
+}
 .lat-velo{position:fixed;inset:0;z-index:55;background:rgba(11,11,16,.42);animation:velo-in 240ms var(--e-std) both}@keyframes velo-in{from{opacity:0}}
 @media (max-width:1000px){
   .lat{position:fixed;left:0;top:0;bottom:0;width:280px;transform:translateX(-100%);transition:transform 450ms cubic-bezier(.32,.72,0,1)}
@@ -324,17 +332,17 @@ body{display:flex;height:100vh;height:100dvh;overflow:hidden}
 </head>
 <body>
 <!-- Módulos en la barra lateral, como la del CRM (maqueta aprobada el 10-nov). En tablet y celular se abre con el menú. -->
-<aside class="lat" id="lat" aria-label="Módulos">
-  <div class="lat-marca"><a class="marca" href="__BASE__/entrar" title="Elegir CRM o Superadmin" aria-label="Elegir entre el CRM y el superadmin"><img src="__BASE__/img/wali-180.png" alt=""><b>wali</b></a><span class="tag">Superadmin</span><button type="button" class="lat-x" id="lat-x" aria-label="Cerrar el menú"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+<aside class="lat wb-barra" id="lat" aria-label="Módulos">
+  <div class="lat-marca wb-marca"><a class="marca" href="__BASE__/entrar" title="Elegir CRM o Superadmin" aria-label="Elegir entre el CRM y el superadmin"><img class="wb-logo" src="__BASE__/img/wali-180.png" alt=""><b class="wb-txt">wali</b></a><span id="lat-plg"></span><button type="button" class="lat-x" id="lat-x" aria-label="Cerrar el menú"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
   <nav class="tabs" role="tablist" aria-label="Módulos" id="tabs" aria-orientation="vertical">
-    <button type="button" class="tab" role="tab" data-tab="resumen" aria-selected="true"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 12 4l9 7v9h-6v-6H9v6H3Z"/></svg><span>Resumen</span></button>
-    <button type="button" class="tab" role="tab" data-tab="analiticas" aria-selected="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Analíticas</span></button>
-    <button type="button" class="tab" role="tab" data-tab="empresas" aria-selected="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1M14 9h1M9 13h1M14 13h1"/></svg><span>Empresas</span></button>
-    <button type="button" class="tab" role="tab" data-tab="finanzas" aria-selected="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg><span>Finanzas</span></button>
-    <button type="button" class="tab" role="tab" data-tab="cupones" aria-selected="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12V4h8l10 10-8 8Z"/><circle cx="7.5" cy="8.5" r="1.5"/></svg><span>Cupones</span></button>
-    <button type="button" class="tab" role="tab" data-tab="soporte" aria-selected="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="m5.6 5.6 3.6 3.6M14.8 14.8l3.6 3.6M18.4 5.6l-3.6 3.6M9.2 14.8l-3.6 3.6"/></svg><span>Soporte</span><span class="tab-n" hidden></span></button>
+    <button type="button" class="tab" role="tab" data-tab="resumen" data-wb-t="Resumen" aria-selected="true"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 12 4l9 7v9h-6v-6H9v6H3Z"/></svg><span class="wb-txt">Resumen</span></button>
+    <button type="button" class="tab" role="tab" data-tab="analiticas" data-wb-t="Analíticas" aria-selected="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="wb-txt">Analíticas</span></button>
+    <button type="button" class="tab" role="tab" data-tab="empresas" data-wb-t="Empresas" aria-selected="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1M14 9h1M9 13h1M14 13h1"/></svg><span class="wb-txt">Empresas</span></button>
+    <button type="button" class="tab" role="tab" data-tab="finanzas" data-wb-t="Finanzas" aria-selected="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg><span class="wb-txt">Finanzas</span></button>
+    <button type="button" class="tab" role="tab" data-tab="cupones" data-wb-t="Cupones" aria-selected="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12V4h8l10 10-8 8Z"/><circle cx="7.5" cy="8.5" r="1.5"/></svg><span class="wb-txt">Cupones</span></button>
+    <button type="button" class="tab" role="tab" data-tab="soporte" data-wb-t="Soporte" aria-selected="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="m5.6 5.6 3.6 3.6M14.8 14.8l3.6 3.6M18.4 5.6l-3.6 3.6M9.2 14.8l-3.6 3.6"/></svg><span class="wb-txt">Soporte</span><span class="tab-n" hidden></span></button>
   </nav>
-  <div class="yo"><span class="yo-av" id="yo-av"></span><span class="yo-t"><b id="yo"></b><small>Superadmin</small></span><button type="button" id="salir" aria-label="Cerrar sesión" title="Cerrar sesión"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h4v16h-4M10 17l5-5-5-5M15 12H3"/></svg></button></div>
+  <div class="yo"><span class="yo-av" id="yo-av"></span><span class="yo-t wb-txt"><b id="yo"></b><small>Superadmin</small></span><button type="button" id="salir" aria-label="Cerrar sesión" title="Cerrar sesión"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h4v16h-4M10 17l5-5-5-5M15 12H3"/></svg></button></div>
 </aside>
 <div class="lat-velo" id="lat-velo" hidden></div>
 <div class="zona" id="zona">
@@ -1174,6 +1182,10 @@ document.addEventListener('paste', ev => {
 });
 document.addEventListener('submit', ev => { if (ev.target.id === 's-resp') { ev.preventDefault(); responderSol(); } });
 $('menu').addEventListener('click', () => menu(true));
+// Barra plegable (compartido/bandeja.js): el botón va donde decía «Superadmin».
+$('lat-plg').outerHTML = WB.botonPlegar('id="lat-plegar"');
+$('lat-plegar').addEventListener('click', () => WB.plegarBarra($('lat'), !$('lat').classList.contains('wb-plegada')));
+WB.plegarBarra($('lat'), WB.barraPlegada(), false);
 $('lat-x').addEventListener('click', () => menu(false));
 $('lat-velo').addEventListener('click', () => menu(false));
 $('salir').addEventListener('click', async () => {
