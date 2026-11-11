@@ -1,6 +1,7 @@
 import type { CrmMensaje, Prisma } from '@prisma/client'
 import { prisma } from './bd'
-import { transcribirAudio } from '../transcriptor'
+import { transcribirAudio, ErrorTranscriptor } from '../transcriptor'
+import { Sentry, sentryActivo } from '../../instrument'
 import { logger } from '../../utils/logger'
 
 /**
@@ -37,6 +38,10 @@ export async function transcribirMensaje(m: Pick<CrmMensaje, 'id' | 'datos'>): P
 export async function transcribirPendientes(msgs: CrmMensaje[]): Promise<void> {
   for (const m of msgs) {
     if (m.tipo !== 'in' || !esAudioIn(m.datos) || txt(obj(obj(m.datos).in).trans)) continue
-    try { await transcribirMensaje(m) } catch (e) { logger.info(`[CRM] nota de voz ${m.id} sin transcripción: ${(e as Error).message}`) }
+    try { await transcribirMensaje(m) } catch (e) {
+      // Si falla el servicio (no el audio), las demás notas tampoco van a salir: se avisa una vez a Sentry y se para.
+      if (e instanceof ErrorTranscriptor) { logger.error({ error: e.message }, '[CRM] transcripción caída (agente IA)'); if (sentryActivo) Sentry.captureException(e, { tags: { area: 'transcripcion' } }); return }
+      logger.info(`[CRM] nota de voz ${m.id} sin transcripción: ${(e as Error).message}`)
+    }
   }
 }

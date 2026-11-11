@@ -5,7 +5,7 @@ import type { Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { prisma, prismaGlobal } from '../../services/crm/bd'
 import { ApiResponse } from '../../utils/response'
-import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../../utils/errors'
+import { AppError, ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../../utils/errors'
 import { auditLog } from '../../utils/auditLogger'
 import { logger } from '../../utils/logger'
 import { usuariosEnCrm } from '../../utils/sseManager'
@@ -24,6 +24,8 @@ import { agenteDeEquipo } from '../../services/crm/agenteIA'
 import { equipoDeCanal } from '../../services/crm/entrantes'
 import type { Subequipo } from '../../services/crm/equipos'
 import { esAudioIn, transcribirMensaje } from '../../services/crm/transcripciones'
+import { ErrorTranscriptor } from '../../services/transcriptor'
+import { Sentry, sentryActivo } from '../../instrument'
 import { actualizarContacto, CANALES, CLAVES_CONTACTO, emitirContacto, telefonoValido } from './_contacto'
 
 /**
@@ -811,6 +813,12 @@ export async function transcribirNota(req: Request, res: Response) {
   try {
     return ApiResponse.success(res, { trans: await transcribirMensaje(m) })
   } catch (e) {
+    // Si el que falla es el servicio, nadie se entera desde la pantalla: va a Sentry y el cliente ve un mensaje claro.
+    if (e instanceof ErrorTranscriptor) {
+      logger.error({ error: e.message, msgId: m.id }, '[CRM] transcripción caída')
+      if (sentryActivo) Sentry.captureException(e, { tags: { area: 'transcripcion' } })
+      throw new AppError('La transcripción no está disponible en este momento. Ya quedó el aviso para arreglarla.', 503)
+    }
     throw new ValidationError(`No se pudo transcribir: ${(e as Error).message}`)
   }
 }

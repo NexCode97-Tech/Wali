@@ -3,9 +3,12 @@
 
 const GEMINI = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
 
+/** Falla del servicio (sin clave, clave mala, cuota, caída), no del audio: se avisa a Sentry y al cliente no se le muestran detalles. */
+export class ErrorTranscriptor extends Error {}
+
 export async function transcribirAudio(audio: Buffer, mime: string): Promise<string> {
   const llave = process.env.GEMINI_API_KEY
-  if (!llave) throw new Error('No hay transcriptor de audio configurado (GEMINI_API_KEY)')
+  if (!llave) throw new ErrorTranscriptor('Falta GEMINI_API_KEY: las notas de voz no se pueden transcribir')
   const res = await fetch(GEMINI, {
     method: 'POST',
     headers: { 'x-goog-api-key': llave, 'Content-Type': 'application/json' },
@@ -17,7 +20,7 @@ export async function transcribirAudio(audio: Buffer, mime: string): Promise<str
     }),
     signal: AbortSignal.timeout(90_000),
   })
-  if (!res.ok) throw new Error(`El servicio de transcripción respondió ${res.status}`) // sin nombre del proveedor: el error puede llegar a la pantalla
+  if (!res.ok) throw new ErrorTranscriptor(`Gemini respondió ${res.status}: ${(await res.text().catch(() => '')).slice(0, 300)}`)
   const datos = await res.json() as { candidates?: { content?: { parts?: { text?: string }[] } }[] }
   const texto = (datos.candidates?.[0]?.content?.parts ?? []).map(p => p.text ?? '').join('').trim()
   if (!texto || texto === '[inaudible]') throw new Error('No se entendió el audio')
