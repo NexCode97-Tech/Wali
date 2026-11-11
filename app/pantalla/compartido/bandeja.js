@@ -38,17 +38,18 @@ button.wb-plegar:hover{background:#1b1b22;color:#fff}button.wb-plegar:active{tra
   .wb-barra{transition:width 380ms ${IOS},padding 380ms ${IOS}}
   .wb-barra .wb-txt{transition:opacity 200ms ${SALIDA} 120ms}
   .wb-barra .wb-logo{transition:opacity 200ms ${SALIDA}}
-  .wb-barra.wb-plegada{overflow:visible}
+  .wb-barra.wb-plegada{overflow-x:hidden}
   .wb-barra.wb-plegada .wb-txt{opacity:0;pointer-events:none;transition:opacity 120ms ${SALIDA}}
   .wb-barra.wb-plegada .wb-marca{flex-direction:column;align-items:flex-start;gap:10px}
   .wb-barra.wb-plegada .wb-plegar{margin:0;width:34px;height:34px;background:#1b1b22;color:#fff}
   .wb-barra.wb-plegada .wb-plegar .fl{transform:rotate(180deg)}
-  .wb-barra.wb-plegada [data-wb-t]::after{content:attr(data-wb-t);position:absolute;left:calc(100% + 12px);top:50%;transform:translate(-4px,-50%);white-space:nowrap;background:#0b0b10;color:#fff;
-    font-size:12.5px;font-weight:500;padding:6px 10px;border-radius:8px;box-shadow:0 8px 24px -8px rgba(0,0,0,.45);opacity:0;pointer-events:none;z-index:70;
-    transition:opacity 140ms ${SALIDA},transform 140ms ${SALIDA}}
-  .wb-barra.wb-plegada [data-wb-t]:hover::after{opacity:1;transform:translate(0,-50%)}
 }
 @media (max-width:1000px){button.wb-plegar{display:none!important}}
+/* El nombre de cada ícono con la barra plegada: va en el body, encima de todo, para que el scroll de la barra no lo recorte */
+.wb-globo{position:fixed;z-index:400;left:0;top:0;white-space:nowrap;background:#0b0b10;color:#fff;font:500 12.5px/1.2 Inter,system-ui,sans-serif;padding:6px 10px;border-radius:8px;
+  box-shadow:0 8px 24px -8px rgba(0,0,0,.45);opacity:0;pointer-events:none;transform:translate(-4px,-50%);transition:opacity 140ms ${SALIDA},transform 140ms ${SALIDA}}
+.wb-globo.ver{opacity:1;transform:translate(0,-50%)}
+@media (prefers-reduced-motion:reduce){.wb-globo{transition:opacity 120ms linear;transform:translate(0,-50%)}}
 button.wb-ocultar{margin-left:auto;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:#4b5563;flex:none;border:0;background:none;padding:0;cursor:pointer;
   transition:background 160ms ${SALIDA},color 160ms ${SALIDA},transform 140ms ${SALIDA}}
 button.wb-ocultar:hover{background:#f3f6fa;color:#0b0b10}button.wb-ocultar:active{transform:scale(.92)}
@@ -62,6 +63,17 @@ button.wb-ocultar:hover{background:#f3f6fa;color:#0b0b10}button.wb-ocultar:activ
   .wb-barra,.wb-barra .wb-txt,.wb-plegar .fl{transition:none!important}
 }`;
   document.head.insertAdjacentHTML('beforeend', '<style id="wb-css">' + css + '</style>');
+
+  // El globito con el nombre: uno solo en el body; sale al pasar el mouse (o con el teclado) por un ícono de la barra plegada.
+  const globo = document.createElement('div'); globo.className = 'wb-globo'; globo.setAttribute('role', 'tooltip'); document.body.appendChild(globo);
+  const blanco = e => (e.target instanceof Element ? e.target.closest('.wb-plegada [data-wb-t]') : null);
+  const ver = t => { globo.textContent = t.getAttribute('data-wb-t'); const r = t.getBoundingClientRect(); globo.style.left = (r.right + 12) + 'px'; globo.style.top = (r.top + r.height / 2) + 'px'; globo.classList.add('ver'); };
+  const quitar = () => globo.classList.remove('ver');
+  document.addEventListener('mouseover', e => { const t = blanco(e); if (t) ver(t); else quitar(); });
+  document.addEventListener('focusin', e => { const t = blanco(e); if (t && t.matches(':focus-visible')) ver(t); else quitar(); });
+  document.addEventListener('focusout', quitar);
+  document.addEventListener('scroll', quitar, true);
+  document.addEventListener('mousedown', quitar);
 
   // El panel a la derecha: con la columna rellena es «ocultar», con la columna vacía es «mostrar».
   const PANEL = '<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path class="pr" d="M15 4h2a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3h-2Z"/><path d="M15 4v16"/></svg>';
