@@ -28,7 +28,8 @@
 }
 @keyframes wb-entra{from{opacity:0;transform:scale(.9)}}
 /* Barra lateral plegable: queda una franja de íconos; los nombres se apagan y salen en un globito al pasar el mouse.
-   Plegada, el logo se cambia por el botón al pasar el mouse, con la flecha hacia afuera. Solo en computador (> 1000 px). */
+   Plegada, el botón para abrirla queda siempre visible debajo del logo, con la flecha hacia afuera (11-nov: escondido
+   detrás del logo confundía). Solo en computador (> 1000 px). */
 button.wb-plegar{margin-left:auto;width:32px;height:32px;border-radius:9px;display:grid;place-items:center;color:#8b8d97;flex:none;border:0;background:none;padding:0;cursor:pointer;
   transition:background 160ms ${SALIDA},color 160ms ${SALIDA},transform 140ms ${SALIDA},opacity 200ms ${SALIDA}}
 button.wb-plegar:hover{background:#1b1b22;color:#fff}button.wb-plegar:active{transform:scale(.92)}
@@ -39,10 +40,9 @@ button.wb-plegar:hover{background:#1b1b22;color:#fff}button.wb-plegar:active{tra
   .wb-barra .wb-logo{transition:opacity 200ms ${SALIDA}}
   .wb-barra.wb-plegada{overflow:visible}
   .wb-barra.wb-plegada .wb-txt{opacity:0;pointer-events:none;transition:opacity 120ms ${SALIDA}}
-  .wb-barra.wb-plegada .wb-marca{position:relative}
-  .wb-barra.wb-plegada .wb-plegar{position:absolute;opacity:0;background:#1b1b22;color:#fff}
+  .wb-barra.wb-plegada .wb-marca{flex-direction:column;align-items:flex-start;gap:10px}
+  .wb-barra.wb-plegada .wb-plegar{margin:0;width:34px;height:34px;background:#1b1b22;color:#fff}
   .wb-barra.wb-plegada .wb-plegar .fl{transform:rotate(180deg)}
-  .wb-barra.wb-plegada .wb-marca:hover .wb-logo{opacity:0}.wb-barra.wb-plegada .wb-marca:hover .wb-plegar,.wb-barra.wb-plegada .wb-plegar:focus-visible{opacity:1}
   .wb-barra.wb-plegada [data-wb-t]::after{content:attr(data-wb-t);position:absolute;left:calc(100% + 12px);top:50%;transform:translate(-4px,-50%);white-space:nowrap;background:#0b0b10;color:#fff;
     font-size:12.5px;font-weight:500;padding:6px 10px;border-radius:8px;box-shadow:0 8px 24px -8px rgba(0,0,0,.45);opacity:0;pointer-events:none;z-index:70;
     transition:opacity 140ms ${SALIDA},transform 140ms ${SALIDA}}
