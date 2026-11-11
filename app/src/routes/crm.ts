@@ -34,6 +34,8 @@ import { crearEspacio, renombrarEspacio, eliminarEspacio, entrarAEspacio, listar
 import { leerAjuste } from '../services/crm/ajustes'
 import { urlPublica } from './acceso'
 import { prisma } from '../config/prisma'
+import { crearClave, listarClaves, revocarClave } from '../services/crm/apiClaves'
+import { auditLog } from '../utils/auditLogger'
 
 /**
  * CRM propio. Todo lo de la bandeja: conversaciones,
@@ -189,6 +191,28 @@ router.use(rutasIaCrm)
 // evento de la encuesta que llega por POST /conversaciones/:id/mensajes y el guardado de Ajustes (PUT /ajustes/cfg).
 router.use(rutasEncuestaCrm)
 router.use(rutasAyudaCrm)
+
+// Claves de la API pública (11-nov, Ajustes del CRM › API): solo administradores. La clave completa sale una sola vez.
+const soloAdminApi = (req: Request) => { if (!configura(req.userRole) || req.soloLectura) throw new ForbiddenError('Solo un administrador puede ver y manejar las claves de la API.') }
+router.get('/api-claves', asyncHandler(async (req: Request, res: Response) => {
+  soloAdminApi(req)
+  return ApiResponse.success(res, await listarClaves())
+}))
+router.post('/api-claves', asyncHandler(async (req: Request, res: Response) => {
+  soloAdminApi(req)
+  const d = z.object({ nombre: z.string().trim().min(2).max(60), permiso: z.enum(['lectura', 'escritura']), vence: z.enum(['90', '365', 'nunca']) }).parse(req.body)
+  const k = await crearClave(d, req.userId!)
+  auditLog(req, 'CREATE', 'crm_api_clave', k.id, { nombre: k.nombre, permiso: k.permiso })
+  return ApiResponse.success(res, k)
+}))
+router.delete('/api-claves/:id', asyncHandler(async (req: Request, res: Response) => {
+  soloAdminApi(req)
+  const id = String(req.params.id)
+  if (!/^[\w-]{1,40}$/.test(id)) throw new ValidationError('Esa clave no existe.')
+  const k = await revocarClave(id, req.userId!)
+  auditLog(req, 'DELETE', 'crm_api_clave', id, { nombre: k.nombre })
+  return ApiResponse.success(res, k)
+}))
 
 const MB = 1024 * 1024
 /** multer en memoria con su tope; el error sale como 400 con un texto que dice qué hacer. */

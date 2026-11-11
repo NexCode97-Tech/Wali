@@ -48,6 +48,7 @@ export const prisma = base.$extends({
     crmConexion: acotado,
     crmEnlace: acotado,
     crmClic: acotado,
+    crmApiClave: acotado,
   },
 })
 

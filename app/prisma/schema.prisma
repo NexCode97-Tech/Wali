@@ -322,6 +322,7 @@ model CrmEspacio {
   ajustes        CrmAjuste[]
   preferencias   CrmPreferencia[]
   enlaces        CrmEnlace[]
+  apiClaves      CrmApiClave[]
   clics          CrmClic[]
   pagos          CrmPago[]
   solicitudes    CrmSolicitud[]
@@ -559,4 +560,29 @@ model CrmSolicitudMensaje {
 
   @@index([solicitudId, createdAt])
   @@map("crm_solicitud_mensajes")
+}
+
+/// Claves de la API pública (11-nov). Las crea un administrador en Ajustes del CRM › API. Se guarda solo la huella
+/// SHA-256 de la clave: la clave completa se muestra una sola vez al crearla. Cada llamada actúa en nombre de quien la
+/// creó, dentro de este espacio, y deja de valer si se revoca, si vence o si esa persona ya no es administradora.
+model CrmApiClave {
+  id          String     @id @default(cuid())
+  espacioId   String     @default("") @map("espacio_id")
+  espacio     CrmEspacio @relation(fields: [espacioId], references: [id], onDelete: Cascade)
+  nombre      String
+  /// Los primeros caracteres, para reconocerla en la lista («wali_live_7Hq2»).
+  prefijo     String
+  /// SHA-256 de la clave completa, en hexadecimal.
+  huella      String     @unique
+  /// lectura o escritura (lectura y acciones).
+  permiso     String
+  venceEn     DateTime?  @map("vence_en")
+  creadaPor   String     @map("creada_por")
+  ultimoUso   DateTime?  @map("ultimo_uso")
+  revocadaEn  DateTime?  @map("revocada_en")
+  revocadaPor String?    @map("revocada_por")
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  @@index([espacioId])
+  @@map("crm_api_claves")
 }

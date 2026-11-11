@@ -20,6 +20,7 @@ import notificacionesRoutes from './routes/notificaciones'
 import uploadRoutes from './routes/upload'
 import eventosRoutes from './routes/eventos'
 import crmRoutes from './routes/crm'
+import apiV1Routes from './routes/apiV1'
 import crmWebRoutes from './routes/crmWeb'
 import crmPautaRoutes from './routes/crmPauta'
 import { regresoCrm, webhookCrmManychat, webhookCrmMeta, webhookCrmTelegram, webhookCrmTiktok, webhookCrmWa } from './routes/crmWhatsapp'
@@ -164,6 +165,7 @@ app.use('/api/crm',          regresoCrm) // regreso de las ventanas de autorizac
 app.use('/api/crm/web',      crmWebRoutes)
 app.use('/api/crm/w',        crmPautaRoutes) // clic en un enlace de pauta (público)
 app.use('/api/crm',          crmRoutes)
+app.use('/api/v1',           apiV1Routes) // API pública para los sistemas de los clientes (clave de Ajustes del CRM › API)
 app.use('/api', (_req: Request, res: Response) => { res.status(404).json({ success: false, error: 'Ruta no encontrada' }) })
 
 // ─── Pantallas ───────────────────────────────────────────────────────────────
