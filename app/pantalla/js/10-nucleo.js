@@ -687,7 +687,7 @@ function panel(c){
   const h = historial(c), recs = (c.recs || []).filter(r => !r.hecho).length;
   const pautaNombre = c.pauta ? (({Google:'Google Ads', TikTok:'TikTok Ads', Meta:'Meta Ads'})[c.pauta.plataforma] || c.pauta.plataforma || 'Pauta') : '';
   document.getElementById('panel').innerHTML = `
-    <div class="ptitle">Contacto${WB.botonOcultar('id="p-min" data-wb-ficha="1"')}</div>
+    <div class="ptitle">Contacto${WB.botonOcultar('id="p-min" data-wb-ficha="1"')}${WB.botonCerrarCajon('data-wb-cerrar="1"')}</div>
     <div class="contact">
       <div class="pc-who"><span class="av" style="background:${AVC[c.id % AVC.length]}">${esc(ini(c.n))}</span><span><b>${esc(c.n)}</b>${c.numero ? `<small>Ticket <strong>#${c.numero}</strong></small>` : ''}</span></div>
       <div class="pc-acts">${c.guardado ? `<button type="button" class="pc-act" aria-label="Ver contacto" title="Ver en Contactos">${I('user')}Ver</button>` : `<button type="button" class="pc-act pri" id="b-agregar" title="Agregar a contactos">${I('user-plus')}Agregar</button>`}<button type="button" class="pc-act" id="b-editar" title="Editar contacto">${I('pen')}Editar</button><button type="button" class="pc-act" id="b-transferir" title="Transferir con nota">${I('share')}Transferir</button>${c.canal === 'wa' ? `<button type="button" class="pc-act" id="b-call" title="Llamar por WhatsApp">${I('phone')}Llamar</button>` : ''}</div>

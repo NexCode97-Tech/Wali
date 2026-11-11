@@ -57,7 +57,30 @@ button.wb-ocultar:hover{background:#f3f6fa;color:#0b0b10}button.wb-ocultar:activ
 .wb-ocultar svg{width:17px;height:17px}.wb-ocultar .pr{fill:currentColor}
 .wb-mostrar{display:none}.wb-mostrar .pr{fill:none}
 @media (max-width:1360px){button.wb-ocultar,.wb-mostrar{display:none!important}}
+/* Tablet (760 a 1360 px, maqueta «Ficha en el iPad» opción A, aprobada el 11-nov): tocar el nombre abre la ficha como
+   un cajón de arriba abajo, pegado al borde derecho del contenedor (que va con position:relative), sobre un velo. El
+   contenido entra escalonado. La X roja (WB.botonCerrarCajon) o tocar el velo la cierran. */
+.wb-velo,.wb-cerrar-cajon{display:none}
+@media (min-width:760px) and (max-width:1360px){
+  .wb-cajon-abierto .wb-ficha{display:block!important;position:absolute;top:var(--wb-cajon-top,0);right:0;bottom:0;width:360px;max-width:calc(100% - 48px);z-index:61;margin:0;
+    overflow-y:auto;background:#fff;border-left:0;box-shadow:-30px 0 60px -30px rgba(0,0,0,.45);animation:wb-cajon 420ms ${IOS} both}
+  .wb-cajon-abierto .wb-ficha > *{animation:wb-fe 420ms ${SALIDA} both}
+  .wb-cajon-abierto .wb-ficha > :nth-child(2){animation-delay:60ms}.wb-cajon-abierto .wb-ficha > :nth-child(3){animation-delay:120ms}
+  .wb-cajon-abierto .wb-ficha > :nth-child(4){animation-delay:180ms}.wb-cajon-abierto .wb-ficha > :nth-child(n+5){animation-delay:240ms}
+  .wb-cajon-abierto > .wb-velo{display:block;position:absolute;inset:var(--wb-cajon-top,0) 0 0 0;z-index:60;background:rgba(11,11,16,.42);animation:wb-velo 240ms ${SALIDA} both}
+  .wb-cajon-abierto button.wb-cerrar-cajon{display:grid}
+  .wb-cajon-sale .wb-ficha{animation:wb-cajon-sale 260ms ${IOS} both!important}.wb-cajon-sale > .wb-velo{animation:wb-velo-sale 260ms ${SALIDA} both}
+  [data-wb-cajon]{cursor:pointer;border-radius:10px;transition:background 160ms ${SALIDA},transform 140ms ${SALIDA}}
+  [data-wb-cajon]:hover{background:#f3f6fa}[data-wb-cajon]:active{transform:scale(.98)}
+}
+button.wb-cerrar-cajon{margin-left:auto;width:32px;height:32px;border-radius:9px;place-items:center;color:#dc2626;flex:none;border:0;background:none;padding:0;cursor:pointer;
+  transition:background 160ms ${SALIDA},transform 140ms ${SALIDA}}
+button.wb-cerrar-cajon:hover{background:#fef2f2}button.wb-cerrar-cajon:active{transform:scale(.92)}.wb-cerrar-cajon svg{width:18px;height:18px}
+@keyframes wb-cajon{from{transform:translateX(100%)}}@keyframes wb-cajon-sale{to{transform:translateX(100%)}}
+@keyframes wb-fe{from{opacity:0;transform:translateX(14px)}}
+@keyframes wb-velo{from{opacity:0}}@keyframes wb-velo-sale{to{opacity:0}}
 @media (prefers-reduced-motion:reduce){
+  .wb-cajon-abierto .wb-ficha,.wb-cajon-abierto .wb-ficha > *,.wb-cajon-abierto > .wb-velo,.wb-cajon-sale .wb-ficha,.wb-cajon-sale > .wb-velo{animation:none!important}
   .wb-anima{transition:none}
   .wb-ficha,.wb-ficha-oculta .wb-ficha{transition:opacity 160ms linear,visibility 0s!important;transform:none!important;filter:none!important}
   .wb-ficha-oculta .wb-mostrar{animation:none}
@@ -115,5 +138,28 @@ button.wb-ocultar:hover{background:#f3f6fa;color:#0b0b10}button.wb-ocultar:activ
     },
     botonPlegar: (attrs = '') => `<button type="button" class="wb-plegar" ${attrs} aria-label="Ocultar el menú" title="Ocultar el menú" aria-expanded="true">${BARRA}</button>`,
     botonMostrar: (attrs = '', clase = '') => `<button type="button" class="wb-mostrar ${clase}" ${attrs} aria-label="Mostrar la ficha" title="Mostrar la ficha">${PANEL}</button>`,
+    /** ¿La pantalla es de tablet, donde la ficha va como cajón? */
+    esCajon: () => window.matchMedia('(min-width:760px) and (max-width:1360px)').matches,
+    /** Abre o cierra la ficha como cajón en `contenedor` (el que tiene la ficha; va con position:relative). */
+    cajon(contenedor, abierto, alCerrar) {
+      if (!contenedor) return;
+      let velo = contenedor.querySelector(':scope > .wb-velo');
+      if (!velo) { velo = document.createElement('div'); velo.className = 'wb-velo'; velo.setAttribute('aria-hidden', 'true'); contenedor.appendChild(velo); }
+      velo.onclick = () => { this.cajon(contenedor, false); if (alCerrar) alCerrar(); };
+      contenedor._wbCerrar = alCerrar || contenedor._wbCerrar;
+      clearTimeout(contenedor._wbCajonT);
+      if (abierto) { contenedor.classList.remove('wb-cajon-sale'); contenedor.classList.add('wb-cajon-abierto'); return; }
+      if (!contenedor.classList.contains('wb-cajon-abierto')) return;
+      const quieto = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+      contenedor.classList.add('wb-cajon-sale');
+      contenedor._wbCajonT = setTimeout(() => contenedor.classList.remove('wb-cajon-abierto', 'wb-cajon-sale'), quieto ? 0 : 260);
+    },
+    botonCerrarCajon: (attrs = '') => `<button type="button" class="wb-cerrar-cajon" ${attrs} aria-label="Cerrar la ficha" title="Cerrar la ficha"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>`,
   };
+  // Escape cierra el cajón abierto.
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    const c = document.querySelector('.wb-cajon-abierto:not(.wb-cajon-sale)'); if (!c) return;
+    window.WB.cajon(c, false); if (c._wbCerrar) c._wbCerrar();
+  });
 })();

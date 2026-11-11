@@ -223,7 +223,11 @@ main.sop{max-width:none;margin:0;padding:10px;height:100%;display:flex}
 .sx-chn{container-type:inline-size}@container (max-width:240px){.sx-chn .sx-chip{display:none}}
 .sx-chn small{color:var(--t3);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sx-acc{display:flex;gap:8px;flex:none}.sx-acc .btn.on{background:#0b0b10;color:#fff;border-color:#0b0b10}
-.btn.ic{width:40px;padding:0;justify-content:center}.sx-volver,.sx-ver-ficha{display:none!important}
+.btn.ic{width:40px;padding:0;justify-content:center}.sx-volver{display:none!important}
+.sx-chz{display:flex;align-items:center;gap:12px;flex:1;min-width:0;margin:-4px;padding:4px}
+/* Tablet (maqueta «Ficha en el iPad» opción A): la ficha es el cajón compartido (WB.cajon) sobre toda la zona, debajo de la barra de arriba */
+@media (min-width:761px) and (max-width:1360px){main.sop,.sx,.sx-det{position:static}.wb-cajon-abierto .sx-ficha{border-radius:0;flex-direction:column}}
+@media (min-width:761px) and (max-width:1000px){.zona{--wb-cajon-top:56px}}
 .sx-msgs{flex:1;min-height:0;overflow-y:auto;padding:22px 28px;display:flex;flex-direction:column;gap:16px;background-color:#f3f4f6;background-image:url(__BASE__/img/fondo-chat.png?v=gris);background-size:288px auto}
 .sx-fila{display:flex;align-items:flex-end;gap:10px;max-width:100%;animation:sx-pop 360ms var(--e-in) both}.sx-fila.yo{justify-content:flex-end}
 .sx-cav{flex:none;align-self:flex-end;margin-bottom:21px;display:flex}
@@ -268,9 +272,7 @@ main.sop{max-width:none;margin:0;padding:10px;height:100%;display:flex}
 /* Pantalla mediana: la ficha se abre encima con su botón */
 @media (max-width:1360px){
   .sx-det{grid-template-columns:minmax(0,1fr)}
-  .sx-ficha{display:none;position:absolute;right:0;top:0;bottom:0;width:330px;z-index:30;box-shadow:0 30px 60px -20px rgba(0,0,0,.35)}
-  .sx-det.ficha-abierta .sx-ficha{display:flex;animation:sx-cajon 400ms cubic-bezier(.32,.72,0,1) both}
-  .sx-ver-ficha{display:inline-flex!important}.sx-fx{display:grid}
+  .sx-ficha{display:none}.sx-fx{display:grid}
   .sx-acc .tx{display:none}.sx-acc .btn{width:40px;padding:0;justify-content:center}
   .sx-chn .sx-chip{display:none}
 }
@@ -938,11 +940,10 @@ function vDetalleSop(d){
   const adj = d.adjunto && /^https:\/\/res\.cloudinary\.com\//.test(d.adjunto) ? `<a class="sx-adj" href="${esc(d.adjunto)}" target="_blank" rel="noopener noreferrer">${IC.link}Ver la captura que adjuntó</a>` : '';
   const botones = resuelta ? `<button type="button" class="btn" data-sest="abierta"><span class="tx">Reabrir</span></button>`
     : `<button type="button" class="btn${d.estado === 'en_curso' ? ' on' : ''}" data-sest="${d.estado === 'en_curso' ? 'abierta' : 'en_curso'}" aria-pressed="${d.estado === 'en_curso'}" aria-label="${d.estado === 'en_curso' ? 'En curso' : 'Marcar en curso'}">${IC.reloj}<span class="tx">${d.estado === 'en_curso' ? 'En curso' : 'Marcar en curso'}</span></button><button type="button" class="btn" data-sest="resuelta" aria-label="Resolver">${IC.chulo}<span class="tx">Resolver</span></button>`;
-  const fichaBtn = `<button type="button" class="btn ic sx-ver-ficha" data-sficha="1" aria-label="Ver la ficha"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M15 4v16"/></svg></button>`;
   const chat = `<section class="sx-panel sx-chat" aria-label="Conversación">
     <div class="sx-ch"><button type="button" class="btn ic sx-volver" data-svolver="lista" aria-label="Volver a la lista"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></button>
-      ${avatar(d.empresa.nombre, d.empresa.id, d.empresa.logo, 40, true)}<span class="sx-chn"><b><span class="nom">${esc(d.persona.nombre)}</span>${d.prioridad === 'urgente' ? '<span class="sx-chip urg">Urgente</span>' : `<span class="sx-chip ${TEMA_CLS[d.tema] || 'otra'}">${esc(TEMA_SOP[d.tema] || 'Otra cosa')}</span>`}</b><small>#${esc(d.numero)} · ${esc(d.empresa.nombre)} · ${esc(d.asunto)}</small></span>
-      <span class="sx-acc">${botones}${WB.botonMostrar('data-stfi="0"', 'btn ic')}${fichaBtn}</span></div>
+      <span class="sx-chz" data-sficha="1" data-wb-cajon="1">${avatar(d.empresa.nombre, d.empresa.id, d.empresa.logo, 40, true)}<span class="sx-chn"><b><span class="nom">${esc(d.persona.nombre)}</span>${d.prioridad === 'urgente' ? '<span class="sx-chip urg">Urgente</span>' : `<span class="sx-chip ${TEMA_CLS[d.tema] || 'otra'}">${esc(TEMA_SOP[d.tema] || 'Otra cosa')}</span>`}</b><small>#${esc(d.numero)} · ${esc(d.empresa.nombre)} · ${esc(d.asunto)}</small></span></span>
+      <span class="sx-acc">${botones}${WB.botonMostrar('data-stfi="0"', 'btn ic')}</span></div>
     <div class="sx-msgs">${d.mensajes.map(burbuja).join('')}${adj}${pista}</div>
     <form class="sx-comp" id="s-resp"><div class="sx-box"><textarea id="s-texto" rows="3" maxlength="4000" placeholder="Escribe la respuesta…" aria-label="Respuesta">${esc(S.borrador[d.id] || '')}</textarea>
       <div class="sx-arch" id="s-arch">${tarjetasAdj(d.id)}</div>
@@ -1097,10 +1098,12 @@ function eventoSoporte(t){
     const f = filtradasSop()[0]; if (f) abrirSol(f.id);
     return true;
   }
-  const se = t.closest('[data-ssel]'); if (se) { const id = +se.dataset.ssel; S.svista = 'chat'; if (id !== S.ssel || !S.sdet) abrirSol(id); else pintar(false); return true; }
+  const se = t.closest('[data-ssel]'); if (se) { const id = +se.dataset.ssel; S.sficha = false; WB.cajon(document.querySelector('.zona'), false); S.svista = 'chat'; if (id !== S.ssel || !S.sdet) abrirSol(id); else pintar(false); return true; }
   // En el celular se ve una parte a la vez (lista, chat o ficha); en pantallas medianas la ficha se abre encima.
   const sv = t.closest('[data-svolver]'); if (sv) { S.svista = sv.dataset.svolver; S.sficha = false; pintar(false); return true; }
-  const sf = t.closest('[data-sficha]'); if (sf) { S.sficha = sf.dataset.sficha === '1'; S.svista = S.sficha ? 'ficha' : 'chat'; const sx = document.querySelector('.sx'); if (sx) sx.dataset.v = S.svista; const det = $('s-det'); if (det) det.classList.toggle('ficha-abierta', S.sficha); return true; }
+  const sf = t.closest('[data-sficha]'); if (sf) { if (sf.dataset.sficha === '1' && !WB.esCajon() && !window.matchMedia('(max-width:760px)').matches) return true;
+    WB.cajon(document.querySelector('.zona'), sf.dataset.sficha === '1' && WB.esCajon(), () => { S.sficha = false; S.svista = 'chat'; });
+    S.sficha = sf.dataset.sficha === '1'; S.svista = S.sficha ? 'ficha' : 'chat'; const sx = document.querySelector('.sx'); if (sx) sx.dataset.v = S.svista; const det = $('s-det'); if (det) det.classList.toggle('ficha-abierta', S.sficha); return true; }
   const fb = t.closest('[data-sfilt]'); if (fb) { S.filtroAb = !S.filtroAb; fb.classList.toggle('abierto', S.filtroAb); fb.setAttribute('aria-expanded', String(S.filtroAb)); pintarMenuFiltro(); return true; }
   const tf = t.closest('[data-stfi]'); if (tf) { S.smin = tf.dataset.stfi === '1'; WB.ocultarFicha($('s-det'), S.smin); return true; }
   if (t.closest('[data-sclip]')) { const f = $('s-file'); if (f) f.click(); return true; }
