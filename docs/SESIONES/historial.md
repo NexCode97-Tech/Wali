@@ -108,3 +108,4 @@
 - Precio de Starter en USD 139 para Nacarbe: el servidor calcula el precio de cada plan con las personas que ya tiene la cuenta (6), y Starter llega hasta 5, así que lo cobraba como 6. Pendiente de decidir con el usuario cómo mostrarlo.
 - Push de 9aba983 (arreglo del pago con días de prueba).
 - Maqueta «Plan que no alcanza» (versión 291 del lienzo) en MacBook, iPad y iPhone: Starter con su precio real (USD 59), candado en su punto y «Hasta 5 personas. Hoy tienes 6»; por defecto queda elegido Growth; al tocar Starter, la franja explica por qué no se puede y ofrece Ver personas, sin botón de pagar. Candado centrado medido (medio píxel). Se quitaron del lienzo los tableros ya aprobados y construidos de la barra plegable y de la API. Pendiente de aprobación.
+- Pendiente (pedido del usuario): conectar Google Calendar. Falta la clave de la cuenta de servicio de Google.
