@@ -18,14 +18,15 @@
 @media (max-width:1360px){:root{--wb-lista:317px}}
 @media (max-width:1000px){:root{--wb-lista:320px}}
 @media (min-width:1361px){
-  /* La ficha se cierra como un cajón hacia la derecha y el chat gana el espacio (la grilla anima solo mientras dura) */
-  .wb-anima{transition:grid-template-columns 420ms ${IOS},column-gap 420ms ${IOS}}
+  /* La ficha se cierra como un cajón hacia la derecha y el chat gana el espacio */
   .wb-ficha{overflow-x:hidden;transition:opacity 240ms ${SALIDA},transform 420ms ${IOS},filter 240ms ${SALIDA},margin 420ms ${IOS},visibility 0s}
   .wb-ficha > *{min-width:295px}
   .wb-ficha-oculta .wb-ficha{opacity:0;transform:translateX(28px);filter:blur(3px);pointer-events:none;visibility:hidden;
     transition:opacity 180ms ${SALIDA},transform 420ms ${IOS},filter 180ms ${SALIDA},margin 420ms ${IOS},visibility 0s 420ms}
   .wb-ficha-oculta .wb-mostrar{display:inline-flex;animation:wb-entra 280ms ${SALIDA} 140ms both}
 }
+/* La grilla anima solo mientras dura el cambio (ficha o barra), así no se mueve con otras cosas */
+.wb-anima{transition:grid-template-columns 420ms ${IOS},column-gap 420ms ${IOS}}
 @keyframes wb-entra{from{opacity:0;transform:scale(.9)}}
 /* Barra lateral plegable: queda una franja de íconos; los nombres se apagan y salen en un globito al pasar el mouse.
    Plegada, el botón para abrirla queda siempre visible debajo del logo, con la flecha hacia afuera (11-nov: escondido
@@ -87,12 +88,17 @@ button.wb-ocultar:hover{background:#f3f6fa;color:#0b0b10}button.wb-ocultar:activ
     PANEL,
     /** ¿La persona dejó la ficha oculta la última vez? Vale para el CRM y para Soporte. */
     fichaOculta: leer,
-    /** Oculta o muestra la ficha con su animación. `contenedor` es la grilla que tiene la columna de la ficha. */
-    ocultarFicha(contenedor, oculta, recordar = true) {
+    /** La grilla `contenedor` anima sus columnas solo durante el próximo cambio. */
+    animar(contenedor) {
       if (!contenedor) return;
       contenedor.classList.add('wb-anima');
       clearTimeout(contenedor._wbT);
       contenedor._wbT = setTimeout(() => contenedor.classList.remove('wb-anima'), 460);
+    },
+    /** Oculta o muestra la ficha con su animación. `contenedor` es la grilla que tiene la columna de la ficha. */
+    ocultarFicha(contenedor, oculta, recordar = true) {
+      if (!contenedor) return;
+      this.animar(contenedor);
       contenedor.classList.toggle('wb-ficha-oculta', !!oculta);
       if (recordar) guardar(!!oculta);
     },
