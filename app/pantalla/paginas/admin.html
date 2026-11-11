@@ -39,7 +39,10 @@ main{max-width:1440px;margin:0 auto;padding:30px 40px 70px}
 h1{margin:0;font-size:22px;font-weight:700;letter-spacing:-.015em}
 .sub{margin:3px 0 0;font-size:13px;color:var(--t3)}
 .der{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.btn{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:500;white-space:nowrap;transition:background 120ms var(--e-std)}
+.btn{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:500;white-space:nowrap;transition:background 160ms cubic-bezier(.23,1,.32,1),border-color 160ms cubic-bezier(.23,1,.32,1),color 160ms cubic-bezier(.23,1,.32,1),transform 140ms cubic-bezier(.23,1,.32,1)}
+.btn:active:not(:disabled){transform:scale(.97);transition-duration:90ms}
+.sx-seg button,.sx-facc button,.sx-facc a,.sx-fx,.sx-clip,.sx-fx2{transition:background 160ms cubic-bezier(.23,1,.32,1),color 160ms cubic-bezier(.23,1,.32,1),transform 140ms cubic-bezier(.23,1,.32,1)}
+.sx-seg button:active,.sx-fx:active,.sx-fx2:active{transform:scale(.95)}
 .btn:hover{background:#f6f7f9}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;padding:3px;background:#fff}
 .seg button{padding:4px 11px;border-radius:7px;font-size:12.5px;color:var(--t2);transition:background 120ms var(--e-std),color 120ms var(--e-std)}
@@ -154,7 +157,7 @@ tr.borrando td{transition:opacity 240ms var(--e-out),padding 240ms var(--e-out);
 #toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,16px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:opacity 240ms var(--e-in),transform 240ms var(--e-in);z-index:40}
 #toast.ver{opacity:1;transform:translate(-50%,0)}
 /* Soporte */
-.tab-n{min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:#e34948;color:#fff;font-size:10.5px;font-weight:700;line-height:1;display:inline-flex;align-items:center;justify-content:center}
+.tab-n{min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;border-radius:10px;background:#e34948;color:#fff;font-size:11px;font-weight:700;line-height:normal;display:grid;place-items:center}
 .tab-n[hidden]{display:none}
 /* Motion de entrada: cada página arranca con .pre y al quitarla cada pieza llega a su lugar. */
 .ent{transition:opacity 240ms var(--e-in) var(--d,0ms),transform 240ms var(--e-in) var(--d,0ms)}
@@ -170,18 +173,33 @@ tr.borrando td{transition:opacity 240ms var(--e-out),padding 240ms var(--e-out);
 @media (max-width:768px){.kp{grid-template-columns:repeat(2,minmax(0,1fr))}.busca{flex-wrap:wrap}.campo{flex-basis:100%}.hero{font-size:40px}}
 /* ── Soporte como la bandeja del CRM (maqueta aprobada el 10-nov) ── */
 main.sop{max-width:none;margin:0;padding:10px;height:100%;display:flex}
-.sx{flex:1;min-height:0;display:grid;grid-template-columns:380px minmax(0,1fr);gap:10px}
-.sx-det{min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:10px;position:relative}
+.sx{flex:1;min-height:0;display:grid;grid-template-columns:320px minmax(0,1fr);gap:10px}
+.sx-det{min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 297px;gap:10px;position:relative}
 .sx-panel{background:#fff;border-radius:16px;box-shadow:0 0 0 1px #eef0f3;min-height:0;display:flex;flex-direction:column;overflow:hidden}
 .sx-vacio{padding:24px;text-align:center;color:var(--t3);font-size:13px;margin:auto}
 .sx-lh{padding:16px 16px 12px;display:grid;gap:12px;border-bottom:1px solid #eef0f3}
 .sx-lt{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.sx-lt h2{margin:0 auto 0 0;font-size:17px;font-weight:700}
 .sx-q{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border-radius:11px;border:1px solid var(--line);background:#fff;color:var(--t3)}
+.sx-lh{grid-template-columns:minmax(0,1fr)}.sx-lh > *{min-width:0}
+.sx-fq{display:flex;gap:8px;align-items:center}.sx-fq .sx-q{flex:1;min-width:0}
+.sx-filt{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 12px;border-radius:11px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:500;color:var(--ink);flex:none;transition:background 160ms var(--e-std),border-color 160ms var(--e-std),transform 140ms var(--e-std)}
+.sx-filt:hover{background:#f3f6fa}.sx-filt:active{transform:scale(.96)}.sx-filt svg.i{width:16px;height:16px}.sx-filt.activo,.sx-filt.abierto{border-color:#0b0b10}.sx-filt.abierto{background:#f3f6fa}
+.sx-filt .fn{min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:#FFD21F;color:#0b0b10;font-size:11px;font-weight:700;display:grid;place-items:center;animation:sx-pop 300ms var(--e-in) both}
+.sx-fmenu{position:fixed;z-index:200;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 40px -12px rgba(15,23,42,.25);padding:6px;display:grid;gap:2px;transform-origin:top right;animation:sx-menu 200ms var(--e-in) both}
+@keyframes sx-menu{from{opacity:0;transform:scale(.96) translateY(-4px)}}
+.sx-fmenu .hd{font-size:11.5px;color:#9ca3af;padding:6px 10px 4px}
+.sx-fmenu button[role="menuitemcheckbox"]{display:flex;align-items:center;gap:10px;text-align:left;padding:8px 10px;border-radius:8px;font-size:13px;width:100%;color:var(--ink)}
+.sx-fmenu button[role="menuitemcheckbox"]:hover{background:#f3f6fa}
+.sx-fmenu .chk{width:17px;height:17px;border-radius:5px;border:1.5px solid #b6c0d0;display:inline-grid;place-items:center;background:#fff;flex:none;margin-right:2px;transition:background 160ms,border-color 160ms}
+.sx-fmenu .chk.on{background:#0b0b10;border-color:#0b0b10;color:#fff}.sx-fmenu .chk svg.i{width:11px;height:11px;stroke-width:2.6}
+.sx-fmenu .fpie{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid #eef0f3;margin-top:4px;padding:8px 4px 2px}
+.sx-fmenu .lim{font-size:13px;color:var(--t2);padding:6px 8px;border-radius:8px}.sx-fmenu .lim:hover{background:#f3f6fa}.sx-fmenu .btn.pri{height:34px;padding:0 14px}
+@media (prefers-reduced-motion:reduce){.sx-fmenu,.sx-filt .fn{animation:none}}
 .sx-q input{flex:1;min-width:0;border:0;outline:0;font:inherit;font-size:13.5px;color:var(--ink);background:none}.sx-q:focus-within{border-color:var(--ink)}
 .sx-seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;padding:3px;border-radius:12px;background:#f4f5f7}
-.sx-seg button{height:34px;border-radius:9px;font-size:13px;color:var(--t2);display:flex;align-items:center;justify-content:center;gap:7px;transition:background 200ms var(--e-std),color 200ms var(--e-std),transform 140ms var(--e-std)}
+.sx-seg button{height:34px;border-radius:9px;font-size:12.5px;padding:0 4px;white-space:nowrap;color:var(--t2);display:flex;align-items:center;justify-content:center;gap:5px;transition:background 200ms var(--e-std),color 200ms var(--e-std),transform 140ms var(--e-std)}
 .sx-seg button:active{transform:scale(.96)}.sx-seg button[aria-selected="true"]{background:#0b0b10;color:#fff;font-weight:600}
-.sx-seg em{font-style:normal;font-size:11.5px;min-width:20px;height:20px;border-radius:10px;display:grid;place-items:center;background:#fff;color:var(--t2);padding:0 6px;font-weight:600}.sx-seg button[aria-selected="true"] em{background:#2a2a33;color:#fff}
+.sx-seg em{font-style:normal;font-size:11px;min-width:20px;height:20px;border-radius:10px;display:grid;place-items:center;box-sizing:border-box;background:#fff;color:var(--t2);padding:0 5px;font-weight:600}.sx-seg button[aria-selected="true"] em{background:#2a2a33;color:#fff}
 .sx-items{flex:1;overflow-y:auto;padding:8px;display:grid;align-content:start;gap:8px}
 .sx-it{display:block;width:100%;text-align:left;border-radius:14px;border:1px solid transparent;overflow:hidden;transition:background 180ms var(--e-std),border-color 180ms var(--e-std),transform 140ms var(--e-std);animation:sx-entra 320ms var(--e-in) var(--d,0ms) both}
 .sx-it:hover{background:#fafafa}.sx-it:active{transform:scale(.985)}.sx-it.on{background:#FFFBEA;border-color:#F2D24C}
@@ -201,14 +219,15 @@ main.sop{max-width:none;margin:0;padding:10px;height:100%;display:flex}
 .sx-banda.urg{background:#FDECEC;color:#b91c1c}.sx-banda.urg .bi{background:#ef4444;color:#fff}
 .sx-banda.ok{background:#ECFDF3;color:#15803d}.sx-banda.ok .bi{background:#22c55e;color:#fff}
 .sx-ch{flex:none;display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid #eef0f3}
-.sx-chn{flex:1;min-width:0;display:grid}.sx-chn b{font-size:15.5px;display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sx-chn{flex:1;min-width:0;display:grid}.sx-chn b{font-size:15.5px;display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sx-chn .nom{min-width:0;overflow:hidden;text-overflow:ellipsis}.sx-chn .sx-chip{flex:none}
+.sx-chn{container-type:inline-size}@container (max-width:240px){.sx-chn .sx-chip{display:none}}
 .sx-chn small{color:var(--t3);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sx-acc{display:flex;gap:8px;flex:none}.sx-acc .btn.on{background:#0b0b10;color:#fff;border-color:#0b0b10}
 .btn.ic{width:40px;padding:0;justify-content:center}.sx-volver,.sx-ver-ficha{display:none!important}
 .sx-msgs{flex:1;min-height:0;overflow-y:auto;padding:22px 28px;display:flex;flex-direction:column;gap:16px;background-color:#f3f4f6;background-image:url(__BASE__/img/fondo-chat.png?v=gris);background-size:288px auto}
 .sx-fila{display:flex;align-items:flex-end;gap:10px;max-width:100%;animation:sx-pop 360ms var(--e-in) both}.sx-fila.yo{justify-content:flex-end}
 .sx-cav{flex:none;align-self:flex-end;margin-bottom:21px;display:flex}
-.sx-col{display:flex;flex-direction:column;gap:3px;max-width:min(520px,78%);min-width:0}.sx-fila.yo .sx-col{align-items:flex-end}.sx-fila:not(.yo) .sx-col{align-items:flex-start}
+.sx-col{display:flex;flex-direction:column;gap:3px;flex:1 1 auto;max-width:100%;min-width:0}.sx-fila.yo .sx-col{align-items:flex-end}.sx-fila:not(.yo) .sx-col{align-items:flex-start}
 .sx-cb{padding:9px 14px;border-radius:16px;font-size:14px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%;box-sizing:border-box}
 .sx-cb.in{background:#fff;border:1px solid #e5e9f0;color:var(--ink);box-shadow:0 1px 1px rgba(15,23,42,.04)}.sx-cb.in.ult{border-bottom-left-radius:6px}
 .sx-cb.out{background:#FFEC9E;color:#0b0b10}.sx-cb.out.ult{border-bottom-right-radius:6px}
@@ -235,9 +254,8 @@ main.sop{max-width:none;margin:0;padding:10px;height:100%;display:flex}
 .sx-clip{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;color:var(--t2);transition:background 140ms var(--e-std),transform 140ms var(--e-std)}.sx-clip:hover{background:#f4f5f7;color:var(--ink)}.sx-clip:active{transform:scale(.92)}.sx-clip svg.i{width:18px;height:18px}
 .sx-aviso{margin:8px 2px 0;display:flex;align-items:center;gap:7px;color:var(--t3);font-size:12.5px}.sx-aviso svg.i{width:14px;height:14px}
 .sx-fh{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 4px;font-size:12.5px;font-weight:600;color:var(--t3)}
-.sx-pmin{display:grid;place-items:center;width:26px;height:26px;border-radius:6px;color:var(--t2)}.sx-pmin:hover{background:#f3f6fa;color:var(--ink)}.sx-pmin svg.i{width:16px;height:16px}
-.sx-popen{display:none;position:absolute;right:0;top:120px;z-index:5;writing-mode:vertical-rl;background:#fff;border:1px solid var(--line);border-right:0;border-radius:8px 0 0 8px;padding:10px 5px;font-size:12px;color:#1d4ed8;box-shadow:0 1px 2px rgba(0,0,0,.05)}
-.sx-det.ficha-min{grid-template-columns:minmax(0,1fr)}.sx-det.ficha-min .sx-ficha{display:none}.sx-det.ficha-min .sx-popen{display:block}.sx-chat{position:relative}
+/* Ocultar la ficha: animación y botones del archivo compartido (compartido/bandeja.js, igual que en el CRM) */
+@media (min-width:1361px){.sx-det.wb-ficha-oculta{grid-template-columns:minmax(0,1fr) 0px;column-gap:0}}
 .sx-fx{display:none;width:34px;height:34px;border-radius:9px;place-items:center;color:#dc2626}.sx-fx:hover{background:#fef2f2}
 .sx-fper{display:grid;justify-items:center;gap:4px;padding:6px 16px 14px;border-bottom:1px solid #eef0f3;text-align:center}.sx-fper b{font-size:16px;margin-top:6px}.sx-fper small{color:var(--t3);font-size:12.5px;overflow-wrap:anywhere}
 .sx-facc{display:flex;gap:18px;margin-top:10px}.sx-facc button,.sx-facc a{display:grid;justify-items:center;gap:5px;font-size:12px;color:var(--t2);text-decoration:none}
@@ -245,15 +263,14 @@ main.sop{max-width:none;margin:0;padding:10px;height:100%;display:flex}
 .sx-ficha{overflow-y:auto}
 .sx-fsec{padding:14px 16px;border-bottom:1px solid #eef0f3;display:grid;gap:10px}.sx-fsec h4{margin:0;display:flex;align-items:center;gap:8px;font-size:14px}.sx-fsec h4 svg.i{color:var(--t3)}
 .sx-ff{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;font-size:13px;align-items:start}.sx-ff > span:first-child{color:var(--t3)}
-.sx-bus{display:flex;flex-wrap:wrap;gap:6px}.sx-bus span{background:#f4f5f7;border-radius:8px;padding:3px 8px;font-size:12px;color:var(--t2)}
 .sx-antes{margin:0;font-size:12.5px;color:var(--t2)}.sx-antes b{color:var(--ink);font-weight:600}
 .an-sec{margin:26px 0 12px;font-size:15px;font-weight:700}
 /* Pantalla mediana: la ficha se abre encima con su botón */
 @media (max-width:1360px){
-  .sx{grid-template-columns:330px minmax(0,1fr)}.sx-det{grid-template-columns:minmax(0,1fr)}
+  .sx{grid-template-columns:320px minmax(0,1fr)}.sx-det{grid-template-columns:minmax(0,1fr)}
   .sx-ficha{display:none;position:absolute;right:0;top:0;bottom:0;width:330px;z-index:30;box-shadow:0 30px 60px -20px rgba(0,0,0,.35)}
   .sx-det.ficha-abierta .sx-ficha{display:flex;animation:sx-cajon 400ms cubic-bezier(.32,.72,0,1) both}
-  .sx-ver-ficha{display:inline-flex!important}.sx-fx{display:grid}.sx-pmin,.sx-det.ficha-min .sx-popen{display:none}.sx-det.ficha-min .sx-ficha{display:none}.sx-det.ficha-min.ficha-abierta .sx-ficha{display:flex}
+  .sx-ver-ficha{display:inline-flex!important}.sx-fx{display:grid}
   .sx-acc .tx{display:none}.sx-acc .btn{width:40px;padding:0;justify-content:center}
   .sx-chn .sx-chip{display:none}
 }
@@ -327,6 +344,7 @@ body{display:flex;height:100vh;height:100dvh;overflow:hidden}
 <aside class="pn" id="pn" hidden aria-labelledby="pn-t"></aside>
 <div id="toast" role="status"></div>
 <script>
+/*BANDEJA_COMPARTIDA*/
 /*ADMIN_INICIO*/
 const INI = window.INICIO || {yo: {}};
 const $ = id => document.getElementById(id);
@@ -388,6 +406,7 @@ const IC = {
   reloj: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
   chulo: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>',
   correo: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',
+  filtro: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>',
   clip: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m20 11-8.5 8.5a5 5 0 0 1-7-7L13 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L14 7"/></svg>',
   imagen: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>',
   doc: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/></svg>',
@@ -433,7 +452,7 @@ function avatar(nombre, id, logo, tam = 28, redondo = false){
 }
 
 /* ── Estado ── */
-const S = {soporte: null, sinEntender: null, svista: 'lista', sficha: false, stab: 'abierta', ssel: null, sdet: null, sq: '', sTema: '', sPri: '', borrador: {}, adj: {}, smin: false, enviando: false, cupones: null, cq: '', cEst: '', cPlan: '', fila: null, confirma: null, nuevo: null, tab: 'resumen', rango: '12m', mes: '', resumen: null, finanzas: null, empresas: null, filtro: 'todas', plan: '', est: '', orden: 'uso', q: '', abierta: null, menu: null};
+const S = {soporte: null, sinEntender: null, svista: 'lista', sficha: false, stab: 'abierta', ssel: null, sdet: null, sq: '', fTema: [], fPri: [], filtroAb: false, borrador: {}, adj: {}, smin: WB.fichaOculta(), enviando: false, cupones: null, cq: '', cEst: '', cPlan: '', fila: null, confirma: null, nuevo: null, tab: 'resumen', rango: '12m', mes: '', resumen: null, finanzas: null, empresas: null, filtro: 'todas', plan: '', est: '', orden: 'uso', q: '', abierta: null, menu: null};
 
 /* ── Pestañas con indicador que se desliza ── */
 // Con la barra lateral (10-nov) ya no hay indicador que deslizar: el módulo abierto lo marca su estilo.
@@ -447,7 +466,7 @@ function menu(abrir){
   if (abrir) $('lat-x').focus();
 }
 function irA(tab){
-  S.tab = tab; cerrarPanel(true);
+  S.tab = tab; cerrarPanel(true); cerrarFiltro();
   document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === tab)));
   moverInd(); menu(false); $('mtop-t').textContent = NOMBRE_MOD[tab] || '';
   try { history.replaceState(null, '', '#' + tab); } catch {}
@@ -838,7 +857,7 @@ function chipSop(s){ return s.prioridad === 'urgente' ? `<span class="est b">${I
 function filtradasSop(){
   const L = (S.soporte && S.soporte.solicitudes) || [], q = norm(S.sq);
   // Las urgentes primero; después, la que más lleva esperando respuesta.
-  return L.filter(s => s.estado === S.stab && (!S.sTema || s.tema === S.sTema) && (!S.sPri || s.prioridad === S.sPri) && (!q || norm(`${s.empresa} ${s.persona} ${s.numero} ${s.asunto}`).includes(q)))
+  return L.filter(s => s.estado === S.stab && (!S.fTema.length || S.fTema.includes(s.tema)) && (!S.fPri.length || S.fPri.includes(s.prioridad)) && (!q || norm(`${s.empresa} ${s.persona} ${s.numero} ${s.asunto}`).includes(q)))
     .sort((a, b) => (b.prioridad === 'urgente') - (a.prioridad === 'urgente') || (a.espera && b.espera ? new Date(a.espera) - new Date(b.espera) : new Date(b.actualizada) - new Date(a.actualizada)));
 }
 /* ── Analíticas (maqueta aprobada el 10-nov): las cifras de soporte, con las mismas tarjetas de cifras del superadmin, y
@@ -868,7 +887,8 @@ function vSoporte(){
   if (!D) return '<div class="vacio">Cargando…</div>';
   const n = k => D.solicitudes.filter(s => s.estado === k).length;
   const seg = `<div class="sx-seg" role="tablist" aria-label="Estado">${Object.entries(ESTADO_SOP).map(([k, t]) => `<button type="button" role="tab" data-stab="${k}" aria-selected="${S.stab === k}">${t}<em>${num(n(k))}</em></button>`).join('')}</div>`;
-  const filtros = `${dd('stema', S.sTema ? TEMA_SOP[S.sTema] : 'Todos los temas', [['', 'Todos los temas'], ...Object.entries(TEMA_SOP)], S.sTema)}${dd('spri', S.sPri ? (S.sPri === 'urgente' ? 'Urgentes' : 'Normales') : 'Toda prioridad', [['', 'Toda prioridad'], ['urgente', 'Urgentes'], ['normal', 'Normales']], S.sPri)}`;
+  const nf = S.fTema.length + S.fPri.length;
+  const filtros = `<button type="button" class="sx-filt${nf ? ' activo' : ''}${S.filtroAb ? ' abierto' : ''}" data-sfilt="1" aria-haspopup="menu" aria-expanded="${S.filtroAb}" aria-label="Filtrar${nf ? ', ' + nf + (nf === 1 ? ' filtro' : ' filtros') : ''}">${IC.filtro}<span>Filtrar</span>${nf ? `<span class="fn">${nf}</span>` : ''}</button>`;
   const fs = filtradasSop();
   if (S.ssel == null || !fs.some(s => s.id === S.ssel)) S.ssel = fs.length ? fs[0].id : null;
   const item = (s, i) => {
@@ -884,10 +904,10 @@ function vSoporte(){
   const lista = fs.length ? fs.map(item).join('') : `<p class="sx-vacio">${D.solicitudes.length ? 'Ninguna solicitud aquí con esos filtros.' : 'Todavía nadie ha escrito a soporte.'}</p>`;
   const det = S.sdet && S.sdet.id === S.ssel ? vDetalleSop(S.sdet) : `<section class="sx-panel sx-chat"><p class="sx-vacio">${S.ssel ? 'Cargando…' : 'Elige una solicitud.'}</p></section>`;
   return `<div class="sx" data-v="${S.svista}">
-    <section class="sx-panel sx-lista" aria-label="Solicitudes"><div class="sx-lh"><div class="sx-lt"><h2>Solicitudes</h2>${filtros}</div>
-      <label class="sx-q">${IC.search}<input id="sq" type="search" value="${esc(S.sq)}" placeholder="Buscar por empresa, persona o número" aria-label="Buscar solicitud" autocomplete="off"></label>${seg}</div>
+    <section class="sx-panel sx-lista" aria-label="Solicitudes"><div class="sx-lh"><div class="sx-lt"><h2>Solicitudes</h2></div>
+      <div class="sx-fq"><label class="sx-q">${IC.search}<input id="sq" type="search" value="${esc(S.sq)}" placeholder="Buscar empresa, persona o número" aria-label="Buscar solicitud" autocomplete="off"></label>${filtros}</div>${seg}</div>
       <div class="sx-items">${lista}</div></section>
-    <div id="s-det" class="sx-det${S.sficha ? ' ficha-abierta' : ''}${S.smin ? ' ficha-min' : ''}">${det}</div></div>`;
+    <div id="s-det" class="sx-det${S.sficha ? ' ficha-abierta' : ''}${S.smin ? ' wb-ficha-oculta' : ''}">${det}</div></div>`;
 }
 const horaDe = iso => new Date(iso).toLocaleTimeString('es-CO', {hour: 'numeric', minute: '2-digit'});
 // Cada mensaje como en el chat de la bandeja: imágenes, texto y archivos en bloques, y debajo quién y cuándo.
@@ -912,21 +932,20 @@ function vDetalleSop(d){
   const fichaBtn = `<button type="button" class="btn ic sx-ver-ficha" data-sficha="1" aria-label="Ver la ficha"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M15 4v16"/></svg></button>`;
   const chat = `<section class="sx-panel sx-chat" aria-label="Conversación">
     <div class="sx-ch"><button type="button" class="btn ic sx-volver" data-svolver="lista" aria-label="Volver a la lista"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></button>
-      ${avatar(d.empresa.nombre, d.empresa.id, d.empresa.logo, 40, true)}<span class="sx-chn"><b>${esc(d.persona.nombre)} ${d.prioridad === 'urgente' ? '<span class="sx-chip urg">Urgente</span>' : `<span class="sx-chip ${TEMA_CLS[d.tema] || 'otra'}">${esc(TEMA_SOP[d.tema] || 'Otra cosa')}</span>`}</b><small>#${esc(d.numero)} · ${esc(d.empresa.nombre)} · ${esc(d.asunto)}</small></span>
-      <span class="sx-acc">${botones}${fichaBtn}</span></div>
+      ${avatar(d.empresa.nombre, d.empresa.id, d.empresa.logo, 40, true)}<span class="sx-chn"><b><span class="nom">${esc(d.persona.nombre)}</span>${d.prioridad === 'urgente' ? '<span class="sx-chip urg">Urgente</span>' : `<span class="sx-chip ${TEMA_CLS[d.tema] || 'otra'}">${esc(TEMA_SOP[d.tema] || 'Otra cosa')}</span>`}</b><small>#${esc(d.numero)} · ${esc(d.empresa.nombre)} · ${esc(d.asunto)}</small></span>
+      <span class="sx-acc">${botones}${WB.botonMostrar('data-stfi="0"', 'btn ic')}${fichaBtn}</span></div>
     <div class="sx-msgs">${d.mensajes.map(burbuja).join('')}${adj}${pista}</div>
     <form class="sx-comp" id="s-resp"><div class="sx-box"><textarea id="s-texto" rows="3" maxlength="4000" placeholder="Escribe la respuesta…" aria-label="Respuesta">${esc(S.borrador[d.id] || '')}</textarea>
       <div class="sx-arch" id="s-arch">${tarjetasAdj(d.id)}</div>
       <div class="sx-bar"><button type="button" class="sx-clip" data-sclip="1" aria-label="Adjuntar un archivo" title="Adjuntar (también puedes pegar con Ctrl+V)">${IC.clip}</button><input type="file" id="s-file" multiple hidden><span class="sx-esp"></span><button type="submit" class="btn pri"${S.enviando ? ' disabled' : ''}>${S.enviando ? '<span class="sx-rueda" aria-hidden="true"></span>Enviando…' : IC.avion + 'Responder'}</button></div></div>
-      <p class="sx-aviso">${IC.correo}Le llega por correo y en Wali</p></form><button type="button" class="sx-popen" data-smin="0">Contacto</button></section>`;
+      <p class="sx-aviso">${IC.correo}Le llega por correo y en Wali</p></form></section>`;
   const [et, ec] = estado({estado: d.empresa.estado, cancelaAlFinal: d.empresa.cancelaAlFinal});
   const fila = (a, b) => `<div class="sx-ff"><span>${a}</span><span>${b}</span></div>`;
-  const busco = (ctx.busco || []).length ? `<span class="sx-bus">${ctx.busco.map(b => `<span>«${esc(b)}»</span>`).join('')}</span>` : '—';
-  const ficha = `<aside class="sx-panel sx-ficha" aria-label="Solicitud ${esc(d.numero)}"><div class="sx-fh"><span>Solicitud #${esc(d.numero)}</span><button type="button" class="sx-pmin" data-smin="1" aria-label="Ocultar el panel"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button><button type="button" class="sx-fx" data-sficha="0" aria-label="Cerrar la ficha">${IC.x}</button></div>
+  const ficha = `<aside class="sx-panel sx-ficha wb-ficha" aria-label="Solicitud ${esc(d.numero)}"><div class="sx-fh"><span>Solicitud #${esc(d.numero)}</span>${WB.botonOcultar('data-stfi="1"')}<button type="button" class="sx-fx" data-sficha="0" aria-label="Cerrar la ficha">${IC.x}</button></div>
     <div class="sx-fper">${avatar(d.persona.nombre, d.persona.correo, null, 64, true)}<b>${esc(d.persona.nombre)}</b><small>${esc(d.persona.correo)}</small>
       <div class="sx-facc"><button type="button" data-sempresa="${esc(d.empresa.id)}"><span>${IC.empresa}</span>Ver empresa</button><a href="mailto:${esc(d.persona.correo)}"><span>${IC.correo}</span>Correo</a><button type="button" data-scopiar="${esc(d.persona.correo)}"><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg></span>Copiar</button></div></div>
     <div class="sx-fsec"><h4>${IC.empresa}Empresa</h4>${fila('Empresa', esc(d.empresa.nombre))}${fila('Plan', esc(`${PLAN[d.empresa.plan] || d.empresa.plan} ${(PERIODO[d.empresa.periodo] || '').toLowerCase()}`.trim()))}${fila('Estado', `<span class="est ${ec}">${et}</span>`)}${fila('Rol', esc(ROL[d.persona.rol] || d.persona.rol))}</div>
-    <div class="sx-fsec"><h4>${IC.alert}Contexto</h4>${fila('Estaba en', esc(ctx.pantalla || '—'))}${caidas.map(l => fila(`Línea ${esc(l.nombre)}`, `<span style="color:var(--mal)">Sin conexión ${esc(hace(l.desde).toLowerCase())}</span>`)).join('')}${fila('Buscó antes', busco)}</div>
+    <div class="sx-fsec"><h4>${IC.alert}Contexto</h4>${fila('Estaba en', esc(ctx.pantalla || '—'))}${caidas.map(l => fila(`Línea ${esc(l.nombre)}`, `<span style="color:var(--mal)">Sin conexión ${esc(hace(l.desde).toLowerCase())}</span>`)).join('')}</div>
     <div class="sx-fsec"><h4>${IC.reloj}Antes pidió</h4>${d.antes.length ? d.antes.map(a => `<p class="sx-antes"><b>«${esc(a.asunto)}»</b> · ${a.minutos != null ? `resuelta en ${esc(hm(a.minutos))}` : esc((ESTADO_SOP[a.estado] || a.estado).toLowerCase())} · ${esc(fecha(a.creada))}</p>`).join('') : '<p class="sx-antes">Es su primera solicitud.</p>'}</div></aside>`;
   return chat + ficha;
 }
@@ -976,6 +995,35 @@ async function subirAdj(archivos){
     if (S.ssel === id) pintarAdj();
   }
 }
+/* Filtrar (maqueta aprobada «Filtrar» del 10-nov): tema y prioridad en un solo menú con casillas, montado en el body
+   bajo su botón para que ningún panel lo recorte. */
+function pintarMenuFiltro(){
+  const viejo = $('sx-fmenu'); if (viejo) viejo.remove();
+  const b = document.querySelector('[data-sfilt]'); if (!S.filtroAb || !b) return;
+  const chk = on => `<span class="chk${on ? ' on' : ''}">${on ? IC.chulo : ''}</span>`;
+  const op = (grupo, k, t) => { const on = S[grupo].includes(k); return `<button type="button" role="menuitemcheckbox" aria-checked="${on}" data-sfo="${grupo}:${esc(k)}">${chk(on)}${esc(t)}</button>`; };
+  const m = document.createElement('div'); m.id = 'sx-fmenu'; m.className = 'sx-fmenu'; m.setAttribute('role', 'menu'); m.setAttribute('aria-label', 'Filtrar');
+  m.insertAdjacentHTML('beforeend', `<div class="hd">Tema</div>${Object.entries(TEMA_SOP).map(([k, t]) => op('fTema', k, t)).join('')}<div class="hd">Prioridad</div>${op('fPri', 'urgente', 'Urgentes')}${op('fPri', 'normal', 'Normales')}<div class="fpie"><button type="button" class="lim" data-sflim="1">Limpiar</button><button type="button" class="btn pri" data-sflisto="1">Listo</button></div>`);
+  document.body.appendChild(m);
+  const r = b.getBoundingClientRect(), ancho = Math.min(260, innerWidth - 24);
+  m.style.width = ancho + 'px'; m.style.top = (r.bottom + 6) + 'px'; m.style.left = Math.max(12, Math.min(r.right - ancho, innerWidth - ancho - 12)) + 'px';
+}
+function cerrarFiltro(){ if (!S.filtroAb) return; S.filtroAb = false; pintarMenuFiltro(); const b = document.querySelector('[data-sfilt]'); if (b) { b.classList.remove('abierto'); b.setAttribute('aria-expanded', 'false'); } }
+// Al cambiar un filtro: la lista se repinta sola; si la solicitud abierta ya no está, se abre la primera que quede.
+function aplicarFiltroSop(){
+  const fs = filtradasSop();
+  if (!fs.some(x => x.id === S.ssel)) { S.ssel = null; S.sdet = null; pintar(false); if (fs[0]) abrirSol(fs[0].id); }
+  else pintarListaSop();
+  pintarMenuFiltro();
+}
+document.addEventListener('click', ev => {
+  const t = ev.target instanceof Element ? ev.target : null; if (!t || !S.filtroAb) return;
+  const o = t.closest('[data-sfo]');
+  if (o) { const [g, k] = o.dataset.sfo.split(':'); S[g] = S[g].includes(k) ? S[g].filter(x => x !== k) : [...S[g], k]; aplicarFiltroSop(); return; }
+  if (t.closest('[data-sflim]')) { S.fTema = []; S.fPri = []; aplicarFiltroSop(); return; }
+  if (t.closest('[data-sflisto]') || (!t.closest('#sx-fmenu') && !t.closest('[data-sfilt]'))) cerrarFiltro();
+});
+addEventListener('resize', () => { if (S.filtroAb) pintarMenuFiltro(); });
 async function abrirSol(id){
   S.ssel = id; S.sdet = null; pintar(false);
   try { const d = await api('/soporte/' + id); if (S.ssel === id) { S.sdet = d; pintarDetalle(); } }
@@ -1007,6 +1055,7 @@ async function responderSol(){
 }
 // Solo la columna de la lista: el chat y lo que se está escribiendo quedan como están.
 function pintarListaSop(){
+  if (S.filtroAb) requestAnimationFrame(pintarMenuFiltro);
   const vieja = document.querySelector('.sx-lista'); if (!vieja) return;
   // vSoporte elige otra solicitud si la abierta salió de la pestaña; aquí no: el chat abierto se queda.
   const sel = S.ssel, tmp = document.createElement('div'); tmp.insertAdjacentHTML('beforeend', vSoporte()); S.ssel = sel;
@@ -1043,7 +1092,8 @@ function eventoSoporte(t){
   // En el celular se ve una parte a la vez (lista, chat o ficha); en pantallas medianas la ficha se abre encima.
   const sv = t.closest('[data-svolver]'); if (sv) { S.svista = sv.dataset.svolver; S.sficha = false; pintar(false); return true; }
   const sf = t.closest('[data-sficha]'); if (sf) { S.sficha = sf.dataset.sficha === '1'; S.svista = S.sficha ? 'ficha' : 'chat'; const sx = document.querySelector('.sx'); if (sx) sx.dataset.v = S.svista; const det = $('s-det'); if (det) det.classList.toggle('ficha-abierta', S.sficha); return true; }
-  const mn = t.closest('[data-smin]'); if (mn) { S.smin = mn.dataset.smin === '1'; const det = $('s-det'); if (det) det.classList.toggle('ficha-min', S.smin); return true; }
+  const fb = t.closest('[data-sfilt]'); if (fb) { S.filtroAb = !S.filtroAb; fb.classList.toggle('abierto', S.filtroAb); fb.setAttribute('aria-expanded', String(S.filtroAb)); pintarMenuFiltro(); return true; }
+  const tf = t.closest('[data-stfi]'); if (tf) { S.smin = tf.dataset.stfi === '1'; WB.ocultarFicha($('s-det'), S.smin); return true; }
   if (t.closest('[data-sclip]')) { const f = $('s-file'); if (f) f.click(); return true; }
   const sq = t.closest('[data-squitar]'); if (sq) { const L = S.adj[S.ssel] || []; L.splice(+sq.dataset.squitar, 1); pintarAdj(); return true; }
   const sc = t.closest('[data-scopiar]'); if (sc) { navigator.clipboard.writeText(sc.dataset.scopiar).then(() => alertar('Correo copiado'), () => alertar('No se pudo copiar')); return true; }
@@ -1088,7 +1138,7 @@ document.addEventListener('click', ev => {
   const op = t.closest('[data-op]');
   if (op) {
     const [id, ...r] = op.dataset.op.split(':'), v = r.join(':'); S.menu = null;
-    if (id === 'plan') S.plan = v; if (id === 'est') S.est = v; if (id === 'orden') S.orden = v; if (id === 'cest') S.cEst = v; if (id === 'cplan') S.cPlan = v; if (id === 'stema') { S.sTema = v; S.ssel = null; } if (id === 'spri') { S.sPri = v; S.ssel = null; }
+    if (id === 'plan') S.plan = v; if (id === 'est') S.est = v; if (id === 'orden') S.orden = v; if (id === 'cest') S.cEst = v; if (id === 'cplan') S.cPlan = v;
     if (id === 'mes') { S.mes = v; cargar('finanzas'); return; }
     pintar(false); return;
   }
@@ -1101,6 +1151,7 @@ document.addEventListener('click', ev => {
 });
 document.addEventListener('mousemove', tipBarras);
 document.addEventListener('keydown', ev => {
+  if (ev.key === 'Escape' && S.filtroAb) { cerrarFiltro(); return; }
   if (ev.key === 'Escape' && $('lat').classList.contains('abierta')) { menu(false); return; }
   if (ev.key === 'Escape') { if (S.nuevo && S.menu) { S.menu = null; pintarNuevo(); } else if (S.menu || S.fila) { S.menu = null; S.fila = null; S.confirma = null; pintar(false); } else if (S.nuevo) cerrarNuevo(); else cerrarPanel(); }
   if ((ev.key === 'Enter' || ev.key === ' ') && ev.target instanceof Element && ev.target.matches('tr[data-emp]')) { ev.preventDefault(); abrirEmpresa(ev.target.dataset.emp); }

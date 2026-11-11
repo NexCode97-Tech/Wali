@@ -687,7 +687,7 @@ function panel(c){
   const h = historial(c), recs = (c.recs || []).filter(r => !r.hecho).length;
   const pautaNombre = c.pauta ? (({Google:'Google Ads', TikTok:'TikTok Ads', Meta:'Meta Ads'})[c.pauta.plataforma] || c.pauta.plataforma || 'Pauta') : '';
   document.getElementById('panel').innerHTML = `
-    <div class="ptitle">Contacto<button type="button" id="p-min" aria-label="Ocultar el panel">${I('back')}</button></div>
+    <div class="ptitle">Contacto${WB.botonOcultar('id="p-min" data-wb-ficha="1"')}</div>
     <div class="contact">
       <div class="pc-who"><span class="av" style="background:${AVC[c.id % AVC.length]}">${esc(ini(c.n))}</span><span><b>${esc(c.n)}</b>${c.numero ? `<small>Ticket <strong>#${c.numero}</strong></small>` : ''}</span></div>
       <div class="pc-acts">${c.guardado ? `<button type="button" class="pc-act" aria-label="Ver contacto" title="Ver en Contactos">${I('user')}Ver</button>` : `<button type="button" class="pc-act pri" id="b-agregar" title="Agregar a contactos">${I('user-plus')}Agregar</button>`}<button type="button" class="pc-act" id="b-editar" title="Editar contacto">${I('pen')}Editar</button><button type="button" class="pc-act" id="b-transferir" title="Transferir con nota">${I('share')}Transferir</button>${c.canal === 'wa' ? `<button type="button" class="pc-act" id="b-call" title="Llamar por WhatsApp">${I('phone')}Llamar</button>` : ''}</div>
@@ -1337,9 +1337,14 @@ document.getElementById('panel').addEventListener('click', e => {
   if (e.target.closest('#eq-b')) { e.stopPropagation(); if (abrirMenuPanel('eq')) { const c = CONV.find(x => x.id === st.sel); document.getElementById('eq-m').innerHTML = `<label class="pc-mq">${I('search')}<input id="eq-q" placeholder="Buscar equipo" autocomplete="off" aria-label="Buscar equipo"></label><div class="pc-ml" id="eq-l">${opcionesEquipo(c, '')}</div>`; document.getElementById('eq-q').focus(); } return; }
   // Cambiar de equipo: el API la deja sin asesor (si no es de ese equipo) y la reparte entre los conectados del equipo nuevo.
   const q = e.target.closest('[data-eq]'); if (q) { const c = CONV.find(x => x.id === st.sel); cerrarMenusPanel(); if (!c || q.dataset.eq === equipoConv(c)) return; c.equipo = q.dataset.eq; c.msgs.push({ev:'swap', t:`Pasó al equipo ${c.equipo} · ahora`}); render(); toast(`Pasó al equipo ${c.equipo}`); return; }
-  if (e.target.closest('#p-min')) { document.getElementById('app').classList.add('panel-min'); document.getElementById('app').classList.remove('panel-on'); pintarPopen(); }
+  if (e.target.closest('[data-wb-ficha="1"]')) fichaCrm(true);
 }, true);
-function pintarPopen(){ let b = document.getElementById('popen'); const min = document.getElementById('app').classList.contains('panel-min'); if (!min) { if (b) b.remove(); return; } if (!b) { b = document.createElement('button'); b.id = 'popen'; b.type = 'button'; b.className = 'popen'; b.textContent = 'Contacto'; b.onclick = () => { document.getElementById('app').classList.remove('panel-min'); b.remove(); }; document.querySelector('.chat').style.position = 'relative'; document.querySelector('.chat').appendChild(b); } }
+/* Ocultar y mostrar la ficha (11-nov): el mismo botón, la misma animación y el mismo recuerdo que Soporte del superadmin
+   (compartido/bandeja.js). Oculta, aparece «Mostrar la ficha» en la cabecera del chat. */
+function fichaCrm(oculta){ const app = document.getElementById('app'); WB.ocultarFicha(app, oculta); app.classList.toggle('panel-min', oculta); app.classList.remove('panel-on'); }
+document.querySelector('.chat-h .acts').insertAdjacentHTML('beforeend', WB.botonMostrar('data-wb-ficha="0"', 'btn ic'));
+document.querySelector('.chat-h').addEventListener('click', e => { if (e.target.closest('[data-wb-ficha="0"]')) fichaCrm(false); });
+if (WB.fichaOculta()) { const app = document.getElementById('app'); app.classList.add('panel-min', 'wb-ficha-oculta'); }
 
 // Informes: las barras llevan a la bandeja filtrada
 document.getElementById('page').addEventListener('click', e => { const a = e.target.closest('[data-f-etq]'); if (a) { st.etq = ''; filtrar('etq', a.dataset.fEtq); return; } const l = e.target.closest('[data-f-linea]'); if (l) { st.linea = ''; filtrar('linea', l.dataset.fLinea); } });

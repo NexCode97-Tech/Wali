@@ -57,7 +57,7 @@
 #app .btn.pri:hover{background:var(--nx-amarillo-2);border-color:var(--nx-amarillo-2);color:var(--nx-negro)}
 
 /* ── Panel del contacto: foto, nombre y ticket centrados; acciones en círculos; datos en un bloque gris ── */
-#app .ptitle{font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);border-bottom:0}
+#app .ptitle{font-size:12.5px;font-weight:600;color:var(--ink3);border-bottom:0}
 #app .ptitle svg{color:var(--ink3)}
 #app .contact{padding-top:6px}
 #app .pc-who{flex-direction:column;text-align:center;gap:10px}
@@ -86,8 +86,9 @@
   #app > .list{margin-left:18px}
   #app > .panel{margin-right:18px}
   #app.app.pg > .page{margin:18px}
-  #app.app.panel-min > .panel{margin:0;border:0}
+  #app.app.panel-min > .panel{margin:18px 0;border-color:transparent}
   #app.app.panel-min > .chat{margin-right:18px}
+  #app.wb-anima > .chat{transition:margin 420ms cubic-bezier(.32,.72,0,1)}
 }
 @media (min-width:1001px) and (max-width:1360px){
   #app.app{--navw:220px}

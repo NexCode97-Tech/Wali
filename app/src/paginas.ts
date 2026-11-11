@@ -49,8 +49,11 @@ const LOGO = (() => {
   return /^(https:\/\/|\/)[^\s"'<>]+$/.test(v) ? v : ''
 })()
 
+/** Lo que comparten la bandeja del CRM y Soporte del superadmin (11-nov): un solo archivo para las dos pantallas. */
+const BANDEJA = () => readFileSync(join(PANTALLA, 'compartido', 'bandeja.js'), 'utf8')
+
 const armarCrm = () => leer('crm.html', html => {
-  const js = SCRIPTS.map(n => readFileSync(join(PANTALLA, 'js', n + '.js'), 'utf8')).join('\n')
+  const js = BANDEJA() + '\n' + SCRIPTS.map(n => readFileSync(join(PANTALLA, 'js', n + '.js'), 'utf8')).join('\n')
   const conLogo = LOGO
     ? html.replace(/<span class="brand-ic" aria-hidden="true">[\s\S]*?<\/span>/, () => `<span class="brand-ic logo" aria-hidden="true"><img src="${escapar(LOGO)}" alt=""></span>`)
     : html
@@ -142,7 +145,7 @@ router.get('/admin', asyncHandler(async (req: Request, res: Response) => {
   // Sin el pase que da elegir «Panel» al iniciar sesión, se vuelve a iniciar sesión.
   if (!paseValido(req, u.id)) { res.redirect(BASE + '/entrar?ir=panel'); return }
   const inicio = { yo: { nombre: u.nombre ?? u.email } }
-  html(res, leer('paginas/admin.html').replace('/*ADMIN_INICIO*/', () => `window.INICIO = ${enScript(inicio)};`))
+  html(res, leer('paginas/admin.html', h => h.replace('/*BANDEJA_COMPARTIDA*/', () => BANDEJA())).replace('/*ADMIN_INICIO*/', () => `window.INICIO = ${enScript(inicio)};`))
 }))
 
 /** El enlace público de los términos y condiciones de una empresa: siempre abre la última versión. */

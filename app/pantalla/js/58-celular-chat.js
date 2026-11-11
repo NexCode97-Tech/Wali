@@ -82,7 +82,7 @@
   /* 3.2 · Panel del contacto a pantalla completa: ocupa el lugar del chat mientras está abierto. */
   #app.cch-ct:not(.pg):not(.sinchat) > .chat{display:none}
   #app.cch-ct:not(.pg):not(.sinchat) > .panel{display:block;position:static;width:auto;min-width:0;min-height:0;border-left:0;box-shadow:none;background:#fff;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;line-height:normal}
-  #app .panel .ptitle,#app .popen{display:none}
+  #app .panel .ptitle{display:none}
   #app .panel .cch-ct-h{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:8px;padding:12px 12px 12px 10px;border-bottom:1px solid #e5e9f0;background:#fff}
   #app .panel .cch-volver{width:30px;height:30px;display:grid;place-items:center;flex:none;margin-left:-6px;color:#374151;border-radius:8px}
   #app .panel .cch-volver svg{width:18px;height:18px}
