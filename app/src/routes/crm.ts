@@ -57,9 +57,14 @@ router.get('/plan', asyncHandler(async (req: Request, res: Response) => {
   // Cobro por usuarios (10-nov): el precio de cada plan de la página de precios, para los usuarios de esta cuenta
   // (el mínimo del plan o los que ya están, lo que sea mayor). La pantalla muestra lo que se cobra, con la misma fórmula.
   const MIN: Record<Plan, number> = { starter: 3, growth: 6, business: 11 }
+  // Un plan que no cubre las personas que ya tiene la cuenta sale con su precio real y bloqueado (maqueta «Plan que no
+  // alcanza», aprobada el 11-nov). Antes salía con el precio de esas personas, que es el de otro plan.
+  const MAX: Partial<Record<Plan, number>> = { starter: 5, growth: 10 }
   const conPrecio = (catalogo as Array<Record<string, unknown>>).map(p => {
     const id = String(p.id) as Plan
     if (!PLANES.includes(id)) return p
+    const max = MAX[id]
+    if (max && uso.usuarios > max) return { ...p, bloqueado: true, maximo: max, enUso: uso.usuarios }
     const n = Math.max(MIN[id], uso.usuarios, USUARIOS_MIN)
     const anual = precioUsuarios(n, 'anual')
     return { ...p, usuarios: n, mensual: precioUsuarios(n, 'mensual'), anual: anual.toLocaleString('es-CO'), equivaleMes: `USD ${Math.round(anual / 12)}` }

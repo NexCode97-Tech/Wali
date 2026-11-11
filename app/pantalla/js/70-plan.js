@@ -250,6 +250,19 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .pla .btn.pla-pri{background:#FFD21F;border-color:#FFD21F;color:#0b0b10;font-weight:600;min-height:44px;padding:0 18px;gap:8px}
 .pla .btn.pla-pri svg{width:16px;height:16px;transition:transform .18s var(--pla-ease)}.pla .btn.pla-pri:hover svg{transform:translateX(3px)}
 .pla .btn.pla-pri:hover{background:#f5c800;border-color:#f5c800}.pla .btn.pla-pri:disabled{opacity:.55;cursor:default}
+/* Plan que no alcanza (maqueta aprobada el 11-nov): precio real, candado en su punto y la franja que explica por qué */
+.pla-pt{display:grid;place-items:center}.pla-cand{fill:none;stroke-linecap:round;stroke-linejoin:round;overflow:visible}
+.pla-paso.bloq .pla-pt{background:var(--bg2);border-color:#d6dae1}.pla-paso.bloq .pla-cand{width:12px;height:12px;stroke:#8a929e;stroke-width:2.2}
+.pla-paso.bloq .pla-pn,.pla-paso.bloq .pla-pp{color:#8a929e}.pla-paso.bloq .pla-pg{color:#b45309}
+.pla-paso.bloq.sel .pla-pt{background:#fff;border-color:#8a929e;box-shadow:0 0 0 6px var(--bg2)}.pla-paso.bloq.sel .pla-pn{text-decoration-color:#c9ced6}
+.pla-det.no{background:var(--bg2);justify-content:flex-start;flex-wrap:nowrap}
+.pla-no-ic{width:40px;height:40px;border-radius:12px;background:#fff;border:1px solid var(--line);display:grid;place-items:center;flex:none}
+.pla-no-ic .pla-cand{width:19px;height:19px;stroke:var(--ink2);stroke-width:1.9}
+.pla-no-ic .pla-arco{transform-box:fill-box;transform-origin:100% 100%;animation:pla-cand .5s var(--pla-ease) .18s both}
+@keyframes pla-cand{40%{transform:translateY(-2.5px) rotate(-8deg)}}
+.pla-no-t{flex:1;min-width:0;display:grid;gap:3px}.pla-no-t b{font-size:14px;color:var(--ink)}.pla-no-t small{font-size:13px;color:var(--ink3);line-height:1.45}
+.pla .btn.pla-sec{min-height:44px;padding:0 18px;gap:8px;font-weight:600;background:#fff;transition:transform .12s var(--pla-ease),box-shadow .16s}
+.pla .btn.pla-sec:hover{transform:translateY(-1px);box-shadow:0 2px 8px rgba(15,15,20,.08)}.pla .btn.pla-sec:active{transform:scale(.97);box-shadow:none}.pla .btn.pla-sec svg{width:17px;height:17px}
 .pla .btn{transition:transform .18s var(--pla-ease)}.pla .btn:active{transform:scale(.97)}
 .pla-led{margin-top:40px}
 .pla-led-h{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-bottom:8px;border-bottom:2px solid var(--ink)}
@@ -273,6 +286,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
   .pla .pla-paso{grid-template-columns:24px 1fr auto;grid-template-areas:"t n p" "t g g";column-gap:12px;padding:12px;border:1px solid var(--line2)}
   .pla-pt{grid-area:t;margin:0}.pla-pn{grid-area:n;font-size:16px}.pla-pp{grid-area:p}.pla-pg{grid-area:g}.pla .pla-paso.sel{border-color:var(--ink)}
   .pla-det{flex-direction:column;align-items:stretch}.pla-det ul{flex-direction:column}.pla-det .btn{width:100%;justify-content:center}
+  .pla-det.no{flex-direction:row;flex-wrap:wrap;align-items:flex-start}.pla-det.no .btn{flex-basis:100%}.pla .pla-paso.bloq.sel{border-color:#8a929e}
   .pla-led-f{grid-template-columns:1fr auto 40px;grid-template-areas:"d m r" "f o r";row-gap:2px;padding:10px 0}.pla-lf{grid-area:f;font-size:12.5px}.pla-ld{grid-area:d}.pla-lm{grid-area:m}.pla-led-f .pl-pago{grid-area:o;justify-self:end}.pla-led-f > :last-child{grid-area:r}.pla-dots,.pla-per{display:none}
   .pla-acc .btn{flex:1;justify-content:center}
 }
@@ -283,6 +297,8 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 let PLAN = null, planCargando = null;
 st.plPeriodo = '';
 const PL_NOMBRE = {starter:'Starter', growth:'Growth', business:'Business'};
+// Candado de un plan que no alcanza para las personas de la cuenta (maqueta «Plan que no alcanza», 11-nov).
+const PLA_CANDADO = '<svg class="pla-cand" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path class="pla-arco" d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg>';
 // El correo de soporte de los cobros (debe verse dentro del producto).
 const PL_SOPORTE = 'nexcode97@gmail.com';
 // Si el sitio no respondió, la pantalla muestra al menos el nombre y el precio de cada plan.
@@ -432,7 +448,9 @@ function plaEscalera(P){
   const noRenueva = P.estado === 'cancelado' || P.cancelaAlFinal;
   const pagado = P.vigente && ['activo', 'pago-pendiente', 'cancelado'].includes(P.estado);
   const iActual = P.estado === 'prueba' ? -1 : cat.findIndex(p => p.id === P.plan);
-  if (!st.plVer || !cat.some(p => p.id === st.plVer)) st.plVer = (cat[iActual + 1] || cat.find(p => p.destacado) || cat[0]).id;
+  // Un plan bloqueado (no cubre las personas de la cuenta) nunca queda elegido de entrada: va el más pequeño que alcanza.
+  const libre = p => p && !p.bloqueado;
+  if (!st.plVer || !cat.some(p => p.id === st.plVer)) st.plVer = ([cat[iActual + 1], cat.find(p => p.destacado), cat[0]].find(libre) || cat.find(libre) || cat[0]).id;
   const mio = p => pagado && !noRenueva && p.id === P.plan && (P.periodo || 'mensual') === per;
   const fichaDe = p => Object.fromEntries((p.ficha || []).map(f => [f.k, f]));
   const actual = iActual >= 0 ? cat[iActual] : null, fA = actual ? fichaDe(actual) : {};
@@ -441,9 +459,14 @@ function plaEscalera(P){
     const d = (p.ficha || []).filter(f => !fA[f.k] || fA[f.k].v !== f.v).slice(0, 2).map(f => `${f.k}: ${f.v}`);
     return d.join(' · ') || (p.incluye || [])[0] || '';
   };
-  const pasos = cat.map((p, k) => `<button type="button" class="pla-paso${p.id === st.plVer ? ' sel' : ''}${k <= iActual ? ' hecho' : ''}" data-pl-ver="${esc(p.id)}" aria-pressed="${p.id === st.plVer}" style="--k:${k}">
-    <span class="pla-pt" aria-hidden="true"></span><span class="pla-pn">${esc(p.nombre)}</span><span class="pla-pp">USD ${esc(anual ? p.anual : String(p.mensual))} <small>${anual ? 'al año' : 'al mes'}</small></span><span class="pla-pg">${esc(gana(p))}</span></button>`).join('');
+  const pasos = cat.map((p, k) => `<button type="button" class="pla-paso${p.id === st.plVer ? ' sel' : ''}${k <= iActual ? ' hecho' : ''}${p.bloqueado ? ' bloq' : ''}" data-pl-ver="${esc(p.id)}" aria-pressed="${p.id === st.plVer}" style="--k:${k}">
+    <span class="pla-pt" aria-hidden="true">${p.bloqueado ? PLA_CANDADO : ''}</span><span class="pla-pn">${esc(p.nombre)}</span><span class="pla-pp">USD ${esc(anual ? p.anual : String(p.mensual))} <small>${anual ? 'al año' : 'al mes'}</small></span><span class="pla-pg">${esc(p.bloqueado ? `Hasta ${p.maximo} personas. Hoy tienes ${p.enUso}` : gana(p))}</span></button>`).join('');
   const sel = cat.find(p => p.id === st.plVer) || cat[0];
+  // Plan bloqueado: la franja explica por qué no se puede elegir y lleva a Personas; no hay botón de pagar.
+  const sobran = sel.bloqueado ? sel.enUso - sel.maximo : 0, alcanza = cat.find(libre);
+  const detNo = sel.bloqueado ? `<div class="pla-det no" data-k="${esc(sel.id + per)}"><span class="pla-no-ic" aria-hidden="true">${PLA_CANDADO}</span>
+      <div class="pla-no-t"><b>${esc(`${sel.nombre} es para equipos de ${(fichaDe(sel).Usuarios || {}).v || `hasta ${sel.maximo}`} personas y tu cuenta tiene ${sel.enUso}`)}</b><small>${esc(`Para elegirlo, primero quita ${sobran === 1 ? '1 persona' : `${sobran} personas`} en Personas.${alcanza ? ` Si no, ${alcanza.nombre} es el que te alcanza.` : ''}`)}</small></div>
+      <button type="button" class="btn pla-sec" data-pl-personas="1">${I('users')}Ver personas</button></div>` : '';
   const difs = actual && sel.id !== actual.id ? (sel.ficha || []).filter(f => !fA[f.k] || fA[f.k].v !== f.v) : (sel.ficha || []);
   const lista = (difs.length ? difs.slice(0, 4).map(f => `<li>${I('check')}<span>${esc(f.k)}: <b>${esc(f.v)}</b></span></li>`) : (sel.incluye || []).slice(0, 4).map(x => `<li>${I('check')}<span>${esc(x)}</span></li>`)).join('');
   const txt = mio(sel) ? 'Tu plan actual' : pagado && !noRenueva ? `Cambiar a ${sel.nombre}` : sel.id === P.plan && P.estado !== 'prueba' ? `Renovar ${sel.nombre}` : `Elegir ${sel.nombre}`;
@@ -456,7 +479,7 @@ function plaEscalera(P){
     <div class="pla-esc-h"><div><h3>${pagado && !noRenueva ? 'Sube cuando tu equipo crezca' : 'Elige tu plan'}</h3><p>${ayuda}</p></div>
       <div class="pla-seg" role="radiogroup" aria-label="Cómo pagas"><button type="button" role="radio" aria-checked="${!anual}" data-pl-per="mensual">Mensual</button><button type="button" role="radio" aria-checked="${anual}" data-pl-per="anual">Anual <em>−20 %</em></button></div></div>
     <div class="pla-riel" style="--n:${cat.length}"><span class="pla-riel-f" style="--hasta:${iActual < 0 ? 0 : (iRiel + .5) / cat.length}"></span>${pasos}</div>
-    <div class="pla-det" data-k="${esc(sel.id + per)}"><ul>${lista}</ul>${boton}</div>
+    ${detNo || `<div class="pla-det" data-k="${esc(sel.id + per)}"><ul>${lista}</ul>${boton}</div>`}
   </section>`;
 }
 
@@ -758,6 +781,7 @@ document.getElementById('page').addEventListener('click', e => {
     return;
   }
   const pv = t.closest('[data-pl-ver]'); if (pv) { st.plVer = pv.dataset.plVer; render(); return; }
+  const vp = t.closest('[data-pl-personas]'); if (vp) { st.repTab = 'personas'; st.pagina = 'cfg-reparto'; render(); return; }
   const pp = t.closest('[data-pl-per]'); if (pp) { st.plPeriodo = pp.dataset.plPer; render(); return; }
   const pg = t.closest('[data-pl-pagar]'); if (pg && !pg.disabled) { plPagar(pg.dataset.plPagar); return; }
   const rc = t.closest('[data-pl-recibo]'); if (rc) { plRecibo(+rc.dataset.plRecibo); return; }
