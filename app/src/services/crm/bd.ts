@@ -36,10 +36,23 @@ function acotar({ operation, args, query }: Operacion) {
 
 const acotado = { $allOperations: acotar } as never
 
+/**
+ * Lo que se hace después de crear un contacto en cualquier parte del CRM (webhooks de la API, 11-nov). Se registra
+ * desde afuera (webhooks.ts) para no importar ese archivo aquí, que todos importan.
+ */
+export const alCrearContacto: ((k: Obj) => void)[] = []
+const contactos = {
+  $allOperations: async (op: Operacion) => {
+    const r = await acotar(op)
+    if (op.operation === 'create' && r && typeof r === 'object') for (const f of alCrearContacto) { try { f(r as Obj) } catch { /* un aviso nunca tumba la creación */ } }
+    return r
+  },
+} as never
+
 export const prisma = base.$extends({
   name: 'crm-espacio',
   query: {
-    crmContacto: acotado,
+    crmContacto: contactos,
     crmLinea: acotado,
     crmConversacion: acotado,
     crmMensaje: acotado,

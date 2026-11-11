@@ -323,6 +323,7 @@ model CrmEspacio {
   preferencias   CrmPreferencia[]
   enlaces        CrmEnlace[]
   apiClaves      CrmApiClave[]
+  apiWebhooks    CrmApiWebhook[]
   clics          CrmClic[]
   pagos          CrmPago[]
   solicitudes    CrmSolicitud[]
@@ -585,4 +586,49 @@ model CrmApiClave {
 
   @@index([espacioId])
   @@map("crm_api_claves")
+}
+
+/// Webhooks de la API (11-nov): Wali le avisa a otro sistema del cliente cuando pasa algo en el espacio.
+model CrmApiWebhook {
+  id          String     @id @default(cuid())
+  espacioId   String     @default("") @map("espacio_id")
+  espacio     CrmEspacio @relation(fields: [espacioId], references: [id], onDelete: Cascade)
+  nombre      String
+  url         String
+  /// mensaje.recibido, conversacion.asignada, conversacion.finalizada, conversacion.etapa, contacto.creado
+  eventos     String[]
+  /// El secreto de la firma, cifrado (cifrado.ts). Se muestra completo una sola vez.
+  secreto     String
+  /// Fallas seguidas; al llegar al tope el webhook se pausa solo.
+  fallas      Int        @default(0)
+  pausadoEn   DateTime?  @map("pausado_en")
+  creadoPor   String     @map("creado_por")
+  ultimoEnvio DateTime?  @map("ultimo_envio")
+  ultimoEstado Int?      @map("ultimo_estado")
+  ultimoError String?    @map("ultimo_error")
+  borradoEn   DateTime?  @map("borrado_en")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  envios      CrmApiEnvio[]
+
+  @@index([espacioId])
+  @@map("crm_api_webhooks")
+}
+
+/// Cada aviso por enviar a un webhook, con sus reintentos.
+model CrmApiEnvio {
+  id        String        @id @default(cuid())
+  webhookId String        @map("webhook_id")
+  webhook   CrmApiWebhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  evento    String
+  cuerpo    Json
+  /// pendiente, hecho, fallido
+  estado    String        @default("pendiente")
+  intentos  Int           @default(0)
+  proximo   DateTime      @default(now())
+  error     String?
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  @@index([estado, proximo])
+  @@index([webhookId])
+  @@map("crm_api_envios")
 }

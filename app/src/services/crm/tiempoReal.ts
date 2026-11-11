@@ -185,14 +185,20 @@ export function emitirAPersona(userId: string, evento: Record<string, unknown>, 
   enOrden(() => { broadcastUsuarios(new Set([userId]), 'crm', { ...evento, por }) })
 }
 
+/** Lo que se hace después de cada cambio de conversación o mensaje (webhooks de la API, 11-nov; los registra webhooks.ts). */
+export const alEmitirConv: ((conv: Record<string, unknown>) => void)[] = []
+export const alEmitirMsg: ((convId: number, m: CrmMensaje) => void)[] = []
+
 export async function emitirConv(id: number, por: string | null = null) {
   const conv = await cargarConv(id)
   if (conv) emitirCrm({ tipo: 'conv', conv }, por)
+  if (conv) for (const f of alEmitirConv) { try { f(conv as unknown as Record<string, unknown>) } catch { /* un aviso nunca tumba el cambio */ } }
   return conv
 }
 
 export function emitirMsg(convId: number, m: CrmMensaje, por: string | null = null) {
   emitirCrm({ tipo: 'msg', convId, msg: msgAFront(m) }, por)
+  for (const f of alEmitirMsg) { try { f(convId, m) } catch { /* un aviso nunca tumba el mensaje */ } }
 }
 
 /** Espera a que salgan los eventos ya emitidos (para pruebas y para cerrar el servidor en orden). */

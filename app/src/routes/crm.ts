@@ -28,6 +28,7 @@ import { accesoCrm, alcanceDe } from '../services/crm/alcance'
 import { borrarEnlace, crearEnlace, editarEnlace, listarEnlaces } from '../services/crm/enlaces'
 import { ApiResponse } from '../utils/response'
 import { z } from 'zod'
+import * as webhooks from '../services/crm/webhooks'
 import { estadoPlan, historialPagos, pagarPlan, cobrarPlan, cotizarUsuarios, usuariosParaInvitar, medioDePago, prepararMedio, guardarMedio, confirmarMedio, cancelarPlan, reanudarPlan, aprobarUsuarios, bajarUsuarios, precioUsuarios, USUARIOS_MIN, USUARIOS_MAX, pagoDeEspacio, planesDelSitio, portalPagos, usoDeCuenta, PLANES, type Plan } from '../services/crm/plan'
 import { nombreRecibo, reciboPdf } from '../services/crm/recibo'
 import { crearEspacio, renombrarEspacio, eliminarEspacio, entrarAEspacio, listarEspacios } from '../services/crm/espacios'
@@ -217,6 +218,35 @@ router.delete('/api-claves/:id', asyncHandler(async (req: Request, res: Response
   const k = await revocarClave(id, req.userId!)
   auditLog(req, 'DELETE', 'crm_api_clave', id, { nombre: k.nombre })
   return ApiResponse.success(res, k)
+}))
+// Webhooks de la API (11-nov): solo administradores. El secreto de la firma sale una sola vez, al crearlo.
+const idWebhook = (v: unknown) => { const id = String(v); if (!/^[\w-]{1,40}$/.test(id)) throw new ValidationError('Ese webhook no existe.'); return id }
+router.get('/api-webhooks', asyncHandler(async (req: Request, res: Response) => {
+  soloAdminApi(req)
+  return ApiResponse.success(res, { webhooks: await webhooks.listarWebhooks(req.espacioId!), eventos: webhooks.EVENTOS })
+}))
+router.post('/api-webhooks', asyncHandler(async (req: Request, res: Response) => {
+  soloAdminApi(req)
+  const d = z.object({ nombre: z.string().trim().min(2).max(60), url: z.string().trim().min(8).max(500), eventos: z.array(z.string().max(40)).min(1).max(10) }).parse(req.body)
+  const w = await webhooks.crearWebhook(req.espacioId!, d, req.userId!)
+  auditLog(req, 'CREATE', 'crm_api_webhook', w.id, { nombre: w.nombre, eventos: w.eventos })
+  return ApiResponse.success(res, w)
+}))
+router.delete('/api-webhooks/:id', asyncHandler(async (req: Request, res: Response) => {
+  soloAdminApi(req)
+  const w = await webhooks.borrarWebhook(req.espacioId!, idWebhook(req.params.id))
+  auditLog(req, 'DELETE', 'crm_api_webhook', w.id, { nombre: w.nombre })
+  return ApiResponse.success(res, w)
+}))
+router.post('/api-webhooks/:id/reactivar', asyncHandler(async (req: Request, res: Response) => {
+  soloAdminApi(req)
+  const w = await webhooks.reactivarWebhook(req.espacioId!, idWebhook(req.params.id))
+  auditLog(req, 'UPDATE', 'crm_api_webhook', w.id, { reactivado: true })
+  return ApiResponse.success(res, w)
+}))
+router.post('/api-webhooks/:id/probar', asyncHandler(async (req: Request, res: Response) => {
+  soloAdminApi(req)
+  return ApiResponse.success(res, await webhooks.probarWebhook(req.espacioId!, idWebhook(req.params.id)))
 }))
 
 const MB = 1024 * 1024
