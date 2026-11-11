@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API de Wali · documentación</title>
+<meta name="description" content="Cómo conectar tus sistemas con Wali: claves, límites, conversaciones, contactos y asignación en lote.">
+<link rel="icon" href="__BASE__/img/wali-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root{--tinta:#0b0b10;--t2:#4b5563;--t3:#6b7280;--linea:#e5e7eb;--fondo:#f6f6f4;--sol:#FFD21F}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:var(--tinta);background:var(--fondo);line-height:1.6}
+.cab{position:sticky;top:0;z-index:5;background:rgba(246,246,244,.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--linea)}
+.cab div{max-width:1400px;margin:0 auto;padding:14px clamp(16px,4vw,32px);display:flex;align-items:center;gap:10px}
+.cab img{width:28px;height:28px;border-radius:8px}.cab b{font-size:16px}.cab span{color:var(--t3);font-size:14px}
+main{max-width:1400px;margin:0 auto;padding:clamp(24px,5vw,56px) clamp(16px,4vw,32px) 80px;display:grid;grid-template-columns:220px minmax(0,1fr);gap:48px}
+nav.ind{position:sticky;top:76px;align-self:start;display:grid;gap:4px;font-size:14px}
+nav.ind a{color:var(--t2);text-decoration:none;padding:6px 10px;border-radius:8px;transition:background .16s}nav.ind a:hover{background:#fff;color:var(--tinta)}
+h1{font-size:clamp(28px,4vw,40px);line-height:1.15;margin:0 0 10px;letter-spacing:-.02em}
+h2{font-size:22px;margin:48px 0 10px;letter-spacing:-.01em}h3{font-size:16px;margin:28px 0 8px}
+p,li{color:var(--t2);font-size:15px}.lead{font-size:17px}
+code{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:13px;background:#fff;border:1px solid var(--linea);border-radius:6px;padding:1px 6px;color:var(--tinta)}
+pre{background:#0b0b10;color:#f4f4f6;border-radius:14px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre code{background:none;border:0;padding:0;color:inherit}
+.ruta{display:flex;align-items:center;gap:10px;margin:22px 0 6px;flex-wrap:wrap}
+.m{font:600 12px/1 "JetBrains Mono",monospace;padding:5px 8px;border-radius:6px;color:#fff;background:#2563eb}.m.post{background:#059669}.m.patch{background:#b45309}
+.ruta code{font-size:14px}
+.tag{font-size:12px;font-weight:600;border-radius:6px;padding:3px 8px;background:#fff4d6;color:#92400e}.tag.lec{background:#eef2ff;color:#4338ca}
+table{width:100%;border-collapse:collapse;font-size:14px;background:#fff;border-radius:12px;overflow:hidden;border:1px solid var(--linea)}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--linea);vertical-align:top;color:var(--t2)}th{color:var(--tinta);font-weight:600;background:#fafafa}
+tr:last-child td{border-bottom:0}
+.nota{background:#fff;border:1px solid var(--linea);border-left:4px solid var(--sol);border-radius:12px;padding:14px 16px;margin:16px 0}
+article{min-width:0}
+@media (max-width:860px){main{grid-template-columns:minmax(0,1fr)}nav.ind{display:none}}
+</style>
+</head>
+<body>
+<header class="cab"><div><img src="__BASE__/img/wali-180.png" alt=""><b>wali</b><span>· API</span></div></header>
+<main>
+<nav class="ind" aria-label="Contenido">
+  <a href="#inicio">Para empezar</a><a href="#claves">Claves y permisos</a><a href="#limites">Límites y errores</a><a href="#paginas">Páginas</a>
+  <a href="#conversaciones">Conversaciones</a><a href="#asignar">Asignar en lote</a><a href="#contactos">Contactos</a><a href="#catalogos">Equipos, miembros y etapas</a>
+</nav>
+<article>
+<h1 id="inicio">API de Wali</h1>
+<p class="lead">Conecta tus otros sistemas con Wali. Lee las conversaciones y los contactos de tu CRM y haz acciones como asignar conversaciones en lote, cambiar la etapa o poner etiquetas.</p>
+<p>Todas las llamadas van a esta dirección, con tu clave en la cabecera <code>Authorization</code>.</p>
+<pre><code>https://walicrm.com/crm/api/v1</code></pre>
+<pre><code>curl https://walicrm.com/crm/api/v1/yo \
+  -H "Authorization: Bearer wali_live_TU_CLAVE"</code></pre>
+
+<h2 id="claves">Claves y permisos</h2>
+<p>Un administrador crea las claves en <b>Ajustes del CRM › API</b>. La clave se muestra completa una sola vez. Guárdala en el sistema que la va a usar.</p>
+<ul>
+  <li>Cada clave ve solo su espacio de trabajo y nunca toca pagos, la cuenta ni los ajustes.</li>
+  <li><b>Solo lectura</b>. Lee todo lo de esta página que empieza con <code>GET</code>.</li>
+  <li><b>Lectura y acciones</b>. Además asigna, cambia la etapa, pone etiquetas, finaliza y crea o edita contactos.</li>
+  <li>Las acciones se hacen en nombre del administrador que creó la clave, con las mismas reglas que en la pantalla, y quedan registradas.</li>
+  <li>La clave deja de funcionar si la revocas, si vence o si quien la creó ya no es administrador del espacio.</li>
+</ul>
+<div class="nota">Nunca pongas la clave en una página web ni en una app que se instale en el celular de otra persona. Úsala solo desde tu servidor.</div>
+
+<h2 id="limites">Límites y errores</h2>
+<p>Hasta <b>120 llamadas por minuto</b> por clave. Cada respuesta trae las cabeceras <code>RateLimit-Remaining</code> y <code>RateLimit-Reset</code>. Si pasas el límite, la respuesta es <code>429</code>. Espera los segundos que indica <code>Retry-After</code>.</p>
+<table><tr><th>Código</th><th>Qué pasó</th></tr>
+<tr><td><code>400</code></td><td>Faltan datos o tienen otra forma. El campo <code>detalle</code> dice cuál.</td></tr>
+<tr><td><code>401</code></td><td>La clave no es válida, venció o fue revocada.</td></tr>
+<tr><td><code>403</code></td><td>La clave es de solo lectura, o el plan del espacio no está activo (queda en solo lectura).</td></tr>
+<tr><td><code>404</code></td><td>Eso no existe en este espacio.</td></tr>
+<tr><td><code>429</code></td><td>Pasaste el límite de llamadas por minuto.</td></tr></table>
+<p>Los errores llegan como <code>{ "error": "…" }</code> y las respuestas buenas como <code>{ "data": … }</code>.</p>
+
+<h2 id="paginas">Páginas</h2>
+<p>Las listas devuelven hasta 50 elementos (máximo 100 con <code>limite</code>). Si hay más, la respuesta trae <code>siguiente</code>. Pásalo como <code>cursor</code> para pedir la página que sigue.</p>
+<pre><code>GET /conversaciones?limite=100
+GET /conversaciones?limite=100&amp;cursor=4521</code></pre>
+
+<h2 id="conversaciones">Conversaciones</h2>
+<div class="ruta"><span class="m">GET</span><code>/conversaciones</code><span class="tag lec">Lectura</span></div>
+<p>Filtros: <code>estado</code> (abiertas, pendientes o finalizadas), <code>asignado</code> (id del miembro, o <code>nadie</code>), <code>equipo</code>, <code>etapa</code>, <code>desde</code> y <code>hasta</code> (fechas ISO, por última actividad).</p>
+<pre><code>curl "https://walicrm.com/crm/api/v1/conversaciones?estado=abiertas&amp;asignado=nadie" \
+  -H "Authorization: Bearer wali_live_TU_CLAVE"</code></pre>
+<pre><code>{ "data": [ { "id": 4521, "estado": "abiertas", "canal": "wa", "asignadoId": null, "equipo": "Ventas",
+    "contacto": { "id": 812, "nombre": "Laura Gómez", "telefono": "+573000000000", "etapa": "Caliente", "etiquetas": ["Referido"] },
+    "ultimoMensaje": "2026-11-11T15:02:11.000Z", "creada": "2026-11-10T21:40:00.000Z" } ],
+  "siguiente": 4519 }</code></pre>
+<div class="ruta"><span class="m">GET</span><code>/conversaciones/:id</code><span class="tag lec">Lectura</span></div>
+<div class="ruta"><span class="m">GET</span><code>/conversaciones/:id/mensajes</code><span class="tag lec">Lectura</span></div>
+<p>Del más nuevo al más viejo. Cada mensaje trae <code>tipo</code> (in, out, note…), <code>texto</code>, <code>archivo</code> si tiene, <code>autorId</code> y <code>en</code>.</p>
+<div class="ruta"><span class="m patch">PATCH</span><code>/conversaciones/:id</code><span class="tag">Acciones</span></div>
+<p>Manda solo lo que cambias: <code>etapa</code>, <code>etiquetas</code> (<code>agregar</code> y <code>quitar</code>), <code>estado</code> con su <code>motivo</code>, <code>miembroId</code> o <code>equipo</code>.</p>
+<pre><code>curl -X PATCH https://walicrm.com/crm/api/v1/conversaciones/4521 \
+  -H "Authorization: Bearer wali_live_TU_CLAVE" -H "Content-Type: application/json" \
+  -d '{ "etapa": "Pagado", "etiquetas": { "agregar": ["Cliente frecuente"] } }'</code></pre>
+
+<h2 id="asignar">Asignar en lote</h2>
+<div class="ruta"><span class="m post">POST</span><code>/conversaciones/asignar</code><span class="tag">Acciones</span></div>
+<p>Hasta <b>100 conversaciones por llamada</b>. Manda <code>miembroId</code> (o <code>null</code> para dejarlas sin asignar), <code>equipo</code>, o los dos. Cada una pasa por las mismas reglas que en la pantalla. Las que no se pueden asignar vuelven en <code>errores</code> con su motivo.</p>
+<pre><code>curl -X POST https://walicrm.com/crm/api/v1/conversaciones/asignar \
+  -H "Authorization: Bearer wali_live_TU_CLAVE" -H "Content-Type: application/json" \
+  -d '{ "conversaciones": [4521, 4519, 4510], "miembroId": "ID_DEL_MIEMBRO" }'</code></pre>
+<pre><code>{ "data": { "asignadas": [4521, 4519], "errores": [ { "id": 4510, "error": "…" } ] } }</code></pre>
+
+<h2 id="contactos">Contactos</h2>
+<div class="ruta"><span class="m">GET</span><code>/contactos</code><span class="tag lec">Lectura</span></div>
+<p>Filtros: <code>q</code> (nombre, teléfono o correo), <code>etapa</code> y <code>etiqueta</code>.</p>
+<div class="ruta"><span class="m">GET</span><code>/contactos/:id</code><span class="tag lec">Lectura</span></div>
+<div class="ruta"><span class="m post">POST</span><code>/contactos</code><span class="tag">Acciones</span></div>
+<div class="ruta"><span class="m patch">PATCH</span><code>/contactos/:id</code><span class="tag">Acciones</span></div>
+<p>Campos: <code>nombre</code>, <code>telefono</code> (con el indicativo del país), <code>correo</code>, <code>etapa</code> y <code>etiquetas</code>. Para crear hace falta teléfono o correo.</p>
+<pre><code>curl -X POST https://walicrm.com/crm/api/v1/contactos \
+  -H "Authorization: Bearer wali_live_TU_CLAVE" -H "Content-Type: application/json" \
+  -d '{ "nombre": "Camilo Torres", "telefono": "+573000000000", "etapa": "Nuevo lead" }'</code></pre>
+
+<h2 id="catalogos">Equipos, miembros y etapas</h2>
+<p>Para saber qué valores usar en los filtros y en las acciones.</p>
+<table><tr><th>Ruta</th><th>Qué trae</th></tr>
+<tr><td><code>GET /miembros</code></td><td>Las personas del espacio, con su <code>id</code> para asignar.</td></tr>
+<tr><td><code>GET /equipos</code></td><td>Los equipos y los ids de sus miembros.</td></tr>
+<tr><td><code>GET /etapas</code></td><td>Las etapas del embudo.</td></tr>
+<tr><td><code>GET /etiquetas</code></td><td>Las etiquetas del espacio.</td></tr>
+<tr><td><code>GET /lineas</code></td><td>Las líneas de WhatsApp conectadas.</td></tr>
+<tr><td><code>GET /yo</code></td><td>El espacio, el nombre y el permiso de la clave.</td></tr></table>
+</article>
+</main>
+</body>
+</html>

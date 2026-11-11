@@ -817,7 +817,8 @@ function pagina(){
         ['flow','Reglas automáticas',`${REGLAS.filter(r => r.on).length} activas · «si pasa esto, haz esto»`,'reglas'],
         ['ad','Enlaces de pauta','De qué anuncio llega cada persona: Google, TikTok, Meta y tu página','cfg-pauta'],
         ['lock','Protección de datos','Autorizaciones, menores, horario legal y números excluidos','cfg-datos'],
-        ['folder','Archivos','Material para enviar en mensajes, difusiones y flujos','cfg-archivos']]],
+        ['folder','Archivos','Material para enviar en mensajes, difusiones y flujos','cfg-archivos'],
+        ['key','API','Claves para que tus otros sistemas lean el CRM y hagan acciones','cfg-api']]],
       ['Cuenta', [
         ['card','Plan y pagos','Tu plan del CRM, el historial de pagos y los recibos','cfg-plan'],
         ['users','Espacios de trabajo','Las empresas de tu cuenta, cada una con su CRM aparte','cfg-espacios']]],

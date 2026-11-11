@@ -25,7 +25,7 @@ import { esOperador, operadorDeSesion, operadorRecien, paseValido } from './serv
  * - /chat.js: la burbuja del chat para las páginas web de la empresa (pública).
  */
 const PANTALLA = join(process.cwd(), 'pantalla')
-const SCRIPTS = ['10-nucleo', '20-llamadas', '30-legal', '40-ajustes', '45-canales', '46-correo', '47-pauta', '48-barra', '49-plantillas', '50-agentes', '56-compositor', '57-celular-menu', '58-celular-chat', '59-celular-ajustes', '61-equipos-roles', '62-vistas-rol', '63-ia-sugerencias', '64-ia-embudo', '65-encuesta', '66-finalizadas', '67-mejoras', '60-kb', '68-marco', '69-tema', '70-plan', '70-usuarios', '71-pestana', '72-espacios', '73-carpetas', '74-reglas', '75-respondidas', '76-contactos', '77-contactos-lista', '77-equipos', '78-difusiones', '78-horarios', '79-manychat', '80-datos', '81-movil', '82-contactos-movil', '83-wa-caido', '84-rutas', '85-embudo-chat', '86-subequipos', '87-grabaciones', '86-flujos-equipo', '87-encuesta-equipo', '88-primeros-pasos', '88-responder', '88-burbujas', '88-llamadas-vivo', '88-llamadas-ajustes', '89-ayuda-guias', '89-ayuda', '89-movimiento', '89-seleccion', '89-barra-plegable', '90-arranque']
+const SCRIPTS = ['10-nucleo', '20-llamadas', '30-legal', '40-ajustes', '45-canales', '46-correo', '47-pauta', '48-barra', '49-plantillas', '50-agentes', '56-compositor', '57-celular-menu', '58-celular-chat', '59-celular-ajustes', '61-equipos-roles', '62-vistas-rol', '63-ia-sugerencias', '64-ia-embudo', '65-encuesta', '66-finalizadas', '67-mejoras', '60-kb', '68-marco', '69-tema', '70-plan', '70-usuarios', '71-pestana', '72-espacios', '73-carpetas', '74-reglas', '75-respondidas', '76-contactos', '77-contactos-lista', '77-equipos', '78-difusiones', '78-horarios', '79-manychat', '80-datos', '81-movil', '82-contactos-movil', '83-wa-caido', '84-rutas', '85-embudo-chat', '86-subequipos', '87-grabaciones', '86-flujos-equipo', '87-encuesta-equipo', '88-primeros-pasos', '88-responder', '88-burbujas', '88-llamadas-vivo', '88-llamadas-ajustes', '89-ayuda-guias', '89-ayuda', '89-movimiento', '89-seleccion', '89-barra-plegable', '89-api', '90-arranque']
 
 /** El nombre del producto que se ve en la pestaña, el inicio de sesión y la barra. */
 const MARCA = () => (process.env.CRM_NOMBRE || 'CRM').slice(0, 40)
@@ -149,6 +149,9 @@ router.get('/admin', asyncHandler(async (req: Request, res: Response) => {
 }))
 
 /** El enlace público de los términos y condiciones de una empresa: siempre abre la última versión. */
+/** La documentación pública de la API (11-nov): walicrm.com/crm/docs/api. */
+router.get('/docs/api', (_req: Request, res: Response) => { html(res, leer('paginas/api-docs.html')) })
+
 router.get('/t/:espacio', asyncHandler(async (req: Request, res: Response) => {
   const id = String(req.params.espacio)
   const url = /^[a-z0-9][a-z0-9-]{0,80}$/.test(id) ? await pdfPublico(id) : null
