@@ -431,6 +431,8 @@ function cambio(actual, antes, como, malo){
   return `<span class="dl ${bien ? 'u' : 'd'}">${dif > 0 ? IC.up : IC.dn}${como(dif)}</span>`;
 }
 const PLAN = {starter: 'Starter', growth: 'Growth', business: 'Business'};
+// En la prueba gratis la empresa tiene todo lo de Business (limitesDe en plan.ts): así se nombra.
+const planDe = e => e.estado === 'prueba' ? 'Business' : (PLAN[e.plan] || e.plan);
 const ROL = {ADMIN: 'Administrador', LIDER: 'Líder', AGENTE: 'Agente', LECTOR: 'Solo lectura'};
 const PERIODO = {mensual: 'Mensual', anual: 'Anual'};
 const ESTADO = {prueba: ['Prueba', 'p'], activo: ['Activo', 'ok'], 'pago-pendiente': ['Pago pendiente', 'w'], cancelado: ['Cancelado', 'b'], vencido: ['Vencido', 'b'], interno: ['Interno', 'g']};
@@ -608,7 +610,7 @@ function vEmpresas(){
   const tabla = fs.length ? `<div class="k tw ent" style="--d:200ms;padding:2px 6px"><table class="t"><thead><tr><th>Empresa</th><th>Plan</th><th>Estado</th><th>Usuarios</th><th>Líneas</th><th>Conversaciones 30 d</th><th>Último uso</th><th>Alta</th></tr></thead><tbody>${fs.map(e => {
     const [et, ec] = estado(e);
     return `<tr data-emp="${esc(e.id)}" tabindex="0" class="${S.abierta === e.id ? 'on' : ''}"><td><div class="emp">${avatar(e.nombre, e.id, e.logo)}<div><b>${esc(e.nombre)}</b>${e.correo ? `<div class="lbl">${esc(e.correo)}</div>` : ''}</div></div></td>
-      <td>${esc(PLAN[e.plan] || e.plan)}<div class="lbl">${esc(PERIODO[e.periodo] || '—')}${e.espacios > 1 ? ` · ${num(e.espacios)} espacios` : ''}</div></td>
+      <td>${esc(planDe(e))}<div class="lbl">${esc(PERIODO[e.periodo] || '—')}${e.espacios > 1 ? ` · ${num(e.espacios)} espacios` : ''}</div></td>
       <td><span class="est ${ec}">${et}</span><div class="lbl" style="margin-top:3px">${esc(vence(e))}</div></td>
       <td>${num(e.usuarios)}</td><td>${num(e.lineas)}${e.caidas ? ` <span style="color:var(--mal)">· ${num(e.caidas)} ${e.caidas === 1 ? 'caída' : 'caídas'}</span>` : ''}</td>
       <td>${num(e.conv30)}</td><td class="mut">${hace(e.ultimoUso)}</td><td class="mut">${fecha(e.alta)}</td></tr>`;
@@ -625,7 +627,7 @@ async function abrirEmpresa(id){
     const e = await api('/empresas/' + encodeURIComponent(id));
     if (S.abierta !== id) return;
     const [et, ec] = estado(e), caidas = e.lineas.filter(l => l.estado !== 'conectada').length, varios = e.espacios.length > 1;
-    pn.innerHTML = `<div class="pn-h">${avatar(e.nombre, e.id, e.logo, 44)}<div style="min-width:0"><h2 id="pn-t">${esc(e.nombre)}</h2><p class="sub">${esc(PLAN[e.plan] || e.plan)}${e.periodo ? ' ' + esc((PERIODO[e.periodo] || e.periodo).toLowerCase()) : ''} · alta ${fecha(e.alta)} · ${e.espacios.length} ${e.espacios.length === 1 ? 'espacio' : 'espacios'}</p></div><button type="button" class="x" id="pn-x" aria-label="Cerrar detalle">${IC.x}</button></div>
+    pn.innerHTML = `<div class="pn-h">${avatar(e.nombre, e.id, e.logo, 44)}<div style="min-width:0"><h2 id="pn-t">${esc(e.nombre)}</h2><p class="sub">${esc(planDe(e))}${e.periodo ? ' ' + esc((PERIODO[e.periodo] || e.periodo).toLowerCase()) : ''} · alta ${fecha(e.alta)} · ${e.espacios.length} ${e.espacios.length === 1 ? 'espacio' : 'espacios'}</p></div><button type="button" class="x" id="pn-x" aria-label="Cerrar detalle">${IC.x}</button></div>
       <div class="cif"><div><span class="lbl">Estado</span><b><span class="est ${ec}">${et}</span></b></div><div><span class="lbl">${e.estado === 'prueba' ? 'Prueba' : 'Vence o renueva'}</span><b>${esc(vence(e) || '—')}</b></div><div><span class="lbl">Conv. 30 d</span><b>${num(e.conv30)}</b></div></div>
       <p class="sec">Miembros · ${e.miembros.length}</p>${e.miembros.length ? e.miembros.map(m => `<div class="row">${avatar(m.nombre, m.id, null, 26, true)}<div><b>${esc(m.nombre)}${m.suspendido ? ' <span class="est b">Suspendido</span>' : ''}</b><span class="lbl">${esc(ROL[m.rol] || m.rol)} · ${esc(m.correo)}${varios ? ' · ' + esc(m.espacios.join(', ')) : ''}</span></div><span class="lbl">${hace(m.ultimoIngreso)}</span></div>`).join('') : '<p class="lbl">Sin miembros.</p>'}
       <p class="sec">Líneas · ${e.lineas.length}${caidas ? ` <span style="color:var(--mal)">· ${caidas} sin conexión</span>` : ''}</p>${e.lineas.length ? e.lineas.map(l => `<div class="row">${IC.tel}<div><b>${esc(l.nombre)}</b><span class="lbl">${esc(l.telefono)}${varios ? ' · ' + esc(l.espacio) : ''}${l.limite ? ' · ' + esc(l.limite) : ''}</span></div><span class="est ${l.estado === 'conectada' ? 'ok' : 'b'}">${l.estado === 'conectada' ? 'Conectada' : l.estado === 'error' ? 'Con error' : 'Desconectada'}</span>${l.calidad ? `<span class="lbl" style="width:92px;text-align:right">Calidad ${esc(String(l.calidad).toLowerCase())}</span>` : ''}</div>`).join('') : '<p class="lbl">Todavía no conecta ninguna línea.</p>'}
@@ -1115,7 +1117,7 @@ function csv(nombre, filas){
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], {type: 'text/csv;charset=utf-8'})); a.download = nombre; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
 async function exportar(que){
-  if (que === 'empresas') csv('empresas-wali.csv', [['Empresa', 'Correo', 'Plan', 'Periodo', 'Estado', 'Usuarios', 'Líneas', 'Líneas caídas', 'Conversaciones 30 d', 'Último uso', 'Alta'], ...filtradas().map(e => [e.nombre, e.correo, PLAN[e.plan] || e.plan, e.periodo || '', estado(e)[0], e.usuarios, e.lineas, e.caidas, e.conv30, e.ultimoUso || '', e.alta])]);
+  if (que === 'empresas') csv('empresas-wali.csv', [['Empresa', 'Correo', 'Plan', 'Periodo', 'Estado', 'Usuarios', 'Líneas', 'Líneas caídas', 'Conversaciones 30 d', 'Último uso', 'Alta'], ...filtradas().map(e => [e.nombre, e.correo, planDe(e), e.periodo || '', estado(e)[0], e.usuarios, e.lineas, e.caidas, e.conv30, e.ultimoUso || '', e.alta])]);
   if (que === 'resumen' && S.resumen) csv(`mrr-wali-${S.rango}.csv`, [['Fecha', 'MRR (USD)'], ...S.resumen.serie.map(p => [p.t.slice(0, 10), (p.mrr / 100).toFixed(2)])]);
   if (que === 'cobros') { const c = await api('/cobros'); csv('cobros-wali.csv', [['Recibo', 'Fecha', 'Empresa', 'Plan', 'Periodo', 'Estado', 'Total (USD)'], ...c.map(p => ['NX-' + p.numero, p.fecha.slice(0, 10), p.empresa, PLAN[p.plan] || p.plan, p.periodo, p.estado, (p.total / 100).toFixed(2)])]); }
 }

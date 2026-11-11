@@ -172,7 +172,7 @@ async function avisoPlan(){
   let P;
   try { P = await api('GET', '/crm/plan'); } catch { return; }
   const dias = P.diasPrueba ?? 0;
-  const a = P.estado === 'prueba' && P.vigente ? ['', dias === 1 ? 'Te queda 1 día de prueba gratis de Starter.' : `Te quedan ${dias} días de prueba gratis de Starter.`, 'Elegir plan', true]
+  const a = P.estado === 'prueba' && P.vigente ? ['', dias === 1 ? 'Te queda 1 día de prueba gratis de Business.' : `Te quedan ${dias} días de prueba gratis de Business.`, 'Elegir plan', true]
     : !P.vigente && P.estado !== 'interno' ? ['vencido', `${P.estado === 'prueba' ? 'Tu prueba gratis terminó.' : 'Tu plan no está activo.'} Puedes ver todo, pero no responder ni hacer cambios.`, P.estado === 'prueba' ? 'Elegir plan' : 'Renovar plan', false]
     : P.estado === 'pago-pendiente' ? ['pendiente', 'No pudimos cobrar tu tarjeta. Actualízala para no perder el acceso.', 'Ver mi plan', false]
     : null;
