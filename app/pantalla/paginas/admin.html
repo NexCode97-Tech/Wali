@@ -205,12 +205,19 @@ main.sop{max-width:none;margin:0;padding:10px;height:100%;display:flex}
 .sx-chn small{color:var(--t3);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sx-acc{display:flex;gap:8px;flex:none}.sx-acc .btn.on{background:#0b0b10;color:#fff;border-color:#0b0b10}
 .btn.ic{width:40px;padding:0;justify-content:center}.sx-volver,.sx-ver-ficha{display:none!important}
-.sx-msgs{flex:1;min-height:0;overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:10px;background:#f6f6f4 url(__BASE__/img/fondo-chat.png?v=gris) center/420px auto}
-.sx-b{width:fit-content;max-width:100%;display:flex;gap:10px;align-items:flex-end;animation:sx-pop 360ms var(--e-in) both}
-.sx-bc{flex:1 1 auto;min-width:0;background:#fff;border-radius:16px 16px 16px 4px;padding:9px 13px 7px;box-shadow:0 1px 1px rgba(0,0,0,.05)}
-.sx-bc strong{display:block;color:#2563eb;font-size:12.5px;margin-bottom:2px}.sx-bc p{margin:0;font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}
-.sx-bc time{display:block;text-align:right;font-size:11px;color:var(--t3);margin-top:3px}
-.sx-b.yo{align-self:flex-end;flex-direction:row-reverse}.sx-b.yo .sx-bc{background:#FFD21F;border-radius:16px 16px 4px 16px}.sx-b.yo .sx-bc strong{color:#0b0b10}.sx-b.yo .sx-bc time{color:#5b4a00}
+.sx-msgs{flex:1;min-height:0;overflow-y:auto;padding:22px 28px;display:flex;flex-direction:column;gap:16px;background-color:#f3f4f6;background-image:url(__BASE__/img/fondo-chat.png?v=gris);background-size:288px auto}
+.sx-fila{display:flex;align-items:flex-end;gap:10px;max-width:100%;animation:sx-pop 360ms var(--e-in) both}.sx-fila.yo{justify-content:flex-end}
+.sx-cav{flex:none;align-self:flex-end;margin-bottom:21px;display:flex}
+.sx-col{display:flex;flex-direction:column;gap:3px;max-width:min(520px,78%);min-width:0}.sx-fila.yo .sx-col{align-items:flex-end}.sx-fila:not(.yo) .sx-col{align-items:flex-start}
+.sx-cb{padding:9px 14px;border-radius:16px;font-size:14px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%;box-sizing:border-box}
+.sx-cb.in{background:#fff;border:1px solid #e5e9f0;color:var(--ink);box-shadow:0 1px 1px rgba(15,23,42,.04)}.sx-cb.in.ult{border-bottom-left-radius:6px}
+.sx-cb.out{background:#FFEC9E;color:#0b0b10}.sx-cb.out.ult{border-bottom-right-radius:6px}
+.sx-cimg{display:block;border-radius:16px;overflow:hidden;border:1px solid #e5e9f0;background:#dfe5ec;max-width:260px}.sx-cimg img{display:block;max-width:260px;max-height:320px;object-fit:cover}
+.sx-cfile{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:16px;text-decoration:none;min-width:260px;max-width:100%;box-sizing:border-box}
+.sx-cfile.out{background:#FFEC9E;color:#0b0b10}.sx-cfile.in{background:#fff;border:1px solid #e5e9f0;color:var(--ink)}
+.sx-cfile .ic{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;flex:none}.sx-cfile.out .ic{background:rgba(255,255,255,.55)}.sx-cfile .ic svg.i{width:18px;height:18px}
+.sx-cfile .nm{display:flex;flex-direction:column;min-width:0}.sx-cfile .nm b{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sx-cfile .nm small{font-size:12px;opacity:.7}
+.sx-meta{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:11.5px;color:#6b7280;padding:0 4px}.sx-meta b{font-weight:500;color:#4b5563}
 @keyframes sx-pop{from{opacity:0;transform:translateY(8px) scale(.97)}}
 .sx-ev{align-self:center;max-width:80%;display:flex;gap:8px;align-items:flex-start;background:#fff;border:1px solid #fde68a;color:#92400e;border-radius:12px;padding:9px 12px;font-size:12.5px}.sx-ev b{color:#92400e}
 .sx-adj{align-self:flex-start;display:inline-flex;gap:6px;align-items:center;font-size:12.5px;color:var(--t2);background:#fff;border-radius:10px;padding:6px 10px}
@@ -226,10 +233,11 @@ main.sop{max-width:none;margin:0;padding:10px;height:100%;display:flex}
 .sx-fx2{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;color:#dc2626;flex:none}.sx-fx2:hover{background:#fef2f2}.sx-fx2 svg.i{width:13px;height:13px;stroke-width:2.2}
 .sx-fc.sub .sx-th{position:relative}.sx-fc.sub .sx-th::after{content:"";position:absolute;inset:10px;border-radius:50%;border:2px solid rgba(0,0,0,.15);border-top-color:currentColor;animation:sx-gira .7s linear infinite}.sx-fc.sub .sx-th svg{opacity:0}
 .sx-clip{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;color:var(--t2);transition:background 140ms var(--e-std),transform 140ms var(--e-std)}.sx-clip:hover{background:#f4f5f7;color:var(--ink)}.sx-clip:active{transform:scale(.92)}.sx-clip svg.i{width:18px;height:18px}
-.sx-ba{display:flex;flex-direction:column;gap:6px;margin:4px 0 6px}.sx-ba .sx-fc{animation:none}
-.sx-bimg{display:block;border-radius:10px;overflow:hidden;max-width:260px;background:rgba(0,0,0,.05)}.sx-bimg img{display:block;width:100%;height:auto;max-height:280px;object-fit:cover}
 .sx-aviso{margin:8px 2px 0;display:flex;align-items:center;gap:7px;color:var(--t3);font-size:12.5px}.sx-aviso svg.i{width:14px;height:14px}
 .sx-fh{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 4px;font-size:12.5px;font-weight:600;color:var(--t3)}
+.sx-pmin{display:grid;place-items:center;width:26px;height:26px;border-radius:6px;color:var(--t2)}.sx-pmin:hover{background:#f3f6fa;color:var(--ink)}.sx-pmin svg.i{width:16px;height:16px}
+.sx-popen{display:none;position:absolute;right:0;top:120px;z-index:5;writing-mode:vertical-rl;background:#fff;border:1px solid var(--line);border-right:0;border-radius:8px 0 0 8px;padding:10px 5px;font-size:12px;color:#1d4ed8;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.sx-det.ficha-min{grid-template-columns:minmax(0,1fr)}.sx-det.ficha-min .sx-ficha{display:none}.sx-det.ficha-min .sx-popen{display:block}.sx-chat{position:relative}
 .sx-fx{display:none;width:34px;height:34px;border-radius:9px;place-items:center;color:#dc2626}.sx-fx:hover{background:#fef2f2}
 .sx-fper{display:grid;justify-items:center;gap:4px;padding:6px 16px 14px;border-bottom:1px solid #eef0f3;text-align:center}.sx-fper b{font-size:16px;margin-top:6px}.sx-fper small{color:var(--t3);font-size:12.5px;overflow-wrap:anywhere}
 .sx-facc{display:flex;gap:18px;margin-top:10px}.sx-facc button,.sx-facc a{display:grid;justify-items:center;gap:5px;font-size:12px;color:var(--t2);text-decoration:none}
@@ -245,7 +253,7 @@ main.sop{max-width:none;margin:0;padding:10px;height:100%;display:flex}
   .sx{grid-template-columns:330px minmax(0,1fr)}.sx-det{grid-template-columns:minmax(0,1fr)}
   .sx-ficha{display:none;position:absolute;right:0;top:0;bottom:0;width:330px;z-index:30;box-shadow:0 30px 60px -20px rgba(0,0,0,.35)}
   .sx-det.ficha-abierta .sx-ficha{display:flex;animation:sx-cajon 400ms cubic-bezier(.32,.72,0,1) both}
-  .sx-ver-ficha{display:inline-flex!important}.sx-fx{display:grid}
+  .sx-ver-ficha{display:inline-flex!important}.sx-fx{display:grid}.sx-pmin,.sx-det.ficha-min .sx-popen{display:none}.sx-det.ficha-min .sx-ficha{display:none}.sx-det.ficha-min.ficha-abierta .sx-ficha{display:flex}
   .sx-acc .tx{display:none}.sx-acc .btn{width:40px;padding:0;justify-content:center}
   .sx-chn .sx-chip{display:none}
 }
@@ -261,7 +269,7 @@ main.sop{max-width:none;margin:0;padding:10px;height:100%;display:flex}
   .zona:has(.sx:not([data-v="lista"])) .mtop{display:none}.zona:has(.sx:not([data-v="lista"])) main.sop{height:100%}.sx-msgs{padding:14px}.sx-ch{padding:10px 12px}
   .sx-comp{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 14px)}
 }
-@media (prefers-reduced-motion:reduce){.sx-it,.sx-b,.sx-ficha{animation:none!important}}
+@media (prefers-reduced-motion:reduce){.sx-it,.sx-fila,.sx-ficha{animation:none!important}}
 /* ── Barra lateral de módulos (maqueta aprobada el 10-nov): la del CRM, oscura, el módulo abierto en blanco con rayita
    amarilla y el contador en rojo. La página se desplaza dentro de .zona; la barra queda fija. ── */
 body{display:flex;height:100vh;height:100dvh;overflow:hidden}
@@ -425,7 +433,7 @@ function avatar(nombre, id, logo, tam = 28, redondo = false){
 }
 
 /* ── Estado ── */
-const S = {soporte: null, sinEntender: null, svista: 'lista', sficha: false, stab: 'abierta', ssel: null, sdet: null, sq: '', sTema: '', sPri: '', borrador: {}, adj: {}, enviando: false, cupones: null, cq: '', cEst: '', cPlan: '', fila: null, confirma: null, nuevo: null, tab: 'resumen', rango: '12m', mes: '', resumen: null, finanzas: null, empresas: null, filtro: 'todas', plan: '', est: '', orden: 'uso', q: '', abierta: null, menu: null};
+const S = {soporte: null, sinEntender: null, svista: 'lista', sficha: false, stab: 'abierta', ssel: null, sdet: null, sq: '', sTema: '', sPri: '', borrador: {}, adj: {}, smin: false, enviando: false, cupones: null, cq: '', cEst: '', cPlan: '', fila: null, confirma: null, nuevo: null, tab: 'resumen', rango: '12m', mes: '', resumen: null, finanzas: null, empresas: null, filtro: 'todas', plan: '', est: '', orden: 'uso', q: '', abierta: null, menu: null};
 
 /* ── Pestañas con indicador que se desliza ── */
 // Con la barra lateral (10-nov) ya no hay indicador que deslizar: el módulo abierto lo marca su estilo.
@@ -879,13 +887,24 @@ function vSoporte(){
     <section class="sx-panel sx-lista" aria-label="Solicitudes"><div class="sx-lh"><div class="sx-lt"><h2>Solicitudes</h2>${filtros}</div>
       <label class="sx-q">${IC.search}<input id="sq" type="search" value="${esc(S.sq)}" placeholder="Buscar por empresa, persona o número" aria-label="Buscar solicitud" autocomplete="off"></label>${seg}</div>
       <div class="sx-items">${lista}</div></section>
-    <div id="s-det" class="sx-det${S.sficha ? ' ficha-abierta' : ''}">${det}</div></div>`;
+    <div id="s-det" class="sx-det${S.sficha ? ' ficha-abierta' : ''}${S.smin ? ' ficha-min' : ''}">${det}</div></div>`;
 }
 const horaDe = iso => new Date(iso).toLocaleTimeString('es-CO', {hour: 'numeric', minute: '2-digit'});
+// Cada mensaje como en el chat de la bandeja: imágenes, texto y archivos en bloques, y debajo quién y cuándo.
+function burbujaSop(m, d){ const yo = m.autor === 'soporte', k = yo ? 'out' : 'in', L = (Array.isArray(m.archivos) ? m.archivos : []).filter(a => a && urlNube(a.url));
+    const imgs = L.filter(a => tipoAdj(a) === 'imagen'), otros = L.filter(a => tipoAdj(a) !== 'imagen');
+    const bloques = [...imgs.map(a => `<a class="sx-cimg" href="${esc(a.url)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir ${esc(a.n)}"><img src="${esc(a.url)}" alt="${esc(a.n)}" loading="lazy"></a>`),
+      ...(m.texto ? [`<div class="sx-cb ${k}">${esc(m.texto)}</div>`] : []),
+      ...otros.map(a => { const [nom, bg, co, ic] = TIPO_ADJ[tipoAdj(a)]; return `<a class="sx-cfile ${k}" href="${esc(a.url)}" target="_blank" rel="noopener noreferrer"><span class="ic"${yo ? '' : ` style="background:${bg};color:${co}"`}>${IC[ic]}</span><span class="nm"><b>${esc(a.n)}</b><small>${esc(nom + (a.t ? ' · ' + a.t : ''))}</small></span></a>`; })];
+    if (bloques.length) bloques[bloques.length - 1] = bloques[bloques.length - 1].replace(/^<(a|div) class="(sx-\w+)( \w+)?/, (x, t, c, kk) => `<${t} class="${c}${kk || ''} ult`);
+    const meta = `<span class="sx-meta"><b>${esc(m.nombre)}</b>${yo ? '· Soporte de Wali ' : ''}· ${esc(fecha(m.en))}, ${esc(horaDe(m.en))}</span>`;
+    const av = `<span class="sx-cav">${avatar(m.nombre, yo ? 'soporte' : d.persona.correo, null, 32, true)}</span>`;
+    return yo ? `<div class="sx-fila yo"><div class="sx-col">${bloques.join('')}${meta}</div>${av}</div>` : `<div class="sx-fila">${av}<div class="sx-col">${bloques.join('')}${meta}</div></div>`;
+}
 function vDetalleSop(d){
   const ctx = d.contexto || {}, caidas = d.caidas || [], resuelta = d.estado === 'resuelta';
   const quien = m => m.autor === 'soporte' ? `${esc(m.nombre)} · Soporte de Wali` : esc(m.nombre);
-  const burbuja = m => `<div class="sx-b${m.autor === 'soporte' ? ' yo' : ''}">${avatar(m.nombre, m.autor === 'soporte' ? 'soporte' : d.persona.correo, null, 32, true)}<div class="sx-bc"><strong>${quien(m)}</strong>${archivosBurbuja(m.archivos)}${m.texto ? `<p>${esc(m.texto)}</p>` : ''}<time>${esc(fecha(m.en))}, ${esc(horaDe(m.en))}</time></div></div>`;
+  const burbuja = m => burbujaSop(m, d);
   const pista = caidas.length ? `<div class="sx-ev">${IC.alert}<span><b>Wali lo revisó solo.</b> ${caidas.map(l => `La línea ${esc(l.nombre)} está sin conexión ${esc(hace(l.desde).toLowerCase())}`).join('; ')}. Al reconectarla en Ajustes › Líneas, los mensajes de ese rato llegan solos.</span></div>` : '';
   const adj = d.adjunto && /^https:\/\/res\.cloudinary\.com\//.test(d.adjunto) ? `<a class="sx-adj" href="${esc(d.adjunto)}" target="_blank" rel="noopener noreferrer">${IC.link}Ver la captura que adjuntó</a>` : '';
   const botones = resuelta ? `<button type="button" class="btn" data-sest="abierta"><span class="tx">Reabrir</span></button>`
@@ -899,11 +918,11 @@ function vDetalleSop(d){
     <form class="sx-comp" id="s-resp"><div class="sx-box"><textarea id="s-texto" rows="3" maxlength="4000" placeholder="Escribe la respuesta…" aria-label="Respuesta">${esc(S.borrador[d.id] || '')}</textarea>
       <div class="sx-arch" id="s-arch">${tarjetasAdj(d.id)}</div>
       <div class="sx-bar"><button type="button" class="sx-clip" data-sclip="1" aria-label="Adjuntar un archivo" title="Adjuntar (también puedes pegar con Ctrl+V)">${IC.clip}</button><input type="file" id="s-file" multiple hidden><span class="sx-esp"></span><button type="submit" class="btn pri"${S.enviando ? ' disabled' : ''}>${S.enviando ? '<span class="sx-rueda" aria-hidden="true"></span>Enviando…' : IC.avion + 'Responder'}</button></div></div>
-      <p class="sx-aviso">${IC.correo}Le llega por correo y en Wali</p></form></section>`;
+      <p class="sx-aviso">${IC.correo}Le llega por correo y en Wali</p></form><button type="button" class="sx-popen" data-smin="0">Contacto</button></section>`;
   const [et, ec] = estado({estado: d.empresa.estado, cancelaAlFinal: d.empresa.cancelaAlFinal});
   const fila = (a, b) => `<div class="sx-ff"><span>${a}</span><span>${b}</span></div>`;
   const busco = (ctx.busco || []).length ? `<span class="sx-bus">${ctx.busco.map(b => `<span>«${esc(b)}»</span>`).join('')}</span>` : '—';
-  const ficha = `<aside class="sx-panel sx-ficha" aria-label="Solicitud ${esc(d.numero)}"><div class="sx-fh"><span>Solicitud #${esc(d.numero)}</span><button type="button" class="sx-fx" data-sficha="0" aria-label="Cerrar la ficha">${IC.x}</button></div>
+  const ficha = `<aside class="sx-panel sx-ficha" aria-label="Solicitud ${esc(d.numero)}"><div class="sx-fh"><span>Solicitud #${esc(d.numero)}</span><button type="button" class="sx-pmin" data-smin="1" aria-label="Ocultar el panel"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button><button type="button" class="sx-fx" data-sficha="0" aria-label="Cerrar la ficha">${IC.x}</button></div>
     <div class="sx-fper">${avatar(d.persona.nombre, d.persona.correo, null, 64, true)}<b>${esc(d.persona.nombre)}</b><small>${esc(d.persona.correo)}</small>
       <div class="sx-facc"><button type="button" data-sempresa="${esc(d.empresa.id)}"><span>${IC.empresa}</span>Ver empresa</button><a href="mailto:${esc(d.persona.correo)}"><span>${IC.correo}</span>Correo</a><button type="button" data-scopiar="${esc(d.persona.correo)}"><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg></span>Copiar</button></div></div>
     <div class="sx-fsec"><h4>${IC.empresa}Empresa</h4>${fila('Empresa', esc(d.empresa.nombre))}${fila('Plan', esc(`${PLAN[d.empresa.plan] || d.empresa.plan} ${(PERIODO[d.empresa.periodo] || '').toLowerCase()}`.trim()))}${fila('Estado', `<span class="est ${ec}">${et}</span>`)}${fila('Rol', esc(ROL[d.persona.rol] || d.persona.rol))}</div>
@@ -938,11 +957,6 @@ function tarjetaAdj(a, quitar){
   return `<span class="sx-fc${a.subiendo ? ' sub' : ''}">${cuerpo}<button type="button" class="sx-fx2" data-squitar="${quitar}" aria-label="Quitar ${esc(a.n)}">${IC.x}</button></span>`;
 }
 const tarjetasAdj = id => (S.adj[id] || []).map((a, i) => tarjetaAdj(a, i)).join('');
-function archivosBurbuja(L){
-  L = (Array.isArray(L) ? L : []).filter(a => a && urlNube(a.url));
-  if (!L.length) return '';
-  return `<div class="sx-ba">${L.map(a => tipoAdj(a) === 'imagen' ? `<a class="sx-bimg" href="${esc(a.url)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir ${esc(a.n)}"><img src="${esc(a.url)}" alt="${esc(a.n)}" loading="lazy"></a>` : tarjetaAdj(a)).join('')}</div>`;
-}
 function pintarAdj(){ const c = $('s-arch'); if (!c || !S.ssel) return; c.replaceChildren(); c.insertAdjacentHTML('beforeend', tarjetasAdj(S.ssel)); }
 async function subirAdj(archivos){
   const id = S.ssel; if (!id) return;
@@ -968,15 +982,38 @@ async function abrirSol(id){
   catch (err) { const c = $('s-det'); if (c) { c.replaceChildren(); c.insertAdjacentHTML('beforeend', `<div class="k vacio">${esc(err.message)}</div>`); } }
 }
 async function responderSol(){
-  const t = $('s-texto'), id = S.ssel; if (!t || !id || S.enviando) return;
+  const t = $('s-texto'), id = S.ssel, d = S.sdet; if (!t || !id || !d || d.id !== id || S.enviando) return;
   const texto = t.value.trim(), L = S.adj[id] || [];
   if (L.some(a => a.subiendo)) { alertar('Espera a que termine de subir el archivo'); return; }
   const archivos = L.map(({url, n, mime, t: tam}) => ({url, n, mime: mime || '', t: tam || ''}));
   if (texto.length < 2 && !archivos.length) { alertar('Escribe la respuesta o adjunta un archivo'); return; }
-  S.enviando = true; S.borrador[id] = texto; pintarDetalle();
-  try { await api(`/soporte/${id}/responder`, 'POST', {texto, archivos}); delete S.borrador[id]; delete S.adj[id]; alertar('Respuesta enviada'); }
-  catch (err) { alertar(err.message); }
-  S.enviando = false; await recargarSoporte();
+  // Como en el chat de la bandeja: la burbuja aparece de una vez, el cuadro queda vacío y el chat no se vuelve a pintar.
+  const m = {autor: 'soporte', nombre: ($('yo').textContent || 'Soporte').trim().split(/\s+/)[0], texto, archivos, en: new Date().toISOString()};
+  S.enviando = true; d.mensajes.push(m); delete S.borrador[id]; delete S.adj[id];
+  t.value = ''; pintarAdj(); t.focus();
+  const hilo = document.querySelector('.sx-msgs'); let el = null;
+  if (hilo) { hilo.insertAdjacentHTML('beforeend', burbujaSop(m, d)); el = hilo.lastElementChild; hilo.scrollTo({top: hilo.scrollHeight, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'}); }
+  try { await api(`/soporte/${id}/responder`, 'POST', {texto, archivos}); }
+  catch (err) {
+    // No salió: se quita la burbuja y el texto y los archivos vuelven al cuadro.
+    S.enviando = false; const k = d.mensajes.indexOf(m); if (k >= 0) d.mensajes.splice(k, 1); if (el) el.remove();
+    if (S.ssel === id) { const t2 = $('s-texto'); if (t2 && !t2.value) t2.value = texto; S.borrador[id] = texto; S.adj[id] = L; pintarAdj(); }
+    alertar(err.message); return;
+  }
+  S.enviando = false;
+  // Por detrás: la lista y los conteos al día, y el hilo con los datos del servidor, sin tocar el chat abierto.
+  try { S.soporte = await api('/soporte'); badgeSoporte(); if (S.tab === 'soporte') pintarListaSop(); } catch {}
+  try { const nd = await api('/soporte/' + id); if (S.ssel === id) S.sdet = nd; } catch {}
+}
+// Solo la columna de la lista: el chat y lo que se está escribiendo quedan como están.
+function pintarListaSop(){
+  const vieja = document.querySelector('.sx-lista'); if (!vieja) return;
+  // vSoporte elige otra solicitud si la abierta salió de la pestaña; aquí no: el chat abierto se queda.
+  const sel = S.ssel, tmp = document.createElement('div'); tmp.insertAdjacentHTML('beforeend', vSoporte()); S.ssel = sel;
+  const nueva = tmp.querySelector('.sx-lista'); if (!nueva) return;
+  const sc = vieja.querySelector('.sx-items'), y = sc ? sc.scrollTop : 0;
+  nueva.querySelectorAll('.sx-it').forEach(x => { x.style.animation = 'none'; });
+  vieja.replaceWith(nueva); const sc2 = nueva.querySelector('.sx-items'); if (sc2) sc2.scrollTop = y;
 }
 async function estadoSol(estado){
   const id = S.ssel; if (!id) return;
@@ -985,7 +1022,9 @@ async function estadoSol(estado){
 }
 async function recargarSoporte(){
   S.soporte = await api('/soporte'); badgeSoporte();
-  if (S.tab === 'soporte') { pintar(false); if (S.ssel) abrirSol(S.ssel); }
+  if (S.tab !== 'soporte') return;
+  pintar(false);
+  const id = S.ssel; if (id) api('/soporte/' + id).then(nd => { if (S.ssel === id) { S.sdet = nd; pintarDetalle(); } }, () => {});
 }
 function badgeSoporte(){
   const b = document.querySelector('.tab[data-tab="soporte"] .tab-n'), n = S.soporte ? S.soporte.solicitudes.filter(s => s.espera).length : 0;
@@ -1004,6 +1043,7 @@ function eventoSoporte(t){
   // En el celular se ve una parte a la vez (lista, chat o ficha); en pantallas medianas la ficha se abre encima.
   const sv = t.closest('[data-svolver]'); if (sv) { S.svista = sv.dataset.svolver; S.sficha = false; pintar(false); return true; }
   const sf = t.closest('[data-sficha]'); if (sf) { S.sficha = sf.dataset.sficha === '1'; S.svista = S.sficha ? 'ficha' : 'chat'; const sx = document.querySelector('.sx'); if (sx) sx.dataset.v = S.svista; const det = $('s-det'); if (det) det.classList.toggle('ficha-abierta', S.sficha); return true; }
+  const mn = t.closest('[data-smin]'); if (mn) { S.smin = mn.dataset.smin === '1'; const det = $('s-det'); if (det) det.classList.toggle('ficha-min', S.smin); return true; }
   if (t.closest('[data-sclip]')) { const f = $('s-file'); if (f) f.click(); return true; }
   const sq = t.closest('[data-squitar]'); if (sq) { const L = S.adj[S.ssel] || []; L.splice(+sq.dataset.squitar, 1); pintarAdj(); return true; }
   const sc = t.closest('[data-scopiar]'); if (sc) { navigator.clipboard.writeText(sc.dataset.scopiar).then(() => alertar('Correo copiado'), () => alertar('No se pudo copiar')); return true; }
