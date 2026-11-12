@@ -137,6 +137,34 @@ async function avisarPorVencer(id: string, vence: number) {
 }
 
 /**
+ * Instagram y TikTok (12-nov): el mismo aviso de «se desconecta pronto», una vez por fecha. Instagram renueva su token
+ * de 60 días solo (instagram.ts); si la renovación lleva días fallando, el token vence a los 60 días de sacado. TikTok
+ * renueva el acceso cada día, pero el permiso para renovarlo dura un año (venceRenovar). Messenger no vence.
+ */
+export async function avisarVencimientoCanales(): Promise<number> {
+  const filas = await prisma.crmConexion.findMany({ where: { tipo: { in: ['instagram', 'tiktok'] }, estado: { in: ['conectada', 'error'] } } })
+  let n = 0
+  for (const c of filas) {
+    const d = obj(c.datos)
+    const vence = c.tipo === 'instagram'
+      ? (!d.tokenCorto && Number(d.tokenDesde) > 0 ? Number(d.tokenDesde) + 60 * UN_DIA : 0)
+      : Number(d.venceRenovar) || 0
+    if (!vence || vence - Date.now() > 7 * UN_DIA || obj(c.datos).porVencerAvisado === vence) continue
+    await prisma.crmConexion.update({ where: { id: c.id }, data: { datos: { ...d, porVencerAvisado: vence } as Prisma.InputJsonValue } })
+    const canal = c.tipo === 'instagram' ? 'Instagram' : 'TikTok'
+    const cual = c.nombre ? `${canal} ${c.nombre}` : `tu cuenta de ${canal}`
+    const f = new Date(vence).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', timeZone: 'America/Bogota' })
+    const texto = vence <= Date.now()
+      ? `La conexión de ${cual} venció y ya no llegan sus mensajes. Vuelve a conectarla en Ajustes del CRM › Canales.`
+      : `La conexión de ${cual} vence el ${f}. Vuelve a conectarla antes en Ajustes del CRM › Canales para que los mensajes sigan llegando.`
+    for (const a of await administradores()) await avisar({ userId: a.id, autorId: null, tipo: 'CRM_CANAL_POR_VENCER', titulo: vence <= Date.now() ? `Tu ${canal} está desconectado` : `Tu ${canal} se desconecta pronto`, texto, url: '/' })
+    logger.info(`[CRM caídas] Aviso de vencimiento: ${canal} ${c.nombre} vence el ${f}`)
+    n++
+  }
+  return n
+}
+
+/**
  * Revisión diaria (procesos.ts, cada 10 minutos, pero cada conexión a lo sumo una vez por día): ¿Meta sigue aceptando
  * el token? Solo cuenta lo que Meta responde; si no se pudo hablar con Meta (la red), se deja para la próxima.
  */

@@ -283,6 +283,8 @@ export async function cadaDiezMinutos() {
     await paso('tokens de Instagram', () => import('./instagram').then(m => m.renovarTokensInstagram()))
     // WhatsApp (13-oct): cada conexión, una vez al día, se revisa en Meta; si se cayó, aviso y franja roja (caidas.ts).
     await pasoPorEspacio('conexiones de WhatsApp', () => import('./caidas').then(m => m.revisarConexionesWhatsapp()))
+    // Instagram y TikTok (12-nov): aviso una semana antes de que venza su conexión.
+    await pasoPorEspacio('vencimiento de Instagram y TikTok', () => import('./caidas').then(m => m.avisarVencimientoCanales()))
   } finally { corriendoDiez = false }
 }
 
