@@ -9,7 +9,8 @@
   const RCP_FR = {manana:['Mañana', 6, 12], tarde:['Tarde', 12, 18], noche:['Noche', 18, 22]};
   const RCP_DS = ['lu', 'ma', 'mi', 'ju', 'vi', 'sá', 'do'];
   const AVISOS = [['10', '10 min'], ['30', '30 min'], ['60', '1 hora']];
-  const gcalConectado = () => !!(window.CRM_YO && CRM_YO.gcal);
+  // CRM_YO es un const del ámbito compartido (10-nucleo), no una propiedad de window: se pregunta por typeof.
+  const gcalConectado = () => !!(typeof CRM_YO === 'object' && CRM_YO && CRM_YO.gcal);
   const AV_TX = {'10':'10 minutos antes', '30':'30 minutos antes', '60':'1 hora antes'};
   // Cómo va el recordatorio en Google: agendando (mientras el servidor responde), en el calendario, hecho allá o sin agendar.
   function gcEstado(r){
