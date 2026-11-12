@@ -198,3 +198,4 @@
 - Revisados los puntos 3 y 4: ya estaban hechos (la API de mensajes de marketing en difusiones desde el 21-oct, whatsapp.ts /marketing_messages; el cobro por usuarios en Whop desde el 10-nov, plan.ts). Memoria de pendientes actualizada.
 - Push hasta 03f6644 (pedido «hazlo, push»): asistente y títulos sin mayúsculas, chat por partes, finalizar en lote con encuesta, horario por la API, historial del celular y avisos de vencimiento de Instagram y TikTok. Revisando el despliegue en segundo plano.
 - El usuario suscribió en la app de Meta los campos history, smb_app_state_sync y smb_message_echoes del webhook.
+- Arreglo del chat por partes: la marca de hasta dónde se subió quedaba a veces en un separador de día, que separar() recrea en cada repintada; al llegar un mensaje se volvía a 20. Ahora la marca va en el primer mensaje real. Probado con mensajes de varios días: 60 mensajes se mantienen tras 3 repintadas y un mensaje nuevo. Sin push.

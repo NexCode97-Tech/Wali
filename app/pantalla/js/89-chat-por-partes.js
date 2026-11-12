@@ -25,11 +25,14 @@
     if (!v || v.carg !== !!c._cargada) v = c._chpp = {carg: !!c._cargada, obj: null, id: null};
     let i = v.obj ? ms.indexOf(v.obj) : -1;
     if (i < 0 && v.id) i = ms.findIndex(m => clave(m) === v.id);
-    if (i < 0) i = atras(ms, ms.length, PASO);
-    v.obj = ms[i] || null; v.id = clave(ms[i]);
+    if (i < 0) { i = atras(ms, ms.length, PASO); anclar(v, ms, i); }
+    // El separador de día de encima también se dibuja (separar() los vuelve a crear en cada repintada).
+    while (i > 0 && ms[i - 1] && ms[i - 1].d) i--;
     return i;
   }
-  function fijar(c, i){ const ms = c.msgs || []; c._chpp.obj = ms[i] || null; c._chpp.id = clave(ms[i]); }
+  // La marca va en el primer mensaje real desde i, nunca en un separador: esos se recrean y se perdería.
+  function anclar(v, ms, i){ while (i < ms.length && ms[i] && ms[i].d) i++; v.obj = ms[i] || null; v.id = clave(ms[i]); }
+  function fijar(c, i){ anclar(c._chpp, c.msgs || [], i); }
 
   const pintarEntero = pintarChat;
   pintarChat = function(c){
