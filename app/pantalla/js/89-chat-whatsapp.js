@@ -371,6 +371,7 @@
 .rr-selbar .btn{display:inline-flex;align-items:center;gap:7px}.rr-selbar .btn svg{width:16px;height:16px}
 .wb-t .mk-f,.wb-t .mk-d{display:inline-flex}.wb-t .mk{width:12px;height:12px;stroke-width:2}
 .wb-t .mk-d .mk{fill:currentColor;stroke:none;color:#b8860b}
+.wb-t .mk-f .mk{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;color:#8a6d00}
 .fj-bar{display:flex;align-items:center;gap:10px;width:100%;flex:none;padding:8px 16px;border:0;border-bottom:1px solid #eef1f5;background:#fff;font:inherit;text-align:left;cursor:pointer;animation:fj-entra .3s cubic-bezier(.32,.72,0,1) both;transition:background .15s}
 .fj-bar:hover{background:#f8fafc}
 @keyframes fj-entra{from{opacity:0;transform:translateY(-6px)}}
