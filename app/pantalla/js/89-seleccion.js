@@ -74,7 +74,7 @@
   .sm-menu{transform-origin:var(--c,24px) 0}
   .sm-menu::after{content:"";position:absolute;top:-6px;left:calc(var(--c,24px) - 6px);width:12px;height:12px;background:#fff;transform:rotate(45deg);border-radius:2px;box-shadow:-1px -1px 0 0 var(--line)}
 }
-.sm-mh{margin:4px 10px 6px;font-size:11.5px;font-weight:600;color:var(--ink3);letter-spacing:.03em;text-transform:uppercase}
+.sm-mh{margin:4px 10px 6px;font-size:12.5px;font-weight:600;color:var(--ink3)}
 .sm-menu button{display:flex;align-items:center;gap:10px;min-height:40px;padding:0 10px;border-radius:9px;font-size:13.5px;color:var(--ink);text-align:left;transition:background .14s,transform .16s cubic-bezier(.22,1,.36,1)}
 .sm-menu button:hover{background:var(--hover)}.sm-menu hr{border:0;border-top:1px solid var(--line);margin:4px 6px}
 .sm-menu .sm-rojo{color:#dc2626}.sm-menu .sm-rojo.sm-seguro{background:#fee2e2;font-weight:600}
@@ -183,10 +183,14 @@
     for (const c of L) items.querySelector(`.it[data-c="${c.id}"]`)?.classList.add('sm-sale');
     setTimeout(() => {
       // El mismo evento que deja «Finalizar» de a una (10-nucleo.js y 40-ajustes.js): «Finalizada por X · Motivo: Y».
+      // La encuesta sale como al finalizar de a una con el interruptor encendido: solo a las que cumplen sus reglas
+      // (65-encuesta), con el evento detrás de «Finalizada por…» en la misma cola.
+      const conEnc = L.filter(c => typeof crmEncuestaPuede === 'function' && crmEncuestaPuede(c));
       for (const c of L) { c.est = 'finalizadas'; c.motivo = motivo || null; c.msgs.push({ev: 'check', t: motivo ? `Finalizada por ${yo} · Motivo: ${motivo}` : `Finalizada por ${yo} · ahora`}); }
+      for (const c of conEnc) c.msgs.push({ev: 'star', t: 'Encuesta enviada por WhatsApp', encuesta: true});
       if (L.some(c => c.id === st.sel)) { const pr = visibles().find(x => !SL.sel.has(x.id)); st.sel = pr ? pr.id : 0; }
       crmSincronizar(); salir(); render();
-      toast(cuantas(L.length, 'conversación finalizada', 'conversaciones finalizadas') + (motivo ? ` · ${motivo}` : ''));
+      toast(cuantas(L.length, 'conversación finalizada', 'conversaciones finalizadas') + (motivo ? ` · ${motivo}` : '') + (conEnc.length ? ` · encuesta a ${conEnc.length}` : ''));
     }, 380);
   }
   async function exportar(){

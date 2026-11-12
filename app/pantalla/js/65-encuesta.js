@@ -175,6 +175,8 @@
     const fecha = `${p.d} de ${HC_MES_L[p.m]}${p.y !== hcPartes(Date.now()).y ? ' de ' + p.y : ''}`;
     return `Ya se le envió una encuesta ${n === 0 ? 'hoy' : n === 1 ? 'hace 1 día' : `hace ${n} días`}. Para no cansarla, la próxima puede salir desde el ${fecha}.`;
   }
+  // Finalizar en lote (89-seleccion) usa las mismas reglas: sale a cada conversación que puede, como el interruptor encendido.
+  window.crmEncuestaPuede = c => encPuede(c).puede;
   function encPuede(c){
     const e = encCfg(c.equipo || 'Ventas'), no = why => ({puede: false, why});
     if (!e.on) return no(`La encuesta de ${c.equipo || 'Ventas'} está apagada en Ajustes del CRM.`);
