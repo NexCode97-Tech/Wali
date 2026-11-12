@@ -126,6 +126,8 @@
     let el = document.querySelector(`#msgs .rr-m[data-rr="${CSS.escape(id)}"]`);
     // Si está más arriba de lo dibujado (89-chat-por-partes), primero se dibuja.
     if (!el && typeof chppMostrar === 'function' && chppMostrar(id)) el = document.querySelector(`#msgs .rr-m[data-rr="${CSS.escape(id)}"]`);
+    // Si ni siquiera se ha traído del servidor (un fijado viejo), se trae primero.
+    if (!el && typeof chppTraer === 'function') { chppTraer(id).then(si => { if (si) irAlMensaje(id); else toast('Ese mensaje ya no está en lo que se ve del chat'); }); return; }
     if (!el) { toast('Ese mensaje ya no está en lo que se ve del chat'); return; }
     el.scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center'});
     el.classList.remove('rr-brilla'); void el.offsetWidth; el.classList.add('rr-brilla');
@@ -136,7 +138,8 @@
     const caja = document.getElementById('msgs'); if (!caja) return;
     let bar = document.getElementById('fj-bar');
     const c = CONV.find(x => x.id === st.sel);
-    const L = c ? c.msgs.filter(m => m && m._id && m.fijado).sort((a, b) => String(b.fijado.en || '').localeCompare(String(a.fijado.en || ''))) : [];
+    // Con el chat por partes, los fijados más viejos que lo traído llegan aparte (c._fijadosViejos, 80-datos).
+    const L = c ? [...c.msgs, ...(c._fijadosViejos || []).filter(f => !c.msgs.some(m => m && m._id === f._id))].filter(m => m && m._id && m.fijado).sort((a, b) => String(b.fijado.en || '').localeCompare(String(a.fijado.en || ''))) : [];
     if (!L.length) { if (bar) bar.remove(); return; }
     if (fjConv !== st.sel) { fjI = 0; fjConv = st.sel; }
     if (fjI >= L.length) fjI = 0;

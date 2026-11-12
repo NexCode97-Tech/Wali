@@ -424,18 +424,44 @@ const crmDatos = (() => {
       .finally(() => { crmCatalogoInfo.cargando = false; });
   }
 
-  /* ── Mensajes: carga completa al abrir y envío de los nuevos, uno por uno y en orden ── */
+  /* ── Mensajes: al abrir, los últimos 300 (12-nov, el chat por partes); al subir hasta el principio, 200 más
+     (cargarAnteriores, desde 89-chat-por-partes). Los fijados más viejos llegan aparte (c._fijadosViejos). El envío de
+     los nuevos, uno por uno y en orden ── */
+  const PRIMERA = 300, MAS = 200;
   const cargandoMsgs = new Set();
   function cargarMensajes(c){
     if (!c || c._cargada || cargandoMsgs.has(c.id)) return;
     cargandoMsgs.add(c.id);
-    crmApi('GET', `/crm/conversaciones/${c.id}/mensajes`).then(lista => {
-      const srv = (lista || []).map(msgLocal), cids = new Set(srv.map(m => m.cid).filter(Boolean));
-      c.msgs = [...srv, ...c.msgs.filter(m => !m._id && !m.d && !(m.cid && cids.has(m.cid)))];
+    crmApi('GET', `/crm/conversaciones/${c.id}/mensajes?limite=${PRIMERA}`).then(r => {
+      const lista = Array.isArray(r) ? r : (r && r.mensajes) || [];
+      const srv = lista.map(msgLocal), cids = new Set(srv.map(m => m.cid).filter(Boolean)), ids = new Set(srv.map(m => m._id).filter(Boolean));
+      // Al recargar (p. ej. al volver la conexión) se conservan los más viejos que ya se habían traído al subir.
+      const primero = srv[0] && srv[0]._t, viejos = primero && c._yaCargo ? c.msgs.filter(m => m._id && !m.d && !m.prog && !ids.has(m._id) && m._t && m._t < primero) : [];
+      c._hayMas = viejos.length ? !!c._hayMas : !Array.isArray(r) && !!(r && r.hayMas);
+      c._yaCargo = true;
+      c._fijadosViejos = (!Array.isArray(r) && r && Array.isArray(r.fijados) ? r.fijados : []).map(msgLocal);
+      c.msgs = [...viejos, ...srv, ...c.msgs.filter(m => !m._id && !m.d && !(m.cid && cids.has(m.cid)))];
       c._cargada = true; c._parcial = false;
       baseProg.set(c.id, new Set(srv.filter(m => m.prog && m._id).map(m => m._id)));
       repintarPronto();
     }, err => toast(err.message)).finally(() => cargandoMsgs.delete(c.id));
+  }
+  // Los 200 anteriores al más viejo que hay. Sin repintar: el chat por partes decide qué se dibuja.
+  const trayendo = new Set();
+  async function cargarAnteriores(c){
+    if (!c || !c._hayMas || trayendo.has(c.id)) return false;
+    const primero = c.msgs.find(m => m && m._id && !m.d && !m.prog); if (!primero) return false;
+    trayendo.add(c.id);
+    try {
+      const r = await crmApi('GET', `/crm/conversaciones/${c.id}/mensajes?limite=${MAS}&antes=${encodeURIComponent(primero._id)}`);
+      const ya = new Set(c.msgs.map(m => m && m._id).filter(Boolean));
+      const nuevos = ((r && r.mensajes) || []).map(msgLocal).filter(m => !ya.has(m._id));
+      c._hayMas = !!(r && r.hayMas);
+      if (nuevos.length) { c.msgs = [...nuevos, ...c.msgs]; prepararMensajes(c); }
+      if (c._fijadosViejos) c._fijadosViejos = c._fijadosViejos.filter(f => !c.msgs.some(m => m._id === f._id));
+      return nuevos.length > 0;
+    } catch (e) { toast(e.message); return false; }
+    finally { trayendo.delete(c.id); }
   }
   async function mensajesDe(id){ const lista = await crmApi('GET', `/crm/conversaciones/${id}/mensajes`); return separar((lista || []).map(msgLocal).filter(m => !m.prog)); }
   // Sin la hora visible, sin separadores y sin campos del sistema; «· ahora» no se guarda en los eventos.
@@ -810,7 +836,7 @@ const crmDatos = (() => {
   const chatBase = chat;
   chat = function(){ if (!listo) return; tiempos(); const c = CONV.find(x => x.id === st.sel); if (c) prepararMensajes(c); chatBase(); const s = CONV.find(x => x.id === st.sel); if (s && !s._cargada) cargarMensajes(s); };
 
-  return {cargar, revisar, programarRevision, guardarYa, informes, fichaExterna, mensajesDe, conversacionNueva, unirConv, borrarDatos, agregarContacto, exportarContactos, cambiarNombre, cargarMensajes, renombrarEquipo};
+  return {cargar, revisar, programarRevision, guardarYa, informes, fichaExterna, mensajesDe, conversacionNueva, unirConv, borrarDatos, agregarContacto, exportarContactos, cambiarNombre, cargarMensajes, cargarAnteriores, renombrarEquipo};
 })();
 
 // Lo que usan 10-nucleo.js y los módulos.

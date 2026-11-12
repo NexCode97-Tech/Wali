@@ -144,11 +144,38 @@ export async function finalizadasAparte(req: Request, res: Response) {
 
 // ─── Mensajes ────────────────────────────────────────────────────────────────
 
+/**
+ * Los mensajes de una conversación. Sin `limite`, todos (como siempre: exportar, la ficha legal…). Con `limite` (12-nov,
+ * el chat por partes), los últimos N y `hayMas`; con `antes` (el id del más viejo que ya tiene la pantalla), los N
+ * anteriores a ese. La primera página trae además los fijados más viejos (la franja de fijados los necesita), marcados.
+ */
 export async function listarMensajes(req: Request, res: Response) {
   const id = idNum(req.params.id)
   await convVisible(req, id)
-  const filas = await prisma.crmMensaje.findMany({ where: { conversacionId: id }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] })
-  return ApiResponse.success(res, filas.map(msgAFront))
+  const lim = Number(req.query.limite)
+  if (!Number.isFinite(lim) || lim <= 0) {
+    const filas = await prisma.crmMensaje.findMany({ where: { conversacionId: id }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] })
+    return ApiResponse.success(res, filas.map(msgAFront))
+  }
+  const n = Math.min(500, Math.max(1, Math.floor(lim)))
+  const antesId = typeof req.query.antes === 'string' ? req.query.antes : ''
+  const ref = antesId ? await prisma.crmMensaje.findFirst({ where: { id: antesId, conversacionId: id }, select: { id: true, createdAt: true } }) : null
+  if (antesId && !ref) throw new NotFoundError('Ese mensaje ya no está en la conversación')
+  const filas = await prisma.crmMensaje.findMany({
+    where: { conversacionId: id, ...(ref ? { OR: [{ createdAt: { lt: ref.createdAt } }, { createdAt: ref.createdAt, id: { lt: ref.id } }] } : {}) },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: n + 1,
+  })
+  const hayMas = filas.length > n
+  const pagina = filas.slice(0, n).reverse()
+  let fijados: typeof pagina = []
+  if (!ref && hayMas && pagina.length) {
+    const desde = pagina[0]
+    fijados = await prisma.crmMensaje.findMany({
+      where: { conversacionId: id, datos: { path: ['fijado'], not: Prisma.AnyNull }, OR: [{ createdAt: { lt: desde.createdAt } }, { createdAt: desde.createdAt, id: { lt: desde.id } }] },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], take: 10,
+    })
+  }
+  return ApiResponse.success(res, { mensajes: pagina.map(msgAFront), hayMas, fijados: fijados.map(msgAFront) })
 }
 
 /**

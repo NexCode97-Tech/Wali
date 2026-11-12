@@ -22,7 +22,8 @@
   function inicio(c){
     const ms = c.msgs || [];
     let v = c._chpp;
-    if (!v || v.carg !== !!c._cargada) v = c._chpp = {carg: !!c._cargada, obj: null, id: null};
+    // Se vuelve a los últimos 20 solo cuando la conversación termina de cargar la primera vez (no en cada recarga).
+    if (!v || (!v.carg && c._cargada)) v = c._chpp = {carg: !!c._cargada, obj: null, id: null};
     let i = v.obj ? ms.indexOf(v.obj) : -1;
     if (i < 0 && v.id) i = ms.findIndex(m => clave(m) === v.id);
     if (i < 0) { i = atras(ms, ms.length, PASO); anclar(v, ms, i); }
@@ -38,7 +39,8 @@
   pintarChat = function(c){
     if (!c || !Array.isArray(c.msgs)) return pintarEntero.apply(this, arguments);
     const todos = c.msgs, desde = inicio(c);
-    if (desde <= 0) return pintarEntero.apply(this, arguments);
+    // Todo lo traído ya cabe: sin recortar, pero con la marca de arriba si el servidor tiene más (para pedirlos al subir).
+    if (desde <= 0) { const h = pintarEntero.apply(this, arguments); return c._hayMas ? `<div class="chpp-mas" data-chpp="${c.id}" aria-hidden="true"></div>` + h : h; }
     const parte = todos.slice(desde);
     for (const f of ['find', 'some', 'filter', 'findIndex', 'indexOf']) parte[f] = todos[f].bind(todos);
     let html;
@@ -61,7 +63,12 @@
     const c = convDe(box); if (!c) return;
     const sinBarra = box.scrollHeight <= box.clientHeight + 4;
     if (box.scrollTop > 120 && !sinBarra) return;
-    const desde = inicio(c); if (desde <= 0) return;
+    const desde = inicio(c);
+    if (desde <= 0) {
+      // Ya está dibujado todo lo que hay en la pantalla: se traen 200 más del servidor y se sigue.
+      if (c._hayMas && crmDatos.cargarAnteriores) crmDatos.cargarAnteriores(c).then(hay => { if (hay) revisar(box); });
+      return;
+    }
     ocupado = true;
     try {
       const abajo = box.scrollHeight - box.scrollTop;
@@ -80,6 +87,12 @@
   document.addEventListener('touchmove', e => { const t = e.touches[0]; if (t && t.clientY > y0 + 10) { const b = e.target.closest && e.target.closest('#msgs, #ec-msgs'); if (b) revisar(b); } }, {passive: true});
 
   // Ir a un mensaje que todavía no se dibujó: se dibuja desde un poco antes de él y luego se va.
+  // Un mensaje que todavía no se trajo del servidor (un fijado viejo): se traen páginas hasta tenerlo, y se va.
+  window.chppTraer = async function(id){
+    const c = CONV.find(x => x.id === st.sel); if (!c || !id) return false;
+    for (let n = 0; n < 25 && !(c.msgs || []).some(m => m && m._id === id) && c._hayMas; n++) if (!(await crmDatos.cargarAnteriores(c))) break;
+    return (c.msgs || []).some(m => m && m._id === id) && chppMostrar(id);
+  };
   window.chppMostrar = function(id, box){
     box = box || document.getElementById('msgs');
     const c = box && (convDe(box) || CONV.find(x => x.id === st.sel)); if (!c || !id) return false;
