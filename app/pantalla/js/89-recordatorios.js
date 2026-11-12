@@ -140,19 +140,23 @@
   const botonGoogle = espera => espera ? '<span class="rcp-rueda"></span>Esperando a Google…' : `Continuar con Google${I('ext')}`;
 
   // Conectar: Google se abre en una ventana aparte (no se deja abrir dentro del marco del CRM). Al terminar, esa
-  // ventana avisa por BroadcastChannel y se cierra; si la cierran antes, el botón vuelve a quedar libre.
-  let ventana = null, vigia = null;
+  // ventana avisa por BroadcastChannel y se cierra; si la cierran antes, el botón vuelve a quedar libre. Lo usan el
+  // diálogo de aquí y Mi perfil (89-perfil-google.js): crmConectarGoogle(botón). El botón muestra la espera y vuelve a
+  // su texto si no se conecta.
+  let ventana = null, vigia = null, boton = null, botonAntes = null;
   function esperando(si){
-    const b = document.querySelector('#ov-x [data-rcp-google]'); if (!b) return;
-    b.disabled = si; b.replaceChildren(); b.insertAdjacentHTML('beforeend', botonGoogle(si));
+    const b = boton; if (!b || !b.isConnected) return;
+    if (si) { botonAntes = [...b.childNodes].map(n => n.cloneNode(true)); b.disabled = true; b.replaceChildren(); b.insertAdjacentHTML('beforeend', botonGoogle(true)); }
+    else { b.disabled = false; if (botonAntes) b.replaceChildren(...botonAntes); botonAntes = null; }
   }
   function soltar(){ clearInterval(vigia); vigia = null; ventana = null; esperando(false); }
   async function conectado(){
     let correo = '';
     try { const r = await crmApi('GET', '/auth/me/google-calendario'); if (!r || !r.conectado) throw 0; correo = r.correo || 'tu cuenta de Google'; }
     catch { soltar(); toast('No se pudo confirmar la conexión con Google. Intenta de nuevo.'); return; }
-    CRM_YO.gcal = correo; clearInterval(vigia); vigia = null; ventana = null;
-    cerrarDialogo();
+    CRM_YO.gcal = correo; clearInterval(vigia); vigia = null; ventana = null; boton = botonAntes = null;
+    if (document.querySelector('#ov-x [data-rcp-google]')) cerrarDialogo();
+    document.dispatchEvent(new CustomEvent('crm:gcal'));
     const c = conv(); if (c && st.recNuevo && st.recNuevo.id === c.id) st.recNuevo.agendar = true;
     if (c) panel(c);
     toast('Google Calendar conectado');
@@ -164,17 +168,19 @@
       if (vigia || ventana) { soltar(); toast(RESPUESTAS[e.data] || RESPUESTAS.error); }
     };
   } catch {}
-  document.getElementById('ov-x').addEventListener('click', e => {
-    const b = e.target.closest('[data-rcp-google]'); if (!b || b.disabled) return;
+  function conectarGoogle(b){
+    if (!b || b.disabled) return;
     const base = String((window.CRM_INICIO && CRM_INICIO.api) || '').replace(/\/+$/, '');
     const w = 520, h = 680, x = Math.max(0, (screen.availWidth - w) / 2), y = Math.max(0, (screen.availHeight - h) / 2);
     ventana = window.open(base + '/auth/google/calendario', 'wali-gcal', `popup=yes,width=${w},height=${h},left=${x},top=${y}`);
     if (!ventana) { toast('Tu navegador bloqueó la ventana de Google. Permite las ventanas emergentes de Wali e inténtalo otra vez.'); return; }
-    esperando(true);
+    boton = b; esperando(true);
     clearInterval(vigia);
     // La cerraron sin terminar: se espera un momento por si el aviso de la ventana viene en camino.
     vigia = setInterval(() => { if (ventana && ventana.closed) { clearInterval(vigia); vigia = null; setTimeout(() => { if (ventana && !gcalConectado()) soltar(); }, 1200); } }, 500);
-  });
+  }
+  window.crmConectarGoogle = conectarGoogle;
+  document.getElementById('ov-x').addEventListener('click', e => { const b = e.target.closest('[data-rcp-google]'); if (b) conectarGoogle(b); });
 
   // Clics del bloque (antes que los de 10-nucleo, que siguen manejando nuevo, hecho, quitar y la sugerencia).
   document.getElementById('panel').addEventListener('click', e => {

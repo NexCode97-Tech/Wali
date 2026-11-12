@@ -703,7 +703,6 @@ function panel(c){
     ${!(f.interes || f.nota) ? '' : sec('guia','compass','Lo que busca', `<dl class="kv"><dt>Interés</dt><dd>${esc(f.interes || 'Sin dato')}</dd></dl>${f.nota ? `<p class="pc-nota">${esc(f.nota)}</p>` : ''}`, 'Formulario web', true)}
     ${sec('compra','cart','Compras', compra, cp ? '1' : buscando || (est && est.error) ? '' : 'Ninguna', true)}
     ${sec('campos','user','Datos del cliente', `<div class="frm">${CAMPOS.map(fd => fd.ops ? `<div class="fld">${esc(fd.n)}${ddSel('data-cop', opsDe(fd).map(([v, l]) => [fd.k + '::' + v, l]), fd.k + '::' + (c.campos[fd.k] || ''), fd.ph || 'Elige una opción')}</div>` : `<label>${esc(fd.n)}<input data-campo="${esc(fd.k)}" value="${esc(c.campos[fd.k] || '')}" placeholder="${fd.trengo ? 'Viene de Trengo' : 'Sin dato'}"></label>`).join('')}<div style="display:flex;justify-content:flex-end"><button type="button" class="btn" data-guardar-campos="1">${I('check')}Guardar</button></div></div>`, '', true)}
-    ${sec('prev','history','Conversaciones anteriores', h.length ? `<div class="pc-hist">${h.join('')}</div>` : '<p class="muted">Es su primera conversación.</p>', h.length ? String(h.length) : 'Primera', true)}
     ${sec('rec','bell','Recordatorios de seguimiento', recHtml(c), recs ? recs + ' pendiente' + (recs > 1 ? 's' : '') : '', true)}`;
 }
 

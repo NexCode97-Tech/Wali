@@ -794,14 +794,18 @@ async function salir(ev: CrmMensaje, c: ConvEncuesta, cfg: CfgEncuesta, token: s
   let enviado: { wamid: string; waIdCliente: string | null; flowId: string }
   // Las preguntas que salieron, con sus textos: la respuesta se lee con ellas aunque después se cambie la encuesta.
   let preguntas: PreguntaEncuesta[] = []
+  // Lo que le llegó al cliente (texto y botón): el chat lo muestra como ese mensaje (12-nov, maqueta aprobada 316).
+  let cuerpo = '', boton = ''
   try {
     let reg = await asegurarFormulario(linea.wabaId)
     if (reg.estado !== 'listo' || !reg.id) throw new ErrorEncuesta(`el formulario no está listo en WhatsApp (${reg.error ?? 'Meta no lo aceptó'})`)
     const vars = await variablesDe(c.contacto.nombre, asesor)
     preguntas = preguntasDeEnvio(cfg, vars)
+    cuerpo = rellenar(cfg.msg, vars).slice(0, 1024)
+    boton = cfg.boton || BOTON_FORMULARIO
     const envio = (flowId: string): DatosEnvio => ({
       linea, destino: destinoWa(c.contacto), flowId, token,
-      cuerpo: rellenar(cfg.msg, vars).slice(0, 1024), boton: cfg.boton,
+      cuerpo, boton,
       data: datosFormulario(rellenar(cfg.titulo, vars), preguntas),
     })
     // La primera vez por cuenta, preparar el formulario puede tardar: la ventana de 24 h se mira otra vez justo antes de
@@ -837,7 +841,7 @@ async function salir(ev: CrmMensaje, c: ConvEncuesta, cfg: CfgEncuesta, token: s
   // 2. Meta lo aceptó: al cliente ya le llegó. Desde aquí nada suelta la reserva ni dice «no salió»; si la base falla,
   // se reintenta y, si no, queda en el registro.
   const { wamid, waIdCliente, flowId } = enviado
-  const enc = { ...obj(datos.encuesta), flowId, preguntas }
+  const enc = { ...obj(datos.encuesta), flowId, preguntas, cuerpo, boton }
   const f = await conReintento(`guardar el envío ${wamid} en el evento ${ev.id}`, () =>
     prisma.crmMensaje.update({ where: { id: ev.id }, data: { waId: wamid, estado: 'enviado', error: null, datos: json({ ...datos, encuesta: enc }) } }))
   await conReintento(`confirmar la reserva del contacto ${c.contactoId}`, () => confirmarReserva(c.contactoId, token))
