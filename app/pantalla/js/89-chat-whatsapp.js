@@ -123,7 +123,9 @@
   }
   // Ir a un mensaje: el chat baja hasta él y lo hace brillar (como al tocar una cita, 88-responder).
   function irAlMensaje(id){
-    const el = document.querySelector(`#msgs .rr-m[data-rr="${CSS.escape(id)}"]`);
+    let el = document.querySelector(`#msgs .rr-m[data-rr="${CSS.escape(id)}"]`);
+    // Si está más arriba de lo dibujado (89-chat-por-partes), primero se dibuja.
+    if (!el && typeof chppMostrar === 'function' && chppMostrar(id)) el = document.querySelector(`#msgs .rr-m[data-rr="${CSS.escape(id)}"]`);
     if (!el) { toast('Ese mensaje ya no está en lo que se ve del chat'); return; }
     el.scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center'});
     el.classList.remove('rr-brilla'); void el.offsetWidth; el.classList.add('rr-brilla');

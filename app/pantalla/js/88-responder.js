@@ -160,7 +160,10 @@ document.addEventListener('click', e => {
   const ir = t.closest('[data-rr-ir]');
   if (ir) {
     // Si el chat está abierto en el panel del embudo, el mensaje que se busca es el de ahí.
-    const sel = `.rr-m[data-rr="${CSS.escape(ir.dataset.rrIr)}"]`, el = ir.closest('#ec-msgs, #msgs') ? ir.closest('#ec-msgs, #msgs').querySelector(sel) : document.querySelector(sel);
+    const caja = ir.closest('#ec-msgs, #msgs'), sel = `.rr-m[data-rr="${CSS.escape(ir.dataset.rrIr)}"]`;
+    let el = caja ? caja.querySelector(sel) : document.querySelector(sel);
+    // Si está más arriba de lo dibujado (89-chat-por-partes), primero se dibuja.
+    if (!el && typeof chppMostrar === 'function' && chppMostrar(ir.dataset.rrIr, caja)) el = (caja && caja.isConnected ? caja : document).querySelector(sel);
     if (!el) { toast('Ese mensaje ya no está en lo que se ve del chat'); return; }
     el.scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center'});
     el.classList.remove('rr-brilla'); void el.offsetWidth; el.classList.add('rr-brilla');
