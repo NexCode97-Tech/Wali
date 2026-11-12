@@ -61,6 +61,10 @@ button.wb-ocultar:hover{background:#f3f6fa;color:#0b0b10}button.wb-ocultar:activ
    un cajón de arriba abajo, pegado al borde derecho del contenedor (que va con position:relative), sobre un velo. El
    contenido entra escalonado. La X roja (WB.botonCerrarCajon) o tocar el velo la cierran. */
 .wb-velo,.wb-cerrar-cajon{display:none}
+/* La X solo va en el cajón: en escritorio la regla general de los botones del título (.ptitle button, display:grid) la
+   mostraba al lado de «Ocultar la ficha», que hace lo mismo (12-nov). Y siempre roja: el tema pinta gris los íconos del título. */
+.ptitle button.wb-cerrar-cajon{display:none}
+.ptitle button.wb-cerrar-cajon svg,#app .ptitle button.wb-cerrar-cajon svg{color:#dc2626}
 @media (min-width:760px) and (max-width:1360px){
   .wb-cajon-abierto .wb-ficha{display:block!important;position:absolute;top:var(--wb-cajon-top,0);right:0;bottom:0;width:360px;max-width:calc(100% - 48px);z-index:61;margin:0;
     overflow-y:auto;background:#fff;border-left:0;box-shadow:-30px 0 60px -30px rgba(0,0,0,.45);animation:wb-cajon 420ms ${IOS} both}
@@ -68,7 +72,7 @@ button.wb-ocultar:hover{background:#f3f6fa;color:#0b0b10}button.wb-ocultar:activ
   .wb-cajon-abierto .wb-ficha > :nth-child(2){animation-delay:60ms}.wb-cajon-abierto .wb-ficha > :nth-child(3){animation-delay:120ms}
   .wb-cajon-abierto .wb-ficha > :nth-child(4){animation-delay:180ms}.wb-cajon-abierto .wb-ficha > :nth-child(n+5){animation-delay:240ms}
   .wb-cajon-abierto > .wb-velo{display:block;position:absolute;inset:var(--wb-cajon-top,0) 0 0 0;z-index:60;background:rgba(11,11,16,.42);animation:wb-velo 240ms ${SALIDA} both}
-  .wb-cajon-abierto button.wb-cerrar-cajon{display:grid}
+  .wb-cajon-abierto button.wb-cerrar-cajon,.wb-cajon-abierto .ptitle button.wb-cerrar-cajon{display:grid}
   .wb-cajon-sale .wb-ficha{animation:wb-cajon-sale 260ms ${IOS} both!important}.wb-cajon-sale > .wb-velo{animation:wb-velo-sale 260ms ${SALIDA} both}
   [data-wb-cajon]{cursor:pointer;border-radius:10px;transition:background 160ms ${SALIDA},transform 140ms ${SALIDA}}
   [data-wb-cajon]:hover{background:#f3f6fa}[data-wb-cajon]:active{transform:scale(.98)}
