@@ -159,7 +159,7 @@
   const probable = r => !entendio(r) && r.lista.length && r.lista[0].s >= 6 && r.cubre >= .5;
 
   /* ── Dónde está la persona: sugerencias de esa pantalla ── */
-  const NOMBRE_PAG = {inbox: 'Mi bandeja', todas: 'Conversaciones', contactos: 'Contactos', embudo: 'Embudo', difusiones: 'Difusiones', plantillas: 'Plantillas', informes: 'Informes', agentes: 'Agentes IA', vivo: 'Equipo en vivo', flujos: 'Flujos', reglas: 'Reglas automáticas', ajustes: 'Ajustes', 'cfg-lineas': 'Líneas de WhatsApp', 'cfg-reparto': 'Equipos y reparto', 'cfg-encuesta': 'la encuesta', 'cfg-canales': 'Canales', 'cfg-plan': 'Plan y pagos', 'cfg-primeros': 'Primeros pasos'};
+  const NOMBRE_PAG = {inbox: 'Mi bandeja', todas: 'Mi bandeja', contactos: 'Contactos', embudo: 'Embudo', difusiones: 'Difusiones', plantillas: 'Plantillas', informes: 'Informes', agentes: 'Agentes IA', vivo: 'Equipo en vivo', flujos: 'Flujos', reglas: 'Reglas automáticas', ajustes: 'Ajustes', 'cfg-lineas': 'Líneas de WhatsApp', 'cfg-reparto': 'Equipos y reparto', 'cfg-encuesta': 'la encuesta', 'cfg-canales': 'Canales', 'cfg-plan': 'Plan y pagos', 'cfg-primeros': 'Primeros pasos'};
   const SUG = {
     inbox: ['ventana-24', 'enviar-plantilla-chat', 'transferir'], todas: ['filtrar', 'finalizar', 'ventana-24'], contactos: ['importar', 'segmento', 'unir'], embudo: ['mover-etapa', 'etapas', 'caliente'],
     difusiones: ['crear-difusion', 'costo-whatsapp', 'limites-meta'], plantillas: ['crear-plantilla', 'plantilla-rechazada', 'encabezado'], informes: ['satisfaccion', 'por-asesor', 'exportar-informe'],
@@ -397,7 +397,7 @@
     if (!A.abierto) { if (p) p.remove(); pintarFab(); return; }
     if (!p) {
       document.body.insertAdjacentHTML('beforeend', `<div class="ay" id="ay-panel" role="dialog" aria-label="Ayuda de Wali">
-        <div class="ay-cab"><button type="button" class="ay-ic" id="ay-atras" data-ay-inicio="1" aria-label="Volver al inicio" hidden>${IC.atras}</button><span class="ay-iso">${ISO}</span><div><b>Ayuda de Wali</b><small><span class="ay-vivo"></span>Responde al instante</small></div>
+        <div class="ay-cab"><button type="button" class="ay-ic" id="ay-atras" data-ay-inicio="1" aria-label="Volver al inicio" hidden>${IC.atras}</button><span class="ay-iso">${ISO}</span><div><b>Ayuda de Wali</b><small>Guías paso a paso</small></div>
           <button type="button" class="ay-ic" id="ay-hbtn" data-ay-hist="1" aria-label="Historial" aria-pressed="false">${IC.reloj}</button><button type="button" class="ay-ic" data-ay-nueva="1" aria-label="Conversación nueva">${IC.mas}</button><button type="button" class="ay-x" data-ay-cerrar="1" aria-label="Cerrar">${IC.x}</button></div>
         <div class="ay-cuerpo" id="ay-cuerpo"></div>
         <form class="ay-in" id="ay-form"><label class="ay-campo">${IC.buscar}<input id="ay-q" placeholder="¿En qué te ayudo?" autocomplete="off" maxlength="200" aria-label="Escribe tu pregunta"></label><button type="submit" class="ay-env" aria-label="Enviar">${IC.enviar}</button></form></div>`);
@@ -606,7 +606,6 @@ body:has(#ec-cajon.on) .ay-fab:not(.abierta){opacity:0;pointer-events:none;trans
 .ay-cab > div{flex:1}
 .ay-cab b{display:block;font-size:14.5px}
 .ay-cab small{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink3)}
-.ay-vivo{width:7px;height:7px;border-radius:50%;background:#22c55e}
 .ay-ast{width:34px;height:34px;border-radius:50%;background:#FFD21F;display:grid;place-items:center;overflow:hidden;flex:none}
 .ay-ast .ay-astro{width:30px;height:30px;margin-top:2px}
 .ay-iso.pq .ay-ast{width:28px;height:28px}.ay-iso.pq .ay-astro{width:24px;height:24px}
@@ -671,7 +670,7 @@ body:has(#ec-cajon.on) .ay-fab:not(.abierta){opacity:0;pointer-events:none;trans
 .ay-hola h3{margin:0;font-size:20px;font-weight:800;letter-spacing:-.02em}
 .ay-hola p{margin:2px 0 0;font-size:13.5px;color:var(--ink3)}
 .ay-sec{display:grid;gap:8px}
-.ay-sec > small,.ay-rel small{font-size:11.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em}
+.ay-sec > small,.ay-rel small{font-size:12.5px;font-weight:600;color:var(--ink3)}
 .ay-sug,.ay-rel{display:grid;gap:6px}
 .ay-sug button,.ay-rel button{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;font:inherit;font-size:13.5px;font-weight:500;text-align:left;color:var(--ink);cursor:pointer}
 .ay-sug button:hover,.ay-rel button:hover{border-color:#0b0b10}
