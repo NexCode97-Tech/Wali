@@ -651,7 +651,7 @@ section.chat{position:relative}
 .menu button small{margin-left:auto;font-size:11.5px;color:var(--ink4)}
 
 /* Doble check como el de WhatsApp: dos marcas iguales, la segunda nace por detrás de la primera */
-svg.i:has(use[href="#i-check2"]){width:18px;height:12px;stroke-width:1.5}
+svg.i:has(use[href="#i-check2"]),svg.i:has(use[href="#i-check1"]){width:18px;height:12px;stroke-width:1.5}
 /* Ayuda al pasar el cursor (data-tip) */
 .tip{position:fixed;z-index:1000;max-width:240px;background:#1f2937;color:#fff;font-size:12px;font-weight:400;line-height:1.45;padding:6px 10px;border-radius:8px;box-shadow:0 8px 20px -8px rgba(15,23,42,.45);pointer-events:none}
 /* ─ panel de contacto: maqueta aprobada el 28-sep ─ */
@@ -1211,7 +1211,8 @@ h4 .marca.mini{margin-right:2px}
   <symbol id="i-shield-ok" viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6Z"/><path d="m9 12 2 2 4-4"/></symbol>
   <symbol id="i-cap" viewBox="0 0 24 24"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></symbol>
   <symbol id="i-rama" viewBox="0 0 24 24"><path d="M6 3v10a3 3 0 0 0 3 3h10"/></symbol>
-  <symbol id="i-check2" viewBox="0.5 1 18 12"><path d="M1.5 7.5 5 11 12 3M7.8 8.8 10 11 17 3"/></symbol>
+  <symbol id="i-check1" viewBox="0.5 1 18 12"><path d="M4.5 7.5 8 11 15 3"/></symbol>
+<symbol id="i-check2" viewBox="0.5 1 18 12"><path d="M1.5 7.5 5 11 12 3M7.8 8.8 10 11 17 3"/></symbol>
   <symbol id="i-bell-off" viewBox="0 0 24 24"><path d="M8.6 3.6A6 6 0 0 1 18 8v4l2 3H8M6 8v4l-2 3h9M9.5 20a2.5 2.5 0 0 0 5 0M3 3l18 18"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
   <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></symbol>

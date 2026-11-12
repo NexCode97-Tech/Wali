@@ -950,7 +950,7 @@ document.getElementById('ov-x').addEventListener('click', e => {
 const CH_SVG_ALERTA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16.5h.01"/></svg>';
 const CH_SVG_ROBOT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V5"/><circle cx="12" cy="4" r="1"/><path d="M9 14h.01"/><path d="M15 14h.01"/></svg>';
 // Chulitos (11-nov, pedido del usuario): uno es entregado (o enviado) y dos son leído.
-const CH_ESTADO = {enviando:['clock', 'Enviando'], enviado:['check', 'Enviado'], entregado:['check', 'Entregado'], leido:['check2', 'Leído']};
+const CH_ESTADO = {enviando:['clock', 'Enviando'], enviado:['check1', 'Enviado'], entregado:['check1', 'Entregado'], leido:['check2', 'Leído']};
 // Hora y chulitos de cada mensaje del grupo (11-nov): la última burbuja los trae en su ch-meta; las demás, con esta marca
 // que 88-burbujas.js mete dentro de su burbuja.
 function chPie(m, conEstado){

@@ -493,7 +493,7 @@ const estrellas = n => `<span class="stars" aria-label="${n} de 5">${[1,2,3,4,5]
 const npsCls = n => n >= 9 ? 'p' : n >= 7 ? 'n' : 'd';
 const resumenIn = x => typeof x === 'string' ? x : x.sticker ? 'Sticker' : x.img ? '📷 ' + (x.cap || 'Imagen') : x.video ? '🎬 ' + (x.cap || 'Video') : x.doc ? '📄 ' + (x.n || 'Documento') : '🎤 Nota de voz';
 const resumenOut = m => m.out || (m.audio ? '🎤 Nota de voz' : m.file ? '📎 ' + m.file.n : m.link ? m.link.p : '');
-const estadoEnvio = m => m._estado === 'enviando' ? `<span title="Enviando">${I('clock')}</span>` : m._estado === 'enviado' ? `<span title="Enviado">${I('check')}</span>` : m._estado === 'entregado' ? `<span title="Entregado">${I('check')}</span>` : m._estado === 'leido' ? `<span class="leido" title="Leído">${I('check2')}</span>` : m._estado === 'fallido' ? '' : I('check');
+const estadoEnvio = m => m._estado === 'enviando' ? `<span title="Enviando">${I('clock')}</span>` : m._estado === 'enviado' ? `<span title="Enviado">${I('check1')}</span>` : m._estado === 'entregado' ? `<span title="Entregado">${I('check1')}</span>` : m._estado === 'leido' ? `<span class="leido" title="Leído">${I('check2')}</span>` : m._estado === 'fallido' ? '' : I('check1');
 function burbuja(m){
   if (m.csat) return `<div class="csat"><div class="t">${I('star')}Respondió la encuesta</div><div class="r"><span>Atención de ${esc(m.csat.asesor)}</span><span>${estrellas(m.csat.aten)} <b>${esc(m.csat.aten)} de 5</b></span></div><div class="r"><span>Recomendaría a ${esc(ESPACIO.nombre || 'la empresa')}</span><span class="nps ${npsCls(m.csat.nps)}">${esc(m.csat.nps)}</span></div>${m.csat.com ? `<q>${esc(m.csat.com)}</q>` : ''}</div>`;
   if (m.d) return `<span class="day">${m.d}</span>`;
