@@ -482,6 +482,8 @@ function irA(tab){
   moverInd(); menu(false); $('mtop-t').textContent = NOMBRE_MOD[tab] || '';
   try { history.replaceState(null, '', '#' + tab); } catch {}
   pintar(true);
+  // Con las solicitudes ya cargadas (el número del menú o Analíticas), vSoporte elige la primera: su chat también se pide.
+  if (tab === 'soporte' && S.soporte && S.ssel != null && (!S.sdet || S.sdet.id !== S.ssel)) abrirSol(S.ssel);
 }
 
 /* ── Pintar la página con su motion de entrada ── */
