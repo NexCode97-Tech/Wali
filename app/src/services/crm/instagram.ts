@@ -3,7 +3,7 @@ import type { CrmConexion, Prisma } from '@prisma/client'
 import { prisma, prismaGlobal } from './bd'
 import { espacioActual } from './espacio'
 import { cifrar, descifrar } from './cifrado'
-import { baseInstagram, graph } from './whatsapp'
+import { baseInstagram, ErrorMeta, graph } from './whatsapp'
 import { conexionAFront, emitirConexiones, porQueNoConecta, proveedorBase, type ConexionFront } from './conexiones'
 import { urlAvisosPagina } from './paginas'
 import { AppError, ConflictError, NotFoundError, ValidationError } from '../../utils/errors'
@@ -48,12 +48,50 @@ export interface DatosInstagram {
   tokenDesde?: number
   estadoOauth?: string
   estadoVence?: number
+  /** Conectada con el token corto (1 hora) porque Meta no dejó cambiarlo por el de 60 días: se reintenta solo. */
+  tokenCorto?: boolean
+  /** El id salió de la respuesta del token porque `/me` falló: se confirma con `/me` en el proceso de tokens. */
+  igIdProvisional?: boolean
 }
 
-interface Yo { user_id?: string | number; id?: string; username?: string; name?: string; account_type?: string }
+interface Yo { user_id?: string | number; id?: string; username?: string; name?: string; account_type?: string; provisional?: boolean }
 
-async function yo(token: string): Promise<Yo> {
-  return graph<Yo>('/me', { cred: { token }, base: baseInstagram(), query: { fields: 'user_id,username,name,account_type' } })
+/** Meta responde a veces «Unsupported request - method type: get» (código 100) en llamadas GET válidas, según la cuenta. */
+const esFallaDeMetodo = (e: unknown) => e instanceof ErrorMeta && e.codigo === 100 && /unsupported request/i.test(e.textoMeta || e.message)
+
+/** La cuenta del token. Con la falla de Meta se intenta sin versión y con menos campos; si tampoco, el id que dio Instagram al entregar el token. */
+async function yo(token: string, idRespaldo = ''): Promise<Yo> {
+  try {
+    return await graph<Yo>('/me', { cred: { token }, base: baseInstagram(), query: { fields: 'user_id,username,name,account_type' } })
+  } catch (e) {
+    if (!esFallaDeMetodo(e)) throw e
+    logger.warn(`[CRM instagram] /me con versión: ${(e as Error).message}`)
+  }
+  try {
+    return await graph<Yo>('/me', { cred: { token }, base: sinVersion(), query: { fields: 'user_id,username' } })
+  } catch (e) {
+    if (!esFallaDeMetodo(e) || !idRespaldo) throw e
+    logger.warn(`[CRM instagram] /me sin versión: ${(e as Error).message}`)
+  }
+  try {
+    return await graph<Yo>(`/${idRespaldo}`, { cred: { token }, base: baseInstagram(), query: { fields: 'user_id,username,name,account_type' } })
+  } catch (e) {
+    if (!esFallaDeMetodo(e)) throw e
+    logger.warn(`[CRM instagram] /${'{id}'} tampoco: ${(e as Error).message}; queda el id que dio Instagram, provisional`)
+    return { user_id: idRespaldo, provisional: true }
+  }
+}
+
+/** Token corto → token de 60 días. Si Meta da su falla de método, se intenta con la dirección con versión. */
+async function tokenLargo(corto: string, secreto: string): Promise<string> {
+  const q = { grant_type: 'ig_exchange_token', client_secret: secreto, access_token: corto }
+  try {
+    return txt((await graph<{ access_token?: string }>('/access_token', { cred: { token: corto }, base: sinVersion(), query: q })).access_token)
+  } catch (e) {
+    if (!esFallaDeMetodo(e)) throw e
+    logger.warn(`[CRM instagram] token de 60 días sin versión: ${(e as Error).message}`)
+  }
+  return txt((await graph<{ access_token?: string }>('/access_token', { cred: { token: corto }, base: baseInstagram(), query: q })).access_token)
 }
 
 /** El token vigente de la cuenta, renovado si tiene más de 30 días (Instagram lo deja renovar mientras no venza). */
@@ -61,6 +99,21 @@ export async function tokenInstagram(c: CrmConexion): Promise<string> {
   const s = descifrar<{ token?: string; appSecret?: string }>(c.secretos)
   const d = obj(c.datos) as DatosInstagram
   if (!s.token) return ''
+  if (d.tokenCorto) {
+    // Conectada con el token corto: se vuelve a pedir el de 60 días (sirve mientras el corto no venza, una hora).
+    const p = c.modo === 'meta' ? await proveedorInstagram() : null
+    if (!p) return s.token
+    try {
+      const largo = await tokenLargo(s.token, p.appSecret)
+      if (!largo) return s.token
+      await prismaGlobal.crmConexion.update({ where: { id: c.id }, data: { secretos: cifrar({ ...s, token: largo }), datos: json({ ...d, tokenCorto: false, tokenDesde: Date.now() }) } })
+      logger.info(`[CRM instagram] token de 60 días conseguido para @${d.igUsuario}`)
+      return largo
+    } catch (e) {
+      logger.warn(`[CRM instagram] sigue sin el token de 60 días @${d.igUsuario}: ${(e as Error).message}`)
+      return s.token
+    }
+  }
   if ((d.tokenDesde ?? 0) > Date.now() - TREINTA_DIAS) return s.token
   try {
     const r = await graph<{ access_token?: string }>('/refresh_access_token', { cred: { token: s.token }, base: sinVersion(), query: { grant_type: 'ig_refresh_token', access_token: s.token } })
@@ -75,9 +128,9 @@ export async function tokenInstagram(c: CrmConexion): Promise<string> {
 }
 
 /** Revisa el token, guarda la cuenta y la suscribe a los avisos. `appSecret` solo en la manual. */
-async function guardarCuenta(o: { modo: 'manual' | 'meta'; appId: string; appSecret?: string; token: string; baseApi: string; previaId?: string }): Promise<CrmConexion & { _count: { lineas: number } }> {
+async function guardarCuenta(o: { modo: 'manual' | 'meta'; appId: string; appSecret?: string; token: string; baseApi: string; previaId?: string; igIdRespaldo?: string; tokenCorto?: boolean }): Promise<CrmConexion & { _count: { lineas: number } }> {
   let me: Yo
-  try { me = await yo(o.token) } catch (e) {
+  try { me = await yo(o.token, o.igIdRespaldo) } catch (e) {
     throw e instanceof AppError && /190|OAuth|token/i.test(e.message) ? new ValidationError('Instagram no aceptó ese token: genéralo de nuevo en tu app (Instagram, Configuración de la API con inicio de sesión de Instagram, «Generar token») y pégalo completo') : e
   }
   const igId = String(me.user_id ?? '')
@@ -95,6 +148,8 @@ async function guardarCuenta(o: { modo: 'manual' | 'meta'; appId: string; appSec
   const datos: DatosInstagram = {
     appId: o.appId, igId, igUsuario: txt(me.username), nombre: txt(me.name), verifyToken: txt(obj(base?.datos).verifyToken) || azar(16),
     ...(o.modo === 'manual' ? { webhookUrl: urlAvisosPagina(o.baseApi, clave) } : {}), tokenDesde: Date.now(),
+    ...(o.tokenCorto ? { tokenCorto: true } : {}),
+    ...(me.provisional ? { igIdProvisional: true } : {}),
   }
   const nombre = datos.igUsuario ? `@${datos.igUsuario}` : datos.nombre || 'Instagram'
   const secretos = cifrar(o.modo === 'manual' ? { token: o.token, appSecret: o.appSecret } : { token: o.token })
@@ -215,15 +270,22 @@ export async function terminarInstagram(query: Json, baseApi: string): Promise<{
     })
     const corto = await res.json().catch(() => ({})) as Json
     const t1 = txt(corto.access_token) || txt(obj(corto.data?.[0]).access_token)
+    const igIdRespaldo = String(corto.user_id ?? obj(corto.data?.[0]).user_id ?? '')
     if (!res.ok || !t1) return { ok: false, texto: `Instagram no aceptó la conexión: ${txt(corto.error_message) || txt(obj(corto.error).message) || `HTTP ${res.status}`}` }
     // 2. Token corto → token de 60 días.
-    const largo = await graph<{ access_token?: string }>('/access_token', { cred: { token: t1 }, base: sinVersion(), query: { grant_type: 'ig_exchange_token', client_secret: p.appSecret, access_token: t1 } })
-    const token = txt(largo.access_token) || t1
-    const hecha = await import('./espacio').then(m => m.enEspacio(c.espacioId, () => guardarCuenta({ modo: 'meta', appId: p.appId, token, baseApi, previaId: c.id })))
+    // Si Meta no lo deja (su falla de método), se conecta con el corto y el proceso de tokens lo vuelve a pedir.
+    let largo = ''
+    try { largo = await tokenLargo(t1, p.appSecret) } catch (e) {
+      if (!esFallaDeMetodo(e)) throw e
+      logger.warn(`[CRM instagram] sin token de 60 días al conectar, queda el corto: ${(e as Error).message}`)
+    }
+    const token = largo || t1
+    const hecha = await import('./espacio').then(m => m.enEspacio(c.espacioId, () => guardarCuenta({ modo: 'meta', appId: p.appId, token, baseApi, previaId: c.id, igIdRespaldo, tokenCorto: !largo })))
     await import('./espacio').then(m => m.enEspacio(c.espacioId, () => emitirConexiones(null)))
     const u = obj(hecha.datos).igUsuario
     return { ok: true, texto: hecha.estado === 'error' ? `La cuenta quedó conectada, pero falta un paso: ${hecha.error}` : `Listo: ${u ? `@${u}` : 'la cuenta de Instagram'} quedó conectada. Ya puedes cerrar esta ventana.`, espacioId: c.espacioId }
   } catch (e) {
+    logger.warn(`[CRM instagram] no se pudo terminar la conexión ${c.id}: ${(e as Error).message}`)
     return { ok: false, texto: `No se pudo conectar la cuenta: ${(e as Error).message}` }
   }
 }
@@ -238,7 +300,11 @@ export async function revisarInstagram(id: string, por: string | null): Promise<
   try {
     const token = await tokenInstagram(c)
     if (!token) throw new AppError('A la cuenta le faltan sus claves: vuelve a conectarla', 409)
-    const me = await yo(token)
+    const me = await yo(token, d.igId)
+    if (!me.provisional && d.igIdProvisional) {
+      await prisma.crmConexion.update({ where: { id }, data: { datos: json({ ...d, igId: String(me.user_id ?? d.igId), igUsuario: txt(me.username) || d.igUsuario, igIdProvisional: false }) } })
+      d.igId = String(me.user_id ?? d.igId)
+    }
     if (String(me.user_id ?? '') !== d.igId) throw new AppError('El token ya no es de la misma cuenta: vuelve a conectarla', 409)
     if (c.modo === 'manual' && d.webhookUrl) {
       const s = descifrar<{ appSecret?: string }>(c.secretos)
@@ -263,12 +329,16 @@ export async function soltarInstagram(c: CrmConexion): Promise<void> {
   } catch (e) { logger.info(`[CRM instagram] no se pudo desuscribir ${c.id}: ${(e as Error).message}`) }
 }
 
+const enEspacioDe = <T>(c: CrmConexion, f: () => Promise<T>) => import('./espacio').then(m => m.enEspacio(c.espacioId, f))
+
 /** Cada día: los tokens con más de 30 días se renuevan aunque la cuenta no haya escrito (así no vencen a los 60). */
 export async function renovarTokensInstagram(): Promise<number> {
   const filas = await prismaGlobal.crmConexion.findMany({ where: { tipo: 'instagram', estado: { not: 'desconectada' } } })
   let n = 0
   for (const c of filas) {
-    if ((obj(c.datos).tokenDesde ?? 0) > Date.now() - TREINTA_DIAS) continue
+    const d = obj(c.datos) as DatosInstagram
+    if (d.igIdProvisional) await enEspacioDe(c, () => revisarInstagram(c.id, null)).catch(() => null)
+    if (!d.tokenCorto && (d.tokenDesde ?? 0) > Date.now() - TREINTA_DIAS) continue
     await tokenInstagram(c).then(() => { n++ }).catch(() => null)
   }
   return n
