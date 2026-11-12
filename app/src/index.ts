@@ -21,6 +21,7 @@ import uploadRoutes from './routes/upload'
 import eventosRoutes from './routes/eventos'
 import crmRoutes from './routes/crm'
 import apiV1Routes from './routes/apiV1'
+import { servirArchivo } from './services/almacen'
 // Webhooks de la API: se registran en los avisos del CRM al cargar el módulo.
 import './services/crm/webhooks'
 import crmWebRoutes from './routes/crmWeb'
@@ -138,6 +139,8 @@ app.use('/api', rateLimit({
 }))
 
 // Revisa también la base de datos: si no responde, el servicio no está sano.
+// Banco multimedia (11-nov): los archivos del bucket de Railway, con su firma (almacen.ts). Público como lo era Cloudinary.
+app.use('/m', (req, res, next) => (req.method === 'GET' || req.method === 'HEAD' ? void servirArchivo(req, res) : next()))
 app.get('/health', async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`

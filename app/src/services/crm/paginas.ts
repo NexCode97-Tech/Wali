@@ -342,8 +342,8 @@ async function subirAdjunto(pageId: string, token: string, url: string, mimeDado
 /** Instagram: se manda por enlace (imagen, video o audio). Lo demás va como enlace en el texto. */
 function tipoInstagram(url: string, mime: string): 'image' | 'video' | 'audio' | null {
   const m = mime.toLowerCase()
-  if (/^image\/(jpeg|png)$/.test(m) || (!m && /\/image\/upload\//.test(url))) return 'image'
-  if (m.startsWith('video/') || (!m && /\/video\/upload\/.+\.(mp4|mov|webm)(\?|$)/i.test(url))) return 'video'
+  if (/^image\/(jpeg|png)$/.test(m) || (!m && (/\/image\/upload\//.test(url) || /\/m\/.+\.(jpe?g|png)\?/i.test(url)))) return 'image'
+  if (m.startsWith('video/') || (!m && /(\/video\/upload\/|\/m\/).+\.(mp4|mov|webm)(\?|$)/i.test(url))) return 'video'
   if (m.startsWith('audio/')) return 'audio'
   return null
 }

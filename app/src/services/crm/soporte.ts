@@ -3,6 +3,7 @@ import { logger } from '../../utils/logger'
 import { ValidationError } from '../../utils/errors'
 import { broadcastUsuarios } from '../../utils/sseManager'
 import { urlPublica } from '../../routes/acceso'
+import { esUrlDeWali } from '../almacen'
 
 /**
  * Soporte (maqueta aprobada el 31-oct): la persona escribe desde el asistente «Ayuda de Wali» del CRM y el operador le
@@ -149,11 +150,11 @@ export async function detalleSoporte(id: number) {
 }
 
 /** La respuesta del equipo: queda en la conversación, avisa en vivo al asistente de la persona y le llega por correo. */
-/** Un adjunto de soporte: solo archivos que Wali subió a su nube (Cloudinary). */
+/** Un adjunto de soporte: solo archivos que Wali subió a su banco multimedia (o a Cloudinary, los de antes). */
 export type ArchivoSoporte = { url: string; n: string; mime: string; t: string }
 const archivosValidos = (l: unknown): ArchivoSoporte[] => (Array.isArray(l) ? l : []).slice(0, 10)
   .map(a => (a && typeof a === 'object' ? a as Record<string, unknown> : {}))
-  .filter(a => typeof a.url === 'string' && /^https:\/\/res\.cloudinary\.com\//.test(a.url))
+  .filter(a => typeof a.url === 'string' && (/^https:\/\/res\.cloudinary\.com\//.test(a.url) || esUrlDeWali(a.url)))
   .map(a => ({ url: String(a.url).slice(0, 500), n: limpio(String(a.n ?? 'archivo'), 120) || 'archivo', mime: String(a.mime ?? '').slice(0, 80), t: String(a.t ?? '').slice(0, 20) }))
 
 export async function responderSoporte(id: number, texto: string, quien: string, adjuntos: unknown = []) {

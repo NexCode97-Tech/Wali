@@ -10,7 +10,8 @@ import { listaCupones, crearCupon, eliminarCupon } from '../services/crm/cupones
 import { listaSoporte, detalleSoporte, responderSoporte, cambiarEstadoSoporte, sinEntender } from '../services/crm/soporte'
 import { paseValido } from '../services/crm/panelAcceso'
 import multer from 'multer'
-import { subirACloudinary, nombreArchivo } from '../controllers/crm/_comun'
+import { almacenListo, esUrlDeWali } from '../services/almacen'
+import { subirArchivo, nombreArchivo } from '../controllers/crm/_comun'
 
 /**
  * API del panel de superadministrador (/api/admin), solo para el operador de la plataforma. Todo es de lectura salvo los
@@ -100,7 +101,7 @@ router.get('/soporte/:id', asyncHandler(async (req: Request, res: Response) => {
   res.json({ success: true, data: s })
 }))
 router.post('/soporte/:id/responder', asyncHandler(async (req: Request, res: Response) => {
-  const d = z.object({ texto: z.string().trim().max(4000).default(''), archivos: z.array(z.object({ url: z.string().url().regex(/^https:\/\/res\.cloudinary\.com\//).max(500), n: z.string().max(200), mime: z.string().max(80), t: z.string().max(20) })).max(10).default([]) }).parse(req.body)
+  const d = z.object({ texto: z.string().trim().max(4000).default(''), archivos: z.array(z.object({ url: z.string().url().max(500).refine(u => /^https:\/\/res\.cloudinary\.com\//.test(u) || esUrlDeWali(u), 'Archivo no válido'), n: z.string().max(200), mime: z.string().max(80), t: z.string().max(20) })).max(10).default([]) }).parse(req.body)
   await responderSoporte(idSoporte(req), d.texto, req.userName ?? '', d.archivos)
   res.json({ success: true })
 }))
@@ -109,8 +110,8 @@ const unAdjunto = multer({ storage: multer.memoryStorage(), limits: { fileSize: 
 router.post('/soporte/archivo', (req: Request, res: Response, next: NextFunction) => unAdjunto(req, res, (err: unknown) => (err ? res.status(400).json({ success: false, error: (err as { code?: string }).code === 'LIMIT_FILE_SIZE' ? 'El archivo pesa más de 25 MB.' : 'No se pudo recibir el archivo.' }) : next())), asyncHandler(async (req: Request, res: Response) => {
   const f = req.file
   if (!f) return res.status(400).json({ success: false, error: 'No se recibió ningún archivo' })
-  if (!process.env.CLOUDINARY_CLOUD_NAME) return res.status(400).json({ success: false, error: 'La subida de archivos no está configurada.' })
-  const url = await subirACloudinary(f.buffer, nombreArchivo(f), f.mimetype, `${process.env.CLOUDINARY_CARPETA || 'crm'}/soporte`)
+  if (!almacenListo()) return res.status(400).json({ success: false, error: 'La subida de archivos no está configurada.' })
+  const url = await subirArchivo(f.buffer, nombreArchivo(f), f.mimetype, 'crm/soporte')
   const kb = f.size / 1024
   res.json({ success: true, data: { url, n: f.originalname.slice(0, 120), mime: f.mimetype, t: kb < 1024 ? `${Math.max(1, Math.round(kb))} KB` : `${(kb / 1024).toFixed(1)} MB` } })
 }))

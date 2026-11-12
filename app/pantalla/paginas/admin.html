@@ -937,7 +937,7 @@ function vDetalleSop(d){
   const quien = m => m.autor === 'soporte' ? `${esc(m.nombre)} · Soporte de Wali` : esc(m.nombre);
   const burbuja = m => burbujaSop(m, d);
   const pista = caidas.length ? `<div class="sx-ev">${IC.alert}<span><b>Wali lo revisó solo.</b> ${caidas.map(l => `La línea ${esc(l.nombre)} está sin conexión ${esc(hace(l.desde).toLowerCase())}`).join('; ')}. Al reconectarla en Ajustes › Líneas, los mensajes de ese rato llegan solos.</span></div>` : '';
-  const adj = d.adjunto && /^https:\/\/res\.cloudinary\.com\//.test(d.adjunto) ? `<a class="sx-adj" href="${esc(d.adjunto)}" target="_blank" rel="noopener noreferrer">${IC.link}Ver la captura que adjuntó</a>` : '';
+  const adj = d.adjunto && urlNube(d.adjunto) ? `<a class="sx-adj" href="${esc(d.adjunto)}" target="_blank" rel="noopener noreferrer">${IC.link}Ver la captura que adjuntó</a>` : '';
   const botones = resuelta ? `<button type="button" class="btn" data-sest="abierta"><span class="tx">Reabrir</span></button>`
     : `<button type="button" class="btn${d.estado === 'en_curso' ? ' on' : ''}" data-sest="${d.estado === 'en_curso' ? 'abierta' : 'en_curso'}" aria-pressed="${d.estado === 'en_curso'}" aria-label="${d.estado === 'en_curso' ? 'En curso' : 'Marcar en curso'}">${IC.reloj}<span class="tx">${d.estado === 'en_curso' ? 'En curso' : 'Marcar en curso'}</span></button><button type="button" class="btn" data-sest="resuelta" aria-label="Resolver">${IC.chulo}<span class="tx">Resolver</span></button>`;
   const chat = `<section class="sx-panel sx-chat" aria-label="Conversación">
@@ -978,7 +978,7 @@ function tipoAdj(a){
   if (/^audio\//.test(m) || /\.(mp3|ogg|opus|m4a|aac|amr|wav)$/.test(n)) return 'audio';
   return 'otro';
 }
-const urlNube = u => typeof u === 'string' && /^https:\/\/res\.cloudinary\.com\//.test(u);
+const urlNube = u => typeof u === 'string' && (/^https:\/\/res\.cloudinary\.com\//.test(u) || u.startsWith(location.origin + '__BASE__/m/'));
 function tarjetaAdj(a, quitar){
   const [nom, bg, co, ic] = TIPO_ADJ[tipoAdj(a)], et = a.subiendo ? 'Subiendo…' : nom + (a.t ? ' · ' + a.t : '');
   const cuerpo = `<span class="sx-th" style="background:${bg};color:${co}">${IC[ic]}</span><span class="sx-tx"><span>${esc(a.n)}</span><small>${esc(et)}</small></span>`;

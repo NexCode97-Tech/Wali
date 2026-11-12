@@ -17,6 +17,7 @@ import { emitirCrm } from '../services/crm/tiempoReal'
 import { BASE } from '../utils/base'
 import { esOperador, operadorDeSesion, sesionReciente, paseValido, darPase, quitarPase } from '../services/crm/panelAcceso'
 import { resumenPanel } from '../services/crm/superadminFinanzas'
+import { esUrlDeWali } from '../services/almacen'
 
 /**
  * La cuenta de cada persona: entrar, salir, el token del API y su perfil.
@@ -224,6 +225,7 @@ function fotoPermitida(v: unknown): string | null {
   let u: URL
   try { u = new URL(s) } catch { return null }
   if (u.protocol !== 'https:') return null
+  if (esUrlDeWali(s)) return s
   const nube = process.env.CLOUDINARY_CLOUD_NAME
   return u.hostname === 'res.cloudinary.com' && !!nube && u.pathname.startsWith(`/${nube}/`) ? s : null
 }

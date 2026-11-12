@@ -225,7 +225,7 @@
   const horaCorta = iso => new Date(iso).toLocaleTimeString('es-CO', {hour: 'numeric', minute: '2-digit'});
   // Adjuntos que manda soporte (10-nov): las imágenes se ven en el chat; los demás, con la tarjeta de la bandeja (.cm-fc).
   function archivosSop(L){
-    L = (Array.isArray(L) ? L : []).filter(a => a && typeof a.url === 'string' && /^https:\/\/res\.cloudinary\.com\//.test(a.url));
+    L = (Array.isArray(L) ? L : []).filter(a => a && typeof a.url === 'string' && (/^https:\/\/res\.cloudinary\.com\//.test(a.url) || a.url.startsWith(location.origin + '__BASE__/m/')));
     if (!L.length) return '';
     return `<div class="ay-sarch">${L.map(a => cmTipo(a) === 'imagen'
       ? `<a class="ay-simg" href="${esc(a.url)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir ${esc(a.n)}"><img src="${esc(a.url)}" alt="${esc(a.n)}" loading="lazy"></a>`

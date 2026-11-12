@@ -8,6 +8,7 @@ import { crearYPublicar, listarFlows } from './encuesta'
 import { guardarMensaje } from './salientes'
 import { marcarAutorizacion } from './autorizacion'
 import { logger } from '../../utils/logger'
+import { esUrlDeWali } from '../almacen'
 
 /**
  * Términos y condiciones de cada empresa (maqueta B aprobada el 5-nov, Protección de datos).
@@ -114,7 +115,7 @@ export async function pdfPublico(espacioId: string): Promise<string | null> {
   if (!e) return null
   return enEspacio(e.id, async () => {
     const u = (await cfgTerminos()).actual?.url ?? ''
-    return u.startsWith('https://res.cloudinary.com/') ? u : null
+    return u.startsWith('https://res.cloudinary.com/') || esUrlDeWali(u) ? u : null
   })
 }
 

@@ -1,6 +1,6 @@
 import type { Request } from 'express'
 import type { Prisma } from '@prisma/client'
-import { v2 as cloudinary } from 'cloudinary'
+import { subir } from '../../services/almacen'
 import { prisma } from '../../services/crm/bd'
 import { ForbiddenError, NotFoundError, ValidationError } from '../../utils/errors'
 import { configura } from '../../utils/roles'
@@ -139,42 +139,15 @@ export function tamanoLegible(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1).replace('.', ',')} MB`
 }
 
-/** Carpeta de la nube de archivos donde quedan los adjuntos del CRM. */
-export const CARPETA_ARCHIVOS = process.env.CLOUDINARY_CARPETA || 'crm'
-
-let cloudinaryListo = false
-function configurarCloudinary() {
-  if (cloudinaryListo) return
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-  })
-  cloudinaryListo = true
-}
+/** Carpeta del banco multimedia donde quedan los adjuntos del CRM. */
+export const CARPETA_ARCHIVOS = 'crm'
 
 /**
- * Qué opciones de Cloudinary lleva cada archivo. Cloudinary puede responder 401 a
- * un public_id que termine en .pdf: los PDF van como `raw` con un nombre propio SIN extensión.
+ * Sube un archivo al banco multimedia de Wali (bucket de Railway, almacen.ts) y devuelve su dirección. Antes iba a
+ * Cloudinary (hasta el 11-nov); las direcciones viejas de Cloudinary siguen sirviendo hasta que se migren.
  */
-export function opcionesCloudinary(nombre: string, mime: string, carpeta = CARPETA_ARCHIVOS): Record<string, unknown> {
-  const base = nombre.replace(/\.[^.]+$/, '').normalize('NFD').replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase().slice(0, 50) || 'archivo'
-  const ext = (nombre.match(/\.([^.]+)$/)?.[1] ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')
-  const sello = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
-  if (mime.startsWith('image/')) return { folder: carpeta, resource_type: 'image', public_id: `${base}-${sello}` }
-  if (mime.startsWith('audio/') || mime.startsWith('video/')) return { folder: carpeta, resource_type: 'video', public_id: `${base}-${sello}` }
-  const esPdf = mime === 'application/pdf' || ext === 'pdf'
-  return { folder: carpeta, resource_type: 'raw', public_id: esPdf || !ext ? `${base}-${sello}` : `${base}-${sello}.${ext}` }
-}
-
-export function subirACloudinary(buffer: Buffer, nombre: string, mime: string, carpeta = CARPETA_ARCHIVOS): Promise<string> {
-  configurarCloudinary()
-  const opciones = opcionesCloudinary(nombre, mime, carpeta)
-  return new Promise((resolve, reject) => {
-    const st = cloudinary.uploader.upload_stream(opciones, (err, r) => (err || !r ? reject(err ?? new Error('Cloudinary no respondió')) : resolve(r.secure_url)))
-    st.end(buffer)
-  })
+export async function subirArchivo(buffer: Buffer, nombre: string, mime: string, carpeta = CARPETA_ARCHIVOS): Promise<string> {
+  return (await subir(buffer, { carpeta, nombre, mime })).url
 }
 
 /** multer entrega el nombre en latin1: se pasa a UTF-8 para no dañar tildes y eñes. */

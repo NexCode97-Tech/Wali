@@ -3,4 +3,5 @@ allowBuilds:
   '@prisma/engines': true
   prisma: true
   esbuild: true
+  ffmpeg-static: true
   core-js: false

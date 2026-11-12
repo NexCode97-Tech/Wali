@@ -1,4 +1,4 @@
-import { v2 as cloudinary } from 'cloudinary'
+import { subir as subirAlBanco } from '../almacen'
 import { Prisma, type CrmConexion, type CrmLinea, type CrmContacto } from '@prisma/client'
 import { prisma, prismaGlobal } from './bd'
 import { enEspacio } from './espacio'
@@ -79,17 +79,7 @@ function enFila<T>(clave: string, fn: () => Promise<T>): Promise<T> {
   return p
 }
 
-// ─── Archivos: de Meta a Cloudinary ──────────────────────────────────────────
-
-function subir(buffer: Buffer, opciones: Record<string, unknown>): Promise<string> {
-  if (!cloudinary.config().cloud_name) {
-    cloudinary.config({ cloud_name: process.env.CLOUDINARY_CLOUD_NAME, api_key: process.env.CLOUDINARY_API_KEY, api_secret: process.env.CLOUDINARY_API_SECRET })
-  }
-  return new Promise((resolve, reject) => {
-    const st = cloudinary.uploader.upload_stream(opciones, (err, r) => (err || !r ? reject(err ?? new Error('Cloudinary no respondió')) : resolve(r.secure_url)))
-    st.end(buffer)
-  })
-}
+// ─── Archivos: de Meta al banco multimedia de Wali (bucket de Railway, almacen.ts) ─
 
 const EXT: Record<string, string> = {
   'application/pdf': 'pdf', 'application/msword': 'doc', 'application/vnd.ms-excel': 'xls', 'application/vnd.ms-powerpoint': 'ppt',
@@ -101,7 +91,7 @@ const EXT: Record<string, string> = {
 
 type ClaseMedia = 'image' | 'audio' | 'video' | 'document' | 'sticker'
 
-/** Baja el archivo de Meta y lo guarda en Cloudinary (carpeta CLOUDINARY_CARPETA). */
+/** Baja el archivo de Meta y lo guarda en el banco multimedia de Wali. */
 async function guardarMedia(media: WaMedia, clase: ClaseMedia, cred: CredMeta) {
   if (!media.id) throw new Error('El mensaje no trae el archivo')
   const { buffer, mime } = await descargarMedia(media.id, cred)
@@ -109,21 +99,11 @@ async function guardarMedia(media: WaMedia, clase: ClaseMedia, cred: CredMeta) {
   return { url: await subirMedia(buffer, mime, clase, `wa-${sello}`, txt(media.filename)), mime, buffer }
 }
 
-/** Guarda en Cloudinary un archivo que mandó el cliente. PDF como raw sin extensión: la cuenta bloquea los .pdf. */
+/** Guarda en el banco multimedia un archivo que mandó el cliente, con su nombre y su extensión. */
 async function subirMedia(buffer: Buffer, mime: string, clase: ClaseMedia, id: string, nombre: string): Promise<string> {
-  const folder = process.env.CLOUDINARY_CARPETA || 'crm'
-  let url: string
-  if (clase === 'image' || clase === 'sticker' || (clase === 'document' && mime.startsWith('image/'))) {
-    url = await subir(buffer, { folder, resource_type: 'image', public_id: id })
-  } else if (clase === 'audio' || clase === 'video') {
-    url = await subir(buffer, { folder, resource_type: 'video', public_id: id })
-  } else {
-    const base = nombre.replace(/\.[^.]+$/, '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase().slice(0, 40) || 'documento'
-    const ext = (nombre.match(/\.([a-z0-9]{1,5})$/i)?.[1] ?? EXT[mime] ?? '').toLowerCase()
-    const esPdf = mime === 'application/pdf' || ext === 'pdf'
-    url = await subir(buffer, { folder, resource_type: 'raw', public_id: `${base}-${id.slice(-12)}${esPdf || !ext ? '' : '.' + ext}` })
-  }
-  return url
+  const ext = (nombre.match(/\.([a-z0-9]{1,5})$/i)?.[1] ?? EXT[mime] ?? '').toLowerCase()
+  const base = clase === 'document' && nombre ? nombre.replace(/\.[^.]+$/, '').slice(0, 40) + '-' + id.slice(-12) : id
+  return (await subirAlBanco(buffer, { carpeta: 'crm/entrantes', nombre: ext ? `${base}.${ext}` : base, mime })).url
 }
 
 const NOMBRE_MEDIA: Record<string, string> = { image: 'una imagen', audio: 'una nota de voz', video: 'un video', document: 'un documento', sticker: 'un sticker' }

@@ -8,7 +8,8 @@ import { logger } from '../utils/logger'
 import { buscarPorSignificado } from '../services/crm/ayudaSemantica'
 import multer from 'multer'
 import { z } from 'zod'
-import { subirACloudinary, nombreArchivo } from '../controllers/crm/_comun'
+import { almacenListo, esUrlDeWali } from '../services/almacen'
+import { subirArchivo, nombreArchivo } from '../controllers/crm/_comun'
 import { TEMAS, crearSolicitud, misSolicitudes, marcarVistas, clienteCambia } from '../services/crm/soporte'
 
 /**
@@ -103,7 +104,7 @@ const nuevaSolicitud = z.object({
   texto: z.string().trim().min(3).max(4000),
   pantalla: z.string().max(60).optional(),
   busco: z.array(z.string().max(200)).max(10).optional(),
-  adjunto: z.string().url().regex(/^https:\/\/res\.cloudinary\.com\//).max(500).nullish(),
+  adjunto: z.string().url().max(500).refine(u => /^https:\/\/res\.cloudinary\.com\//.test(u) || esUrlDeWali(u), 'Archivo no válido').nullish(),
 })
 rutasAyudaCrm.post('/ayuda/soporte', limiteSoporte, asyncHandler(async (req: Request, res: Response) => {
   if (!req.userId || !req.espacioId) throw new ValidationError('Falta la sesión')
@@ -113,8 +114,8 @@ rutasAyudaCrm.post('/ayuda/soporte/captura', limiteSoporte, (req, res, next) => 
   const f = req.file
   if (!f) throw new ValidationError('No se recibió ninguna captura')
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(f.mimetype)) throw new ValidationError('La captura debe ser JPG, PNG o WebP')
-  if (!process.env.CLOUDINARY_CLOUD_NAME) throw new ValidationError('La subida de archivos no está configurada.')
-  const url = await subirACloudinary(f.buffer, nombreArchivo(f), f.mimetype, `${process.env.CLOUDINARY_CARPETA || 'crm'}/soporte`)
+  if (!almacenListo()) throw new ValidationError('La subida de archivos no está configurada.')
+  const url = await subirArchivo(f.buffer, nombreArchivo(f), f.mimetype, 'crm/soporte')
   return ApiResponse.success(res, { url, nombre: f.originalname.slice(0, 80), peso: f.size })
 }))
 rutasAyudaCrm.get('/ayuda/soporte', asyncHandler(async (req: Request, res: Response) => {

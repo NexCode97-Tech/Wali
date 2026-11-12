@@ -8,7 +8,7 @@ import { AppError, ForbiddenError, ValidationError } from '../utils/errors'
 import { cambiarPedir, nuevaVersion, resumenTerminos } from '../services/crm/terminos'
 import { enEspacio } from '../services/crm/espacio'
 import { borrarGrabacion, direccionDe, grabacionPorId, listarGrabaciones, puedeVerGrabaciones, subirGrabacion } from '../services/crm/grabaciones'
-import { convVisible, nombreArchivo, subirACloudinary } from '../controllers/crm/_comun'
+import { convVisible, nombreArchivo, subirArchivo } from '../controllers/crm/_comun'
 import { logger } from '../utils/logger'
 import { rutasWaCrm } from './crmWhatsapp'
 import { rutasIaCrm } from './crmIa'
@@ -365,7 +365,7 @@ router.get('/grabaciones/:id/url', asyncHandler(async (req: Request, res: Respon
   const descargar = req.query.descargar === '1'
   if (descargar && (req.soloLectura || !puedeVerGrabaciones(await alcanceDe(req)))) throw new ForbiddenError('Tu cuenta no puede descargar grabaciones.')
   res.setHeader('Cache-Control', 'no-store')
-  return ApiResponse.success(res, { url: direccionDe(g.audio, descargar) })
+  return ApiResponse.success(res, { url: await direccionDe(g.audio, descargar) })
 }))
 router.delete('/grabaciones/:id', asyncHandler(async (req: Request, res: Response) => {
   if (req.soloLectura || req.userRole !== 'ADMIN') throw new ForbiddenError('Solo un administrador puede eliminar grabaciones.')
@@ -381,7 +381,7 @@ router.post('/terminos', soloLideres('subir los términos y condiciones'), unArc
   if (f.buffer.subarray(0, 5).toString('latin1') !== '%PDF-') throw new ValidationError('Los términos tienen que ser un archivo PDF')
   const n = nombreArchivo(f)
   let url: string
-  try { url = await subirACloudinary(f.buffer, n, 'application/pdf', 'crm/terminos') } catch (e) {
+  try { url = await subirArchivo(f.buffer, n, 'application/pdf', 'crm/terminos') } catch (e) {
     logger.error(`[CRM términos] Cloudinary: ${(e as Error)?.message ?? e}`)
     throw new AppError('No se pudo guardar el PDF. Intenta de nuevo en un momento.', 502)
   }

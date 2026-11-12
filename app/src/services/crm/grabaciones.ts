@@ -1,4 +1,5 @@
 import { v2 as cloudinary } from 'cloudinary'
+import { subir as subirAlBanco, enlaceTemporal, borrar as borrarDelBanco } from '../almacen'
 import type { Prisma } from '@prisma/client'
 import { prisma } from './bd'
 import { leerAjuste } from './ajustes'
@@ -30,21 +31,19 @@ function configurar() {
   listo = true
 }
 
-export const esRefGrabacion = (v: unknown) => typeof v === 'string' && REF.test(v)
+/** Grabaciones en el bucket de Railway (11-nov): `grabr:<clave>`, privadas. Las de antes (`grab:`) siguen en Cloudinary hasta migrarlas. */
+const REF_BANCO = /^grabr:(privado\/[a-z0-9/._-]{3,300})$/
+export const esRefGrabacion = (v: unknown) => typeof v === 'string' && (REF.test(v) || REF_BANCO.test(v))
 
-export function subirGrabacion(buffer: Buffer): Promise<string> {
-  configurar()
-  return new Promise((ok, mal) => {
-    const st = cloudinary.uploader.upload_stream({ folder: CARPETA, resource_type: 'video', type: 'authenticated' }, (err, r) => {
-      if (err || !r) { mal(err ?? new Error('Cloudinary no respondió')); return }
-      ok(`grab:${r.public_id}:${r.format || 'webm'}`)
-    })
-    st.end(buffer)
-  })
+export async function subirGrabacion(buffer: Buffer): Promise<string> {
+  const { clave } = await subirAlBanco(buffer, { carpeta: 'crm/grabaciones', nombre: 'llamada.webm', mime: 'audio/webm', privado: true })
+  return `grabr:${clave}`
 }
 
 /** La dirección para oír o descargar: la privada vence pronto; una vieja se devuelve tal cual. */
-export function direccionDe(audio: string, descargar: boolean): string {
+export async function direccionDe(audio: string, descargar: boolean): Promise<string> {
+  const b = audio.match(REF_BANCO)
+  if (b) return enlaceTemporal(b[1], MINUTOS_ENLACE * 60, descargar)
   const m = audio.match(REF)
   if (!m) return audio
   configurar()
@@ -99,6 +98,8 @@ export async function grabacionPorId(id: string) {
 
 /** Borra el archivo de la Nube. Una vieja se reconoce por su dirección. */
 async function borrarArchivo(audio: string) {
+  const b = audio.match(REF_BANCO)
+  if (b) { await borrarDelBanco(b[1]); return }
   configurar()
   const r = audio.match(REF)
   if (r) { await cloudinary.uploader.destroy(r[1], { resource_type: 'video', type: 'authenticated', invalidate: true }); return }

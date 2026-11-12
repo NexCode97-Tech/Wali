@@ -23,7 +23,7 @@ import { cuentaDe, usuariosDeCuenta } from '../../services/crm/espacio'
 import { cifrarClave } from '../../routes/auth'
 import crypto from 'node:crypto'
 import { conectarMotor, conOpciones, desconectarMotor, estadoMotor, motorIA, usarMotor } from '../../services/crm/motorIA'
-import { convVigente, esLider, exigirAdminEquipos, exigirEscritura, exigirLider, nombreArchivo, obj, subirACloudinary, tamanoLegible } from './_comun'
+import { convVigente, esLider, exigirAdminEquipos, exigirEscritura, exigirLider, nombreArchivo, obj, subirArchivo as subirAlBanco, tamanoLegible } from './_comun'
 
 /**
  * Ajustes del equipo, preferencias de cada persona, archivos adjuntos, base de
@@ -621,7 +621,7 @@ export async function subirArchivo(req: Request, res: Response) {
   const n = nombreArchivo(f)
   let url: string
   try {
-    url = await subirACloudinary(f.buffer, n, f.mimetype)
+    url = await subirAlBanco(f.buffer, n, f.mimetype)
   } catch (e) {
     logger.error(`[CRM archivos] Cloudinary: ${(e as Error)?.message ?? e}`)
     throw new AppError('No se pudo guardar el archivo en la nube. Intenta de nuevo en un momento; si sigue fallando, avisa al administrador.', 502)
@@ -654,7 +654,7 @@ export async function subirDocumento(req: Request, res: Response) {
   const { texto, paginas, recortado } = await extraerTexto(f.buffer, f.mimetype, n)
   let url: string
   try {
-    url = await subirACloudinary(f.buffer, n, /\.pdf$/i.test(n) ? 'application/pdf' : f.mimetype)
+    url = await subirAlBanco(f.buffer, n, /\.pdf$/i.test(n) ? 'application/pdf' : f.mimetype)
   } catch (e) {
     logger.error(`[CRM kb] Cloudinary: ${(e as Error)?.message ?? e}`)
     throw new AppError('Se leyó el documento pero no se pudo guardar en la nube. Intenta de nuevo en un momento.', 502)

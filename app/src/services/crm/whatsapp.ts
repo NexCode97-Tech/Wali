@@ -8,6 +8,7 @@ import { telDigitos } from './formas'
 import { buscarPlantilla, plantillaEnEquipo, variablesDe, type PlantillaMeta } from './plantillas'
 import { credDeLinea, hayWhatsapp, type CredMeta } from './credenciales'
 import { leerAjuste } from './ajustes'
+import { esUrlDeWali, urlEnFormato } from '../almacen'
 
 /**
  * WhatsApp Cloud API del CRM (26-sep-2026): el cliente de la Graph API de Meta
@@ -298,6 +299,8 @@ const txt = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
  * Instagram no recibe mp3: a Instagram va en m4a.
  */
 export function audioParaWhatsapp(url: string, formato = 'mp3'): string {
+  // Banco multimedia de Wali (11-nov): ffmpeg lo convierte al pedirlo con &v=.
+  if (esUrlDeWali(url)) return /\.(mp3|m4a|aac|amr|ogg)\?/i.test(url) && formato === 'mp3' ? url : (urlEnFormato(url, formato === 'm4a' ? 'm4a' : 'mp3') ?? url)
   if (!/res\.cloudinary\.com\/.+\/video\/upload\//.test(url)) return url
   if (formato === 'mp3' ? /\.(mp3|m4a|aac|amr|ogg)(\?|$)/i.test(url) : new RegExp(`\\.${formato}(\\?|$)`, 'i').test(url)) return url
   return /\.[a-z0-9]{2,5}(\?|$)/i.test(url) ? url.replace(/\.[a-z0-9]{2,5}(\?|$)/i, `.${formato}$1`) : `${url}.${formato}`
@@ -305,6 +308,7 @@ export function audioParaWhatsapp(url: string, formato = 'mp3'): string {
 
 /** La nota de voz en OGG con OPUS (lo que WhatsApp muestra como nota de voz), o null si no está en Cloudinary. */
 export function notaDeVozOgg(url: string): string | null {
+  if (esUrlDeWali(url)) return urlEnFormato(url, 'ogg')
   const m = url.match(/^(https:\/\/res\.cloudinary\.com\/[^/]+\/video\/upload\/)(.+)$/)
   if (!m) return null
   const resto = m[2].replace(/^ac_[a-z0-9]+\//, '')
@@ -333,7 +337,7 @@ const TIPOS_META: { tipo: 'image' | 'video' | 'audio' | 'document'; re: RegExp; 
 export function archivoPermitido(url: string): boolean {
   try {
     const u = new URL(url)
-    return u.protocol === 'https:' && u.hostname === 'res.cloudinary.com' || u.host === new URL(base()).host
+    return u.protocol === 'https:' && u.hostname === 'res.cloudinary.com' || u.host === new URL(base()).host || esUrlDeWali(url)
   } catch { return false }
 }
 
