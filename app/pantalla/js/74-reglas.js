@@ -27,7 +27,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .mr-est.off{color:#4b5563;background:#f1f5f9}
 .mr-flujo{display:grid;grid-template-columns:minmax(0,1fr) 28px minmax(0,1fr) 28px minmax(0,1.2fr);align-items:stretch}
 .mr-paso{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-radius:12px;background:#f8fafc;border:1px solid #eef1f5;min-width:0}
-.mr-paso .k{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#6b7280}
+.mr-paso .k{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:#6b7280}
 .mr-paso .k svg{width:14px;height:14px}
 .mr-paso .v{font-size:13.5px;line-height:1.4;color:var(--ink)}
 .mr-paso .mr-nada{font-size:13px;color:#9ca3af}
@@ -74,7 +74,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .mm-ic.si{background:#eef2ff;color:#3730a3}
 .mm-ic.ent{background:#0b0b10;color:#fff}
 .mm-tx{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
-.mm-tx small{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#6b7280}
+.mm-tx small{font-size:12px;font-weight:600;color:#6b7280}
 .mm-tx b{font-size:14px;font-weight:600;line-height:1.35}
 .mm-tx span{font-size:13px;color:#4b5563}
 .mm-tx span.falta{color:#b45309}

@@ -382,7 +382,7 @@
 .ppm-cmp input{height:40px;border:1px solid var(--line);border-radius:10px;padding:0 12px;font:inherit;font-size:14px;background:#fff}
 .ppm-cmp input:focus{outline:0;border-color:#0b0b10;box-shadow:0 0 0 3px rgba(11,11,16,.08)}
 .ppm-cb .btn{height:40px;width:100%;justify-content:center}
-.ppm-inv{display:grid;gap:4px}.ppm-inv > small,.ppm-ideas > small{font-size:11.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em}
+.ppm-inv{display:grid;gap:4px}.ppm-inv > small,.ppm-ideas > small{font-size:12.5px;font-weight:600;color:var(--ink3)}
 .ppm-invl{display:flex;align-items:center;gap:10px;padding:8px 0}.ppm-invl > div{flex:1;min-width:0}.ppm-invl b{display:block;font-size:13.5px}.ppm-invl small{font-size:12px;color:var(--ink3)}
 .ppm-av{width:32px;height:32px;border-radius:50%;color:#fff;display:grid;place-items:center;font-size:11.5px;font-weight:700;flex:none;background:#9ca3af}
 .ppm-qrbox{display:flex;gap:20px;align-items:center;padding:18px;border:1px solid var(--line);border-radius:14px}

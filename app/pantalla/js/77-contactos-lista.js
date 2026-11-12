@@ -234,7 +234,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .cl-fi dl{margin:0;border:1px solid var(--line2);border-radius:10px;overflow:hidden}
 .cl-fi dl div{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 12px;border-top:1px solid var(--line2)}.cl-fi dl div:first-child{border-top:0}
 .cl-fi dt{color:var(--ink3);font-size:12.5px;flex:none}.cl-fi dd{margin:0;font-size:13px;text-align:right;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px}
-.cl-fi h6{margin:2px 0 0;font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3)}
+.cl-fi h6{margin:2px 0 0;font-size:12px;font-weight:600;color:var(--ink3)}
 .cl-msj{display:grid;gap:6px}.cl-msj p{margin:0;padding:8px 11px;border-radius:12px;font-size:13px;max-width:85%;overflow-wrap:anywhere}
 .cl-msj .in{background:#f3f4f6;justify-self:start}.cl-msj .out{background:#FFEC9E;justify-self:end}.cl-msj .cl-nada{background:none;padding:0;color:var(--ink3);max-width:none}
 .ck-flmenu [data-cl-v],.ck-flmenu [data-ck-seg]{display:flex;align-items:center;gap:9px}.ck-flmenu [data-cl-v] span,.ck-flmenu [data-ck-seg] span{flex:1;text-align:left}.ck-flmenu [data-cl-v] em{font-style:normal;font-size:12px;color:var(--ink3);font-variant-numeric:tabular-nums}

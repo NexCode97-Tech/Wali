@@ -237,7 +237,7 @@ document.addEventListener('click', e => {
 document.head.insertAdjacentHTML('beforeend', `<style>
 .ck{display:flex;gap:18px;align-items:flex-start;max-width:1320px;margin:0 auto;padding-bottom:70px}
 .ck-vistas{flex:none;width:215px;display:flex;flex-direction:column;gap:2px;position:sticky;top:0}
-.ck-vistas h5{margin:14px 8px 6px;font-size:11.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#6b7280;display:flex;align-items:center;justify-content:space-between}
+.ck-vistas h5{margin:14px 8px 6px;font-size:12.5px;font-weight:600;color:#6b7280;display:flex;align-items:center;justify-content:space-between}
 .ck-vistas h5:first-child{margin-top:0}
 .ck-vistas h5 button{display:inline-flex;align-items:center;gap:4px;border:0;background:none;padding:3px 6px;border-radius:7px;font:inherit;font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;color:#0b0b10;cursor:pointer}
 .ck-vistas h5 button:hover{background:#FFD21F}
@@ -323,7 +323,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ck-flota .ck-fmenu button:hover{background:#f3f4f6}
 .ck-fmenu p{margin:0;padding:8px 10px;font-size:13px;color:#6b7280}
 .ck-flmenu{position:fixed;z-index:60;min-width:220px;max-height:320px;overflow-y:auto;background:#fff;border:1px solid #e5e9f0;border-radius:12px;box-shadow:0 18px 40px -12px rgba(15,23,42,.3);padding:6px;display:grid;gap:2px}
-.ck-flmenu small{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#6b7280;padding:6px 10px 4px}
+.ck-flmenu small{font-size:12px;font-weight:600;color:#6b7280;padding:6px 10px 4px}
 .ck-flmenu p{margin:0;padding:8px 10px;font-size:13px;color:#6b7280}
 .ck-flmenu button{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border:0;background:none;border-radius:8px;font:inherit;font-size:13.5px;color:var(--ink);text-align:left;cursor:pointer}
 .ck-flmenu button:hover{background:#f3f4f6}
@@ -341,7 +341,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .sg2-logo svg{width:24px;height:24px}
 .sg2-cab h3{margin:0;font-size:20px}
 .sg2-cab p{margin:2px 0 0;font-size:13px;color:#6b7280}
-.sg2-lab{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#6b7280;margin-bottom:8px;display:block}
+.sg2-lab{font-size:13px;font-weight:600;color:#6b7280;margin-bottom:8px;display:block}
 .sg2-nom{display:flex;gap:10px;align-items:center}
 .sg2-nom input{flex:1;height:44px;border:1px solid #e5e9f0;border-radius:11px;padding:0 14px;font:inherit;font-size:15px}
 .sg2-nom input:focus{outline:none;border-color:#0b0b10;box-shadow:0 0 0 3px rgba(11,11,16,.08)}
@@ -373,7 +373,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .sg2-pie{display:flex;justify-content:flex-end;gap:8px;padding:14px 26px;border-top:1px solid #eef1f5;background:#fff}
 .sgm{display:flex;flex-direction:column;align-items:center;padding:18px 12px;border-radius:14px;background-color:#f6f7f9;background-image:radial-gradient(#d7dce3 1px,transparent 1px);background-size:16px 16px}
 .sgm-ini,.sgm-fin{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:#fff;border:1.5px solid #e5e9f0;min-width:240px}
-.sgm-ini small,.sgm-fin small{display:block;font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#6b7280}
+.sgm-ini small,.sgm-fin small{display:block;font-size:11.5px;font-weight:600;color:#6b7280}
 .sgm-ini b,.sgm-fin b{display:block;font-size:13.5px;font-weight:600}
 .sgm .mm-ic{width:32px;height:32px;border-radius:50%}
 .sgm .mm-ic svg{width:16px;height:16px}
@@ -390,7 +390,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .sgm-ayuda b{color:#0b0b10}
 .sgm-mas-w{position:relative;display:flex;flex-direction:column;align-items:center}
 .sgm-menu{position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);z-index:5;min-width:210px;background:#fff;border:1px solid #e5e9f0;border-radius:12px;box-shadow:0 16px 36px -12px rgba(15,23,42,.3);padding:6px;display:grid;gap:2px}
-.sgm-menu small{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#6b7280;padding:6px 10px 4px}
+.sgm-menu small{font-size:12px;font-weight:600;color:#6b7280;padding:6px 10px 4px}
 .sgm-menu button{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border:0;background:none;border-radius:8px;font:inherit;font-size:13.5px;text-align:left;cursor:pointer}
 .sgm-menu button:hover{background:#f3f4f6}
 .sgm-menu button svg{width:16px;height:16px;color:#6b7280}

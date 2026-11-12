@@ -211,7 +211,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .mv-hbus{padding:0 18px 10px}
 .mv-hcuerpo{flex:1 1 auto!important;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:4px 10px 16px;border-top:1px solid var(--mv-linea2)}
 .mv-hpie{padding:10px 18px 14px;border-top:1px solid var(--mv-linea2);background:#fff}
-.mv-hsec{margin:14px 8px 6px;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mv-t4)}
+.mv-hsec{margin:14px 8px 6px;font-size:12.5px;font-weight:600;color:var(--mv-t4)}
 .mv-op{width:100%;display:flex;align-items:center;gap:12px;min-height:50px;padding:0 10px;border:0;border-radius:11px;background:none;font:inherit;font-size:15px;color:var(--mv-tinta);text-align:left;cursor:pointer}
 .mv-op:active{background:var(--mv-fondo)}
 .mv-op .t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

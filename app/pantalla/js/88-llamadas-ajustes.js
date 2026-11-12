@@ -204,7 +204,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .lw-sync{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:#15803d;font-weight:600}
 .lw-sync em{font-style:normal;font-weight:400;color:var(--ink3);flex-basis:100%;padding-left:24px}
 .lw-g{display:grid;gap:0;border:1px solid var(--line);border-radius:12px;overflow:hidden}
-.lw-gt{display:block;padding:9px 14px;background:#fbfbfc;border-bottom:1px solid var(--line);font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+.lw-gt{display:block;padding:9px 14px;background:#fbfbfc;border-bottom:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--ink3)}
 .lw-f{display:flex;align-items:center;gap:14px;padding:11px 14px;border-top:1px solid var(--line)}
 .lw-gt + .lw-f{border-top:0}
 .lw-tx{flex:1;min-width:0;display:grid}.lw-tx b{font-size:13.5px;font-weight:600}.lw-tx small{font-size:12.5px;color:var(--ink3)}

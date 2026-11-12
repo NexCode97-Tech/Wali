@@ -413,7 +413,7 @@ body:has(.lcd) .ay-fab:not(.abierta){opacity:0;pointer-events:none}
 .pm-info{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:9px}
 .pm-info li{display:flex;gap:9px;font-size:13px;color:var(--ink2)}.pm-info .i{width:16px;height:16px;margin-top:2px;color:var(--ink3)}
 .pm-info li:first-child .i{color:#16a34a}
-.pm-tel small{display:block;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-bottom:8px}
+.pm-tel small{display:block;font-size:12.5px;font-weight:600;color:var(--ink3);margin-bottom:8px}
 .pm-wa{background:#efeae2;border-radius:14px;padding:12px;display:grid;gap:6px}
 .pm-bur{position:relative;background:#fff;border-radius:0 10px 10px 10px;padding:8px 10px 18px;font-size:13px;line-height:1.4;color:#111b21;box-shadow:0 1px .5px rgba(11,20,26,.13);white-space:pre-wrap;overflow-wrap:anywhere}
 .pm-h1{position:absolute;right:8px;bottom:4px;font-size:10.5px;color:#8696a0}

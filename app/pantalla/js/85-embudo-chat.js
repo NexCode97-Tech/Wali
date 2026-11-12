@@ -42,7 +42,7 @@
 .ec-abrir:hover{background:#f9fafb}
 .ec-abrir svg{width:14px;height:14px}
 .ec-tags{position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 16px;border-bottom:1px solid #eef1f5;flex:none}
-.ec-lb{font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#6b7280;margin-right:4px}
+.ec-lb{font-size:12.5px;font-weight:600;color:#6b7280;margin-right:4px}
 .ec-tag{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 4px 0 10px;border:1px solid #e5e9f0;border-radius:999px;font-size:12.5px;background:#fff;white-space:nowrap}
 .ec-tag i{width:7px;height:7px;border-radius:50%;flex:none}
 .ec-tag button{width:20px;height:20px;border:0;border-radius:50%;background:none;color:#dc2626;display:grid;place-items:center;cursor:pointer;padding:0}

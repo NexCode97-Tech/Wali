@@ -568,7 +568,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .v2-nueva{display:inline-flex!important;align-items:center;gap:8px;height:46px;padding:0 20px!important;border-radius:12px!important;background:#FFD21F!important;color:#0b0b10!important;font-weight:700!important;font-size:15px!important;box-shadow:0 10px 24px -12px rgba(230,184,0,.9);transition:transform .2s cubic-bezier(.16,1,.3,1),box-shadow .2s}
 .v2-nueva:hover{transform:translateY(-1px);box-shadow:0 14px 28px -12px rgba(230,184,0,1)}
 .v2-sec{margin-top:26px;width:100%;display:grid;gap:10px}
-.v2-sec > small{font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+.v2-sec > small{font-size:12.5px;font-weight:600;color:var(--ink3)}
 .v2-ideas{display:grid;gap:8px}
 .v2-ideas button{display:flex!important;align-items:center;gap:12px;padding:10px 14px 10px 10px!important;border:1px solid var(--line)!important;border-radius:14px!important;background:#fff!important;text-align:left;transition:border-color .15s,transform .2s cubic-bezier(.16,1,.3,1),box-shadow .2s;animation:v2-sube .6s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(.45s + var(--i) * .07s)}
 .v2-ideas button:hover{border-color:#0b0b10!important;transform:translateX(2px);box-shadow:0 8px 20px -14px rgba(15,23,42,.4)}
