@@ -122,7 +122,8 @@ router.get('/app', asyncHandler(async (req: Request, res: Response) => {
   const s = await sesion(req, res); if (!s) return
   const inicio = {
     api: BASE + '/api',
-    yo: yoDe(s.u),
+    // gcal: el correo de su Google Calendar conectado (recordatorios), o null.
+    yo: { ...yoDe(s.u), gcal: (await prisma.crmGoogleCalendario.findUnique({ where: { userId: s.u.id }, select: { correo: true } }))?.correo ?? null },
     espacio: s.espacio,
     // Los países con su indicativo, para los teléfonos con bandera.
     paises: PAISES.map(p => [p.iso, p.nombre, p.indicativo]),

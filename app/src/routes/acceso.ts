@@ -12,7 +12,8 @@ import { ApiResponse } from '../utils/response'
 import { AppError, ConflictError, ForbiddenError, ValidationError } from '../utils/errors'
 import { logger, logSecurityEvent } from '../utils/logger'
 import { BASE } from '../utils/base'
-import { abrirSesion, cifrarClave, claveValida, RUTA_COOKIE } from './auth'
+import { abrirSesion, cifrarClave, claveValida, RUTA_COOKIE, sesionDePagina } from './auth'
+import { guardarConexion, urlPermiso } from '../services/crm/googleCalendario'
 import { correoMarca, escaparHtml } from '../utils/correoMarca'
 import { DIAS_PRUEBA } from '../services/crm/plan'
 import { ajustesIniciales } from '../services/crm/inicial'
@@ -224,7 +225,61 @@ router.get('/google', (_req: Request, res: Response) => {
 
 const igual = (a: string, b: string) => a.length === b.length && crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b))
 
+// ─── Google Calendar de cada persona (12-nov) ────────────────────────────────
+//
+// Se abre en una ventana aparte desde el CRM (el CRM vive en un marco y Google no se deja abrir dentro de uno). Usa el
+// mismo cliente y el mismo regreso que «Entrar con Google»; la cookie de estado propia dice a cuál de los dos vuelve.
+// Al terminar, la ventana le cuenta al CRM cómo le fue (BroadcastChannel, mismo origen) y se cierra.
+
+const COOKIE_ESTADO_CAL = 'crm_gcal_estado'
+
+function finCalendario(res: Response, resultado: string) {
+  const textos: Record<string, [string, string]> = {
+    ok: ['Google Calendar conectado', 'Ya puedes cerrar esta ventana y volver a Wali.'],
+    'sin-permiso': ['Falta el permiso del calendario', 'En la pantalla de Google hay que dejar marcada la casilla del calendario. Cierra esta ventana e inténtalo de nuevo.'],
+    cancelado: ['No se conectó', 'Cancelaste en Google. Cierra esta ventana; puedes intentarlo cuando quieras.'],
+    sesion: ['Tu sesión de Wali se cerró', 'Entra otra vez a Wali y vuelve a conectar Google Calendar.'],
+    error: ['No se pudo conectar', 'Google no respondió bien. Cierra esta ventana e inténtalo de nuevo en un momento.'],
+  }
+  const [t, d] = textos[resultado] ?? textos.error
+  res.setHeader('Content-Type', 'text/html; charset=utf-8')
+  res.setHeader('Cache-Control', 'no-store')
+  res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escaparHtml(t)}</title>
+<style>body{margin:0;min-height:100dvh;display:grid;place-items:center;background:#f6f7f9;font:15px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:#0b0b10}main{max-width:340px;padding:28px 24px;text-align:center}h1{font-size:18px;margin:0 0 6px}p{margin:0;color:#4b5563}</style></head>
+<body><main><h1>${escaparHtml(t)}</h1><p>${escaparHtml(d)}</p></main>
+<script>try{var c=new BroadcastChannel('wali-gcal');c.postMessage(${JSON.stringify(resultado)});c.close()}catch(e){}setTimeout(function(){try{window.close()}catch(e){}},${resultado === 'ok' ? 600 : 2600})</script></body></html>`)
+}
+
+router.get('/google/calendario', limiteEnlace, asyncHandler(async (req: Request, res: Response) => {
+  const u = await sesionDePagina(req)
+  if (!u) return finCalendario(res, 'sesion')
+  if (!googleListo()) return finCalendario(res, 'error')
+  const estado = crypto.randomBytes(24).toString('base64url')
+  res.cookie(COOKIE_ESTADO_CAL, jwt.sign({ tipo: 'gcal', estado, uid: u.id }, secreto(), { expiresIn: '10m' }), cookieCorta(10))
+  return res.redirect(urlPermiso(regresoGoogle(), estado, u.email))
+}))
+
+/** El regreso de Google para el calendario: la misma sesión que lo pidió, y el permiso queda guardado y cifrado. */
+async function regresoCalendario(req: Request, res: Response, galleta: string) {
+  res.clearCookie(COOKIE_ESTADO_CAL, { path: RUTA_COOKIE })
+  let p: { tipo?: string; estado?: string; uid?: string }
+  try { p = jwt.verify(galleta, secreto()) as typeof p } catch { return finCalendario(res, 'error') }
+  if (p.tipo !== 'gcal' || !p.estado || !p.uid || typeof req.query.state !== 'string' || !igual(req.query.state, p.estado)) return finCalendario(res, 'error')
+  const u = await sesionDePagina(req)
+  if (!u || u.id !== p.uid) return finCalendario(res, 'sesion')
+  if (req.query.error || typeof req.query.code !== 'string') return finCalendario(res, 'cancelado')
+  const r = await guardarConexion(u.id, req.query.code, regresoGoogle())
+  logSecurityEvent('GCAL_CONEXION', { userId: u.id, ip: req.ip, resultado: r })
+  return finCalendario(res, r)
+}
+
 router.get('/google/regreso', limiteEnlace, asyncHandler(async (req: Request, res: Response) => {
+  // ¿Viene de conectar el calendario? Su cookie de estado lo dice (la del ingreso es otra).
+  const galletaCal = String((req.cookies as Record<string, string> | undefined)?.[COOKIE_ESTADO_CAL] ?? '')
+  if (galletaCal) {
+    const p = jwt.decode(galletaCal) as { estado?: string } | null
+    if (p?.estado && typeof req.query.state === 'string' && igual(req.query.state, p.estado)) return regresoCalendario(req, res, galletaCal)
+  }
   const volver = (q: string) => res.redirect(`${BASE}/entrar?${q}`)
   const estado = String((req.cookies as Record<string, string> | undefined)?.[COOKIE_ESTADO] ?? '')
   res.clearCookie(COOKIE_ESTADO, { path: RUTA_COOKIE })

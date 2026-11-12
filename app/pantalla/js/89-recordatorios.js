@@ -1,14 +1,26 @@
 /* ── Recordatorios de seguimiento con calendario propio (maqueta aprobada «Recordatorios con Google Calendar», 12-nov,
    versión 310). Sin atajos: el día abre un calendario y, al elegirlo, pasa solo a la hora (por franjas, de a 30 min).
    El recordatorio vencido trae un solo botón «Posponer» que abre lo mismo. La X del formulario va en la esquina.
-   «Agendar en Google Calendar» es un interruptor; sin Google conectado abre «Primero conecta Google Calendar»
-   (la conexión llega en la parte 2). El calendario y la hora van en portal a document.body: en escritorio junto al
+   «Agendar en Google Calendar» es un interruptor; sin Google conectado abre «Primero conecta Google Calendar», que
+   abre Google en una ventana aparte (api acceso.ts, /auth/google/calendario) y espera su respuesta (parte 2, 12-nov).
+   Cada recordatorio agendado dice cómo va con Google; el servidor crea, mueve y borra el evento (googleCalendario.ts). El calendario y la hora van en portal a document.body: en escritorio junto al
    campo que los abrió; en el celular, como hoja desde abajo. ── */
 (() => {
   const RCP_FR = {manana:['Mañana', 6, 12], tarde:['Tarde', 12, 18], noche:['Noche', 18, 22]};
   const RCP_DS = ['lu', 'ma', 'mi', 'ju', 'vi', 'sá', 'do'];
   const AVISOS = [['10', '10 min'], ['30', '30 min'], ['60', '1 hora']];
   const gcalConectado = () => !!(window.CRM_YO && CRM_YO.gcal);
+  const AV_TX = {'10':'10 minutos antes', '30':'30 minutos antes', '60':'1 hora antes'};
+  // Cómo va el recordatorio en Google: agendando (mientras el servidor responde), en el calendario, hecho allá o sin agendar.
+  function gcEstado(r){
+    if (!r.gcal) return '';
+    let cls = '', tx;
+    if (r.gerr) { cls = 'mal'; tx = r.gerr === 'sin-conexion' ? 'No quedó en Google. Conecta tu calendario' : 'Google no lo agendó. Muévelo para intentar otra vez'; }
+    else if (!r.gev) { if (r.hecho) return ''; cls = 'sync'; tx = 'Agendando en Google…'; }
+    else tx = r.hecho ? 'Marcado hecho en tu calendario' : `En tu Google Calendar · ${AV_TX[String(r.aviso)] || AV_TX['10']}`;
+    return `<span class="rcp-rgc ${cls}"><span class="rcp-rueda"></span>${I('calendar')}${esc(tx)}</span>`;
+  }
+  const nuevoId = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
   const iso = (y, m, d) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
   const hoyP = () => hcPartes(Date.now());
   const cap = t => t.charAt(0).toUpperCase() + t.slice(1);
@@ -37,11 +49,12 @@
       const e = recEst(r), f = recFechaDe(r), cuando = f ? hcCuando(f) : r.cuando, vencido = !r.hecho && e === 'vencido';
       const chip = r.hecho ? '<span class="rcd-cu">Hecho</span>' : `<span class="rcd-cu ${vencido ? 'vence' : e === 'hoy' ? 'hoy' : ''}">${I('clock')}${vencido ? 'Venció ' + esc(String(cuando).replace(/^./, x => x.toLowerCase())) : esc(cuando)}</span>`;
       const pos = vencido ? `<button type="button" class="rcp-pos${n.pick && n.pos === i ? ' on' : ''}" data-rcp-pos="${i}" aria-haspopup="dialog">${I('calendar')}Posponer${I('chev', 'i chev')}</button>` : '';
-      return `<div class="rcd-it${r.hecho ? ' hecho' : ''}${vencido ? ' vencido' : ''}"><button type="button" class="rcd-ck" data-rec-done="${i}" aria-label="${r.hecho ? 'Marcar pendiente' : 'Marcar hecho'}">${r.hecho ? I('check') : ''}</button><div class="rcd-tx"><b>${esc(r.t)}</b>${chip}${pos}</div>${r.hecho ? '' : `<button type="button" class="rcd-del" data-rec-del="${i}" aria-label="Quitar recordatorio">${I('x')}</button>`}</div>`;
+      return `<div class="rcd-it${r.hecho ? ' hecho' : ''}${vencido ? ' vencido' : ''}"><button type="button" class="rcd-ck" data-rec-done="${i}" aria-label="${r.hecho ? 'Marcar pendiente' : 'Marcar hecho'}">${r.hecho ? I('check') : ''}</button><div class="rcd-tx"><b>${esc(r.t)}</b>${chip}${gcEstado(r)}${pos}</div>${r.hecho ? '' : `<button type="button" class="rcd-del" data-rec-del="${i}" aria-label="Quitar recordatorio">${I('x')}</button>`}</div>`;
     }).join('');
     const sug = sg && !n.abierto ? `<div class="rcd-sug"><p>Dijo «${esc(sg.frase)}». ¿Te lo recuerdo?</p><button type="button" data-rec-sug="1">${I('bell')}${esc(sg.cuando.split(',')[0])} a las 10 a. m.</button></div>` : '';
     const vacio = !lista && !sg && !n.abierto ? '<p class="rcd-vacio">El día que programes, esta conversación sale de primera en tu bandeja.</p>' : '';
     const gc = gcalConectado(), on = gc && n.agendar;
+    const cuentaGc = gc ? `<div class="rcp-gcon">${I('calendar')}<span><b>Google Calendar</b> · ${esc(String(CRM_YO.gcal))}</span></div>` : '';
     const form = n.abierto ? `<div class="rcd-fm rcp-fm"><button type="button" class="rcp-x" data-rec-cancel="1" aria-label="Cancelar" title="Cancelar">${I('x')}</button>
       <label class="rcd-lbl" for="rec-t">¿Qué hay que hacer?</label><textarea id="rec-t" rows="2" placeholder="Ej. Confirmar el pago">${esc(n.texto)}</textarea>
       <span class="rcd-lbl">¿Cuándo?</span>
@@ -50,7 +63,7 @@
       <div class="rcp-gc${on ? ' on' : ''}"><button type="button" class="rcp-sw" role="switch" aria-checked="${on}" aria-label="Agendar en Google Calendar" data-rcp-gc="1"><i></i></button><div><b>Agendar en Google Calendar</b>${on ? `<small>Google te avisa ${({'10':'10 minutos', '30':'30 minutos', '60':'1 hora'})[n.aviso]} antes</small>` : ''}</div></div>
       ${on ? `<div class="rcp-avr"><span class="rcd-lbl">Google te avisa</span><div class="rcp-seg">${AVISOS.map(([k, t]) => `<button type="button" data-rcp-aviso="${k}" aria-pressed="${n.aviso === k}">${t}</button>`).join('')}</div></div>` : ''}
       <button type="button" class="rcd-prog rcp-prog" data-rec-add="1">${I('bell')}Programar</button></div>` : '';
-    return `${sug}${vacio}${lista ? `<div class="rcd-lista">${lista}</div>` : ''}${form}${n.abierto ? '' : `<button type="button" class="rcd-nuevo" data-rec-nuevo="1">${I('plus')}Nuevo recordatorio</button>`}`;
+    return `${cuentaGc}${sug}${vacio}${lista ? `<div class="rcd-lista">${lista}</div>` : ''}${form}${n.abierto ? '' : `<button type="button" class="rcd-nuevo" data-rec-nuevo="1">${I('plus')}Nuevo recordatorio</button>`}`;
   };
 
   // ── Calendario y hora, en portal ────────────────────────────────────────────
@@ -121,11 +134,45 @@
   function dlgConectarGoogle(){
     abrirDialogo(`<div class="rcp-dlg-ic">${I('calendar')}</div><h3>Primero conecta Google Calendar</h3><p>Para agendar este recordatorio en tu calendario, conecta tu cuenta de Google. Es una sola vez.</p>
       <ul class="rcp-pts"><li>${I('bell')}<span>Cada recordatorio que programes queda en tu calendario. Si lo mueves, lo marcas hecho o lo borras en Wali, allá también cambia.</span></li><li>${I('lock')}<span>Wali no lee ni cambia tus otros eventos.</span></li><li>${I('user')}<span>Es solo tu calendario. Cada persona del equipo conecta el suyo.</span></li></ul>
-      <div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" data-rcp-google="1">Continuar con Google</button></div>`, 'rcp-dlg');
+      <div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri rcp-ir" data-rcp-google="1">${botonGoogle(false)}</button></div>`, 'rcp-dlg');
   }
+  const botonGoogle = espera => espera ? '<span class="rcp-rueda"></span>Esperando a Google…' : `Continuar con Google${I('ext')}`;
+
+  // Conectar: Google se abre en una ventana aparte (no se deja abrir dentro del marco del CRM). Al terminar, esa
+  // ventana avisa por BroadcastChannel y se cierra; si la cierran antes, el botón vuelve a quedar libre.
+  let ventana = null, vigia = null;
+  function esperando(si){
+    const b = document.querySelector('#ov-x [data-rcp-google]'); if (!b) return;
+    b.disabled = si; b.replaceChildren(); b.insertAdjacentHTML('beforeend', botonGoogle(si));
+  }
+  function soltar(){ clearInterval(vigia); vigia = null; ventana = null; esperando(false); }
+  async function conectado(){
+    let correo = '';
+    try { const r = await crmApi('GET', '/auth/me/google-calendario'); if (!r || !r.conectado) throw 0; correo = r.correo || 'tu cuenta de Google'; }
+    catch { soltar(); toast('No se pudo confirmar la conexión con Google. Intenta de nuevo.'); return; }
+    CRM_YO.gcal = correo; clearInterval(vigia); vigia = null; ventana = null;
+    cerrarDialogo();
+    const c = conv(); if (c && st.recNuevo && st.recNuevo.id === c.id) st.recNuevo.agendar = true;
+    if (c) panel(c);
+    toast('Google Calendar conectado');
+  }
+  const RESPUESTAS = {'sin-permiso':'Falta el permiso del calendario. En Google deja marcada la casilla del calendario.', cancelado:'No se conectó Google Calendar.', sesion:'Tu sesión se cerró. Vuelve a entrar e inténtalo otra vez.', error:'No se pudo conectar Google Calendar. Intenta de nuevo.'};
+  try {
+    new BroadcastChannel('wali-gcal').onmessage = e => {
+      if (e.data === 'ok') { conectado(); return; }
+      if (vigia || ventana) { soltar(); toast(RESPUESTAS[e.data] || RESPUESTAS.error); }
+    };
+  } catch {}
   document.getElementById('ov-x').addEventListener('click', e => {
-    if (!e.target.closest('[data-rcp-google]')) return;
-    cerrarDialogo(); toast('La conexión con Google Calendar se activa muy pronto.');
+    const b = e.target.closest('[data-rcp-google]'); if (!b || b.disabled) return;
+    const base = String((window.CRM_INICIO && CRM_INICIO.api) || '').replace(/\/+$/, '');
+    const w = 520, h = 680, x = Math.max(0, (screen.availWidth - w) / 2), y = Math.max(0, (screen.availHeight - h) / 2);
+    ventana = window.open(base + '/auth/google/calendario', 'wali-gcal', `popup=yes,width=${w},height=${h},left=${x},top=${y}`);
+    if (!ventana) { toast('Tu navegador bloqueó la ventana de Google. Permite las ventanas emergentes de Wali e inténtalo otra vez.'); return; }
+    esperando(true);
+    clearInterval(vigia);
+    // La cerraron sin terminar: se espera un momento por si el aviso de la ventana viene en camino.
+    vigia = setInterval(() => { if (ventana && ventana.closed) { clearInterval(vigia); vigia = null; setTimeout(() => { if (ventana && !gcalConectado()) soltar(); }, 1200); } }, 500);
   });
 
   // Clics del bloque (antes que los de 10-nucleo, que siguen manejando nuevo, hecho, quitar y la sugerencia).
@@ -146,6 +193,8 @@
     if (e.target.closest('[data-rcp-gc]')) { e.stopPropagation(); guardarTexto(); if (!gcalConectado()) { dlgConectarGoogle(); return; } const n = estado(c); n.agendar = !n.agendar; panel(c); return; }
     const av = e.target.closest('[data-rcp-aviso]'); if (av) { e.stopPropagation(); guardarTexto(); estado(c).aviso = av.dataset.rcpAviso; panel(c); return; }
     if (e.target.closest('[data-rec-cancel]')) { cerrarPick(false); return; }
+    const del = e.target.closest('[data-rec-del]'), rd = del && c.recs[+del.dataset.recDel];
+    if (rd && rd.gev) { e.stopPropagation(); cerrarPick(false); c.recs.splice(+del.dataset.recDel, 1); render(); toast('Recordatorio borrado, también de tu Google Calendar'); return; }
     if (e.target.closest('[data-rec-nuevo]')) { cerrarPick(false); return; }
     if (e.target.closest('[data-rec-add]')) {
       e.stopPropagation();
@@ -155,10 +204,10 @@
       const para = hcDeOpciones(n.dia, n.hora);
       if (!para || para.getTime() <= Date.now()) { toast('Esa hora ya pasó. Elige una más adelante.'); return; }
       const cuando = hcCuando(para), ag = gcalConectado() && n.agendar;
-      c.recs = [...(c.recs || []), Object.assign({t, cuando, fecha: para.toISOString(), hecho:false, por: yo}, ag ? {gcal:true, aviso:+n.aviso} : {})];
+      c.recs = [...(c.recs || []), Object.assign({id: nuevoId(), t, cuando, fecha: para.toISOString(), hecho:false, por: yo}, ag ? {gcal:true, aviso:+n.aviso} : {})];
       c.msgs.push({ev:'bell', t:`${yo} programó un recordatorio: ${t} · ${cuando}`});
       cerrarPick(false); st.recNuevo = null; render();
-      toast(`Recordatorio para ${cuando.split(',')[0].toLowerCase().replace(/\.$/, '')}. Ese día la conversación sale de primera en tu bandeja.`);
+      toast(ag ? 'Recordatorio programado y agendado en Google Calendar' : `Recordatorio para ${cuando.split(',')[0].toLowerCase().replace(/\.$/, '')}. Ese día la conversación sale de primera en tu bandeja.`);
     }
   }, true);
 
@@ -241,6 +290,16 @@
 .rcp-capa.cel .rcp-d{height:44px}.rcp-capa.cel .rcp-s{height:54px}
 .dlg.rcp-dlg .rcp-dlg-ic{width:44px;height:44px;border-radius:12px;background:#eef3ff;color:#1d4ed8;display:grid;place-items:center;margin-bottom:10px}.dlg.rcp-dlg .rcp-dlg-ic svg{width:22px;height:22px}
 .rcp-pts{list-style:none;margin:6px 0 4px;padding:0;display:grid;gap:10px;font-size:13px;color:#374151;line-height:1.45}.rcp-pts li{display:flex;gap:10px;align-items:flex-start}.rcp-pts svg{width:17px;height:17px;color:#6b7280;margin-top:1px;flex:none}
+.rcp-gcon{display:flex;align-items:center;gap:8px;font-size:12px;color:#4b5563;padding:8px 11px;border-radius:10px;background:#f6f7f9;margin-bottom:10px;animation:rcp-fade .45s cubic-bezier(.32,.72,0,1) both}
+.rcp-gcon svg{width:15px;height:15px;color:#1d4ed8;flex:none}.rcp-gcon b{font-weight:600;color:#0b0b10}.rcp-gcon span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rcp-rgc{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:500;color:#1d4ed8;min-height:18px;margin-top:2px;animation:rcp-fade .35s cubic-bezier(.23,1,.32,1) both}
+.rcp-rgc svg{width:13px;height:13px;flex:none}.rcp-rgc .rcp-rueda{display:none}
+.rcp-rgc.sync{color:#6b7280}.rcp-rgc.sync .rcp-rueda{display:block}.rcp-rgc.sync svg{display:none}.rcp-rgc.mal{color:#b91c1c}
+.rcp-rueda{width:13px;height:13px;border-radius:50%;border:2px solid rgba(29,78,216,.25);border-top-color:#1d4ed8;animation:rcp-gira .7s linear infinite;flex:none}
+@keyframes rcp-gira{to{transform:rotate(360deg)}}
+.rcp-ir{display:inline-flex;align-items:center;justify-content:center;gap:8px}.rcp-ir svg{width:15px;height:15px}
+.rcp-ir .rcp-rueda{width:15px;height:15px;border-color:rgba(11,11,16,.25);border-top-color:#0b0b10}.rcp-ir:disabled{opacity:1;cursor:progress}
+@media (prefers-reduced-motion:reduce){.rcp-gcon,.rcp-rgc{animation:none!important}.rcp-rueda{animation-duration:1.6s!important}}
 @media (prefers-reduced-motion:reduce){.rcp-pop,.rcp-grid,.rcp-slots,.rcp-d.sel::before,.rcp-velo{animation:none!important}.rcp-campo,.rcp-sw i,.rcp-pos,.rcp-campo svg.chev{transition:none!important}}
 </style>`);
 })();

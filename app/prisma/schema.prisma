@@ -22,25 +22,38 @@ enum Role {
 
 /// Persona que entra al CRM. A qué espacio pertenece lo dice `crm_miembros`.
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  nombre        String?
-  telefono      String?
-  image         String?
-  passwordHash  String    @map("password_hash")
-  role          Role      @default(AGENTE)
-  suspendido    Boolean   @default(false)
+  id               String               @id @default(cuid())
+  email            String               @unique
+  nombre           String?
+  telefono         String?
+  image            String?
+  passwordHash     String               @map("password_hash")
+  role             Role                 @default(AGENTE)
+  suspendido       Boolean              @default(false)
   /// Operador de la plataforma: configura lo común a todos los espacios (apps de Meta, Instagram y TikTok).
-  operador      Boolean   @default(false)
-  ultimoIngreso DateTime? @map("ultimo_ingreso")
+  operador         Boolean              @default(false)
+  ultimoIngreso    DateTime?            @map("ultimo_ingreso")
   /// Las sesiones abiertas antes de esta fecha ya no valen (al cambiar o recuperar la contraseña, 8-oct).
-  sesionesDesde DateTime? @map("sesiones_desde")
+  sesionesDesde    DateTime?            @map("sesiones_desde")
   /// El espacio de trabajo en que está (si entra a varios). null = el primero al que entró.
-  espacioActivo String?   @map("espacio_activo")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  espacioActivo    String?              @map("espacio_activo")
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  googleCalendario CrmGoogleCalendario?
 
   @@map("usuarios")
+}
+
+/// El Google Calendar que conectó cada persona (12-nov): ahí se agendan sus recordatorios de seguimiento.
+/// El permiso de Google (refresh token) va cifrado con cifrado.ts y nunca sale del servidor.
+model CrmGoogleCalendario {
+  userId      String   @id @map("user_id")
+  correo      String
+  secreto     String
+  conectadoAt DateTime @default(now()) @map("conectado_at")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("crm_google_calendario")
 }
 
 /// Prueba de que una persona aceptó los términos y la política de datos (Ley 1581): quién, cuándo, qué versión y desde dónde.
@@ -285,48 +298,48 @@ model CrmWebhookEvento {
 /// sin pasar por bd.ts choca con la llave foránea en vez de caer en otra empresa.
 /// Se crean con `pnpm crear-espacio`.
 model CrmEspacio {
-  id             String            @id
-  nombre         String
+  id                String            @id
+  nombre            String
   /// Logo de la empresa (14-oct): imagen cuadrada de hasta 256 px como data URL (png, jpeg o webp). null = la inicial.
-  logo           String?
+  logo              String?
   /// Plan del CRM: starter, growth o business. Lo cambia el aviso de Whop al pagar.
-  plan           String            @default("starter")
+  plan              String            @default("starter")
   /// prueba (14 días de Starter), activo, pago-pendiente (cobro fallido, Whop reintenta), cancelado, vencido,
   /// o interno (espacios de NexCode97, sin cobro).
-  estadoPlan     String            @default("prueba") @map("estado_plan")
+  estadoPlan        String            @default("prueba") @map("estado_plan")
   /// mensual o anual.
-  periodo        String?
-  pruebaHasta    DateTime?         @map("prueba_hasta")
+  periodo           String?
+  pruebaHasta       DateTime?         @map("prueba_hasta")
   /// Fin del periodo pagado (Whop: current_period_end de la membresía).
-  renuevaEl      DateTime?         @map("renueva_el")
+  renuevaEl         DateTime?         @map("renueva_el")
   /// Canceló pero el plan sigue hasta renuevaEl.
-  cancelaAlFinal Boolean           @default(false) @map("cancela_al_final")
+  cancelaAlFinal    Boolean           @default(false) @map("cancela_al_final")
   /// Cobro por usuarios (10-nov): cuántos usuarios cubre lo pagado. null = de antes (el tope de su plan).
-  usuarios       Int?
+  usuarios          Int?
   /// Bajó de usuarios: desde `usuariosProxDesde` (la renovación) quedan `usuariosProx`; hasta entonces, `usuarios`.
-  usuariosProx   Int?              @map("usuarios_prox")
-  usuariosProxDesde DateTime?      @map("usuarios_prox_desde")
-  creemCliente   String?           @map("creem_cliente")
-  creemSuscripcion String?         @map("creem_suscripcion")
+  usuariosProx      Int?              @map("usuarios_prox")
+  usuariosProxDesde DateTime?         @map("usuarios_prox_desde")
+  creemCliente      String?           @map("creem_cliente")
+  creemSuscripcion  String?           @map("creem_suscripcion")
   /// Espacios de trabajo (6-oct): la cuenta que paga el plan. null = este espacio es la cuenta (tiene el plan).
   /// Los espacios de una cuenta comparten su plan, sus usuarios y sus agentes (sumados entre todos).
-  cuentaId       String?           @map("cuenta_id")
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  miembros       CrmMiembro[]
-  conexiones     CrmConexion[]
-  contactos      CrmContacto[]
-  lineas         CrmLinea[]
-  conversaciones CrmConversacion[]
-  mensajes       CrmMensaje[]
-  ajustes        CrmAjuste[]
-  preferencias   CrmPreferencia[]
-  enlaces        CrmEnlace[]
-  apiClaves      CrmApiClave[]
-  apiWebhooks    CrmApiWebhook[]
-  clics          CrmClic[]
-  pagos          CrmPago[]
-  solicitudes    CrmSolicitud[]
+  cuentaId          String?           @map("cuenta_id")
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  miembros          CrmMiembro[]
+  conexiones        CrmConexion[]
+  contactos         CrmContacto[]
+  lineas            CrmLinea[]
+  conversaciones    CrmConversacion[]
+  mensajes          CrmMensaje[]
+  ajustes           CrmAjuste[]
+  preferencias      CrmPreferencia[]
+  enlaces           CrmEnlace[]
+  apiClaves         CrmApiClave[]
+  apiWebhooks       CrmApiWebhook[]
+  clics             CrmClic[]
+  pagos             CrmPago[]
+  solicitudes       CrmSolicitud[]
 
   @@index([cuentaId])
   @@map("crm_espacios")
@@ -335,32 +348,32 @@ model CrmEspacio {
 /// Un cobro del plan del CRM, tal como lo avisó Whop: pagado, rechazado o reembolsado. Es el historial de
 /// Ajustes → Plan y pagos y de él sale el recibo en PDF. Los montos van en centavos de la moneda del cobro.
 model CrmPago {
-  id         String     @id @default(cuid())
-  espacioId  String     @map("espacio_id")
-  espacio    CrmEspacio @relation(fields: [espacioId], references: [id], onDelete: Cascade)
+  id        String     @id @default(cuid())
+  espacioId String     @map("espacio_id")
+  espacio   CrmEspacio @relation(fields: [espacioId], references: [id], onDelete: Cascade)
   /// Consecutivo del recibo (NX-10001, NX-10002…), único en todo el CRM.
-  numero     Int        @unique @default(autoincrement())
+  numero    Int        @unique @default(autoincrement())
   /// El pago de Whop (pay_…); en un cobro rechazado, pay_…:rechazado.
-  creemId    String     @unique @map("creem_id")
-  plan       String
-  periodo    String
+  creemId   String     @unique @map("creem_id")
+  plan      String
+  periodo   String
   /// pagado, rechazado o reembolsado.
-  estado     String
-  subtotal   Int
-  impuestos  Int        @default(0)
-  total      Int
-  reembolso  Int        @default(0)
-  moneda     String     @default("USD")
-  desde      DateTime?
-  hasta      DateTime?
-  fecha      DateTime
+  estado    String
+  subtotal  Int
+  impuestos Int        @default(0)
+  total     Int
+  reembolso Int        @default(0)
+  moneda    String     @default("USD")
+  desde     DateTime?
+  hasta     DateTime?
+  fecha     DateTime
   /// El cupón con que se pagó (su código) y cuánto descontó, en centavos (31-oct).
-  cupon      String?
-  descuento  Int        @default(0)
+  cupon     String?
+  descuento Int        @default(0)
   /// Cobro por usuarios (10-nov): cuántos usuarios cubre este cobro y de qué es («plan» o «usuarios», los adicionales).
-  usuarios   Int?
-  concepto   String?
-  createdAt  DateTime   @default(now()) @map("created_at")
+  usuarios  Int?
+  concepto  String?
+  createdAt DateTime   @default(now()) @map("created_at")
 
   @@index([espacioId, fecha])
   @@index([cupon])
@@ -590,25 +603,25 @@ model CrmApiClave {
 
 /// Webhooks de la API (11-nov): Wali le avisa a otro sistema del cliente cuando pasa algo en el espacio.
 model CrmApiWebhook {
-  id          String     @id @default(cuid())
-  espacioId   String     @default("") @map("espacio_id")
-  espacio     CrmEspacio @relation(fields: [espacioId], references: [id], onDelete: Cascade)
-  nombre      String
-  url         String
+  id           String        @id @default(cuid())
+  espacioId    String        @default("") @map("espacio_id")
+  espacio      CrmEspacio    @relation(fields: [espacioId], references: [id], onDelete: Cascade)
+  nombre       String
+  url          String
   /// mensaje.recibido, conversacion.asignada, conversacion.finalizada, conversacion.etapa, contacto.creado
-  eventos     String[]
+  eventos      String[]
   /// El secreto de la firma, cifrado (cifrado.ts). Se muestra completo una sola vez.
-  secreto     String
+  secreto      String
   /// Fallas seguidas; al llegar al tope el webhook se pausa solo.
-  fallas      Int        @default(0)
-  pausadoEn   DateTime?  @map("pausado_en")
-  creadoPor   String     @map("creado_por")
-  ultimoEnvio DateTime?  @map("ultimo_envio")
-  ultimoEstado Int?      @map("ultimo_estado")
-  ultimoError String?    @map("ultimo_error")
-  borradoEn   DateTime?  @map("borrado_en")
-  createdAt   DateTime   @default(now()) @map("created_at")
-  envios      CrmApiEnvio[]
+  fallas       Int           @default(0)
+  pausadoEn    DateTime?     @map("pausado_en")
+  creadoPor    String        @map("creado_por")
+  ultimoEnvio  DateTime?     @map("ultimo_envio")
+  ultimoEstado Int?          @map("ultimo_estado")
+  ultimoError  String?       @map("ultimo_error")
+  borradoEn    DateTime?     @map("borrado_en")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  envios       CrmApiEnvio[]
 
   @@index([espacioId])
   @@map("crm_api_webhooks")

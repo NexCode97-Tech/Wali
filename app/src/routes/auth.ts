@@ -8,6 +8,7 @@ import { prisma } from '../config/prisma'
 import { asyncHandler } from '../middleware/errorHandler'
 import { authenticate, COOKIE_SESION, firmar, secreto, usuarioDeToken, type JwtPayload } from '../middleware/auth'
 import { ApiResponse } from '../utils/response'
+import { desconectar, estadoConexion } from '../services/crm/googleCalendario'
 import { ConflictError, ForbiddenError, NotFoundError, UnauthorizedError, ValidationError } from '../utils/errors'
 import { auditLog } from '../utils/auditLogger'
 import { logger, logSecurityEvent } from '../utils/logger'
@@ -163,6 +164,18 @@ router.patch('/me', authenticate, asyncHandler(async (req: Request, res: Respons
   await refrescarGente(req.userId!)
   auditLog(req, 'UPDATE', 'mi_perfil', req.userId)
   return ApiResponse.success(res, { ok: true })
+}))
+
+// Google Calendar de la persona (12-nov): si está conectado y con qué correo; y desconectarlo.
+router.get('/me/google-calendario', authenticate, asyncHandler(async (req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-store')
+  return ApiResponse.success(res, await estadoConexion(req.userId!))
+}))
+
+router.delete('/me/google-calendario', authenticate, asyncHandler(async (req: Request, res: Response) => {
+  await desconectar(req.userId!)
+  auditLog(req, 'DELETE', 'google_calendario', req.userId)
+  return ApiResponse.success(res, { conectado: false, correo: null })
 }))
 
 router.patch('/me/clave', authenticate, asyncHandler(async (req: Request, res: Response) => {

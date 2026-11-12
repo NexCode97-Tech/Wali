@@ -28,6 +28,8 @@ import { ErrorTranscriptor } from '../../services/transcriptor'
 import { Sentry, sentryActivo } from '../../instrument'
 import { actualizarContacto, CANALES, CLAVES_CONTACTO, emitirContacto, telefonoValido } from './_contacto'
 import { esUrlDeWali } from '../../services/almacen'
+import { aplicarCambios, sincronizar, unirRecs } from '../../services/crm/googleCalendario'
+import { urlPublica } from '../../routes/acceso'
 
 /**
  * Bandeja del CRM: carga inicial, mensajes y cambios de cada conversación.
@@ -358,9 +360,14 @@ export async function editarConversacion(req: Request, res: Response) {
       const r = await actualizarContacto(c.contactoId, aContacto, false, nuevoAsignado ? { asignadoId: nuevoAsignado } : {}, tx)
       contactoCambio = r.cambio && Object.keys(aContacto).length > 0
     }
+    // Los recordatorios llevan id, y lo de Google (evento, dueño) que la pantalla todavía no conocía se conserva.
+    if ('recs' in cambios) conv.recs = unirRecs(c.recs, conv.recs as unknown[]) as Prisma.InputJsonValue
     if (Object.keys(conv).length) await tx.crmConversacion.update({ where: { id }, data: conv })
     return { c, contactoCambio }
   }, { timeout: 20_000 })
+
+  // Google Calendar (12-nov): lo que cambió en los recordatorios también cambia en el calendario de quien lo agendó.
+  if ('recs' in cambios) await sincronizarCalendario(id, c.recs, conv.recs as Json[], req.userId!, previa.contacto)
 
   // Si el equipo (o subequipo) al que pasó tiene agente IA, la toma él; si no, se reparte entre su gente.
   if (reparteEquipo && !(await agenteDeEquipo(id))) await repartir(id)
@@ -398,6 +405,20 @@ export async function editarConversacion(req: Request, res: Response) {
     if (cambios.est === 'finalizadas' && c.estado !== 'finalizadas') await dispararReglas('finalizada', id, { motivo: txt(cambios.motivo) || null, por: (await nombreDe(req.userId!)) || null })
   })().catch(e => logger.warn(`[CRM reglas] ${id}: ${(e as Error)?.message}`))
   return ApiResponse.success(res, salida)
+}
+
+async function sincronizarCalendario(id: number, antes: unknown, despues: Json[], editor: string, contacto: { nombre: string | null; telefono: string | null }) {
+  if (!despues.some(r => obj(r).gcal) && !(Array.isArray(antes) && antes.some(r => obj(r).gev))) return
+  const base = urlPublica()
+  const ctx = { convId: id, contacto: contacto.nombre || telVisible(contacto.telefono) || 'un contacto', urlConv: base ? `${base}/?conv=${id}` : null }
+  const cambiosGoogle = await sincronizar(antes, despues, editor, ctx).catch(e => { logger.warn(`[CRM calendario] ${id}: ${(e as Error)?.message}`); return null })
+  if (!cambiosGoogle) return
+  // Con la fila bloqueada y leída otra vez: solo se tocan los campos de Google de esos recordatorios.
+  await prisma.$transaction(async tx => {
+    await tx.$queryRaw`SELECT id FROM crm_conversaciones WHERE id = ${id} FOR UPDATE`
+    const c = await tx.crmConversacion.findUnique({ where: { id }, select: { recs: true } })
+    if (c) await tx.crmConversacion.update({ where: { id }, data: { recs: aplicarCambios(c.recs, cambiosGoogle) as Prisma.InputJsonValue } })
+  })
 }
 
 export async function marcarLeida(req: Request, res: Response) {
