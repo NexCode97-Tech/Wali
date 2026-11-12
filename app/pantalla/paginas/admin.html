@@ -324,7 +324,8 @@ body{display:flex;height:100vh;height:100dvh;overflow:hidden}
   .lat.abierta{transform:none;box-shadow:30px 0 60px -30px rgba(0,0,0,.5)}
   .lat-x{display:grid}
   .mtop{display:flex;align-items:center;gap:12px;height:56px;padding:0 14px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30}
-  .mtop .menu{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;border:1px solid var(--line)}.mtop .menu:active{transform:scale(.95)}
+  /* El botón del menú comparte la clase .menu de los desplegables: aquí se le quita lo flotante (posición, ancho, sombra). */
+  .mtop .menu{position:static;min-width:0;padding:0;box-shadow:none;animation:none;flex:none;width:40px;height:40px;border-radius:10px;display:grid;place-items:center;border:1px solid var(--line)}.mtop .menu:active{transform:scale(.95)}
   .lat .yo .yo-av,.lat .yo .yo-t{display:grid}
   .mtop .marca{display:flex;align-items:center;gap:8px;font-weight:700}.mtop .marca img{width:26px;height:26px;border-radius:7px}.mtop-t{margin-left:auto;font-weight:600;color:var(--t2)}
 }
