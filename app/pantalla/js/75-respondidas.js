@@ -10,8 +10,15 @@ const visiblesSinResp = visibles;
 // contadores), pero el chat abierto NO se cierra (10-nov, reporte de soporte S-1002): sigue en pantalla hasta que la
 // persona abra otra conversación o lo cierre. Antes se esperaban 10 segundos y luego saltaba a la siguiente, y quien
 // se quedaba consultando algo antes de seguir perdía el chat. El chat abierto lo manda st.sel, no la lista.
-const respFiltrar = L => respActivo() ? L.filter(c => (st.resp === 'por') === respEsPor(c)) : L;
+// 11-nov (seguía pasando): chat() abre la que esté en st.sel solo si sigue en la lista; al pasar a Respondidas ya no
+// estaba y la pantalla quedaba en «Elige una conversación» hasta que llegaba la actualización del servidor. Ahora,
+// mientras se pinta el chat, la conversación que ya estaba abierta se sigue contando aunque haya salido de este filtro.
+// La lista y los contadores no la ven: solo el chat.
+let respAbierta = null, respEnChat = false;
+const respFiltrar = L => respActivo() ? L.filter(c => (st.resp === 'por') === respEsPor(c) || (respEnChat && c.id === respAbierta && c.id === st.sel)) : L;
 visibles = function(){ return respFiltrar(visiblesSinResp.apply(this, arguments)); };
+const chatSinResp = chat;
+chat = function(){ respEnChat = true; try { return chatSinResp.apply(this, arguments); } finally { respEnChat = false; respAbierta = document.getElementById('app').classList.contains('sinchat') ? null : st.sel; } };
 document.head.insertAdjacentHTML('beforeend', `<style>
 .rp-seg{display:flex;gap:6px;margin-top:10px}
 .rp-seg[hidden]{display:none}
