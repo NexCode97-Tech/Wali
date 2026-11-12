@@ -350,7 +350,7 @@ router.post('/grabaciones/subir', unArchivo(60), asyncHandler(async (req: Reques
   if (!req.file) throw new ValidationError('Falta el archivo. Súbelo en el campo «archivo».')
   if (!/^(audio|video)\//.test(req.file.mimetype)) throw new ValidationError('La grabación tiene que ser un audio')
   try { return ApiResponse.created(res, { ref: await subirGrabacion(req.file.buffer) }) } catch (e) {
-    logger.error(`[CRM grabaciones] Cloudinary: ${(e as Error)?.message ?? e}`)
+    logger.error(`[CRM grabaciones] banco multimedia: ${(e as Error)?.message ?? e}`)
     throw new AppError('No se pudo guardar la grabación.', 502)
   }
 }))
@@ -383,7 +383,7 @@ router.post('/terminos', soloLideres('subir los términos y condiciones'), unArc
   const n = nombreArchivo(f)
   let url: string
   try { url = await subirArchivo(f.buffer, n, 'application/pdf', 'crm/terminos') } catch (e) {
-    logger.error(`[CRM términos] Cloudinary: ${(e as Error)?.message ?? e}`)
+    logger.error(`[CRM términos] banco multimedia: ${(e as Error)?.message ?? e}`)
     throw new AppError('No se pudo guardar el PDF. Intenta de nuevo en un momento.', 502)
   }
   // multer corre fuera del contexto de la petición: la empresa se vuelve a fijar antes de guardar.

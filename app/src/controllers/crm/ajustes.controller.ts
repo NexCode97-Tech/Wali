@@ -625,7 +625,7 @@ export async function subirArchivo(req: Request, res: Response) {
     url = await subirAlBanco(f.buffer, n, f.mimetype)
     if (/^audio\//.test(f.mimetype)) prepararAudio(url)
   } catch (e) {
-    logger.error(`[CRM archivos] Cloudinary: ${(e as Error)?.message ?? e}`)
+    logger.error(`[CRM archivos] banco multimedia: ${(e as Error)?.message ?? e}`)
     throw new AppError('No se pudo guardar el archivo en la nube. Intenta de nuevo en un momento; si sigue fallando, avisa al administrador.', 502)
   }
   return ApiResponse.created(res, { url, n, t: tamanoLegible(f.size), mime: f.mimetype, bytes: f.size })
@@ -658,7 +658,7 @@ export async function subirDocumento(req: Request, res: Response) {
   try {
     url = await subirAlBanco(f.buffer, n, /\.pdf$/i.test(n) ? 'application/pdf' : f.mimetype)
   } catch (e) {
-    logger.error(`[CRM kb] Cloudinary: ${(e as Error)?.message ?? e}`)
+    logger.error(`[CRM kb] banco multimedia: ${(e as Error)?.message ?? e}`)
     throw new AppError('Se leyó el documento pero no se pudo guardar en la nube. Intenta de nuevo en un momento.', 502)
   }
   return ApiResponse.created(res, { url, n, t: tamanoLegible(f.size), texto, paginas, ...(recortado ? { recortado: true } : {}) })

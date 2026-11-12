@@ -140,7 +140,7 @@ export async function subirSaludo(l: CrmLinea, audio: Buffer, nombre = 'saludo.o
 }
 
 /**
- * Saludo del buzón desde un audio de la Nube (grabado en el navegador o subido): Cloudinary lo da en ogg con Opus,
+ * Saludo del buzón desde un audio de la Nube (grabado en el navegador o subido): ffmpeg lo da en ogg con Opus,
  * que es lo único que Meta acepta, se sube a Meta y queda en la línea. Si el buzón ya está prendido, Meta lo usa de una.
  */
 export async function saludoDesdeNube(l: CrmLinea, url: string, seg: number | null): Promise<{ linea: CrmLinea; ajustes: AjustesLlamadas }> {

@@ -399,7 +399,7 @@ rutasWaCrm.put('/lineas/:id/llamadas', soloLideres, asyncHandler(async (req: Req
 rutasWaCrm.post('/lineas/:id/llamadas/saludo', soloLideres, asyncHandler(async (req: Request, res: Response) => {
   const l = await prisma.crmLinea.findUnique({ where: { id: req.params.id } })
   if (!l) throw new NotFoundError('Esa línea no existe')
-  // Grabado en el navegador o subido: ya está en la Nube y Cloudinary lo da en ogg (llamadas.ts).
+  // Grabado en el navegador o subido: ya está en el banco multimedia y ffmpeg lo da en ogg (llamadas.ts).
   if (typeof req.body?.url === 'string') {
     const seg = Number(req.body.seg)
     const { linea, ajustes } = await saludoDesdeNube(l, req.body.url, Number.isFinite(seg) && seg > 0 ? seg : null)

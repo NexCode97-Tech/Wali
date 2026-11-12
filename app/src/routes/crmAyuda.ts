@@ -104,7 +104,7 @@ const nuevaSolicitud = z.object({
   texto: z.string().trim().min(3).max(4000),
   pantalla: z.string().max(60).optional(),
   busco: z.array(z.string().max(200)).max(10).optional(),
-  adjunto: z.string().url().max(500).refine(u => /^https:\/\/res\.cloudinary\.com\//.test(u) || esUrlDeWali(u), 'Archivo no válido').nullish(),
+  adjunto: z.string().url().max(500).refine(u => esUrlDeWali(u), 'Archivo no válido').nullish(),
 })
 rutasAyudaCrm.post('/ayuda/soporte', limiteSoporte, asyncHandler(async (req: Request, res: Response) => {
   if (!req.userId || !req.espacioId) throw new ValidationError('Falta la sesión')

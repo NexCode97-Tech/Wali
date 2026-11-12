@@ -70,7 +70,7 @@ app.use(helmet({
       mediaSrc:       ["'self'", 'blob:', 'https:'],
       // Solo a donde la pantalla de verdad llama (revisión de seguridad 8-oct): el propio CRM, los archivos de la nube
       // (base de conocimiento) y el botón de Meta. Antes era cualquier https:, por donde un script colado podía sacar datos.
-      connectSrc:     ["'self'", 'https://res.cloudinary.com', 'https://*.facebook.com', 'https://*.facebook.net', 'https://*.whop.com'],
+      connectSrc:     ["'self'", 'https://*.facebook.com', 'https://*.facebook.net', 'https://*.whop.com'],
       frameSrc:       ["'self'", 'https://www.facebook.com', 'https://web.facebook.com', 'https://staticxx.facebook.com', 'https://*.whop.com', 'https://whop.com'],
       frameAncestors: ["'self'"],
       objectSrc:      ["'none'"],
@@ -139,7 +139,7 @@ app.use('/api', rateLimit({
 }))
 
 // Revisa también la base de datos: si no responde, el servicio no está sano.
-// Banco multimedia (11-nov): los archivos del bucket de Railway, con su firma (almacen.ts). Público como lo era Cloudinary.
+// Banco multimedia (11-nov): los archivos del bucket de Railway, con su firma (almacen.ts).
 app.use('/m', (req, res, next) => (req.method === 'GET' || req.method === 'HEAD' ? void servirArchivo(req, res) : next()))
 app.get('/health', async (_req, res) => {
   try {

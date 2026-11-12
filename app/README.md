@@ -57,7 +57,7 @@ como las apps de Meta, Instagram y TikTok para los botones de conexión.
 
 | Función | Necesita |
 |---|---|
-| Adjuntos, fotos de perfil, audios | Cuenta de Cloudinary (`CLOUDINARY_*`) |
+| Adjuntos, fotos de perfil, audios | Bucket compatible con S3 (`S3_*`) |
 | WhatsApp, Instagram, Messenger | Una app de Meta; se conecta desde Ajustes › Canales |
 | Telegram, TikTok, correo, chat web | Se conectan desde Ajustes › Canales |
 | Agentes IA, sugerencias, embudo automático | `ANTHROPIC_API_KEY` |

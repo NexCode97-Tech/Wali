@@ -568,7 +568,7 @@ model CrmSolicitudMensaje {
   autor       String
   autorNombre String       @map("autor_nombre")
   texto       String
-  /// Adjuntos (10-nov): [{url, n, mime, t}] en Cloudinary, carpeta de soporte.
+  /// Adjuntos (10-nov): [{url, n, mime, t}] en el banco multimedia, carpeta de soporte.
   archivos    Json         @default("[]")
   createdAt   DateTime     @default(now()) @map("created_at")
 

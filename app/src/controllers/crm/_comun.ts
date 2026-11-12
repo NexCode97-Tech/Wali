@@ -143,8 +143,7 @@ export function tamanoLegible(bytes: number): string {
 export const CARPETA_ARCHIVOS = 'crm'
 
 /**
- * Sube un archivo al banco multimedia de Wali (bucket de Railway, almacen.ts) y devuelve su dirección. Antes iba a
- * Cloudinary (hasta el 11-nov); las direcciones viejas de Cloudinary siguen sirviendo hasta que se migren.
+ * Sube un archivo al banco multimedia de Wali (bucket de Railway, almacen.ts) y devuelve su dirección.
  */
 export async function subirArchivo(buffer: Buffer, nombre: string, mime: string, carpeta = CARPETA_ARCHIVOS): Promise<string> {
   return (await subir(buffer, { carpeta, nombre, mime })).url

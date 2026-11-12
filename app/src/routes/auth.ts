@@ -238,9 +238,7 @@ function fotoPermitida(v: unknown): string | null {
   let u: URL
   try { u = new URL(s) } catch { return null }
   if (u.protocol !== 'https:') return null
-  if (esUrlDeWali(s)) return s
-  const nube = process.env.CLOUDINARY_CLOUD_NAME
-  return u.hostname === 'res.cloudinary.com' && !!nube && u.pathname.startsWith(`/${nube}/`) ? s : null
+  return esUrlDeWali(s) ? s : null
 }
 
 router.patch('/usuarios/:id/foto', authenticate, asyncHandler(async (req: Request, res: Response) => {

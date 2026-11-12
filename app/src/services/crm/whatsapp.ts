@@ -294,33 +294,26 @@ const primerNombre = (n?: string | null) => String(n ?? '').trim().split(/\s+/)[
 const txt = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
 
 /**
- * Cloudinary guarda las notas de voz del navegador como webm, que WhatsApp no
- * acepta: se pide la versión mp3 cambiando la extensión (Cloudinary la convierte).
- * Instagram no recibe mp3: a Instagram va en m4a.
+ * Las notas de voz del navegador quedan en webm, que WhatsApp no acepta: se pide la versión mp3 (ffmpeg la convierte
+ * en el banco multimedia). Instagram no recibe mp3: a Instagram va en m4a.
  */
 export function audioParaWhatsapp(url: string, formato = 'mp3'): string {
   // Banco multimedia de Wali (11-nov): ffmpeg lo convierte al pedirlo con &v=.
-  if (esUrlDeWali(url)) return /\.(mp3|m4a|aac|amr|ogg)\?/i.test(url) && formato === 'mp3' ? url : (urlEnFormato(url, formato === 'm4a' ? 'm4a' : 'mp3') ?? url)
-  if (!/res\.cloudinary\.com\/.+\/video\/upload\//.test(url)) return url
-  if (formato === 'mp3' ? /\.(mp3|m4a|aac|amr|ogg)(\?|$)/i.test(url) : new RegExp(`\\.${formato}(\\?|$)`, 'i').test(url)) return url
-  return /\.[a-z0-9]{2,5}(\?|$)/i.test(url) ? url.replace(/\.[a-z0-9]{2,5}(\?|$)/i, `.${formato}$1`) : `${url}.${formato}`
+  if (!esUrlDeWali(url)) return url
+  return /\.(mp3|m4a|aac|amr|ogg)\?/i.test(url) && formato === 'mp3' ? url : (urlEnFormato(url, formato === 'm4a' ? 'm4a' : 'mp3') ?? url)
 }
 
-/** La nota de voz en OGG con OPUS (lo que WhatsApp muestra como nota de voz), o null si no está en Cloudinary. */
+/** La nota de voz en OGG con OPUS (lo que WhatsApp muestra como nota de voz), o null si no está en el banco de Wali. */
 export function notaDeVozOgg(url: string): string | null {
-  if (esUrlDeWali(url)) return urlEnFormato(url, 'ogg')
-  const m = url.match(/^(https:\/\/res\.cloudinary\.com\/[^/]+\/video\/upload\/)(.+)$/)
-  if (!m) return null
-  const resto = m[2].replace(/^ac_[a-z0-9]+\//, '')
-  return `${m[1]}ac_opus/${resto.replace(/\.[a-z0-9]{2,5}(\?.*)?$/i, '')}.ogg`
+  return esUrlDeWali(url) ? urlEnFormato(url, 'ogg') : null
 }
 
 export class ErrorEnvio extends Error {}
 
 // ─── Archivos que salen ──────────────────────────────────────────────────────
 // Se suben a Meta (POST /{phone_number_id}/media) con su tipo real y se mandan
-// por id. Por enlace, Meta mira el tipo que sirve Cloudinary, y los PDF (raw sin
-// extensión) salen como application/octet-stream y los rechaza. Tamaños y tipos
+// por id. Por enlace, Meta mira el tipo que sirve el servidor y rechaza los que
+// salen como application/octet-stream. Tamaños y tipos
 // de WhatsApp: imagen JPG o PNG ≤ 5 MB, video MP4 o 3GP ≤ 16 MB, audio AAC, AMR,
 // MP3, M4A u OGG ≤ 16 MB, documento ≤ 100 MB; lo que no cabe como lo que es va
 // como documento.
@@ -333,11 +326,11 @@ const TIPOS_META: { tipo: 'image' | 'video' | 'audio' | 'document'; re: RegExp; 
   { tipo: 'document', re: /./, max: 100 * MB },
 ]
 
-/** Solo se descargan archivos del Cloudinary del CRM (o del Meta simulado en pruebas). */
+/** Solo se descargan archivos del banco de Wali (o del Meta simulado en pruebas). */
 export function archivoPermitido(url: string): boolean {
   try {
     const u = new URL(url)
-    return u.protocol === 'https:' && u.hostname === 'res.cloudinary.com' || u.host === new URL(base()).host || esUrlDeWali(url)
+    return u.host === new URL(base()).host || esUrlDeWali(url)
   } catch { return false }
 }
 
@@ -671,7 +664,7 @@ async function armarCuerpo(m: MsgConTodo, cred: CredMeta): Promise<Json> {
   const audio = obj(datos.audio)
   if (txt(audio.url)) {
     // Nota de voz de verdad: Meta la muestra como nota de voz solo si
-    // es OGG con OPUS y va con voice: true. Cloudinary la convierte (ac_opus); si el archivo no está allá, va en mp3 como audio.
+    // es OGG con OPUS y va con voice: true. ffmpeg la convierte en el banco; si no se puede, va en mp3 como audio.
     const ogg = notaDeVozOgg(txt(audio.url))
     if (ogg) {
       const { id } = await subirAMeta(cred, c.linea.phoneNumberId, ogg, 'audio/ogg', 'nota-de-voz.ogg', true)

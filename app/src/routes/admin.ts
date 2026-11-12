@@ -101,7 +101,7 @@ router.get('/soporte/:id', asyncHandler(async (req: Request, res: Response) => {
   res.json({ success: true, data: s })
 }))
 router.post('/soporte/:id/responder', asyncHandler(async (req: Request, res: Response) => {
-  const d = z.object({ texto: z.string().trim().max(4000).default(''), archivos: z.array(z.object({ url: z.string().url().max(500).refine(u => /^https:\/\/res\.cloudinary\.com\//.test(u) || esUrlDeWali(u), 'Archivo no válido'), n: z.string().max(200), mime: z.string().max(80), t: z.string().max(20) })).max(10).default([]) }).parse(req.body)
+  const d = z.object({ texto: z.string().trim().max(4000).default(''), archivos: z.array(z.object({ url: z.string().url().max(500).refine(u => esUrlDeWali(u), 'Archivo no válido'), n: z.string().max(200), mime: z.string().max(80), t: z.string().max(20) })).max(10).default([]) }).parse(req.body)
   await responderSoporte(idSoporte(req), d.texto, req.userName ?? '', d.archivos)
   res.json({ success: true })
 }))

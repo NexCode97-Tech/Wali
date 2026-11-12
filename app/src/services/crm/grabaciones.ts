@@ -1,4 +1,3 @@
-import { v2 as cloudinary } from 'cloudinary'
 import { subir as subirAlBanco, enlaceTemporal, borrar as borrarDelBanco } from '../almacen'
 import type { Prisma } from '@prisma/client'
 import { prisma } from './bd'
@@ -9,9 +8,8 @@ import { NotFoundError } from '../../utils/errors'
 import type { Alcance } from './alcance'
 
 /**
- * Grabaciones de llamadas (maquetas aprobadas el 5-nov). Las nuevas quedan privadas en la Nube (type «authenticated»):
- * call.audio guarda «grab:<public_id>:<formato>» y para oírlas el servidor da una dirección que vence a los 10 minutos.
- * Las viejas siguen siendo una dirección https y se oyen igual hasta que venzan.
+ * Grabaciones de llamadas (maquetas aprobadas el 5-nov). Quedan privadas en el bucket de Railway: call.audio guarda
+ * «grabr:<clave>» y para oírlas el servidor da una dirección que vence a los 10 minutos.
  * Cada 10 minutos (procesos.ts) se borran las que pasaron el plazo de «Guardar las grabaciones durante».
  */
 
@@ -22,32 +20,19 @@ const MINUTOS_ENLACE = 10
 const LOTE = 20
 const PRIMERA = 50
 const MESES: Record<string, number> = { '6 meses': 6, '1 año': 12, '2 años': 24 }
-const REF = /^grab:([\w/.-]{1,200}):([a-z0-9]{1,8})$/
-
-let listo = false
-function configurar() {
-  if (listo) return
-  cloudinary.config({ cloud_name: process.env.CLOUDINARY_CLOUD_NAME, api_key: process.env.CLOUDINARY_API_KEY, api_secret: process.env.CLOUDINARY_API_SECRET })
-  listo = true
-}
-
-/** Grabaciones en el bucket de Railway (11-nov): `grabr:<clave>`, privadas. Las de antes (`grab:`) siguen en Cloudinary hasta migrarlas. */
 const REF_BANCO = /^grabr:(privado\/[a-z0-9/._-]{3,300})$/
-export const esRefGrabacion = (v: unknown) => typeof v === 'string' && (REF.test(v) || REF_BANCO.test(v))
+export const esRefGrabacion = (v: unknown) => typeof v === 'string' && REF_BANCO.test(v)
 
 export async function subirGrabacion(buffer: Buffer): Promise<string> {
   const { clave } = await subirAlBanco(buffer, { carpeta: 'crm/grabaciones', nombre: 'llamada.webm', mime: 'audio/webm', privado: true })
   return `grabr:${clave}`
 }
 
-/** La dirección para oír o descargar: la privada vence pronto; una vieja se devuelve tal cual. */
+/** La dirección para oír o descargar: vence pronto. */
 export async function direccionDe(audio: string, descargar: boolean): Promise<string> {
   const b = audio.match(REF_BANCO)
-  if (b) return enlaceTemporal(b[1], MINUTOS_ENLACE * 60, descargar)
-  const m = audio.match(REF)
-  if (!m) return audio
-  configurar()
-  return cloudinary.utils.private_download_url(m[1], m[2], { resource_type: 'video', type: 'authenticated', expires_at: Math.floor(Date.now() / 1000) + MINUTOS_ENLACE * 60, attachment: descargar })
+  if (!b) throw new NotFoundError('Esa grabación ya no existe')
+  return enlaceTemporal(b[1], MINUTOS_ENLACE * 60, descargar)
 }
 
 /** Lo que este alcance puede ver en la página: todo, o lo de los equipos que lidera. null: nada. */
@@ -96,15 +81,10 @@ export async function grabacionPorId(id: string) {
   return { id: m.id, convId: m.conversacionId, audio }
 }
 
-/** Borra el archivo de la Nube. Una vieja se reconoce por su dirección. */
+/** Borra el archivo del bucket. */
 async function borrarArchivo(audio: string) {
   const b = audio.match(REF_BANCO)
-  if (b) { await borrarDelBanco(b[1]); return }
-  configurar()
-  const r = audio.match(REF)
-  if (r) { await cloudinary.uploader.destroy(r[1], { resource_type: 'video', type: 'authenticated', invalidate: true }); return }
-  const v = audio.match(/res\.cloudinary\.com\/[^/]+\/(video|raw|image)\/upload\/(?:v\d+\/)?(.+)$/)
-  if (v) await cloudinary.uploader.destroy(v[1] === 'raw' ? v[2] : v[2].replace(/\.[^.]+$/, ''), { resource_type: v[1], invalidate: true })
+  if (b) await borrarDelBanco(b[1])
 }
 
 /** Borra la grabación: el registro de la llamada sigue en el chat, sin el audio. */

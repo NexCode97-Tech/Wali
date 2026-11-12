@@ -75,7 +75,7 @@ const navSinGrupos = nav;
 // Fuera de Mi perfil se olvida lo que quedó escrito sin guardar (sección 2).
 nav = function(){ navSinGrupos(); barraPorEquipo(); if (st.pagina !== 'ajustes' || st.ajSec !== 'perfil') st.pfBorrador = null; };
 
-/* 2 · Mi perfil: la foto se cambia desde el CRM (JPG, PNG o WebP de hasta 5 MB, a Cloudinary por /upload/imagen) o
+/* 2 · Mi perfil: la foto se cambia desde el CRM (JPG, PNG o WebP de hasta 5 MB, al banco multimedia por /upload/imagen) o
    se vuelve a la de Google. Los compañeros la ven sin recargar en el chat, la lista y Personas (evento `usuario-foto`,
    80-datos.js). «Usar la de Google» sale solo si hay foto de Google y no es la que está puesta. */
 const PF = {google: undefined, pidiendo: false, subiendo: false};

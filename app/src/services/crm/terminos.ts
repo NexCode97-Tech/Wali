@@ -115,7 +115,7 @@ export async function pdfPublico(espacioId: string): Promise<string | null> {
   if (!e) return null
   return enEspacio(e.id, async () => {
     const u = (await cfgTerminos()).actual?.url ?? ''
-    return u.startsWith('https://res.cloudinary.com/') || esUrlDeWali(u) ? u : null
+    return esUrlDeWali(u) ? u : null
   })
 }
 

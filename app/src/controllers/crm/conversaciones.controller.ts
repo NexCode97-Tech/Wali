@@ -215,7 +215,7 @@ export async function enviarMensaje(req: Request, res: Response) {
   // conversación y sale apenas la persona conteste (entrantes.ts), porque WhatsApp no deja notas de voz en plantillas.
   const voz = obj(datos.vozAlResponder)
   const vozUrl = txt(voz.url)
-  if (vozUrl && !/^https:\/\/res\.cloudinary\.com\/[^/]+\/video\/upload\//.test(vozUrl) && !esUrlDeWali(vozUrl)) throw new ValidationError('Sube otra vez el audio de la nota de voz: no quedó en la Nube del CRM.')
+  if (vozUrl && !esUrlDeWali(vozUrl)) throw new ValidationError('Sube otra vez el audio de la nota de voz: no quedó en la Nube del CRM.')
   if (vozUrl && !datos.plantilla) throw new ValidationError('La nota de voz para cuando responda va con una plantilla.')
   const m = await guardarMensaje(id, validarDesdePantalla(datos), { autorId: req.userId! })
   if (m.tipo === 'out') await tomarAlResponder(id, req.userId!)

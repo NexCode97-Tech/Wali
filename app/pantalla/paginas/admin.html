@@ -963,7 +963,7 @@ function tipoAdj(a){
   if (/^audio\//.test(m) || /\.(mp3|ogg|opus|m4a|aac|amr|wav)$/.test(n)) return 'audio';
   return 'otro';
 }
-const urlNube = u => typeof u === 'string' && (/^https:\/\/res\.cloudinary\.com\//.test(u) || u.startsWith(location.origin + '__BASE__/m/'));
+const urlNube = u => typeof u === 'string' && u.startsWith(location.origin + '__BASE__/m/');
 function tarjetaAdj(a, quitar){
   const [nom, bg, co, ic] = TIPO_ADJ[tipoAdj(a)], et = a.subiendo ? 'Subiendo…' : nom + (a.t ? ' · ' + a.t : '');
   const cuerpo = `<span class="sx-th" style="background:${bg};color:${co}">${IC[ic]}</span><span class="sx-tx"><span>${esc(a.n)}</span><small>${esc(et)}</small></span>`;
