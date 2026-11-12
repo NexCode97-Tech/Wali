@@ -99,7 +99,7 @@ function dlgCrearEspacio(){
   const lleno = ESP.limite !== null && (ESP.lista || []).length >= ESP.limite;
   return `<h3>Crear espacio de trabajo</h3><p>La empresa arranca con su CRM vacío, sin etapas, etiquetas ni reglas de ejemplo. Su administrador recibe un correo para crear su contraseña y entrar.</p>
     ${lleno ? `<div class="mt-aviso">${I('lock')}<span>Tu plan incluye ${ESP.limite} ${ESP.limite === 1 ? 'espacio' : 'espacios'} de trabajo y ya están en uso. Sube de plan para crear más.</span><button type="button" class="btn" data-ir="cfg-plan" data-cerrar-dlg="1">Ver planes</button></div>` : ''}
-    <div class="cx-f"><label>Nombre de la empresa<input id="me-n" placeholder="Ej. Clínica Sonrisa" autocomplete="off"></label></div>
+    <div class="cx-f"><label>Nombre de la empresa<input id="me-emp" placeholder="Ej. Clínica Sonrisa" autocomplete="off"></label></div>
     <div class="fld">Administrador de la empresa<div class="cx-f" style="margin:6px 0 0"><label>Nombre completo<input id="me-an" placeholder="Nombre y apellido" autocomplete="off"></label><label>Correo<input id="me-ac" type="email" placeholder="nombre@empresa.com" autocomplete="off"><small>Le llega la invitación a este correo.</small></label></div></div>
     <label class="me-chk"><input type="checkbox" ${ESP.yo ? 'checked' : ''} id="me-yo">Quedar yo también como administrador, para darle soporte</label>
     <div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" data-me-ok="1"${lleno ? ' disabled' : ''}>${I('check')}Crear y enviar invitación</button></div>`;
@@ -132,17 +132,17 @@ document.addEventListener('click', e => {
   const sw = t.closest('.me-sw'); if (sw) { const m = sw.nextElementSibling; m.hidden = !m.hidden; sw.setAttribute('aria-expanded', String(!m.hidden)); return; }
   if (!t.closest('.me-menu')) document.querySelectorAll('.me-menu').forEach(m => { m.hidden = true; const b = m.previousElementSibling; if (b) b.setAttribute('aria-expanded', 'false'); });
   const f = t.closest('[data-me-filtro]'); if (f) { ESP.filtro = f.dataset.meFiltro; render(); return; }
-  if (t.closest('[data-me-crear]')) { document.querySelectorAll('.me-menu').forEach(m => { m.hidden = true; }); abrirDialogo(dlgCrearEspacio(), 'dlg-per'); setTimeout(() => { const x = document.getElementById('me-n'); if (x) x.focus(); }, 30); return; }
+  if (t.closest('[data-me-crear]')) { document.querySelectorAll('.me-menu').forEach(m => { m.hidden = true; }); abrirDialogo(dlgCrearEspacio(), 'dlg-per'); setTimeout(() => { const x = document.getElementById('me-emp'); if (x) x.focus(); }, 30); return; }
   if (t.closest('[data-me-todos]')) { document.querySelectorAll('.me-menu').forEach(m => { m.hidden = true; }); st.pagina = 'cfg-espacios'; render(); document.getElementById('app').classList.remove('open'); return; }
   const en = t.closest('[data-me-entrar]'); if (en) { espEntrar(en.dataset.meEntrar); return; }
   const aj = t.closest('[data-me-ajustes]'); if (aj) { espEntrar(aj.dataset.meAjustes, 'ajustes'); return; }
   const ok = t.closest('[data-me-ok]'); if (ok && !ok.disabled) {
     const v = id => ((document.getElementById(id) || {}).value || '').trim();
     const yoMarca = !!(document.getElementById('me-yo') || {}).checked;
-    if (v('me-n').length < 2) { toast('Escribe el nombre de la empresa'); return; }
+    if (v('me-emp').length < 2) { toast('Escribe el nombre de la empresa'); return; }
     if (!v('me-ac') && !yoMarca) { toast('Invita a su administrador o quédate tú como administrador'); return; }
     ok.disabled = true; ok.textContent = 'Creando…';
-    crmApi('POST', '/crm/espacios', {nombre: v('me-n'), adminNombre: v('me-an'), adminCorreo: v('me-ac'), yo: yoMarca})
+    crmApi('POST', '/crm/espacios', {nombre: v('me-emp'), adminNombre: v('me-an'), adminCorreo: v('me-ac'), yo: yoMarca})
       .then(() => { cerrarDialogo(); toast(v('me-ac') ? 'Espacio creado. Le enviamos la invitación al administrador.' : 'Espacio creado.'); ESP.lista = null; espCargar(); })
       .catch(err => { ok.disabled = false; ok.textContent = ''; ok.insertAdjacentHTML('beforeend', `${I('check')}Crear y enviar invitación`); toast(err.message || 'No se pudo crear el espacio'); });
     return;
