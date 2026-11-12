@@ -93,7 +93,7 @@ export async function leer(clave: string): Promise<Buffer> {
 
 export async function borrar(clave: string): Promise<void> {
   await s3().send(new DeleteObjectCommand({ Bucket: bucket(), Key: clave }))
-  for (const f of Object.keys(FORMATOS)) await s3().send(new DeleteObjectCommand({ Bucket: bucket(), Key: `${clave}.v.${f}` })).catch(() => {})
+  for (const f of Object.keys(FORMATOS)) for (const v of ['v', 'v2']) await s3().send(new DeleteObjectCommand({ Bucket: bucket(), Key: `${clave}.${v}.${f}` })).catch(() => {})
 }
 
 /** Enlace firmado del bucket que vence (lo privado: grabaciones). */
@@ -112,7 +112,7 @@ const ARGS: Record<Formato, string[]> = {
 export function convertirAudio(entrada: Buffer, formato: Formato): Promise<Buffer> {
   return new Promise((ok, mal) => {
     if (!ffmpegRuta) { mal(new Error('ffmpeg no está disponible')); return }
-    const p = spawn(ffmpegRuta as unknown as string, ['-hide_banner', '-loglevel', 'error', '-i', 'pipe:0', '-vn', ...ARGS[formato], 'pipe:1'], { stdio: ['pipe', 'pipe', 'pipe'] })
+    const p = spawn(ffmpegRuta as unknown as string, ['-hide_banner', '-loglevel', 'error', '-i', 'pipe:0', '-vn', '-map', '0:a:0', '-map_metadata', '-1', ...ARGS[formato], 'pipe:1'], { stdio: ['pipe', 'pipe', 'pipe'] })
     const partes: Buffer[] = [], err: Buffer[] = []
     const reloj = setTimeout(() => { p.kill('SIGKILL'); mal(new Error('La conversión del audio tardó demasiado')) }, 60_000)
     p.stdout.on('data', d => partes.push(d)); p.stderr.on('data', d => err.push(d))
@@ -126,7 +126,9 @@ export function convertirAudio(entrada: Buffer, formato: Formato): Promise<Buffe
 const enCurso = new Map<string, Promise<void>>()
 /** Se asegura de que exista la versión del audio en ese formato y devuelve su clave. */
 async function variante(clave: string, formato: Formato): Promise<string> {
-  const destino = `${clave}.v.${formato}`
+  // v2 (11-nov): sin los datos del archivo original (fecha, idioma, vendor_id del mp4 de Chrome). Con ellos Meta no
+  // reconocía el ogg (131053, «application/octet-stream»); Cloudinary los quitaba. Las versiones .v. viejas no se usan.
+  const destino = `${clave}.v2.${formato}`
   try { await s3().send(new HeadObjectCommand({ Bucket: bucket(), Key: destino })); return destino } catch { /* no existe todavía */ }
   let p = enCurso.get(destino)
   if (!p) {
