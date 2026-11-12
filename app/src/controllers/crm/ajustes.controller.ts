@@ -24,6 +24,7 @@ import { cifrarClave } from '../../routes/auth'
 import crypto from 'node:crypto'
 import { conectarMotor, conOpciones, desconectarMotor, estadoMotor, motorIA, usarMotor } from '../../services/crm/motorIA'
 import { convVigente, esLider, exigirAdminEquipos, exigirEscritura, exigirLider, nombreArchivo, obj, subirArchivo as subirAlBanco, tamanoLegible } from './_comun'
+import { prepararAudio } from '../../services/almacen'
 
 /**
  * Ajustes del equipo, preferencias de cada persona, archivos adjuntos, base de
@@ -622,6 +623,7 @@ export async function subirArchivo(req: Request, res: Response) {
   let url: string
   try {
     url = await subirAlBanco(f.buffer, n, f.mimetype)
+    if (/^audio\//.test(f.mimetype)) prepararAudio(url)
   } catch (e) {
     logger.error(`[CRM archivos] Cloudinary: ${(e as Error)?.message ?? e}`)
     throw new AppError('No se pudo guardar el archivo en la nube. Intenta de nuevo en un momento; si sigue fallando, avisa al administrador.', 502)

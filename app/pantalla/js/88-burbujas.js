@@ -34,6 +34,16 @@ pintarChat = function(c){
     bs[bs.length - 1].append(pie);
     meta.remove();
   }
+  // Las demás burbujas del grupo también llevan su hora y sus chulitos (11-nov).
+  for (const x of doc.body.querySelectorAll('.ch-pie')) {
+    const b = x.previousElementSibling, est = x.querySelector('.est');
+    const pie = doc.createElement('span');
+    pie.className = 'wb-t' + (est && est.classList.contains('leido') ? ' leido' : '');
+    const h = x.querySelector('.h'); if (h && h.textContent) pie.append(h);
+    if (est) pie.append(est);
+    if (b && b.classList.contains('ch-b')) b.append(pie); else { pie.classList.add('suelto'); x.before(pie); }
+    x.remove();
+  }
   return doc.body.innerHTML;
 };
 document.head.insertAdjacentHTML('beforeend', `<style>
@@ -48,4 +58,6 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .wb-t.leido .est{color:#1f93ff}
 .wb-t .st{font-weight:500}
 .wb-t .rq{color:var(--blue-ink)}
+.wb-t.suelto{margin:2px 4px 2px}
+.ch-fila.yo .wb-t.suelto{align-self:flex-end}
 </style>`);

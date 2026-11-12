@@ -949,7 +949,15 @@ document.getElementById('ov-x').addEventListener('click', e => {
    de voz traen su reproductor y la transcripción solo se saca al tocar «Ver transcripción». ── */
 const CH_SVG_ALERTA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16.5h.01"/></svg>';
 const CH_SVG_ROBOT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V5"/><circle cx="12" cy="4" r="1"/><path d="M9 14h.01"/><path d="M15 14h.01"/></svg>';
-const CH_ESTADO = {enviando:['clock', 'Enviando'], enviado:['check', 'Enviado'], entregado:['check2', 'Entregado'], leido:['check2', 'Leído']};
+// Chulitos (11-nov, pedido del usuario): uno es entregado (o enviado) y dos son leído.
+const CH_ESTADO = {enviando:['clock', 'Enviando'], enviado:['check', 'Enviado'], entregado:['check', 'Entregado'], leido:['check2', 'Leído']};
+// Hora y chulitos de cada mensaje del grupo (11-nov): la última burbuja los trae en su ch-meta; las demás, con esta marca
+// que 88-burbujas.js mete dentro de su burbuja.
+function chPie(m, conEstado){
+  if (m._estado === 'fallido') return '';
+  const est = conEstado ? (CH_ESTADO[m._estado] || (m._id ? CH_ESTADO.enviado : CH_ESTADO.enviando)) : null;
+  return `<span class="ch-pie" hidden><span class="h">${esc(m.h || '')}</span>${est ? `<span class="est${m._estado === 'leido' ? ' leido' : ''}" aria-label="${est[1]}">${I(est[0])}</span>` : ''}</span>`;
+}
 const chDur = new Map();   // duración de cada nota de voz, para no esperar a reproducirla
 const chFmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 function chAvatarPersona(nombre){
@@ -1134,9 +1142,9 @@ function pintarChat(c){
     while (j < ms.length && lado(ms[j]) === l && quien(ms[j]) === quien(m) && ms[j]._estado !== 'fallido' && ms[j - 1]._estado !== 'fallido') { g.push(j); j++; }
     const ult = ms[g[g.length - 1]];
     if (l === 'in') {
-      out.push(`<div class="ch-fila"><span class="av ch-av" style="background:${AVC[c.id % AVC.length]}">${esc(ini(c.n))}</span><div class="ch-col">${g.map((k, n) => chBloqueIn(c, ms[k], n === g.length - 1)).join('')}<span class="ch-meta"><b>${esc(c.n)}</b>· ${chTipoIn(ult)}${esc(ult.h || '')}</span></div></div>`);
+      out.push(`<div class="ch-fila"><span class="av ch-av" style="background:${AVC[c.id % AVC.length]}">${esc(ini(c.n))}</span><div class="ch-col">${g.map((k, n) => chBloqueIn(c, ms[k], n === g.length - 1) + (n === g.length - 1 ? '' : chPie(ms[k], false))).join('')}<span class="ch-meta"><b>${esc(c.n)}</b>· ${chTipoIn(ult)}${esc(ult.h || '')}</span></div></div>`);
     } else if (l === 'out') {
-      out.push(`<div class="ch-fila yo"><div class="ch-col">${g.map((k, n) => chBloqueOut(ms[k], n === g.length - 1)).join('')}${chMetaOut(c, ult, g[g.length - 1])}</div>${chAvatarPersona(m.by || yo)}</div>`);
+      out.push(`<div class="ch-fila yo"><div class="ch-col">${g.map((k, n) => chBloqueOut(ms[k], n === g.length - 1) + (n === g.length - 1 ? '' : chPie(ms[k], true))).join('')}${chMetaOut(c, ult, g[g.length - 1])}</div>${chAvatarPersona(m.by || yo)}</div>`);
     } else {
       // Agente IA, recepcionista de noche o un flujo: a la derecha, en morado.
       const ag = l === 'ia' ? (AGENTES.find(x => x.id === m.ag) || (!m.ag && !m.agente && AGENTES.length === 1 ? AGENTES[0] : null)) : null;

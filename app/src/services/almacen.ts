@@ -142,6 +142,26 @@ async function variante(clave: string, formato: Formato): Promise<string> {
   return destino
 }
 
+/**
+ * Los bytes de un archivo de Wali a partir de su dirección firmada (con &v= saca la versión convertida), directo del
+ * bucket, sin dar la vuelta por walicrm.com. null si la dirección no es de Wali. Lo usa el envío a WhatsApp (11-nov).
+ */
+export async function leerDeUrl(url: string): Promise<{ buffer: Buffer; tipo: string } | null> {
+  const clave = claveDeUrl(url)
+  if (!clave) return null
+  const v = new URL(url).searchParams.get('v') ?? ''
+  const k = v in FORMATOS ? await variante(clave, v as Formato) : clave
+  const r = await s3().send(new GetObjectCommand({ Bucket: bucket(), Key: k }))
+  return { buffer: Buffer.from(await r.Body!.transformToByteArray()), tipo: r.ContentType || 'application/octet-stream' }
+}
+
+/** Deja listas en segundo plano las versiones de un audio recién subido (nota de voz de WhatsApp y mp3), para que el envío no espere a ffmpeg. */
+export function prepararAudio(url: string): void {
+  const clave = claveDeUrl(url)
+  if (!clave) return
+  for (const f of ['ogg', 'mp3'] as Formato[]) variante(clave, f).catch(e => logger.warn({ evento: 'MEDIA_PREPARAR', clave, formato: f, err: (e as Error).message }))
+}
+
 // ─── Servir: GET /m/<clave>?f=<firma>[&v=ogg|mp3|m4a] ────────────────────────
 
 const EN_LINEA = /^(image\/(jpeg|png|gif|webp|avif)|audio\/|video\/|application\/pdf$)/

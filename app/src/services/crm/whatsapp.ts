@@ -8,7 +8,7 @@ import { telDigitos } from './formas'
 import { buscarPlantilla, plantillaEnEquipo, variablesDe, type PlantillaMeta } from './plantillas'
 import { credDeLinea, hayWhatsapp, type CredMeta } from './credenciales'
 import { leerAjuste } from './ajustes'
-import { esUrlDeWali, urlEnFormato } from '../almacen'
+import { esUrlDeWali, leerDeUrl, urlEnFormato } from '../almacen'
 
 /**
  * WhatsApp Cloud API del CRM (26-sep-2026): el cliente de la Graph API de Meta
@@ -364,6 +364,9 @@ async function subirAMeta(cred: CredMeta, phoneNumberId: string, url: string, mi
   let buffer: Buffer, tipoNube: string
   try {
     ;({ buffer, tipoNube } = await conReintentos(async () => {
+      // Del banco de Wali se lee directo del bucket (11-nov): sin la vuelta por walicrm.com y Vercel.
+      const propio = esUrlDeWali(url) ? await leerDeUrl(url) : null
+      if (propio) return { buffer: propio.buffer, tipoNube: propio.tipo }
       const res = await fetch(url, { signal: AbortSignal.timeout(60_000) })
       // 423: la Nube todavía está convirtiendo el archivo (la nota de voz a OGG); 5xx: falla pasajera.
       if (res.status === 423 || res.status >= 500) throw new CorteDeRed(`HTTP ${res.status}`)
