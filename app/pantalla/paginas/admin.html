@@ -42,7 +42,6 @@ h1{margin:0;font-size:22px;font-weight:700;letter-spacing:-.015em}
 .btn{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:500;white-space:nowrap;transition:background 160ms cubic-bezier(.23,1,.32,1),border-color 160ms cubic-bezier(.23,1,.32,1),color 160ms cubic-bezier(.23,1,.32,1),transform 140ms cubic-bezier(.23,1,.32,1)}
 .btn:active:not(:disabled){transform:scale(.97);transition-duration:90ms}
 .sx-seg button,.sx-facc button,.sx-facc a,.sx-fx,.sx-clip,.sx-fx2{transition:background 160ms cubic-bezier(.23,1,.32,1),color 160ms cubic-bezier(.23,1,.32,1),transform 140ms cubic-bezier(.23,1,.32,1)}
-.sx-seg button:active,.sx-fx:active,.sx-fx2:active{transform:scale(.95)}
 .btn:hover{background:#f6f7f9}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;padding:3px;background:#fff}
 .seg button{padding:4px 11px;border-radius:7px;font-size:12.5px;color:var(--t2);transition:background 120ms var(--e-std),color 120ms var(--e-std)}
@@ -177,14 +176,6 @@ main.sop{max-width:none;margin:0;padding:10px;height:100%;display:flex}
 .sx-det{min-height:0;display:grid;grid-template-columns:minmax(0,1fr) var(--wb-ficha);gap:10px;position:relative}
 .sx-panel{background:#fff;border-radius:16px;box-shadow:0 0 0 1px #eef0f3;min-height:0;display:flex;flex-direction:column;overflow:hidden}
 .sx-vacio{padding:24px;text-align:center;color:var(--t3);font-size:13px;margin:auto}
-.sx-lh{padding:16px 16px 12px;display:grid;gap:12px;border-bottom:1px solid #eef0f3}
-.sx-lt{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.sx-lt h2{margin:0 auto 0 0;font-size:17px;font-weight:700}
-.sx-q{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border-radius:11px;border:1px solid var(--line);background:#fff;color:var(--t3)}
-.sx-lh{grid-template-columns:minmax(0,1fr)}.sx-lh > *{min-width:0}
-.sx-fq{display:flex;gap:8px;align-items:center}.sx-fq .sx-q{flex:1;min-width:0}
-.sx-filt{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 12px;border-radius:11px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:500;color:var(--ink);flex:none;transition:background 160ms var(--e-std),border-color 160ms var(--e-std),transform 140ms var(--e-std)}
-.sx-filt:hover{background:#f3f6fa}.sx-filt:active{transform:scale(.96)}.sx-filt svg.i{width:16px;height:16px}.sx-filt.activo,.sx-filt.abierto{border-color:#0b0b10}.sx-filt.abierto{background:#f3f6fa}
-.sx-filt .fn{min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:#FFD21F;color:#0b0b10;font-size:11px;font-weight:700;display:grid;place-items:center;animation:sx-pop 300ms var(--e-in) both}
 .sx-fmenu{position:fixed;z-index:200;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 40px -12px rgba(15,23,42,.25);padding:6px;display:grid;gap:2px;transform-origin:top right;animation:sx-menu 200ms var(--e-in) both}
 @keyframes sx-menu{from{opacity:0;transform:scale(.96) translateY(-4px)}}
 .sx-fmenu .hd{font-size:11.5px;color:#9ca3af;padding:6px 10px 4px}
@@ -194,30 +185,12 @@ main.sop{max-width:none;margin:0;padding:10px;height:100%;display:flex}
 .sx-fmenu .chk.on{background:#0b0b10;border-color:#0b0b10;color:#fff}.sx-fmenu .chk svg.i{width:11px;height:11px;stroke-width:2.6}
 .sx-fmenu .fpie{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid #eef0f3;margin-top:4px;padding:8px 4px 2px}
 .sx-fmenu .lim{font-size:13px;color:var(--t2);padding:6px 8px;border-radius:8px}.sx-fmenu .lim:hover{background:#f3f6fa}.sx-fmenu .btn.pri{height:34px;padding:0 14px}
-@media (prefers-reduced-motion:reduce){.sx-fmenu,.sx-filt .fn{animation:none}}
-.sx-q input{flex:1;min-width:0;border:0;outline:0;font:inherit;font-size:13.5px;color:var(--ink);background:none}.sx-q:focus-within{border-color:var(--ink)}
-.sx-seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;padding:3px;border-radius:12px;background:#f4f5f7}
-.sx-seg button{height:34px;border-radius:9px;font-size:12.5px;padding:0 4px;white-space:nowrap;color:var(--t2);display:flex;align-items:center;justify-content:center;gap:5px;transition:background 200ms var(--e-std),color 200ms var(--e-std),transform 140ms var(--e-std)}
-.sx-seg button:active{transform:scale(.96)}.sx-seg button[aria-selected="true"]{background:#0b0b10;color:#fff;font-weight:600}
-.sx-seg em{font-style:normal;font-size:11px;min-width:20px;height:20px;border-radius:10px;display:grid;place-items:center;box-sizing:border-box;background:#fff;color:var(--t2);padding:0 5px;font-weight:600}.sx-seg button[aria-selected="true"] em{background:#2a2a33;color:#fff}
-.sx-items{flex:1;overflow-y:auto;padding:8px;display:grid;align-content:start;gap:8px}
-.sx-it{display:block;width:100%;text-align:left;border-radius:14px;border:1px solid transparent;overflow:hidden;transition:background 180ms var(--e-std),border-color 180ms var(--e-std),transform 140ms var(--e-std);animation:sx-entra 320ms var(--e-in) var(--d,0ms) both}
-.sx-it:hover{background:#fafafa}.sx-it:active{transform:scale(.985)}.sx-it.on{background:#FFFBEA;border-color:#F2D24C}
+@media (prefers-reduced-motion:reduce){.sx-fmenu{animation:none}}
+.sx-items{min-height:0}
 @keyframes sx-entra{from{opacity:0;transform:translateY(6px)}}
-.sx-it-a{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;padding:12px 12px 10px;align-items:start}
-.sx-it-n{display:grid;gap:2px;min-width:0}.sx-it-n b{font-size:14.5px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sx-it-n span{color:var(--t2);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sx-it-r{display:grid;justify-items:end;gap:6px;font-size:12px;color:var(--t3);white-space:nowrap}.sx-it.on .sx-it-r > span:first-child{color:#7c3aed;font-weight:600}
-.sx-dot{width:20px;height:20px;border-radius:50%;background:#7c3aed;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center}
-.sx-chips{display:flex;gap:6px;flex-wrap:wrap;padding:0 12px 12px 68px}
 .sx-chip{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:500;vertical-align:middle}
 .sx-chip.como{background:#FFF3C4;color:#92400e}.sx-chip.fac{background:#EEF2FF;color:#4338ca}.sx-chip.msj{background:#FDE7E9;color:#be123c}.sx-chip.otra{background:#f1f2f4;color:var(--t2)}
 .sx-chip.per{background:none;color:var(--t3);padding:0}.sx-chip.urg{background:#fee2e2;color:#b91c1c;font-weight:600}
-.sx-banda{display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:12.5px;font-weight:600;border-top:1px solid rgba(0,0,0,.04)}
-.sx-banda .bi{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;flex:none}.sx-banda .bi svg.i{width:12px;height:12px}
-.sx-banda.esp{background:#FFF4CC;color:#92400e}.sx-banda.esp .bi{background:#F5B700;color:#fff}
-.sx-banda.urg{background:#FDECEC;color:#b91c1c}.sx-banda.urg .bi{background:#ef4444;color:#fff}
-.sx-banda.ok{background:#ECFDF3;color:#15803d}.sx-banda.ok .bi{background:#22c55e;color:#fff}
 .sx-ch{flex:none;display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid #eef0f3}
 .sx-chn{flex:1;min-width:0;display:grid}.sx-chn b{font-size:15.5px;display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sx-chn .nom{min-width:0;overflow:hidden;text-overflow:ellipsis}.sx-chn .sx-chip{flex:none}
 .sx-chn{container-type:inline-size}@container (max-width:240px){.sx-chn .sx-chip{display:none}}
@@ -900,28 +873,37 @@ function vSoporte(){
   const D = S.soporte;
   if (!D) return '<div class="vacio">Cargando…</div>';
   const n = k => D.solicitudes.filter(s => s.estado === k).length;
-  const seg = `<div class="sx-seg" role="tablist" aria-label="Estado">${Object.entries(ESTADO_SOP).map(([k, t]) => `<button type="button" role="tab" data-stab="${k}" aria-selected="${S.stab === k}">${t}<em>${num(n(k))}</em></button>`).join('')}</div>`;
+  // Igual que Mi bandeja del CRM (maqueta aprobada el 12-nov): pestañas en barra, filtro como ícono y buscador a todo el ancho.
+  const tabs = `<div class="tabs" role="tablist" aria-label="Estado">${Object.entries(ESTADO_SOP).map(([k, t]) => `<button type="button" role="tab" data-stab="${k}" aria-selected="${S.stab === k}" aria-pressed="${S.stab === k}">${t}<span class="n">${num(n(k))}</span></button>`).join('')}</div>`;
   const nf = S.fTema.length + S.fPri.length;
-  const filtros = `<button type="button" class="sx-filt${nf ? ' activo' : ''}${S.filtroAb ? ' abierto' : ''}" data-sfilt="1" aria-haspopup="menu" aria-expanded="${S.filtroAb}" aria-label="Filtrar${nf ? ', ' + nf + (nf === 1 ? ' filtro' : ' filtros') : ''}">${IC.filtro}<span>Filtrar</span>${nf ? `<span class="fn">${nf}</span>` : ''}</button>`;
+  const filtros = `<button type="button" class="sx-filt${nf ? ' activo' : ''}${S.filtroAb ? ' abierto' : ''}" data-sfilt="1" aria-haspopup="menu" aria-expanded="${S.filtroAb}" aria-label="Filtrar${nf ? ', ' + nf + (nf === 1 ? ' filtro' : ' filtros') : ''}" title="Filtrar">${IC.filtro}${nf ? `<span class="fn">${nf}</span>` : ''}</button>`;
   const fs = filtradasSop();
   if (S.ssel == null || !fs.some(s => s.id === S.ssel)) S.ssel = fs.length ? fs[0].id : null;
-  const item = (s, i) => {
+  // La tarjeta de la bandeja (tj-*): la hora, la vista previa, el número sin leer, las etiquetas y abajo quién escribió con su espera.
+  const item = s => {
     const u = s.ultimo, mio = u && u.autor === 'soporte';
-    const banda = s.espera ? [`Espera ${hace(s.espera).toLowerCase().replace(/^hace /, 'hace ')}`, s.prioridad === 'urgente' ? 'urg' : 'esp']
-      : mio && s.estado !== 'resuelta' ? [`Respondiste ${hace(u.en).toLowerCase()}`, 'ok'] : null;
-    return `<button type="button" class="sx-it${S.ssel === s.id ? ' on' : ''}" style="--d:${Math.min(i, 8) * 30}ms" data-ssel="${s.id}">
-      <span class="sx-it-a">${avatar(s.empresa, s.empresaId, s.logo, 44, true)}<span class="sx-it-n"><b>${esc(s.empresa)}</b><span>${esc(u ? (mio ? 'Tú: ' : '') + u.texto : s.asunto)}</span></span>
-        <span class="sx-it-r"><span>${esc(hace(s.actualizada))}</span>${s.nueva ? '<span class="sx-dot" aria-label="Nueva">1</span>' : ''}</span></span>
-      <span class="sx-chips">${s.prioridad === 'urgente' ? '<span class="sx-chip urg">Urgente</span>' : ''}<span class="sx-chip ${TEMA_CLS[s.tema] || 'otra'}">${esc(TEMA_SOP[s.tema] || 'Otra cosa')}</span><span class="sx-chip per">${esc(s.persona)}</span></span>
-      ${banda ? `<span class="sx-banda ${banda[1]}"><span class="bi">${IC.reloj}</span>${esc(banda[0])}</span>` : ''}</button>`;
+    const esp = s.espera ? `<span class="tj-esp">${IC.reloj}${esc(hace(s.espera).replace(/^hace\s*/i, ''))}</span>` : '';
+    return `<button type="button" class="it${s.nueva ? ' unread' : ''}" data-ssel="${s.id}"${S.ssel === s.id ? ' aria-current="true"' : ''}>
+      <span class="tj-foto">${avatar(s.empresa, s.empresaId, s.logo, 40, true)}</span>
+      <span class="tj-cu"><span class="tj-l1"><b>${esc(s.empresa)}</b><time>${esc(horaCorta(s.actualizada))}</time></span>
+        <span class="tj-l2"><span class="tj-msg">${esc(u ? (mio ? 'Tú: ' : '') + u.texto : s.asunto)}</span>${s.nueva ? '<span class="tj-cnt" aria-label="Nueva">1</span>' : ''}</span>
+        <span class="tj-l4">${s.prioridad === 'urgente' ? '<span class="tj-chip urg">Urgente</span>' : ''}<span class="tj-chip tema">${esc(TEMA_SOP[s.tema] || 'Otra cosa')}</span></span></span>
+      <span class="tj-l3 tj-pie"><span class="av tj-mini" style="background:#7c5cff">${esc(iniciales(s.persona))}</span><span class="tj-as"><span>De <b>${esc(s.persona)}</b></span></span>${esp}</span></button>`;
   };
   const lista = fs.length ? fs.map(item).join('') : `<p class="sx-vacio">${D.solicitudes.length ? 'Ninguna solicitud aquí con esos filtros.' : 'Todavía nadie ha escrito a soporte.'}</p>`;
   const det = S.sdet && S.sdet.id === S.ssel ? vDetalleSop(S.sdet) : `<section class="sx-panel sx-chat"><p class="sx-vacio">${S.ssel ? 'Cargando…' : 'Elige una solicitud.'}</p></section>`;
   return `<div class="sx" data-v="${S.svista}">
-    <section class="sx-panel sx-lista" aria-label="Solicitudes"><div class="sx-lh"><div class="sx-lt"><h2>Solicitudes</h2></div>
-      <div class="sx-fq"><label class="sx-q">${IC.search}<input id="sq" type="search" value="${esc(S.sq)}" placeholder="Buscar empresa, persona o número" aria-label="Buscar solicitud" autocomplete="off"></label>${filtros}</div>${seg}</div>
-      <div class="sx-items">${lista}</div></section>
+    <section class="sx-panel sx-lista wb-lista" aria-label="Solicitudes"><div class="list-h"><div class="t"><h2>Solicitudes</h2><span class="ic">${filtros}</span></div>
+      <label class="search lq">${IC.search}<input id="sq" type="search" value="${esc(S.sq)}" placeholder="Buscar empresa, persona o número" aria-label="Buscar solicitud" autocomplete="off"></label>${tabs}</div>
+      <div class="items sx-items">${lista}</div></section>
     <div id="s-det" class="sx-det${S.sficha ? ' ficha-abierta' : ''}${S.smin ? ' wb-ficha-oculta' : ''}">${det}</div></div>`;
+}
+// La hora de la tarjeta, como en la bandeja: hoy la hora, ayer «Ayer» y antes el día.
+function horaCorta(iso){
+  const d = new Date(iso), h = new Date();
+  if (d.toDateString() === h.toDateString()) return horaDe(iso).replace(/\s*[ap]\.\s*m\./i, '');
+  if (d.toDateString() === new Date(h - 864e5).toDateString()) return 'Ayer';
+  return d.toLocaleDateString('es-CO', {day: 'numeric', month: 'short'}).replace('.', '');
 }
 const horaDe = iso => new Date(iso).toLocaleTimeString('es-CO', {hour: 'numeric', minute: '2-digit'});
 // Cada mensaje como en el chat de la bandeja: imágenes, texto y archivos en bloques, y debajo quién y cuándo.
@@ -1074,7 +1056,6 @@ function pintarListaSop(){
   const sel = S.ssel, tmp = document.createElement('div'); tmp.insertAdjacentHTML('beforeend', vSoporte()); S.ssel = sel;
   const nueva = tmp.querySelector('.sx-lista'); if (!nueva) return;
   const sc = vieja.querySelector('.sx-items'), y = sc ? sc.scrollTop : 0;
-  nueva.querySelectorAll('.sx-it').forEach(x => { x.style.animation = 'none'; });
   vieja.replaceWith(nueva); const sc2 = nueva.querySelector('.sx-items'); if (sc2) sc2.scrollTop = y;
 }
 async function estadoSol(estado){
