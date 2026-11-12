@@ -33,7 +33,9 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 #app .me-bar .tabs{display:inline-flex;gap:4px}
 #app .me-bar .tabs button{flex:none;white-space:nowrap;height:34px;padding:0 14px;gap:8px;display:inline-flex;align-items:center}
 #app .me-bar .tabs button .n{margin-left:0}
-.me-bar .cn-q{flex:1 1 260px;max-width:360px;margin:0}
+.me-bar .cn-q{flex:1 1 260px;max-width:none;margin:0}
+/* Buscador a fila completa (regla del usuario, 12-nov): en escritorio toma todo el ancho que dejan los filtros de estado. */
+@media (min-width:760px){.me-bar{flex-wrap:nowrap}#app .me-bar .tabs{flex:none}}
 .me-plan{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .me-plan .cx-op{align-items:flex-start}
 .me-plan .cx-op small{display:block}

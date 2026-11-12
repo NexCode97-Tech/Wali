@@ -734,6 +734,9 @@ svg.i.ck{padding:0;margin:0 0 0 auto;max-width:none;display:inline-block;gap:0}
 .pc-op .av{width:28px;height:28px;font-size:10.5px;overflow:hidden}
 /* Las iniciales de todo avatar van centradas (14-oct): los menús alinean a la izquierda y se las llevaban. */
 .av{text-align:center;justify-content:center;align-items:center;justify-items:center;line-height:1}
+/* Centrado exacto de las iniciales (12-nov, medido en captura a 4x): Inter deja las mayúsculas medio píxel abajo del
+   centro; 0,1em abajo las sube justo al centro (desfase 0,0 px). Las fotos van con position:absolute y no se mueven. */
+.av{padding-bottom:.1em}
 .menu button .av,.pc-op .av{display:grid;place-items:center;text-align:center}
 .pc-op .pc-tx > span .pc-nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pc-op .pc-tx > span{text-overflow:clip}
