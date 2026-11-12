@@ -182,3 +182,4 @@
 - Maqueta 316/317 quitada del lienzo (ya aprobada y en producción). Maqueta nueva, versión 320, sobre el CRM real: en «Mi bandeja» el número y la flecha del desplegable quedaban a 36 px porque los dos usan margin-left:auto (crm.html, .nav li button .n y .tw). Propuesta: `.nav li button .n + .tw{margin-left:0}`, que deja 10 px (el gap del botón). Tres equipos con Hoy/Propuesta. Esperando aprobación.
 - Maqueta del conteo, versión 321: los tableros ahora abren en la propuesta y el paso 2 muestra producción (el usuario veía el paso «Hoy» y lo tomó por la propuesta).
 - Conteo y flecha de Mi bandeja aprobado (maqueta 321) y montado: crm.html `.nav li button .n + .tw{margin-left:0}` (10 px, medido en el CRM real). Tableros quitados del lienzo (versión 322). Sin push.
+- Push hasta f274789 (pedido «haz el push»): conteo junto a la flecha en Mi bandeja. Revisando el despliegue en segundo plano.
