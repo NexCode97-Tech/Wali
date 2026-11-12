@@ -302,6 +302,7 @@ router.post('/conversaciones/:id/mensajes', asyncHandler(conv.enviarMensaje))
 router.delete('/conversaciones/:id/mensajes/:msgId', asyncHandler(conv.borrarMensaje))
 router.post('/conversaciones/:id/mensajes/:msgId/transcripcion', asyncHandler(conv.transcribirNota))
 router.post('/conversaciones/:id/mensajes/:msgId/reaccion', asyncHandler(conv.reaccionar))
+router.patch('/conversaciones/:id/mensajes/:msgId/marcas', asyncHandler(conv.marcarMensaje))
 // Llamadas por WhatsApp en vivo (llamadasVivo.ts).
 router.get('/difusiones/:id/respondieron', asyncHandler(difusiones.respondieron))
 router.get('/llamadas', asyncHandler(llamadas.enCurso))

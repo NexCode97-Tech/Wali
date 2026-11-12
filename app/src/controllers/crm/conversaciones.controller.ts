@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express'
 import { dispararReglas } from '../../services/crm/reglas'
 import { comoPdf, comoTexto, comoZip, renglones, type OpcionesExportar } from '../../services/crm/exportarChat'
-import type { Prisma } from '@prisma/client'
+import { Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { prisma, prismaGlobal } from '../../services/crm/bd'
 import { ApiResponse } from '../../utils/response'
@@ -843,6 +843,43 @@ export async function transcribirNota(req: Request, res: Response) {
     }
     throw new ValidationError(`No se pudo transcribir: ${(e as Error).message}`)
   }
+}
+
+/**
+ * PATCH /crm/conversaciones/:id/mensajes/:msgId/marcas {fijar?, destacar?} (12-nov, maqueta aprobada 316):
+ * - fijar: el mensaje queda arriba del chat para todo el equipo (datos.fijado = {por, en}); hasta 3 por conversación.
+ * - destacar: la estrella es de cada persona (datos.dest = ids de quienes lo destacaron).
+ * Solo en el CRM: WhatsApp no se entera.
+ */
+const MAX_FIJADOS = 3
+const marcasSchema = z.object({ fijar: z.boolean().optional(), destacar: z.boolean().optional() }).refine(d => d.fijar !== undefined || d.destacar !== undefined, 'Falta qué marcar')
+export async function marcarMensaje(req: Request, res: Response) {
+  const convId = idNum(req.params.id)
+  await convVisible(req, convId)
+  const d = marcasSchema.parse(req.body ?? {})
+  // Fijar cambia lo que ve todo el equipo: pide escritura (el de solo lectura no pasa de authenticate con un PATCH).
+  if (d.fijar !== undefined) exigirEscritura(req)
+  const msgId = String(req.params.msgId)
+  const m = await prisma.$transaction(async tx => {
+    await tx.$queryRaw`SELECT id FROM crm_conversaciones WHERE id = ${convId} FOR UPDATE`
+    const msg = await tx.crmMensaje.findUnique({ where: { id: msgId } })
+    if (!msg || msg.conversacionId !== convId) throw new NotFoundError('Ese mensaje ya no existe. Recarga la conversación.')
+    if (msg.tipo === 'prog') throw new ValidationError('Un mensaje programado no se puede fijar ni destacar hasta que salga.')
+    const datos = { ...obj(msg.datos) }
+    if (d.fijar === true && !datos.fijado) {
+      const fijados = await tx.crmMensaje.count({ where: { conversacionId: convId, datos: { path: ['fijado'], not: Prisma.AnyNull } } })
+      if (fijados >= MAX_FIJADOS) throw new ValidationError(`Ya hay ${MAX_FIJADOS} mensajes fijados. Desfija uno para fijar este.`)
+      datos.fijado = { por: req.userId ?? null, en: new Date().toISOString() }
+    } else if (d.fijar === false) delete datos.fijado
+    if (d.destacar !== undefined) {
+      const dest = new Set((Array.isArray(datos.dest) ? datos.dest : []).filter((x): x is string => typeof x === 'string'))
+      if (d.destacar) dest.add(req.userId!); else dest.delete(req.userId!)
+      if (dest.size) datos.dest = [...dest]; else delete datos.dest
+    }
+    return tx.crmMensaje.update({ where: { id: msgId }, data: { datos: datos as Prisma.InputJsonValue } })
+  })
+  emitirMsg(convId, m, req.userId ?? null)
+  return ApiResponse.success(res, msgAFront(m))
 }
 
 /** POST /crm/conversaciones/:id/mensajes/:msgId/reaccion {emoji}: la reacción de WhatsApp a un mensaje; vacía la quita. */

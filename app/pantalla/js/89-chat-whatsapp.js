@@ -11,7 +11,10 @@
        abre el mismo selector completo del compositor). En tablet y celular, mantener presionado levanta el mensaje:
        reacciones arriba y opciones abajo, por separado.
    5 · Seleccionar: casilla a la izquierda de cada mensaje, la fila elegida resaltada y, en lugar del compositor, la barra
-       con la X roja, cuántos van y Copiar. Fijar y Destacar quedan para cuando se construyan (necesitan su maqueta). ── */
+       con la X roja, cuántos van, Copiar y Destacar.
+   6 · Fijar (de la conversación, lo ve todo el equipo, hasta 3) y Destacar (de cada persona): PATCH …/mensajes/:id/marcas.
+       Los fijados salen en una franja arriba del chat (tocarla lleva al mensaje y pasa al siguiente); los destacados llevan
+       una estrella junto a la hora y se ven en el ⋯ del chat, «Mensajes destacados». ── */
 (() => {
   const SV = d => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
   const IC = {
@@ -20,7 +23,13 @@
     mas: SV('<path d="M12 5v14M5 12h14"/>'),
     sel: SV('<rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8.5 12 2.5 2.5 4.5-5"/>'),
     ok: SV('<path d="m5 12 4.5 4.5L19 7"/>'),
+    fijar: SV('<path d="M9 4h6l-1 6 3 3H7l3-3z"/><path d="M12 13v7"/>'),
+    dest: SV('<path d="M12 3.2l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.5l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/>'),
   };
+  const MINI = d => `<svg class="mk" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
+  const YO = () => (typeof CRM_YO === 'object' && CRM_YO && CRM_YO.id) || '';
+  const fijado = m => !!(m && m.fijado);
+  const destacado = m => !!(m && Array.isArray(m.dest) && m.dest.includes(YO()));
   const ESTRELLA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.5l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg>';
   const angosto = () => matchMedia('(hover:none), (max-width:1000px)').matches;
   const primera = s => { const p = String(s ?? '').trim().split(/\s+/)[0] || ''; return /\p{L}/u.test(p) && !p.includes('@') ? p : ''; };
@@ -61,11 +70,13 @@
       if (b && !b.querySelector('.rr-chev')) b.insertAdjacentHTML('beforeend', `<button type="button" class="rr-chev" data-rr-menu="${esc(id)}" aria-label="Opciones del mensaje" aria-haspopup="menu">${IC.chev}</button>`);
       const m = c && rrMsg(c, id);
       if (m && rrReacciona(c, m)) w.insertAdjacentHTML('beforeend', `<button type="button" class="rr-emob" data-rr-pill="${esc(id)}" aria-label="Reaccionar">${IC.smile}</button>`);
+      const t = b && b.querySelector('.wb-t');
+      if (t && m && (fijado(m) || destacado(m))) t.insertAdjacentHTML('afterbegin', `${fijado(m) ? `<span class="mk-f" title="Fijado">${MINI('<path d="M9 4h6l-1 6 3 3H7l3-3z"/><path d="M12 13v7"/>')}</span>` : ''}${destacado(m) ? `<span class="mk-d" title="Destacado">${MINI('<path d="M12 3.2l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.5l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/>')}</span>` : ''}`);
     }
     return doc.body.innerHTML;
   };
   const marcar = (id, si) => { document.querySelectorAll('.rr-m.rr-activo').forEach(x => x.classList.remove('rr-activo')); if (si && id) document.querySelectorAll(`.rr-m[data-rr="${CSS.escape(id)}"]`).forEach(x => x.classList.add('rr-activo')); };
-  const MAS_OP = `<hr><button type="button" role="menuitem" data-rr-sel>${IC.sel}Seleccionar</button>`;
+  const masOp = m => `<hr><button type="button" role="menuitem" data-rr-fijar>${IC.fijar}${fijado(m) ? 'Desfijar' : 'Fijar'}</button><button type="button" role="menuitem" data-rr-dest>${IC.dest}${destacado(m) ? 'Quitar destacado' : 'Destacar'}</button><hr><button type="button" role="menuitem" data-rr-sel>${IC.sel}Seleccionar</button>`;
   // El menú de siempre (88-responder), sin Reenviar, se abra con la flecha o con clic derecho.
   const abrirMenuAntes = rrAbrirMenu;
   rrAbrirMenu = function(){ abrirMenuAntes.apply(this, arguments); rrMenu.querySelectorAll('[data-rr-reenv]').forEach(x => x.remove()); };
@@ -74,9 +85,86 @@
   // La flecha abre solo las opciones: las reacciones van en el botón de emoji.
   document.addEventListener('click', e => {
     const ch = e.target.closest('.rr-chev');
-    if (ch) { setTimeout(() => { if (rrMenu.hidden) { marcar(null, false); return; } rrMenu.classList.add('rr-solo-op'); if (!rrMenu.querySelector('[data-rr-sel]')) rrMenu.insertAdjacentHTML('beforeend', MAS_OP); marcar(ch.dataset.rrMenu, true); }); return; }
+    if (ch) { setTimeout(() => { if (rrMenu.hidden) { marcar(null, false); return; } rrMenu.classList.add('rr-solo-op'); if (!rrMenu.querySelector('[data-rr-sel]')) rrMenu.insertAdjacentHTML('beforeend', masOp(rrMsg(rrConv(), ch.dataset.rrMenu))); marcar(ch.dataset.rrMenu, true); }); return; }
     if (e.target.closest('[data-rr-menu]')) rrMenu.classList.remove('rr-solo-op');
     if (e.target.closest('.rr-menu [data-rr-sel]')) entrarSel(menuDe);
+    else if (e.target.closest('.rr-menu [data-rr-fijar]')) alternarFijado(menuDe);
+    else if (e.target.closest('.rr-menu [data-rr-dest]')) alternarDestacado([menuDe]);
+  });
+
+  /* ── 6 · Fijar y Destacar ── */
+  const quitarCampo = (o, k, v) => { if (v === undefined) delete o[k]; else o[k] = v; };
+  async function marcas(ids, cambios, ok){
+    const c = rrConv(); if (!c) return;
+    const ms = ids.map(id => rrMsg(c, id)).filter(Boolean); if (!ms.length) return;
+    const antes = ms.map(m => ({m, fijado: m.fijado, dest: m.dest}));
+    for (const m of ms) {
+      if ('fijar' in cambios) quitarCampo(m, 'fijado', cambios.fijar ? {por: YO(), en: new Date().toISOString()} : undefined);
+      if ('destacar' in cambios) { const d = new Set(Array.isArray(m.dest) ? m.dest : []); if (cambios.destacar) d.add(YO()); else d.delete(YO()); quitarCampo(m, 'dest', d.size ? [...d] : undefined); }
+    }
+    chat();
+    try {
+      for (const m of ms) {
+        const r = await crmApi('PATCH', `/crm/conversaciones/${c.id}/mensajes/${encodeURIComponent(m._id)}/marcas`, cambios);
+        if (r) { quitarCampo(m, 'fijado', r.fijado || undefined); quitarCampo(m, 'dest', Array.isArray(r.dest) ? r.dest : undefined); }
+      }
+      if (ok) toast(ok);
+    } catch (err) {
+      for (const a of antes) { quitarCampo(a.m, 'fijado', a.fijado); quitarCampo(a.m, 'dest', a.dest); }
+      toast(err.message || 'No se pudo guardar');
+    }
+    if (st.sel === c.id) chat();
+  }
+  function alternarFijado(id){ const m = rrMsg(rrConv(), id); if (!m) return; const si = !fijado(m); marcas([id], {fijar: si}, si ? 'Mensaje fijado' : 'Mensaje desfijado'); }
+  function alternarDestacado(ids){
+    const c = rrConv(), ms = ids.map(id => rrMsg(c, id)).filter(Boolean); if (!ms.length) return;
+    const si = !ms.every(destacado);
+    marcas(ms.map(m => m._id), {destacar: si}, si ? (ms.length === 1 ? 'Mensaje destacado' : `${ms.length} mensajes destacados`) : (ms.length === 1 ? 'Destacado quitado' : 'Destacados quitados'));
+  }
+  // Ir a un mensaje: el chat baja hasta él y lo hace brillar (como al tocar una cita, 88-responder).
+  function irAlMensaje(id){
+    const el = document.querySelector(`#msgs .rr-m[data-rr="${CSS.escape(id)}"]`);
+    if (!el) { toast('Ese mensaje ya no está en lo que se ve del chat'); return; }
+    el.scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center'});
+    el.classList.remove('rr-brilla'); void el.offsetWidth; el.classList.add('rr-brilla');
+  }
+  // La franja de fijados arriba del chat: el más reciente primero; cada toque lleva a uno y pasa al siguiente.
+  let fjI = 0, fjConv = null;
+  function pintarFijados(){
+    const caja = document.getElementById('msgs'); if (!caja) return;
+    let bar = document.getElementById('fj-bar');
+    const c = CONV.find(x => x.id === st.sel);
+    const L = c ? c.msgs.filter(m => m && m._id && m.fijado).sort((a, b) => String(b.fijado.en || '').localeCompare(String(a.fijado.en || ''))) : [];
+    if (!L.length) { if (bar) bar.remove(); return; }
+    if (fjConv !== st.sel) { fjI = 0; fjConv = st.sel; }
+    if (fjI >= L.length) fjI = 0;
+    if (!bar) { bar = document.createElement('button'); bar.type = 'button'; bar.id = 'fj-bar'; bar.className = 'fj-bar'; caja.before(bar); }
+    const m = L[fjI];
+    bar.dataset.id = m._id; bar.setAttribute('aria-label', 'Ir al mensaje fijado');
+    bar.replaceChildren();
+    bar.insertAdjacentHTML('beforeend', `<span class="fj-ic">${IC.fijar}</span><span class="fj-tx"><b>Mensaje fijado${L.length > 1 ? ` · ${fjI + 1} de ${L.length}` : ''}</b><small>${esc(`${rrQuien(c, m)}: ${rrTexto(m)}`)}</small></span>`);
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('#fj-bar'); if (!b) return;
+    irAlMensaje(b.dataset.id); fjI++; pintarFijados();
+  });
+  // ⋯ del chat: «Mensajes destacados» (los tuyos en esta conversación).
+  document.getElementById('b-mas').addEventListener('click', () => {
+    const m = document.getElementById('m-mas'); if (m.hidden || m.querySelector('[data-dst-ver]')) return;
+    const hr = m.querySelector('hr');
+    const html = `<button type="button" data-dst-ver>${IC.dest}Mensajes destacados</button>`;
+    if (hr) hr.insertAdjacentHTML('beforebegin', html); else m.insertAdjacentHTML('beforeend', html);
+  });
+  document.getElementById('m-mas').addEventListener('click', e => {
+    if (!e.target.closest('[data-dst-ver]')) return;
+    const c = rrConv(); if (!c) return;
+    const L = c.msgs.filter(m => m && m._id && destacado(m));
+    const filas = L.map(m => `<button type="button" class="dst-it" data-dst-ir="${esc(m._id)}"><span class="dst-q"><b>${esc(rrQuien(c, m))}</b><small>${esc(m.h || '')}</small></span><span class="dst-t">${esc(rrTexto(m))}</span></button>`).join('');
+    abrirDialogo(`<h3>Mensajes destacados</h3><p>${L.length ? 'Los que destacaste en esta conversación. Toca uno para ir a él.' : 'Todavía no destacaste mensajes en esta conversación. Abre las opciones de un mensaje y toca Destacar.'}</p>${L.length ? `<div class="dst-lista">${filas}</div>` : ''}<div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cerrar</button></div>`, 'dst-dlg');
+  });
+  document.getElementById('ov-x').addEventListener('click', e => {
+    const b = e.target.closest('[data-dst-ir]'); if (!b) return;
+    cerrarDialogo(); irAlMensaje(b.dataset.dstIr);
   });
 
   /* ── 5 · Seleccionar ── */
@@ -87,18 +175,18 @@
     let bar = document.getElementById('rr-selbar');
     if (!SEL.on) { if (bar) bar.remove(); return; }
     if (!bar) {
-      comp.insertAdjacentHTML('afterbegin', `<div class="rr-selbar" id="rr-selbar" role="toolbar" aria-label="Mensajes seleccionados"><button type="button" class="rr-selx" data-sel-salir aria-label="Salir de la selección">${RR_IC.x}</button><b class="rr-seln"></b><span class="rr-selsp"></span><button type="button" class="btn" data-sel-copiar>${RR_IC.copia}Copiar</button></div>`);
+      comp.insertAdjacentHTML('afterbegin', `<div class="rr-selbar" id="rr-selbar" role="toolbar" aria-label="Mensajes seleccionados"><button type="button" class="rr-selx" data-sel-salir aria-label="Salir de la selección">${RR_IC.x}</button><b class="rr-seln"></b><span class="rr-selsp"></span><button type="button" class="btn" data-sel-copiar>${RR_IC.copia}Copiar</button><button type="button" class="btn" data-sel-dest>${IC.dest}Destacar</button></div>`);
       bar = document.getElementById('rr-selbar');
     }
     bar.querySelector('.rr-seln').textContent = selCuenta();
-    bar.querySelectorAll('[data-sel-copiar]').forEach(b => { b.disabled = !SEL.ids.size; });
+    bar.querySelectorAll('[data-sel-copiar],[data-sel-dest]').forEach(b => { b.disabled = !SEL.ids.size; });
   }
   function entrarSel(id){ cerrarTodo(); rrCerrarMenu(); SEL.on = true; SEL.ids = new Set(id ? [id] : []); chat(); pintarSel(); }
   function salirSel(){ SEL.on = false; SEL.ids.clear(); chat(); pintarSel(); }
   // Otra conversación: la selección no la sigue.
   let selConv = null;
   const chatSel = chat;
-  chat = function(){ if (SEL.on && selConv !== null && selConv !== st.sel) { SEL.on = false; SEL.ids.clear(); } selConv = st.sel; const r = chatSel.apply(this, arguments); pintarSel(); alinearCasillas(); return r; };
+  chat = function(){ if (SEL.on && selConv !== null && selConv !== st.sel) { SEL.on = false; SEL.ids.clear(); } selConv = st.sel; const r = chatSel.apply(this, arguments); pintarSel(); pintarFijados(); alinearCasillas(); return r; };
   // Todas las casillas en una misma columna, a la izquierda del chat, cada una a la altura de su mensaje.
   function alinearCasillas(){
     if (!SEL.on) return;
@@ -115,6 +203,7 @@
       navigator.clipboard.writeText(lineas.join('\n')).then(() => toast(lineas.length === 1 ? 'Mensaje copiado' : `${lineas.length} mensajes copiados`), () => toast('No se pudo copiar'));
       salirSel(); return;
     }
+    if (e.target.closest('[data-sel-dest]')) { const ids = [...SEL.ids]; salirSel(); alternarDestacado(ids); return; }
     const w = e.target.closest('#msgs .rr-m'); if (!w) return;
     e.preventDefault(); e.stopPropagation();
     const id = w.dataset.rr; if (SEL.ids.has(id)) SEL.ids.delete(id); else SEL.ids.add(id);
@@ -168,7 +257,7 @@
     const copia = b.cloneNode(true); copia.querySelectorAll('.rr-chev').forEach(x => x.remove());
     foco.insertAdjacentHTML('beforeend', m && rrReacciona(c, m) ? `<div class="rr-pill" role="toolbar" aria-label="Reaccionar">${barraHTML(id)}</div>` : '');
     foco.append(copia);
-    foco.insertAdjacentHTML('beforeend', `<div class="rr-ops" role="menu" aria-label="Opciones del mensaje"><button type="button" role="menuitem" data-f-resp>${RR_IC.resp}Responder</button>${texto ? `<button type="button" role="menuitem" data-f-copiar>${RR_IC.copia}Copiar</button>` : ''}${MAS_OP}</div>`);
+    foco.insertAdjacentHTML('beforeend', `<div class="rr-ops" role="menu" aria-label="Opciones del mensaje"><button type="button" role="menuitem" data-f-resp>${RR_IC.resp}Responder</button>${texto ? `<button type="button" role="menuitem" data-f-copiar>${RR_IC.copia}Copiar</button>` : ''}${masOp(m)}</div>`);
     document.body.append(capa, foco);
     const h = foco.offsetHeight, pill = foco.querySelector('.rr-pill'), arriba = pill ? pill.offsetHeight + 10 : 0;
     foco.style.top = Math.max(16, Math.min(innerHeight - h - 16, r.top - arriba)) + 'px';
@@ -205,6 +294,8 @@
       if (t.closest('[data-f-resp]')) { cerrarTodo(); rrResponder(id); }
       else if (t.closest('[data-f-copiar]')) { cerrarTodo(); navigator.clipboard.writeText(rrTexto(m)).then(() => toast('Mensaje copiado'), () => toast('No se pudo copiar')); }
       else if (t.closest('[data-rr-sel]')) { cerrarTodo(); entrarSel(id); }
+      else if (t.closest('[data-rr-fijar]')) { cerrarTodo(); alternarFijado(id); }
+      else if (t.closest('[data-rr-dest]')) { cerrarTodo(); alternarDestacado([id]); }
       return;
     }
     if (selector && (t.closest('.rr-reacc') || t.closest('.rr-hoja'))) return;
@@ -278,7 +369,18 @@
 .rr-selbar b{font-size:14px;font-weight:600;color:#0b0b10;white-space:nowrap}.rr-selsp{flex:1}
 .rr-selx{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;color:#dc2626;background:none;border:0;cursor:pointer}.rr-selx:hover{background:#fef2f2}.rr-selx svg{width:18px;height:18px}
 .rr-selbar .btn{display:inline-flex;align-items:center;gap:7px}.rr-selbar .btn svg{width:16px;height:16px}
+.wb-t .mk-f,.wb-t .mk-d{display:inline-flex}.wb-t .mk{width:12px;height:12px;stroke-width:2}
+.wb-t .mk-d .mk{fill:currentColor;stroke:none;color:#b8860b}
+.fj-bar{display:flex;align-items:center;gap:10px;width:100%;flex:none;padding:8px 16px;border:0;border-bottom:1px solid #eef1f5;background:#fff;font:inherit;text-align:left;cursor:pointer;animation:fj-entra .3s cubic-bezier(.32,.72,0,1) both;transition:background .15s}
+.fj-bar:hover{background:#f8fafc}
+@keyframes fj-entra{from{opacity:0;transform:translateY(-6px)}}
+.fj-ic{width:30px;height:30px;border-radius:8px;background:#fff7d6;color:#8a6d00;display:grid;place-items:center;flex:none}.fj-ic svg{width:15px;height:15px}
+.fj-tx{flex:1;min-width:0;display:grid}.fj-tx b{font-size:12.5px;font-weight:600;color:#8a6d00}.fj-tx small{font-size:13px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dlg.dst-dlg .dst-lista{display:grid;gap:6px;max-height:min(420px,55dvh);overflow:auto;margin:4px 0}
+.dst-it{display:grid;gap:3px;width:100%;padding:10px 12px;border:1px solid #eef1f5;border-radius:10px;background:#fff;font:inherit;text-align:left;cursor:pointer;transition:background .15s}
+.dst-it:hover{background:#f8fafc}.dst-q{display:flex;justify-content:space-between;gap:10px}.dst-q b{font-size:12.5px;font-weight:600}.dst-q small{font-size:11.5px;color:#6b7280}
+.dst-t{font-size:13.5px;color:#1f2937;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 @media (max-width:759.98px){.rr-sel-on #msgs .ch-fila{padding-left:32px}.rr-selbar .btn{padding:0 10px}}
-@media (prefers-reduced-motion:reduce){.enc-fila,.rr-pill,.rr-pill button,.rr-capa,.rr-foco .ch-b,.rr-foco .rr-ops,.rr-hoja,.rr-m.rr-sel .rr-ck,.rr-selbar{animation:none}.rr-chev,.rr-emob,.rr-ck{transition:none}}
+@media (prefers-reduced-motion:reduce){.fj-bar,.enc-fila,.rr-pill,.rr-pill button,.rr-capa,.rr-foco .ch-b,.rr-foco .rr-ops,.rr-hoja,.rr-m.rr-sel .rr-ck,.rr-selbar{animation:none}.rr-chev,.rr-emob,.rr-ck{transition:none}}
 </style>`);
 })();
