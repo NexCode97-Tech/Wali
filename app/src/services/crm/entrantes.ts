@@ -1201,6 +1201,72 @@ async function procesarEcoWhatsapp(linea: { id: string }, e: Json): Promise<void
 }
 
 /**
+ * Coexistencia: el historial de chats del celular (campo `history`, 12-nov). Al conectar el número con la app de WhatsApp
+ * Business, Meta manda hasta 6 meses de chats en partes ({metadata: {phase, chunk_order, progress}, threads: [{id, messages}]}).
+ * Cada chat queda en la conversación de esa persona en esa línea; si no hay, una nueva ya finalizada («Historial del
+ * celular»), para no llenar la bandeja de chats viejos ni repartirlos. Los mensajes van con su hora real, sin duplicarse
+ * (waId), y los que la empresa mandó desde el celular quedan como «Desde la app de WhatsApp Business». Sin avisos ni
+ * automatizaciones: es historia. Si la empresa no comparte el historial llega un error (2593109) y queda en el registro.
+ */
+const TIPO_HIST: Record<string, string> = { image: '📷 Foto', video: '🎥 Video', audio: '🎤 Nota de voz', document: '📄 Documento', sticker: 'Sticker', location: '📍 Ubicación', contacts: '👤 Contacto' }
+async function procesarHistorial(linea: { id: string; phoneNumberId: string | null; ajustes: unknown }, v: Json): Promise<void> {
+  const propio = telDigitos(obj(v.metadata).display_phone_number) || ''
+  for (const parte of Array.isArray(v.history) ? v.history as Json[] : []) {
+    const errores = Array.isArray(parte.errors) ? parte.errors as Json[] : []
+    if (errores.length) { logger.info(`[CRM WA] historial de la línea ${linea.id} no compartido: ${txt(errores[0].message) || txt(errores[0].title) || errores[0].code}`); continue }
+    const meta = obj(parte.metadata)
+    let guardados = 0
+    for (const hilo of Array.isArray(parte.threads) ? parte.threads as Json[] : []) {
+      const tel = telDigitos(hilo.id) || ''
+      const msgs = (Array.isArray(hilo.messages) ? hilo.messages as Json[] : []).filter(m => txt(m.id))
+      if (tel.length < 7 || !msgs.length) continue
+      const cuando = (m: Json) => (Number(m.timestamp) > 0 ? new Date(Number(m.timestamp) * 1000) : new Date())
+      msgs.sort((a, b) => cuando(a).getTime() - cuando(b).getTime())
+      const k = await contactoDe({ tel, uid: '', usuario: '' }, '', undefined)
+      let conv = await prisma.crmConversacion.findFirst({ where: { contactoId: k.id, lineaId: linea.id }, orderBy: { createdAt: 'desc' } })
+      const primero = cuando(msgs[0]), ultimo = cuando(msgs[msgs.length - 1])
+      if (!conv) {
+        conv = await prisma.crmConversacion.create({ data: {
+          contactoId: k.id, canal: 'wa', lineaId: linea.id, equipo: txt(obj(linea.ajustes).equipo) || null,
+          estado: 'finalizadas', motivoFin: 'Historial del celular', finalizadaAt: ultimo, createdAt: primero, ultimoMensajeAt: ultimo,
+        } })
+      }
+      let ultimoIn: Date | null = null
+      for (const m of msgs) {
+        const deEmpresa = !!txt(m.to) || (!!propio && telDigitos(m.from) === propio)
+        const tipo = txt(m.type)
+        const texto = tipo === 'text' ? txt(obj(m.text).body) : txt(obj(m[tipo]).caption) || TIPO_HIST[tipo] || 'Mensaje'
+        const t = cuando(m)
+        try {
+          await prisma.crmMensaje.create({ data: {
+            conversacionId: conv.id, tipo: deEmpresa ? 'out' : 'in', waId: txt(m.id), createdAt: t,
+            datos: json(deEmpresa ? { out: texto, by: 'Desde la app de WhatsApp Business', historial: true } : { in: texto, historial: true }),
+            ...(deEmpresa ? { estado: ['read', 'played'].includes(txt(obj(m.history_context).status).toLowerCase()) ? 'leido' : 'entregado' } : {}),
+          } })
+          guardados++
+          if (!deEmpresa && (!ultimoIn || t > ultimoIn)) ultimoIn = t
+        } catch (err) { if (!(err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002')) throw err }
+      }
+      const data: Prisma.CrmConversacionUpdateInput = {}
+      if (!conv.ultimoMensajeAt || ultimo > conv.ultimoMensajeAt) data.ultimoMensajeAt = ultimo
+      if (ultimoIn && (!conv.ultimoEntranteAt || ultimoIn > conv.ultimoEntranteAt)) data.ultimoEntranteAt = ultimoIn
+      if (Object.keys(data).length) await prisma.crmConversacion.update({ where: { id: conv.id }, data })
+      await emitirConv(conv.id)
+    }
+    logger.info(`[CRM WA] historial de la línea ${linea.id}: parte ${String(meta.chunk_order ?? '?')} (${String(meta.phase ?? '?')}, ${String(meta.progress ?? '?')}%), ${guardados} mensajes`)
+  }
+}
+
+/** Coexistencia: los contactos de la agenda del celular (`smb_app_state_sync`). Solo pone el nombre a quien ya está en el CRM sin nombre. */
+async function procesarContactosCelular(v: Json): Promise<void> {
+  for (const x of Array.isArray(v.state_sync) ? v.state_sync as Json[] : []) {
+    const c = obj(x.contact), tel = telDigitos(c.phone_number) || '', nombre = txt(c.full_name) || txt(c.first_name)
+    if (x.type !== 'contact' || tel.length < 7 || !nombre || txt(x.action) === 'remove') continue
+    await prisma.crmContacto.updateMany({ where: { telefono: tel, OR: [{ nombre: null }, { nombre: '' }] }, data: { nombre } })
+  }
+}
+
+/**
  * Un aviso de llamada (campo `calls`): connect de una entrante (trae la oferta del cliente) o de una saliente (trae su
  * respuesta), y terminate. La entrante cae en la conversación del cliente en esa línea, como un mensaje suyo.
  */
@@ -1269,6 +1335,12 @@ export async function procesarWebhookCrm(cuerpo: Json, conexionId: string | null
             const pnid = String(v.metadata?.phone_number_id ?? '')
             const linea = pnid ? await prisma.crmLinea.findUnique({ where: { phoneNumberId: pnid }, select: { id: true } }) : null
             if (linea) for (const e of v.message_echoes ?? []) await procesarEcoWhatsapp(linea, e).catch(err => { fallas.push(`eco ${e?.id}: ${(err as Error).message}`) })
+          } else if (cambio?.field === 'history' || cambio?.field === 'smb_app_state_sync') {
+            const pnid = String(v.metadata?.phone_number_id ?? '')
+            const linea = pnid ? await prisma.crmLinea.findUnique({ where: { phoneNumberId: pnid }, select: { id: true, phoneNumberId: true, ajustes: true } }) : null
+            if (!linea) { logger.info(`[CRM WA] ${pnid} fuera del CRM: aviso ${cambio.field}`); continue }
+            if (cambio.field === 'history') await procesarHistorial(linea, v)
+            else await procesarContactosCelular(v)
           } else if (cambio?.field === 'phone_number_quality_update') {
             await actualizarCalidad(v)
           } else if (cambio?.field === 'business_capability_update') {
