@@ -153,3 +153,4 @@
 - Maqueta versión 306 (pedido del usuario): en un recordatorio vencido los botones quedan bajo el rótulo «Posponer»: 1 hora, Mañana 9 a. m. y Elegir… (abre el mismo calendario y la hora; el botón del formulario dice Posponer y mueve ese recordatorio, también en Google).
 - Maqueta versión 307 (pedido del usuario): en el recordatorio vencido queda un solo botón «Posponer»; abre ahí mismo el calendario y, al elegir el día, la hora; al elegir la hora el recordatorio queda movido.
 - Maqueta versión 308 (pedido del usuario): se quitó el texto «Primero conecta tu Google Calendar» del interruptor. Si lo activan sin tener Google conectado, sale el modal «Primero conecta Google Calendar» con Continuar con Google.
+- Maqueta versión 309 (pedido del usuario): se quitó la tarjeta azul «Agéndalos en tu Google Calendar»; conectar Google queda solo en el modal que sale al encender el interruptor sin tenerlo conectado (y en Mi perfil).
