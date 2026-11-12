@@ -7,6 +7,7 @@
 (() => {
   st.mbAbierto = st.mbAbierto !== false;
   const navAntes = nav;
+  let mbEstabaAbierto = true; // al cargar, el desplegable ya viene abierto: sin animación
   nav = function(){
     // Menciones y Finalizadas se pintan solo con «Conversaciones» abierto: se pintan siempre y aquí se deciden.
     const g = st.convAbierto; st.convAbierto = true;
@@ -19,11 +20,14 @@
     b.setAttribute('aria-expanded', String(st.mbAbierto));
     if (!b.querySelector('.tw')) b.insertAdjacentHTML('beforeend', I('chev', 'i tw'));
     b.setAttribute('aria-current', String(!st.pagina && !st.menciones && !st.finVista && !st.carpeta && !st.equipo && !st.etq && !st.canal && !st.tag && !st.linea));
+    // La entrada se anima solo al abrir el desplegable: nav() repinta el menú con cada aviso en vivo y repetirla parpadea.
+    const animar = st.mbAbierto && !mbEstabaAbierto;
+    mbEstabaAbierto = st.mbAbierto;
     let tras = bandeja;
     for (const k of ['menciones', 'finalizadas']) {
       const x = li(k); if (!x) continue;
       if (!st.mbAbierto) { x.remove(); continue; }
-      x.className = 'sub mb-sub'; tras.after(x); tras = x;
+      x.className = 'sub mb-sub' + (animar ? ' mb-entra' : ''); tras.after(x); tras = x;
     }
   };
   // El título de la lista: con «Conversaciones» y «Sin asignar» dentro de Mi bandeja, la lista se llama Mi bandeja.
@@ -62,8 +66,8 @@
   });
 
   document.head.insertAdjacentHTML('beforeend', `<style>
-#principal li.sub.mb-sub{animation:mb-sub .32s cubic-bezier(.32,.72,0,1) both}
-#principal li.sub.mb-sub + li.sub.mb-sub{animation-delay:.04s}
+#principal li.sub.mb-entra{animation:mb-sub .32s cubic-bezier(.32,.72,0,1) both}
+#principal li.sub.mb-entra + li.sub.mb-entra{animation-delay:.04s}
 @keyframes mb-sub{from{opacity:0;transform:translateY(-4px)}}
 .nav-ay{display:none}
 @media (max-width:1000px){
@@ -76,6 +80,6 @@
   .nav-ay-tx{flex:1;min-width:0}.nav-ay b{display:block;font-size:13.5px;font-weight:600}.nav-ay small{display:block;font-size:12px;opacity:.7}
   .nav-ay-n{min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#dc2626;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center}
 }
-@media (prefers-reduced-motion:reduce){#principal li.sub.mb-sub{animation:none}.nav-ay{transition:none}}
+@media (prefers-reduced-motion:reduce){#principal li.sub.mb-entra{animation:none}.nav-ay{transition:none}}
 </style>`);
 })();
