@@ -226,7 +226,7 @@ export function preguntaAsesor(p1: string, vars: VariablesEncuesta): string {
 // ─── El formulario (Flow JSON) ───────────────────────────────────────────────
 
 /** Sube con cada cambio del formulario: el nombre en Meta lleva la versión. */
-export const VERSION_FORMULARIO = 2
+export const VERSION_FORMULARIO = 3
 export const NOMBRE_FORMULARIO = `encuesta_al_finalizar_v${VERSION_FORMULARIO}`
 export const BOTON_FORMULARIO = 'Responder encuesta'
 const PANTALLA = 'ENCUESTA'
@@ -275,7 +275,7 @@ export const FORMULARIO_JSON = {
           ...lugares.flatMap(i => [
             { type: 'TextBody', text: `\${data.q${i}}`, 'font-weight': 'bold', visible: `\${data.vq${i}}` },
             { type: 'RadioButtonsGroup', name: `r${i}`, label: 'Elige una opción', 'data-source': `\${data.o${i}}`, required: `\${data.rr${i}}`, visible: `\${data.vr${i}}` },
-            { type: 'Dropdown', name: `d${i}`, label: 'Elige de 0 a 10', 'data-source': DE_0_A_10, required: `\${data.rd${i}}`, visible: `\${data.vd${i}}` },
+            { type: 'Dropdown', name: `d${i}`, label: 'De 0 a 10', 'data-source': DE_0_A_10, required: `\${data.rd${i}}`, visible: `\${data.vd${i}}` },
             { type: 'TextArea', name: `t${i}`, label: 'Tu respuesta', 'max-length': 600, required: `\${data.rt${i}}`, visible: `\${data.vt${i}}` },
           ]),
           {
