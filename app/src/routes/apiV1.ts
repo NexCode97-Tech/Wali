@@ -10,6 +10,7 @@ import { leerEquipos } from '../services/crm/equipos'
 import { auditLog } from '../utils/auditLogger'
 import { ConflictError, NotFoundError, ValidationError } from '../utils/errors'
 import { FLUJOS_DEFECTO } from '../services/crm/flujos'
+import { dentroDeHorario } from '../services/crm/entrantes'
 import * as ajustes from '../controllers/crm/ajustes.controller'
 import * as conv from '../controllers/crm/conversaciones.controller'
 import * as contactos from '../controllers/crm/contactos.controller'
@@ -18,7 +19,8 @@ import * as contactos from '../controllers/crm/contactos.controller'
  * API pública de Wali, versión 1 (11-nov). Base: https://walicrm.com/crm/api/v1. Va con
  * `Authorization: Bearer wali_live_…` (la clave de Ajustes del CRM › API). Todo dentro del espacio de la clave.
  *
- * Lectura: conversaciones (con filtros y sus mensajes), contactos, equipos, miembros, etapas, etiquetas, líneas, flujos y agentes.
+ * Lectura: conversaciones (con filtros y sus mensajes), contactos, equipos, miembros, etapas, etiquetas, líneas, flujos, agentes
+ * y el horario de atención (turnos, festivos y mensaje fuera de horario), que también se cambia (12-nov).
  * Acciones (clave de lectura y acciones): asignar (también en lote, hasta 100), cambiar la etapa, poner o quitar
  * etiquetas, finalizar o reabrir, y crear o editar contactos. Las acciones pasan por los mismos controladores que la
  * pantalla: mismos permisos, validaciones, avisos en vivo y registro. Respuestas: { data, siguiente? } o { error }.
@@ -219,7 +221,7 @@ router.patch('/contactos/:id', asyncHandler(async (req: Request, res: Response) 
 const encenderSchema = z.object({ encendido: z.boolean() })
 
 /** Guarda un ajuste con el controlador de la pantalla, a partir de la versión que se leyó. */
-async function guardarComoPantalla(req: Request, clave: 'flujos' | 'agentes', valor: unknown, base: Date | null) {
+async function guardarComoPantalla(req: Request, clave: 'flujos' | 'agentes' | 'cfg', valor: unknown, base: Date | null) {
   const r = Object.assign(Object.create(Object.getPrototypeOf(req)), req, { params: { clave }, body: { valor, base: base ? base.toISOString() : null }, query: {} }) as Request
   let estado = 200
   const res = { statusCode: 200, status(c: number) { estado = c; return this }, json() { return this }, send() { return this }, setHeader() { return this } }
@@ -270,6 +272,88 @@ router.patch('/agentes/:id', asyncHandler(async (req: Request, res: Response) =>
   if (a.estado !== estado) await guardarComoPantalla(req, 'agentes', lista.map(x => (x === a ? { ...x, estado } : x)), fila?.updatedAt ?? null)
   auditLog(req, 'UPDATE', 'api_agente', String(a.id), { clave: req.apiClave?.id, encendido: d.encendido })
   res.json({ data: agenteDe({ ...a, estado }) })
+}))
+
+// ── Horario de atención (12-nov, pedido del usuario): leerlo y cambiarlo. Es el mismo de Ajustes del CRM › Horario de
+// atención (78-horarios.js): los turnos (días, horas, almuerzo y quiénes lo trabajan), «Festivos de Colombia como domingo»
+// y el mensaje fuera de horario. El horario de la empresa sale de los turnos (la primera hora y la última de cada día), igual
+// que en la pantalla, y de él viven el aviso fuera de horario, el agente IA y el chat de la web. Se guarda con el controlador
+// de Ajustes (solo administradores, aviso en vivo) y no pisa lo que alguien guardó al mismo tiempo.
+const DIAS_API = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'] as const
+const NOMBRES_DIA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+const minHora = (v: unknown) => { const m = String(v ?? '').match(/^(\d{1,2})(?::(\d{2}))?$/); return m && +m[1] <= 24 && +(m[2] ?? 0) < 60 ? +m[1] * 60 + +(m[2] ?? 0) : null }
+const hora = z.string().regex(/^([01]?\d|2[0-4])(:[0-5]\d)?$/, 'La hora va como 7:00 o 18:30 (de 0:00 a 24:00)')
+const turnoSchema = z.object({
+  id: z.string().min(1).max(60).optional(),
+  nombre: z.string().trim().min(1).max(60),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  dias: z.array(z.object({
+    dia: z.enum(DIAS_API), desde: hora, hasta: hora,
+    almuerzo: z.object({ desde: hora, hasta: hora }).optional(),
+  })).min(1).max(7),
+  personas: z.array(z.string().min(1).max(60)).max(500),
+}).refine(t => new Set(t.dias.map(d => d.dia)).size === t.dias.length, { message: 'Cada día va una sola vez en el turno.' })
+const horarioSchema = z.object({
+  turnos: z.array(turnoSchema).max(50).optional(),
+  festivosComoDomingo: z.boolean().optional(),
+  mensajeFueraDeHorario: z.string().max(1000).optional(),
+}).strict()
+
+/** El horario de la empresa a partir de los turnos (htDerivar de 78-horarios.js): sin turnos ese día, cerrado. */
+function horarioDeTurnos(turnos: Json[]): unknown[][] {
+  return [1, 2, 3, 4, 5, 6, 0].map(dia => {
+    const fr = turnos.flatMap(t => (Array.isArray(t.dias) ? t.dias as unknown[][] : []).filter(z => z[0] === dia)).filter(z => minHora(z[1]) !== null && minHora(z[2]) !== null)
+    if (!fr.length) return [NOMBRES_DIA[dia], '7:00', '22:00', false]
+    const de = fr.reduce((a, z) => (minHora(z[1])! < minHora(a)! ? z[1] : a), fr[0][1])
+    const a = fr.reduce((x, z) => (minHora(z[2])! > minHora(x)! ? z[2] : x), fr[0][2])
+    return [NOMBRES_DIA[dia], de, a, true]
+  })
+}
+const turnoDe = (t: Json) => ({
+  id: String(t.id ?? ''), nombre: String(t.n ?? ''), color: t.col ?? null,
+  dias: (Array.isArray(t.dias) ? t.dias as unknown[][] : []).map(z => ({ dia: DIAS_API[Number(z[0])] ?? null, desde: z[1], hasta: z[2], ...(z[3] && z[4] ? { almuerzo: { desde: z[3], hasta: z[4] } } : {}) })),
+  personas: Array.isArray(t.ids) ? t.ids.map(String) : [],
+})
+function horarioDe(cfg: Json) {
+  const turnos = Array.isArray(cfg.turnos) ? (cfg.turnos as unknown[]).map(obj) : []
+  const horario = Array.isArray(cfg.horario) ? cfg.horario as unknown[][] : []
+  const festivos = cfg.festivos !== false
+  return {
+    turnos: turnos.map(turnoDe),
+    horarioEmpresa: horario.filter(Array.isArray).map(f => ({ dia: String(f[0] ?? ''), abierto: f[3] !== false, desde: f[1] ?? null, hasta: f[2] ?? null })),
+    festivosComoDomingo: festivos,
+    mensajeFueraDeHorario: typeof cfg.fuera === 'string' ? cfg.fuera : '',
+    dentroDeHorarioAhora: horario.length ? dentroDeHorario(horario, new Date(), festivos) : true,
+  }
+}
+router.get('/horario', asyncHandler(async (_req: Request, res: Response) => {
+  res.json({ data: horarioDe(obj((await filaAjuste('cfg'))?.valor)) })
+}))
+router.patch('/horario', asyncHandler(async (req: Request, res: Response) => {
+  const d = horarioSchema.parse(req.body)
+  const fila = await filaAjuste('cfg')
+  const cfg = { ...obj(fila?.valor) }
+  if (d.turnos) {
+    const ids = new Set((await usuariosCrm()).map(u => u.id))
+    const extranos = [...new Set(d.turnos.flatMap(t => t.personas))].filter(id => !ids.has(id))
+    if (extranos.length) throw new ValidationError(`Estas personas no son miembros del espacio: ${extranos.join(', ')}. Revisa GET /miembros.`)
+    const previos = Array.isArray(cfg.turnos) ? (cfg.turnos as unknown[]).map(obj) : []
+    const COLORES = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#14B8A6']
+    cfg.turnos = d.turnos.map((t, i) => {
+      const previo = t.id ? previos.find(x => String(x.id) === t.id) : undefined
+      return {
+        id: t.id || `t${Date.now().toString(36)}${i}`, n: t.nombre, col: t.color ?? previo?.col ?? COLORES[i % COLORES.length],
+        dias: t.dias.map(z => [DIAS_API.indexOf(z.dia), z.desde, z.hasta, ...(z.almuerzo ? [z.almuerzo.desde, z.almuerzo.hasta] : [])]),
+        ids: [...new Set(t.personas)],
+      }
+    })
+    if ((cfg.turnos as unknown[]).length) cfg.horario = horarioDeTurnos(cfg.turnos as Json[])
+  }
+  if (d.festivosComoDomingo !== undefined) cfg.festivos = d.festivosComoDomingo
+  if (d.mensajeFueraDeHorario !== undefined) cfg.fuera = d.mensajeFueraDeHorario.trim()
+  await guardarComoPantalla(req, 'cfg', cfg, fila?.updatedAt ?? null)
+  auditLog(req, 'UPDATE', 'api_horario', undefined, { clave: req.apiClave?.id, campos: Object.keys(d) })
+  res.json({ data: horarioDe(cfg) })
 }))
 
 router.use((_req: Request, res: Response) => { res.status(404).json({ error: 'Esa ruta no existe en la API v1. Revisa la documentación.' }) })

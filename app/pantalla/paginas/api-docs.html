@@ -41,7 +41,7 @@ article{min-width:0}
 <main>
 <nav class="ind" aria-label="Contenido">
   <a href="#inicio">Para empezar</a><a href="#claves">Claves y permisos</a><a href="#limites">Límites y errores</a><a href="#paginas">Páginas</a>
-  <a href="#conversaciones">Conversaciones</a><a href="#asignar">Asignar en lote</a><a href="#contactos">Contactos</a><a href="#catalogos">Equipos, miembros y etapas</a><a href="#robots">Flujos y agentes de IA</a><a href="#webhooks">Webhooks</a>
+  <a href="#conversaciones">Conversaciones</a><a href="#asignar">Asignar en lote</a><a href="#contactos">Contactos</a><a href="#catalogos">Equipos, miembros y etapas</a><a href="#robots">Flujos y agentes de IA</a><a href="#horario">Horario de atención</a><a href="#webhooks">Webhooks</a>
 </nav>
 <article>
 <h1 id="inicio">API de Wali</h1>
@@ -54,9 +54,9 @@ article{min-width:0}
 <h2 id="claves">Claves y permisos</h2>
 <p>Un administrador crea las claves en <b>Ajustes del CRM › API</b>. La clave se muestra completa una sola vez. Guárdala en el sistema que la va a usar.</p>
 <ul>
-  <li>Cada clave ve solo su espacio de trabajo y nunca toca pagos ni la cuenta. De los ajustes, solo enciende o apaga flujos y agentes de IA.</li>
+  <li>Cada clave ve solo su espacio de trabajo y nunca toca pagos ni la cuenta. De los ajustes, solo enciende o apaga flujos y agentes de IA y cambia el horario de atención.</li>
   <li><b>Solo lectura</b>. Lee todo lo de esta página que empieza con <code>GET</code>.</li>
-  <li><b>Lectura y acciones</b>. Además asigna, cambia la etapa, pone etiquetas, finaliza, crea o edita contactos y enciende o apaga flujos y agentes de IA.</li>
+  <li><b>Lectura y acciones</b>. Además asigna, cambia la etapa, pone etiquetas, finaliza, crea o edita contactos, enciende o apaga flujos y agentes de IA y cambia el horario de atención.</li>
   <li>Las acciones se hacen en nombre del administrador que creó la clave, con las mismas reglas que en la pantalla, y quedan registradas.</li>
   <li>La clave deja de funcionar si la revocas, si vence o si quien la creó ya no es administrador del espacio.</li>
 </ul>
@@ -134,6 +134,15 @@ GET /conversaciones?limite=100&amp;cursor=4521</code></pre>
 <div class="ruta"><span class="m patch">PATCH</span><code>/agentes/:id</code><span class="tag">Acciones</span></div>
 <p>Manda <code>encendido</code> en <code>true</code> o <code>false</code>. Para encender un agente, el espacio necesita un canal conectado y el agente, un canal marcado en «Dónde atiende». Si alguien cambia lo mismo en el CRM en ese momento, la respuesta es <code>409</code>. Vuelve a intentarlo.</p>
 <pre><code>curl -X PATCH https://walicrm.com/crm/api/v1/agentes/ag_1   -H "Authorization: Bearer wali_live_TU_CLAVE" -H "Content-Type: application/json"   -d '{ "encendido": true }'</code></pre>
+<h2 id="horario">Horario de atención</h2>
+<p>El mismo de <b>Ajustes del CRM › Horario de atención</b>. Son los turnos con sus días, horas, almuerzo y las personas que los trabajan, más los festivos y el mensaje que le llega al cliente cuando escribe fuera de horario. El horario de la empresa se arma solo con los turnos, desde la primera hora hasta la última de cada día. De ese horario dependen el aviso fuera de horario, el agente de IA y el chat de la web. Solo lo cambia una clave creada por un administrador o un líder.</p>
+<div class="ruta"><span class="m">GET</span><code>/horario</code><span class="tag lec">Lectura</span></div>
+<pre><code>{ "data": { "turnos": [ { "id": "t1", "nombre": "Mañana", "color": "#3B82F6", "dias": [ { "dia": "lunes", "desde": "7:00", "hasta": "15:00", "almuerzo": { "desde": "12:00", "hasta": "13:00" } } ], "personas": ["usr_1"] } ],
+  "horarioEmpresa": [ { "dia": "Lunes", "abierto": true, "desde": "7:00", "hasta": "15:00" } ],
+  "festivosComoDomingo": true, "mensajeFueraDeHorario": "Estamos fuera de horario…", "dentroDeHorarioAhora": true } }</code></pre>
+<div class="ruta"><span class="m patch">PATCH</span><code>/horario</code><span class="tag">Acciones</span></div>
+<p>Manda solo lo que cambia, ya sea <code>turnos</code> (la lista completa, que reemplaza la de hoy), <code>festivosComoDomingo</code> o <code>mensajeFueraDeHorario</code>. Los días van como <code>lunes</code>, <code>martes</code>, <code>miercoles</code>, <code>jueves</code>, <code>viernes</code>, <code>sabado</code> o <code>domingo</code>, y las horas como <code>7:00</code> o <code>18:30</code>. Las personas son los <code>id</code> de <code>GET /miembros</code>. Para conservar el color de un turno, manda su <code>id</code>. Si alguien cambia el horario en el CRM en ese momento, la respuesta es <code>409</code>. Vuelve a intentarlo.</p>
+<pre><code>curl -X PATCH https://walicrm.com/crm/api/v1/horario   -H "Authorization: Bearer wali_live_TU_CLAVE" -H "Content-Type: application/json"   -d '{ "mensajeFueraDeHorario": "Hoy atendemos hasta las 4 p. m." }'</code></pre>
 <h2 id="webhooks">Webhooks</h2>
 <p>Wali le avisa a tu sistema cuando pasa algo en tu espacio, sin que tengas que preguntar. Un administrador crea el webhook en <b>Ajustes del CRM › API</b> con la dirección de tu sistema (https) y los eventos que quieres recibir.</p>
 <table><tr><th>Evento</th><th>Cuándo llega</th></tr>
