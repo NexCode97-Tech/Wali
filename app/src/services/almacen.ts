@@ -160,6 +160,10 @@ export async function servirArchivo(req: Request, res: Response) {
     if (r.ContentRange) res.setHeader('Content-Range', r.ContentRange)
     res.setHeader('Accept-Ranges', 'bytes')
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+    // Solo el navegador guarda copia. El CDN de Vercel no: no separa las peticiones por Range y llegó a servir
+    // un pedazo de 1 byte (206) como si fuera el archivo entero (11-nov).
+    res.setHeader('CDN-Cache-Control', 'no-store')
+    res.setHeader('Vercel-CDN-Cache-Control', 'no-store')
     res.setHeader('X-Content-Type-Options', 'nosniff')
     res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'; sandbox")
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin')
