@@ -138,7 +138,9 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .flujo .rs .v{color:var(--ink)}
 .eqc{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:999px;background:var(--bg3);font-size:12px;font-weight:500;color:var(--ink2);white-space:nowrap}
 .eqc i{width:7px;height:7px;border-radius:50%;flex:none}
-.cv{display:inline-flex;align-items:center;gap:6px;padding:2px 8px 2px 3px;border-radius:999px;background:var(--bg3);color:var(--ink2);white-space:nowrap}
+/* La pastilla del canal en las tarjetas de Flujos. Sin el .flujo, la regla tomaba la flechita .cv de los desplegables de
+   toda la página (ficha, Finalizar) y la volvía un círculo gris vacío (12-nov). */
+.flujo .cv{display:inline-flex;align-items:center;gap:6px;padding:2px 8px 2px 3px;border-radius:999px;background:var(--bg3);color:var(--ink2);white-space:nowrap}
 .mc{width:18px;height:18px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;flex:none;color:#fff;line-height:0}
 .mc svg{width:12px;height:12px;display:block}
 .mc.wa,.mcb.wa{background:#25D366}
