@@ -2619,7 +2619,7 @@ async function notaDeVoz(boton){
   const c = conv(); if (!c) return;
   if (/cerrada/i.test(c.ventana)) { toast(cerradaTxt(c)); return; }
   if (!navigator.mediaDevices || !window.MediaRecorder) { toast('Este navegador no deja grabar audio'); return; }
-  let flujo; try { flujo = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false, noiseSuppression:false, autoGainControl:false, channelCount:1}}); /* 11-nov: el filtro de ruido del navegador cortaba medio segundo a los 2 s de cada nota */ } catch { toast('Permite el micrófono para grabar la nota de voz'); return; }
+  let flujo; try { flujo = await navigator.mediaDevices.getUserMedia({audio:{noiseSuppression:true, autoGainControl:false, echoCancellation:false, channelCount:1}}); /* 11-nov: el filtro de ruido se queda (lo pidió el usuario); se apagan el volumen automático y el cancelador de eco, que cortaban medio segundo a los 2 s de cada nota */ } catch { toast('Permite el micrófono para grabar la nota de voz'); return; }
   const tipo = ['audio/ogg;codecs=opus', 'audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'].find(t => MediaRecorder.isTypeSupported(t)) || '';
   const rec = new MediaRecorder(flujo, tipo ? {mimeType: tipo} : undefined), partes = [], inicio = Date.now();
   // La onda en vivo: el nivel de la voz cada décima de segundo (también queda guardada para dibujar la nota lista).
