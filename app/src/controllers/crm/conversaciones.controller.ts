@@ -864,7 +864,7 @@ export async function transcribirNota(req: Request, res: Response) {
   } catch (e) {
     // Si el que falla es el servicio, nadie se entera desde la pantalla: va a Sentry y el cliente ve un mensaje claro.
     if (e instanceof ErrorTranscriptor) {
-      logger.error({ error: e.message, msgId: m.id }, '[CRM] transcripción caída')
+      logger.error({ error: e.message, msgId: m.id, sentry: false }, '[CRM] transcripción caída')
       if (sentryActivo) Sentry.captureException(e, { tags: { area: 'transcripcion' } })
       throw new AppError('La transcripción no está disponible en este momento. Ya quedó el aviso para arreglarla.', 503)
     }

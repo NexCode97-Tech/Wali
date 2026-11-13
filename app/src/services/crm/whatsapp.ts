@@ -1,6 +1,7 @@
 import type { CrmMensaje, Prisma } from '@prisma/client'
 import { prisma } from './bd'
 import { logger } from '../../utils/logger'
+import { avisarFalla } from '../../instrument'
 import { AppError } from '../../utils/errors'
 import { emitirMsg } from './tiempoReal'
 import { nombreDe } from './usuarios'
@@ -737,6 +738,7 @@ async function marcarCuentaConError(msgId: string, error: string) {
 
 export async function enviarPorWhatsapp(msgId: string): Promise<void> {
   let convId: number | null = null
+  let canalDe = 'wa'
   try {
     const m = await prisma.crmMensaje.findUnique({
       where: { id: msgId },
@@ -753,6 +755,7 @@ export async function enviarPorWhatsapp(msgId: string): Promise<void> {
     }
     // Messenger e Instagram (paginas.ts), Telegram (telegram.ts), TikTok (tiktok.ts) y correo (correo.ts): salen por su conexión.
     const canal = m.conversacion.canal
+    canalDe = canal
     if (canal === 'fb' || canal === 'ig' || canal === 'tg' || canal === 'tt' || canal === 'mail') {
       const r = canal === 'tg' ? await (await import('./telegram')).enviarPorTelegram(m as never).then(x => ({ mid: x.id, extra: x.extra }))
         : canal === 'mail' ? await (await import('./correo')).enviarPorCorreo(m as never).then(x => ({ mid: x.id, extra: x.extra }))
@@ -811,6 +814,7 @@ export async function enviarPorWhatsapp(msgId: string): Promise<void> {
     porMarketing.delete(msgId)
     const texto = e instanceof ErrorEnvio || e instanceof AppError ? e.message : esCorte(e) ? 'No se pudo enviar: la conexión se cortó mientras salía. Toca Reintentar.' : `No se pudo enviar: ${(e as Error)?.message ?? e}`
     logger.warn(`[CRM WA] envío ${msgId} falló: ${texto}`)
+    avisarFalla(({ wa: 'WhatsApp', fb: 'Messenger', ig: 'Instagram', tg: 'Telegram', tt: 'TikTok', mail: 'correo' } as Record<string, string>)[canalDe] ?? canalDe, texto, e instanceof ErrorMeta ? e.codigo : undefined)
     // Token vencido o sin permiso: la cuenta de Meta queda con el problema a la vista en Líneas de WhatsApp (6-oct),
     // no solo en el mensaje que falló.
     if (e instanceof ErrorMeta && TOKEN_MALO.has(e.codigo)) await marcarCuentaConError(msgId, explicarErrorMeta({ code: e.codigo, message: e.textoMeta })).catch(() => {})

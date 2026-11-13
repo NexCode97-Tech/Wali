@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "tsx watch --env-file=.env src/index.ts",
-    "build": "prisma generate && tsc",
+    "build": "prisma generate && tsc && node scripts/armar-vigia.mjs",
     "start": "node dist/index.js",
     "db:migrate": "prisma migrate deploy",
     "db:generate": "prisma generate",
@@ -53,6 +53,7 @@
     "zod": "^3.22.0"
   },
   "devDependencies": {
+    "@sentry/browser": "11.6.0",
     "@types/bcryptjs": "^3.0.0",
     "@types/compression": "^1.7.5",
     "@types/cookie-parser": "^1.4.7",
@@ -65,6 +66,7 @@
     "@types/node-fetch": "^2.6.13",
     "@types/nodemailer": "^6.4.24",
     "@types/qrcode": "1.5.5",
+    "esbuild": "0.28.2",
     "tsx": "^4.0.0",
     "typescript": "^5.0.0"
   }

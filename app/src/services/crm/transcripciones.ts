@@ -40,7 +40,7 @@ export async function transcribirPendientes(msgs: CrmMensaje[]): Promise<void> {
     if (m.tipo !== 'in' || !esAudioIn(m.datos) || txt(obj(obj(m.datos).in).trans)) continue
     try { await transcribirMensaje(m) } catch (e) {
       // Si falla el servicio (no el audio), las demás notas tampoco van a salir: se avisa una vez a Sentry y se para.
-      if (e instanceof ErrorTranscriptor) { logger.error({ error: e.message }, '[CRM] transcripción caída (agente IA)'); if (sentryActivo) Sentry.captureException(e, { tags: { area: 'transcripcion' } }); return }
+      if (e instanceof ErrorTranscriptor) { logger.error({ error: e.message, sentry: false }, '[CRM] transcripción caída (agente IA)'); if (sentryActivo) Sentry.captureException(e, { tags: { area: 'transcripcion' } }); return }
       logger.info(`[CRM] nota de voz ${m.id} sin transcripción: ${(e as Error).message}`)
     }
   }

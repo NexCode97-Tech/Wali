@@ -49,7 +49,7 @@ export function errorHandler(err: Error, req: ReqWithId, res: Response, _next: N
   // Error inesperado: se registra con su reqId. La URL va redactada, porque algunos endpoints reciben un
   // token por query string y no debe quedar en los registros.
   const urlSegura = redactarUrl(req.originalUrl || req.url)
-  logger.error({ reqId, error: err.message, stack: err.stack, url: urlSegura, method: req.method })
+  logger.error({ reqId, error: err.message, stack: err.stack, url: urlSegura, method: req.method, sentry: false })
   if (sentryActivo) Sentry.captureException(err, { tags: { reqId: reqId ?? '', metodo: req.method }, extra: { url: urlSegura } })
 
   return res.status(500).json({

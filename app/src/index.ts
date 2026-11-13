@@ -28,6 +28,7 @@ import crmWebRoutes from './routes/crmWeb'
 import crmPautaRoutes from './routes/crmPauta'
 import { regresoCrm, webhookCrmManychat, webhookCrmMeta, webhookCrmTelegram, webhookCrmTiktok, webhookCrmWa } from './routes/crmWhatsapp'
 import paginas from './paginas'
+import { servirVigia, tunelVigia } from './routes/vigia'
 import { calentarAyudaSemantica } from './services/crm/ayudaSemantica'
 
 /**
@@ -126,6 +127,11 @@ app.use((req: Request & { reqId?: string }, res: Response, next: NextFunction) =
 // 429 la hace reintentar. Tampoco el clic de un enlace de pauta (/api/crm/w), que tiene su propio límite.
 const ipCliente = (req: Request) => String(req.headers['x-real-ip'] ?? '').trim() || req.ip || 'anon'
 const esAvisoDeCanal = (req: Request) => /^\/api\/crm\/((whatsapp|meta|telegram|tiktok)\/webhook|w\/)/.test(req.originalUrl)
+// Vigilante de las pantallas (routes/vigia.ts): los avisos de error del navegador, con su propio límite, para que una
+// pantalla con muchos errores no le gaste a la persona el cupo del API.
+app.post('/api/vigia', rateLimit({ windowMs: 60 * 1000, max: 30, keyGenerator: ipCliente, standardHeaders: true, legacyHeaders: false, message: '' }),
+  express.text({ type: () => true, limit: '200kb' }), (req, res) => { void tunelVigia(req, res) })
+app.get('/vigia.js', servirVigia)
 app.use('/api', rateLimit({
   windowMs: 15 * 60 * 1000, max: 3000, skip: esAvisoDeCanal, keyGenerator: ipCliente,
   standardHeaders: true, legacyHeaders: false,
