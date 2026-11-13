@@ -238,6 +238,8 @@ export interface InfoToken {
   appId: string; valido: boolean; vence: number; permisos: string[]; wabas: string[]; tipo: string
   /** Token de página: el id de la página. */
   perfilId: string
+  /** Quién de Facebook dio el acceso (id propio de la app): sirve para las solicitudes de Meta (metaPrivacidad.ts). */
+  usuarioId: string
   /** Las páginas a las que llega con permiso de mensajes (pages_messaging). */
   paginas: string[]
 }
@@ -247,7 +249,7 @@ export interface InfoToken {
  * no es de esa app, Meta lo rechaza: así se valida también la clave.
  */
 export async function revisarToken(token: string, llaveApp: string): Promise<InfoToken> {
-  const r = await graph<{ data?: { app_id?: string; is_valid?: boolean; expires_at?: number; scopes?: string[]; type?: string; profile_id?: string; granular_scopes?: { scope?: string; target_ids?: string[] }[] } }>(
+  const r = await graph<{ data?: { app_id?: string; is_valid?: boolean; expires_at?: number; scopes?: string[]; type?: string; profile_id?: string; user_id?: string; granular_scopes?: { scope?: string; target_ids?: string[] }[] } }>(
     '/debug_token', { cred: { token: llaveApp }, query: { input_token: token } })
   const d = r.data ?? {}
   const wabas = new Set<string>(), paginas = new Set<string>()
@@ -257,7 +259,7 @@ export async function revisarToken(token: string, llaveApp: string): Promise<Inf
   }
   return {
     appId: String(d.app_id ?? ''), valido: d.is_valid === true, vence: Number(d.expires_at ?? 0), permisos: d.scopes ?? [], wabas: [...wabas], tipo: String(d.type ?? ''),
-    perfilId: String(d.profile_id ?? ''), paginas: [...paginas],
+    perfilId: String(d.profile_id ?? ''), paginas: [...paginas], usuarioId: String(d.user_id ?? ''),
   }
 }
 

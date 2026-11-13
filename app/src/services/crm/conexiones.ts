@@ -51,6 +51,8 @@ export interface DatosWhatsapp {
   /** Como la llama Meta (maqueta aprobada «ConectarWhatsApp»): el portafolio de la empresa y el nombre de la cuenta. */
   portafolio?: string
   cuentaNombre?: string
+  /** Quién de Facebook la conectó (metaPrivacidad.ts). */
+  metaUsuario?: string
 }
 
 /** El nombre por defecto de las conexiones con el botón de Meta antes de traer el de Meta. */
@@ -391,6 +393,8 @@ export async function conectarWhatsappMeta(entrada: Json, por: string | null): P
     token = String(r.access_token ?? '')
   } catch (e) { throw porQueNoConecta(e, 'Meta no aceptó la conexión') }
   if (!token) throw new AppError('Meta no entregó el acceso a la cuenta', 502)
+  // Quién de Facebook la conectó (antes de cambiar al token de empresa): para las solicitudes de Meta (metaPrivacidad.ts).
+  const metaUsuario = (await revisarToken(token, `${p.appId}|${p.appSecret}`).catch(() => null))?.usuarioId || undefined
   const llave = await tokenDeEmpresa(token, p)
   token = llave.token
   if (await cuentaEnOtroEspacio([wabaId])) throw new ConflictError('Esa cuenta de WhatsApp ya está conectada en otro espacio del CRM')
@@ -404,7 +408,7 @@ export async function conectarWhatsappMeta(entrada: Json, por: string | null): P
   // El nombre de Meta (portafolio o cuenta): así cada conexión se distingue en Líneas de WhatsApp.
   const nm = await nombresDeMeta(wabaId, token)
   const nombre = (nm && (nm.portafolio || nm.cuenta)) || previa?.nombre || NOMBRE_META_DEFECTO
-  const datos: DatosWhatsapp = { appId: p.appId, wabas: [wabaId], verifyToken: '', vence: llave.vence, ...(coexistencia || coexAntes.length ? { coex: [...new Set([...coexAntes, ...(coexistencia ? [phoneNumberId] : [])])] } : {}),
+  const datos: DatosWhatsapp = { appId: p.appId, wabas: [wabaId], verifyToken: '', vence: llave.vence, ...(metaUsuario ? { metaUsuario } : {}), ...(coexistencia || coexAntes.length ? { coex: [...new Set([...coexAntes, ...(coexistencia ? [phoneNumberId] : [])])] } : {}),
     ...(nm ? { portafolio: nm.portafolio, cuentaNombre: nm.cuenta } : {}) }
   const c = previa
     ? await prisma.crmConexion.update({ where: { id: previa.id }, data: { nombre, secretos: cifrar({ token }), datos: datos as unknown as Prisma.InputJsonValue, estado: 'conectada', error: null }, include: { _count: { select: { lineas: true } } } })

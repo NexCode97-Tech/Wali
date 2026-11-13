@@ -52,6 +52,8 @@ export interface DatosPagina {
   webhookApp?: 'propio' | 'otro'
   permisos?: string[]
   vence?: number
+  /** Quién de Facebook la conectó (metaPrivacidad.ts). */
+  metaUsuario?: string
 }
 
 export const urlAvisosPagina = (baseApi: string, clave: string) => `${baseApi}/api/crm/meta/webhook/${clave}`
@@ -85,6 +87,8 @@ interface OpcionesGuardar {
   permisos: string[]
   vence: number
   baseApi: string
+  /** Quién de Facebook la conectó, con el botón de Meta (metaPrivacidad.ts). */
+  metaUsuario?: string
 }
 
 /**
@@ -107,7 +111,7 @@ async function guardarPagina(o: OpcionesGuardar): Promise<CrmConexion & { _count
   const datos: DatosPagina = {
     appId: o.appId, pageId, pageNombre: txt(o.pagina.name) || `Página ${pageId}`,
     verifyToken, ...(o.modo === 'manual' ? { webhookUrl: urlAvisosPagina(o.baseApi, clave) } : {}),
-    permisos: o.permisos, vence: o.vence || 0,
+    permisos: o.permisos, vence: o.vence || 0, ...(o.metaUsuario ? { metaUsuario: o.metaUsuario } : {}),
   }
   const secretos = cifrar(o.modo === 'manual' ? { token: pageToken, appSecret: o.appSecret } : { token: pageToken })
   // Se guarda antes de pedirle nada a Meta: al configurar los avisos, Meta llama de una vez a la
@@ -211,7 +215,7 @@ export async function conectarPaginasMeta(entrada: Json, baseApi: string, por: s
   let primerError: unknown = null
   for (const pagina of paginas) {
     try {
-      hechas.push(conexionAFront(await guardarPagina({ modo: 'meta', appId: p.appId, pagina, permisos: info.permisos, vence: info.vence, baseApi })))
+      hechas.push(conexionAFront(await guardarPagina({ modo: 'meta', appId: p.appId, pagina, permisos: info.permisos, vence: info.vence, baseApi, metaUsuario: info.usuarioId || undefined })))
     } catch (e) {
       primerError ??= e
       logger.warn(`[CRM páginas] no se conectó la página ${pagina.id}: ${(e as Error).message}`)

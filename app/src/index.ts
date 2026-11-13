@@ -29,6 +29,7 @@ import crmPautaRoutes from './routes/crmPauta'
 import { regresoCrm, webhookCrmManychat, webhookCrmMeta, webhookCrmTelegram, webhookCrmTiktok, webhookCrmWa } from './routes/crmWhatsapp'
 import paginas from './paginas'
 import { servirVigia, tunelVigia } from './routes/vigia'
+import metaPrivacidadRoutes from './routes/metaPrivacidad'
 import { calentarAyudaSemantica } from './services/crm/ayudaSemantica'
 
 /**
@@ -159,6 +160,7 @@ app.get('/health', async (_req, res) => {
 // ─── API ─────────────────────────────────────────────────────────────────────
 app.use('/api/auth',           authRoutes)
 app.use('/api/auth',           accesoRoutes)
+app.use('/api/meta',          metaPrivacidadRoutes) // desautorizar y eliminación de datos que pide Meta (firmadas)
 app.use('/api/pagos/whop',      pagosRoutes) // avisos de Whop (firmados) // registro, recuperar la contraseña y Google (sin sesión)
 app.use('/api/admin',          adminRoutes) // panel de superadministrador (solo el operador)
 app.use('/api/partners',       partnersRoutes) // formulario de walicrm.com/partners (público)
