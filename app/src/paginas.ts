@@ -149,6 +149,15 @@ router.get('/admin', asyncHandler(async (req: Request, res: Response) => {
   html(res, leer('paginas/admin.html', h => h.replace('/*BANDEJA_COMPARTIDA*/', () => BANDEJA())).replace('/*ADMIN_INICIO*/', () => `window.INICIO = ${enScript(inicio)};`))
 }))
 
+/** El estado de una solicitud de borrado de datos que llegó desde Meta (13-nov, metaPrivacidad.ts). Pública: la abre la
+ *  persona desde el aviso de Facebook o Instagram, con su código. */
+router.get('/meta/borrado', asyncHandler(async (req: Request, res: Response) => {
+  const { solicitudBorrado } = await import('./services/crm/metaPrivacidad')
+  const s = typeof req.query.codigo === 'string' ? await solicitudBorrado(req.query.codigo.trim().toUpperCase()) : null
+  res.setHeader('X-Robots-Tag', 'noindex')
+  html(res, leer('paginas/borrado.html').replace('/*BORRADO_INICIO*/', () => `window.BORRADO = ${enScript(s)};`))
+}))
+
 /** El enlace público de los términos y condiciones de una empresa: siempre abre la última versión. */
 /** La documentación pública de la API (11-nov): walicrm.com/crm/docs/api. */
 router.get('/docs/api', (_req: Request, res: Response) => { html(res, leer('paginas/api-docs.html')) })

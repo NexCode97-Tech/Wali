@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<script src="__BASE__/vigia.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="robots" content="noindex">
+<title>Solicitud de borrado · Wali</title>
+<link rel="icon" type="image/png" sizes="32x32" href="__BASE__/img/wali-32.png">
+<link rel="apple-touch-icon" href="__BASE__/img/wali-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Estado de una solicitud de borrado de datos que llegó desde Meta (13-nov, metaPrivacidad.ts). Misma apariencia de la
+   entrada al CRM: oscuro, amarillo de Wali e Inter. Lo único que se mueve es la línea de tiempo al abrir. */
+:root{
+  --fondo:#0a0a0d; --campo:#121217; --linea:#26262f; --linea-2:#33333e;
+  --texto:#f4f4f6; --texto-2:#a1a1ad; --texto-3:#6f6f7c;
+  --amarillo:#FFD21F; --verde:#4ade80;
+  --f:Inter,"Segoe UI",system-ui,sans-serif; color-scheme:dark;
+  --sale:cubic-bezier(.23,1,.32,1);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{min-height:100%}
+body{margin:0;font-family:var(--f);font-size:14px;line-height:1.5;color:var(--texto);background:var(--fondo);
+  background-image:radial-gradient(60rem 30rem at 50% -10rem,rgba(255,210,31,.07),transparent 70%)}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+button:focus-visible,a:focus-visible{outline:2px solid var(--amarillo);outline-offset:2px;border-radius:6px}
+svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+.pagina{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 40px) 20px calc(env(safe-area-inset-bottom,0px) + 40px)}
+.caja{width:100%;max-width:440px}
+.marca{display:flex;justify-content:center;margin-bottom:22px}
+.marca img{width:52px;height:52px}
+h1{margin:0;text-align:center;font-size:24px;font-weight:700;letter-spacing:-.02em;text-wrap:balance}
+.bajada{margin:10px auto 0;max-width:36ch;text-align:center;color:var(--texto-2);font-size:14px;text-wrap:balance}
+
+/* El código: lo que la persona guarda o le dicta a soporte. */
+.codigo{margin:28px 0 0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 14px 14px 18px;border:1px solid var(--linea);border-radius:14px;background:var(--campo)}
+.codigo small{display:block;font-size:12.5px;color:var(--texto-3)}
+.codigo strong{display:block;margin-top:2px;font-size:19px;font-weight:600;letter-spacing:.08em;font-variant-numeric:tabular-nums}
+.copiar{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 13px;border-radius:10px;border:1px solid var(--linea-2);font-size:13px;font-weight:600;color:var(--texto);transition:transform .16s var(--sale),background .15s,border-color .15s}
+.copiar:hover{background:#1a1a22}
+.copiar:active{transform:scale(.97)}
+.copiar.listo{border-color:rgba(74,222,128,.45);color:var(--verde)}
+
+/* Línea de tiempo: dos pasos. La línea entre los puntos se dibuja al abrir. */
+.pasos{list-style:none;margin:26px 0 0;padding:0 0 0 4px;position:relative}
+.paso{position:relative;display:grid;grid-template-columns:22px 1fr;column-gap:14px;padding-bottom:22px}
+.paso:last-child{padding-bottom:0}
+.punto{position:relative;z-index:1;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--fondo);border:1.5px solid var(--linea-2);color:var(--fondo)}
+.punto svg{width:12px;height:12px;stroke-width:2.6}
+.paso.hecho .punto{background:var(--amarillo);border-color:var(--amarillo)}
+.paso.espera .punto{border-color:var(--amarillo)}
+.paso.espera .punto::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--amarillo)}
+.paso h2{margin:0;font-size:14.5px;font-weight:600}
+.paso p{margin:2px 0 0;font-size:13px;color:var(--texto-2)}
+/* La línea va dentro del primer paso: de debajo de su punto hasta el punto del segundo. */
+.hilo{position:absolute;left:10.25px;top:22px;bottom:0;width:1.5px;background:var(--linea);overflow:hidden}
+.hilo i{position:absolute;inset:0;background:var(--amarillo);transform-origin:top;transform:scaleY(var(--hecho,1))}
+.anima .hilo i{animation:hilo .7s var(--sale) .15s both}
+.anima .paso:last-child .punto{animation:punto .32s var(--sale) .75s both}
+@keyframes hilo{from{transform:scaleY(0)}to{transform:scaleY(var(--hecho,1))}}
+@keyframes punto{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+
+/* Qué se borró y qué no: dos bloques de texto, sin tarjetas. */
+.detalle{margin:28px 0 0;padding-top:22px;border-top:1px solid var(--linea);display:grid;gap:16px}
+.detalle h3{margin:0;font-size:13.5px;font-weight:600}
+.detalle p{margin:3px 0 0;font-size:13.5px;color:var(--texto-2)}
+.ayuda{margin:26px 0 0;text-align:center;font-size:13px;color:var(--texto-3)}
+.ayuda a{color:var(--texto-2);text-underline-offset:3px}
+.ayuda a:hover{color:var(--texto)}
+
+@media (prefers-reduced-motion:reduce){
+  .anima .hilo i{animation:none}
+  .anima .paso:last-child .punto{animation:aparece .2s linear both}
+  @keyframes aparece{from{opacity:0}to{opacity:1}}
+  .copiar{transition:none}
+}
+@media (max-width:420px){h1{font-size:21px}.codigo strong{font-size:17px}}
+</style>
+</head>
+<body>
+<main class="pagina">
+  <div class="caja">
+    <div class="marca"><img src="__BASE__/img/wali-512.png" alt="Wali"></div>
+
+    <section id="hecha" hidden>
+      <h1 id="titulo">Tus datos de Meta ya se borraron de Wali</h1>
+      <p class="bajada" id="bajada">Recibimos la solicitud que hiciste desde Facebook o Instagram y quitamos lo que Wali guardaba de tu cuenta.</p>
+
+      <div class="codigo">
+        <div><small>Código de la solicitud</small><strong id="codigo"></strong></div>
+        <button class="copiar" id="copiar" type="button" aria-live="polite">
+          <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+          <span>Copiar</span>
+        </button>
+      </div>
+
+      <ol class="pasos anima" id="pasos">
+        <li class="paso hecho">
+          <span class="hilo" aria-hidden="true"><i></i></span>
+          <span class="punto" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+          <div><h2>Solicitud recibida</h2><p id="f-recibida"></p></div>
+        </li>
+        <li class="paso" id="paso-fin">
+          <span class="punto" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+          <div><h2 id="t-fin">Datos borrados</h2><p id="f-fin"></p></div>
+        </li>
+      </ol>
+
+      <div class="detalle">
+        <div><h3>Lo que se borró</h3><p>El acceso de Wali a tu cuenta de Instagram, si la habías conectado, y tu identificador de Facebook en las conexiones que hiciste.</p></div>
+        <div><h3>Lo que sigue igual</h3><p>Las conversaciones de cada empresa con sus clientes. Son de la empresa, no de la persona que conectó la cuenta.</p></div>
+      </div>
+    </section>
+
+    <section id="nada" hidden>
+      <h1>No encontramos esa solicitud</h1>
+      <p class="bajada">Revisa que el enlace esté completo. Lo encuentras en el aviso que te mostró Facebook o Instagram al pedir el borrado.</p>
+    </section>
+
+    <p class="ayuda">¿Tienes dudas? Escríbenos a <a href="mailto:nexcode97@gmail.com">nexcode97@gmail.com</a></p>
+  </div>
+</main>
+<script>
+/*BORRADO_INICIO*/
+(function(){
+  var s = window.BORRADO || null;
+  var $ = function(id){ return document.getElementById(id); };
+  if (!s) { $('nada').hidden = false; return; }
+  $('hecha').hidden = false;
+  var fecha = function(iso){
+    var d = new Date(iso);
+    return isNaN(d) ? '' : d.toLocaleString('es-CO', { timeZone: 'America/Bogota', day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+  };
+  $('codigo').textContent = s.codigo;
+  $('f-recibida').textContent = fecha(s.recibida);
+  if (s.terminada) {
+    $('paso-fin').classList.add('hecho');
+    $('f-fin').textContent = fecha(s.terminada);
+  } else {
+    // Todavía en curso (casi nunca: se borra al recibirla). La línea queda a medio camino.
+    $('paso-fin').classList.add('espera');
+    $('pasos').style.setProperty('--hecho', '.5');
+    $('titulo').textContent = 'Estamos borrando tus datos de Meta en Wali';
+    $('bajada').textContent = 'Recibimos la solicitud que hiciste desde Facebook o Instagram. Vuelve a abrir esta página en unos minutos para ver que terminó.';
+    $('t-fin').textContent = 'Borrando los datos';
+    $('f-fin').textContent = 'En curso';
+  }
+  var b = $('copiar'), t = b.querySelector('span'), espera = 0;
+  b.addEventListener('click', function(){
+    var hecho = function(){ b.classList.add('listo'); t.textContent = 'Copiado'; clearTimeout(espera); espera = setTimeout(function(){ b.classList.remove('listo'); t.textContent = 'Copiar'; }, 1800); };
+    if (navigator.clipboard) navigator.clipboard.writeText(s.codigo).then(hecho, hecho); else hecho();
+  });
+})();
+</script>
+</body>
+</html>
