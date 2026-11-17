@@ -184,12 +184,10 @@ router.post('/plan/portal', asyncHandler(async (req: Request, res: Response) => 
   return ApiResponse.success(res, await portalPagos(req.espacioId!))
 }))
 
-/** Con la prueba o el pago vencidos el espacio queda en solo lectura: se ve todo, nada se borra, pero no se escribe. */
-router.use((req: Request, _res: Response, next: NextFunction) => {
-  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method.toUpperCase())) return next()
-  estadoPlan(req.espacioId!).then(p => (p.vigente ? next()
-    : next(new ForbiddenError(p.estado === 'prueba' ? 'Tu prueba gratis terminó. Elige un plan en Ajustes → Plan y pagos para seguir atendiendo.' : 'Tu plan no está activo. Renuévalo en Ajustes → Plan y pagos para seguir atendiendo.'))), next)
-})
+/* Con la prueba o el pago vencidos (17-nov, decisión del usuario): el CRM sigue funcionando (ajustes, equipos, personas,
+   pagar) y los mensajes de los clientes siguen llegando; lo único que no se puede es responderles (plan.ts,
+   sinResponder, se revisa en cada envío). Antes quedaba en solo lectura y una empresa que quería pagar por menos
+   personas no podía quitar a nadie. */
 router.use(rutasWaCrm)
 // La IA del CRM (lote 5): Mi IA, sugerencias de respuesta y embudo automático (crmIa.ts).
 router.use(rutasIaCrm)

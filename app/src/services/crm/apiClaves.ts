@@ -3,7 +3,6 @@ import type { Request, Response, NextFunction } from 'express'
 import { prisma } from './bd'
 import { prismaGlobal } from './bd'
 import { enEspacio } from './espacio'
-import { estadoPlan } from './plan'
 import { configura } from '../../utils/roles'
 import { ForbiddenError, NotFoundError, UnauthorizedError, ValidationError } from '../../utils/errors'
 import { logSecurityEvent } from '../../utils/logger'
@@ -105,10 +104,6 @@ export function conClaveApi(req: Request, _res: Response, next: NextFunction) {
     req.userName = `${u.nombre ?? u.email} (API · ${k.nombre})`
     req.espacioId = k.espacioId
     req.apiClave = { id: k.id, nombre: k.nombre, permiso: k.permiso as Permiso }
-    if (!lectura) {
-      const p = await estadoPlan(k.espacioId)
-      if (!p.vigente) throw new ForbiddenError('El plan de este espacio no está activo: la API queda en solo lectura hasta renovarlo.')
-    }
     // La última vez que se usó, sin escribir en cada llamada (una vez por minuto).
     if (!k.ultimoUso || Date.now() - k.ultimoUso.getTime() > 60_000) prismaGlobal.crmApiClave.update({ where: { id: k.id }, data: { ultimoUso: new Date() } }).catch(() => {})
     return k.espacioId

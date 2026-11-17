@@ -74,6 +74,13 @@ router.patch('/:id', asyncHandler(async (req: Request, res: Response) => {
     const era = await prisma.user.findUnique({ where: { id }, select: { role: true } })
     if (era?.role === 'ADMIN' && !otros) throw new ValidationError('El espacio no puede quedar sin un administrador activo')
   }
+  if (d.suspendido === false) {
+    const era = await prisma.user.findUnique({ where: { id }, select: { suspendido: true } })
+    if (era?.suspendido) {
+      const tope = await limiteUsuarios(espacio)
+      if ((await usuariosDeCuenta(await cuentaDe(espacio))).length >= tope) throw new ForbiddenError(topeUsuariosTexto(tope))
+    }
+  }
   const u = await prisma.user.update({
     where: { id },
     data: { ...(d.role ? { role: d.role as never } : {}), ...(d.suspendido !== undefined ? { suspendido: d.suspendido } : {}), ...(d.password ? { passwordHash: await cifrarClave(d.password), sesionesDesde: new Date() } : {}) },

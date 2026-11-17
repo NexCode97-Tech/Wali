@@ -110,6 +110,17 @@ export async function tokenInstagram(c: CrmConexion): Promise<string> {
       logger.info(`[CRM instagram] token de 60 días conseguido para @${d.igUsuario}`)
       return largo
     } catch (e) {
+      // El corto ya venció (Meta 190, dura una hora): no hay nada que renovar. La conexión queda pidiendo que se vuelva
+      // a conectar, sin el token muerto, y deja de reintentarse en cada vuelta (17-nov).
+      if (/\b190\b|Session has expired/i.test((e as Error).message)) {
+        await prismaGlobal.crmConexion.update({ where: { id: c.id }, data: {
+          secretos: cifrar({ ...s, token: undefined }), estado: 'error',
+          error: 'La conexión con Instagram no se terminó y el permiso de Meta ya venció. Vuelve a conectar Instagram en Ajustes › Canales.',
+          datos: json({ ...d, tokenCorto: false }),
+        } })
+        logger.info(`[CRM instagram] conexión ${c.id}: el token corto venció sin conseguir el de 60 días; queda para volver a conectar`)
+        return ''
+      }
       logger.warn(`[CRM instagram] sigue sin el token de 60 días @${d.igUsuario}: ${(e as Error).message}`)
       return s.token
     }
@@ -337,6 +348,8 @@ export async function renovarTokensInstagram(): Promise<number> {
   let n = 0
   for (const c of filas) {
     const d = obj(c.datos) as DatosInstagram
+    // Sin token (venció antes de terminar de conectar): nada que renovar ni revisar hasta que la vuelvan a conectar.
+    if (!descifrar<{ token?: string }>(c.secretos).token) continue
     if (d.igIdProvisional) await enEspacioDe(c, () => revisarInstagram(c.id, null)).catch(() => null)
     if (!d.tokenCorto && (d.tokenDesde ?? 0) > Date.now() - TREINTA_DIAS) continue
     await tokenInstagram(c).then(() => { n++ }).catch(() => null)

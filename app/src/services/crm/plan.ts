@@ -57,7 +57,7 @@ export interface EstadoPlan {
   duracionPrueba: number
   renuevaEl: string | null
   cancelaAlFinal: boolean
-  /** Si el espacio puede trabajar normal. Si no, queda en solo lectura hasta pagar. */
+  /** Si el plan está al día. Si no, el CRM sigue funcionando, pero no se responde a los clientes (sinResponder). */
   vigente: boolean
   limites: { usuarios: number | null; agentesIA: number | null; espacios: number | null }
   pagos: boolean
@@ -79,6 +79,18 @@ export function limitesDe(e: { plan: string; estadoPlan: string; pruebaHasta?: D
   // Cobro por usuarios (10-nov): con un pago que dice cuántos usuarios cubre, ese es el tope (no el del plan).
   if (!enPrueba && e.usuarios != null) return { ...base, usuarios: usuariosPagados(e) }
   return base
+}
+
+/**
+ * Con el plan vencido no se responde a los clientes (17-nov): ni el equipo, ni difusiones, flujos, agente de IA,
+ * avisos automáticos o encuestas. Devuelve el porqué para mostrarlo en el mensaje que no salió, o null si puede.
+ */
+export async function sinResponder(espacioDado: string): Promise<string | null> {
+  const p = await estadoPlan(espacioDado)
+  if (p.vigente) return null
+  return p.estado === 'prueba'
+    ? 'Tu prueba gratis terminó. Para responder a tus clientes, elige un plan en Ajustes › Plan y pagos.'
+    : 'Tu plan no está activo. Para responder a tus clientes, renuévalo en Ajustes › Plan y pagos.'
 }
 
 export async function estadoPlan(espacioDado: string): Promise<EstadoPlan> {

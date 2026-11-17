@@ -151,6 +151,8 @@ export async function enviarTerminos(convId: number, userId: string, textoSolici
   const k = conv.contacto
   const c = await cfgTerminos()
   if (!c.actual) throw new Error('La empresa no tiene términos subidos')
+  const porPlan = await (await import('./plan')).sinResponder(espacioActual())
+  if (porPlan) throw new (await import('../../utils/errors')).AppError(porPlan, 402)
   const enlace = enlaceTerminos(baseCrm)
   const nombre = (k.nombre ?? '').trim().split(/\s+/)[0] ?? ''
   const cuerpo = TEXTO_PEDIDO(nombre)

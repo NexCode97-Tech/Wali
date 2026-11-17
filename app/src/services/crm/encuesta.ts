@@ -706,6 +706,8 @@ interface DatosEnvio { linea: CrmLinea; destino: { to: string } | { recipient: s
 
 /** El mensaje interactivo de tipo flow: solo cuerpo y el botón «Responder encuesta» (tablero 1, sin header ni footer). */
 async function mandarFormulario(d: DatosEnvio): Promise<{ wamid: string; waIdCliente: string | null }> {
+  const porPlan = await (await import('./plan')).sinResponder(espacioActual())
+  if (porPlan) throw new AppError(porPlan, 402)
   const cred = await credDeLinea(d.linea)
   const r = await graph<{ messages?: { id?: string }[]; contacts?: { wa_id?: string }[] }>(`/${d.linea.phoneNumberId}/messages`, {
     cred, method: 'POST', timeoutMs: TIEMPO_META,
@@ -1129,7 +1131,7 @@ export async function respuestaFormulario(linea: CrmLinea, m: MensajeFormulario,
   // El gracias: por texto (la ventana está abierta), si no está vacío. No se guarda en la conversación (tablero 4).
   const vars = await variablesDe(ev.conversacion.contacto.nombre, asesor)
   const gracias = rellenar(cfg.gracias, vars).slice(0, 4096)
-  if (gracias) {
+  if (gracias && !(await (await import('./plan')).sinResponder(espacioActual()))) {
     try {
       await graph(`/${linea.phoneNumberId}/messages`, {
         cred: await credDeLinea(linea), method: 'POST', timeoutMs: TIEMPO_META,

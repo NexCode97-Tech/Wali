@@ -54,10 +54,15 @@ export async function espaciosDeCuenta(cuentaId: string): Promise<string[]> {
   return l.map(e => e.id).sort((a, b) => (a === cuentaId ? -1 : b === cuentaId ? 1 : 0))
 }
 
-/** Las personas de toda la cuenta, sin repetir (el límite de usuarios del plan se suma entre sus espacios). */
+/**
+ * Las personas de toda la cuenta, sin repetir (el límite de usuarios del plan se suma entre sus espacios). Una cuenta
+ * suspendida no ocupa puesto (17-nov): suspender es como se saca a alguien, y así la empresa puede pagar por menos.
+ */
 export async function usuariosDeCuenta(cuentaId: string): Promise<string[]> {
   const ids = await espaciosDeCuenta(cuentaId)
-  return [...new Set((await base.crmMiembro.findMany({ where: { espacioId: { in: ids } }, select: { userId: true } })).map(m => m.userId))]
+  const filas = await base.crmMiembro.findMany({ where: { espacioId: { in: ids } }, select: { userId: true } })
+  const activos = await base.user.findMany({ where: { id: { in: [...new Set(filas.map(m => m.userId))] }, suspendido: false }, select: { id: true } })
+  return activos.map(u => u.id)
 }
 
 /** Quiénes entran a un espacio (para el tiempo real y las listas de usuarios). */

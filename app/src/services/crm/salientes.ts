@@ -2,6 +2,8 @@ import type { CrmMensaje, Prisma } from '@prisma/client'
 import { prisma } from './bd'
 import { logger } from '../../utils/logger'
 import { ValidationError, NotFoundError } from '../../utils/errors'
+import { espacioActual } from './espacio'
+import { sinResponder } from './plan'
 import { avisar } from '../notificaciones'
 import { enviarPorWhatsapp } from './whatsapp'
 import { emitirConv, emitirMsg } from './tiempoReal'
@@ -415,7 +417,9 @@ export async function guardarMensaje(convId: number, crudo: Json, op: OpcionesGu
   let estado: string | null = null
   let error: string | null = null
   if (tipo === 'out') {
+    const porPlan = await sinResponder(espacioActual())
     if (!tieneSalida(conv)) { estado = 'fallido'; error = sinSalida(conv.canal) }
+    else if (porPlan) { estado = 'fallido'; error = porPlan }
     else if (op.tras && await textoNoSalio(op.tras)) { estado = 'fallido'; error = TEXTO_NO_SALIO }
     else estado = 'enviando'
   }
