@@ -422,7 +422,7 @@ document.getElementById('page').addEventListener('click', e => {
   const edt = t.closest('[data-ag-editar]'); if (edt) { st.agId = edt.dataset.agEditar; st.agV = 'editor'; st.agEdit = false; agReiniciar(); render(); return; }
   const bo = t.closest('[data-ag-borrar]'); if (bo) { const a = AGENTES.find(x => x.id === bo.dataset.agBorrar); if (!a) return;
     abrirDialogo(`<h3>Eliminar «${esc(a.nombre)}»</h3><p>Se borra el agente con sus instrucciones y su configuración, y no se puede deshacer.${agListo(a) ? ' Está encendido: si está atendiendo conversaciones, pasan a una persona del equipo.' : ''}</p>
-      <div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626" data-ag-borrar-ok="${a.id}">${I('trash')}Eliminar</button></div>`);
+      <div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626;color:#fff" data-ag-borrar-ok="${a.id}">${I('trash')}Eliminar</button></div>`);
     return; }
   const oo = t.closest('[data-ag-onoff]'); if (oo) { const a = AGENTES.find(x => x.id === oo.dataset.agOnoff); if (!a) return;
     if (agListo(a)) { a.estado = 'pausado'; render(); toast(`${a.nombre} quedó apagado: ya no contesta`); return; }
@@ -732,7 +732,7 @@ document.getElementById('page').addEventListener('click', e => {
       <div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" data-integ-guardar="${esc(s.id)}">${I('link')}Conectar</button></div>`, 'dlg-per dlg-ig');
     setTimeout(() => { const x = document.getElementById('hm-id'); if (x) x.focus(); }, 30); return; }
   const qt = t.closest('[data-integ-quitar]'); if (qt) { const s = (INTEG.lista || []).find(x => x.id === qt.dataset.integQuitar); if (!s) return;
-    abrirDialogo(`<h3>Desconectar ${esc(s.n)}</h3><p>Se borran las credenciales guardadas y ningún agente podrá consultar ${esc(s.n)} hasta que la conectes de nuevo.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626" data-integ-quitar-ok="${esc(s.id)}">${I('x')}Desconectar</button></div>`); }
+    abrirDialogo(`<h3>Desconectar ${esc(s.n)}</h3><p>Se borran las credenciales guardadas y ningún agente podrá consultar ${esc(s.n)} hasta que la conectes de nuevo.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626;color:#fff" data-integ-quitar-ok="${esc(s.id)}">${I('x')}Desconectar</button></div>`); }
 });
 document.getElementById('ov-x').addEventListener('click', e => {
   const g = e.target.closest('[data-integ-guardar]'), q = e.target.closest('[data-integ-quitar-ok]'); if (!g && !q) return;
@@ -926,7 +926,7 @@ document.getElementById('page').addEventListener('click', e => {
       .catch(err => { us.disabled = false; toast(err.message); }); return; }
   const qt = t.closest('[data-motor-quitar]'); if (qt) { const p = MOTOR.estado.proveedores.find(x => x.id === qt.dataset.motorQuitar); if (!p) return;
     const otro = MOTOR.estado.proveedores.find(x => x.conectado && x.id !== p.id);
-    abrirDialogo(`<h3>Desconectar ${esc(p.n)}</h3><p>Se borra la clave guardada. ${p.activo ? (otro ? `Los agentes pasan a responder con ${esc(otro.n)}.` : 'Los agentes IA dejan de responder y las conversaciones pasan a tu equipo hasta que conectes otro motor.') : 'Los agentes siguen con el motor que está en uso.'}</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626" data-motor-quitar-ok="${esc(p.id)}">${I('x')}Desconectar</button></div>`); }
+    abrirDialogo(`<h3>Desconectar ${esc(p.n)}</h3><p>Se borra la clave guardada. ${p.activo ? (otro ? `Los agentes pasan a responder con ${esc(otro.n)}.` : 'Los agentes IA dejan de responder y las conversaciones pasan a tu equipo hasta que conectes otro motor.') : 'Los agentes siguen con el motor que está en uso.'}</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626;color:#fff" data-motor-quitar-ok="${esc(p.id)}">${I('x')}Desconectar</button></div>`); }
 });
 document.getElementById('ov-x').addEventListener('click', e => {
   const g = e.target.closest('[data-motor-guardar]'), q = e.target.closest('[data-motor-quitar-ok]'); if (!g && !q) return;

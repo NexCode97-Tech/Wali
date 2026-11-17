@@ -739,7 +739,7 @@ document.getElementById('page').addEventListener('click', e => {
     const co = t.closest('[data-eq-color]'); if (co) { x.color = co.dataset.eqColor; render(); return; }
     const me = t.closest('[data-eq-metodo]'); if (me) { x.metodo = me.dataset.eqMetodo; render(); return; }
     if (t.closest('[data-eq-guardar2]')) { guardarEquipo(); return; }
-    if (t.closest('[data-eq-borrar]')) { abrirDialogo(`<h3>Eliminar el equipo ${esc(x.orig)}</h3><p>Sus líneas y sus conversaciones pasan a Ventas. Quien entraba al CRM solo por este equipo deja de entrar.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626" data-eq-borrar-ok="1">${I('trash')}Eliminar</button></div>`); return; }
+    if (t.closest('[data-eq-borrar]')) { abrirDialogo(`<h3>Eliminar el equipo ${esc(x.orig)}</h3><p>Sus líneas y sus conversaciones pasan a Ventas. Quien entraba al CRM solo por este equipo deja de entrar.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626;color:#fff" data-eq-borrar-ok="1">${I('trash')}Eliminar</button></div>`); return; }
   }
   const pf = t.closest('[data-per-filtro]'); if (pf) { st.perEq = pf.dataset.perFiltro; render(); return; }
   const pe = t.closest('[data-per-eq]'); if (pe) { abrirPersona(pe.dataset.perEq); return; }

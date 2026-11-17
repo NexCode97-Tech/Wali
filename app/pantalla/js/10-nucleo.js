@@ -1510,7 +1510,7 @@ document.getElementById('m-mas').addEventListener('click', e => {
   if (b.dataset.mas === 'exportar') mjDlgExportar(c);
   if (b.dataset.mas === 'spam') mjDlgSpam(c);
   if (b.dataset.mas === 'nocontactar') { if (c.noContactar) { c.noContactar = null; render(); toast('Ya se le puede escribir'); return; } st.nc = 'Lo pidió el cliente'; dlgNoContactar(); }
-  if (b.dataset.mas === 'borrar') abrirDialogo(`<h3>Borrar los datos de ${esc(c.n)}</h3><p>Se borran su contacto, sus conversaciones y su ficha. Queda solo el registro de que pidió el borrado y la fecha, como exige la ley de protección de datos. No se puede deshacer.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626" id="borrar-ok">${I('x')}Borrar sus datos</button></div>`);
+  if (b.dataset.mas === 'borrar') abrirDialogo(`<h3>Borrar los datos de ${esc(c.n)}</h3><p>Se borran su contacto, sus conversaciones y su ficha. Queda solo el registro de que pidió el borrado y la fecha, como exige la ley de protección de datos. No se puede deshacer.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626;color:#fff" id="borrar-ok">${I('x')}Borrar sus datos</button></div>`);
 });
 /* Transferir (maqueta aprobada «transferir la conversación», 14-oct): a un equipo o a una persona, con quién está
    disponible, nota opcional y un resumen de lo que va a pasar. st.tr = {modo, a, nota, q}; `a` es «Equipo X» o el nombre. */

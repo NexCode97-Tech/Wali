@@ -913,12 +913,12 @@ document.addEventListener('click', e => {
   const q = e.target.closest('[data-per-quitar]');
   if (q) {
     const p = personaDe(q.dataset.perQuitar); if (!p) return;
-    abrirDialogo(`<h3>¿Quitar a ${esc(p.nombre)} del CRM?</h3><p>Deja de entrar al CRM de tu empresa y sale de sus equipos. Sus conversaciones abiertas vuelven al reparto y deja de ocupar un usuario de tu plan. Lo que ya respondió queda con su nombre.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626" data-per-quitarok="${esc(p.id)}">${I('trash')}Quitar del CRM</button></div>`);
+    abrirDialogo(`<h3>¿Quitar a ${esc(p.nombre)} del CRM?</h3><p>Deja de entrar al CRM de tu empresa y sale de sus equipos. Sus conversaciones abiertas vuelven al reparto y deja de ocupar un usuario de tu plan. Lo que ya respondió queda con su nombre.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626;color:#fff" data-per-quitarok="${esc(p.id)}">${I('trash')}Quitar del CRM</button></div>`);
     return;
   }
   const x = e.target.closest('[data-per-cancelar]'); if (!x) return;
   const p = USUARIOS.find(u => u.id === x.dataset.perCancelar); if (!p) return;
-  abrirDialogo(`<h3>Cancelar la invitación de ${esc(p.nombre)}</h3><p>Sale del CRM y el enlace que le llegó deja de servir. La puedes volver a invitar cuando quieras.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Volver</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626" data-per-cancelarok="${esc(p.id)}">${I('x')}Cancelar la invitación</button></div>`);
+  abrirDialogo(`<h3>Cancelar la invitación de ${esc(p.nombre)}</h3><p>Sale del CRM y el enlace que le llegó deja de servir. La puedes volver a invitar cuando quieras.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Volver</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626;color:#fff" data-per-cancelarok="${esc(p.id)}">${I('x')}Cancelar la invitación</button></div>`);
 });
 document.getElementById('ov-x').addEventListener('click', e => {
   const qb = e.target.closest('[data-per-quitarok]');

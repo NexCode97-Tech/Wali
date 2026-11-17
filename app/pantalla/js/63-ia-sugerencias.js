@@ -218,7 +218,7 @@
     const cu = t.closest('[data-ias-cuando]');
     if (cu) { if (cu.dataset.iasCuando !== MIA.cuando) cambiar({cuando: cu.dataset.iasCuando}, 'Guardado'); else render(); return; }
     if (t.closest('[data-ias-borrar]')) {
-      abrirDialogo(`<h3>Borrar lo que aprendió</h3><p>Tu IA olvida lo que aprendió de cómo escribes y vuelve a aprender desde esta noche.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626" data-ias-borrar-ok="1">Borrar</button></div>`);
+      abrirDialogo(`<h3>Borrar lo que aprendió</h3><p>Tu IA olvida lo que aprendió de cómo escribes y vuelve a aprender desde esta noche.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626;color:#fff" data-ias-borrar-ok="1">Borrar</button></div>`);
     }
   });
   document.getElementById('ov-x').addEventListener('click', e => {

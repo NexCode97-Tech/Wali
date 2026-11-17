@@ -184,7 +184,7 @@ document.getElementById('page').addEventListener('click', e => {
   const f = t.closest('[data-rg-filtro]'); if (f) { e.stopImmediatePropagation(); RG.filtro = f.dataset.rgFiltro; render(); return; }
   const on = t.closest('[data-rg-on]'); if (on) { e.stopImmediatePropagation(); const r = REGLAS[+on.dataset.rgOn]; r.on = !r.on; render(); toast(`${r.n}: ${r.on ? 'activa' : 'apagada'}`); return; }
   const bo = t.closest('[data-rg-borrar]'); if (bo) { e.stopImmediatePropagation(); const i = +bo.dataset.rgBorrar, r = REGLAS[i];
-    abrirDialogo(`<h3>Borrar la regla «${esc(r.n)}»</h3><p>Deja de funcionar de inmediato. Esto no se puede deshacer.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626" data-rg-borrar-ok="${i}">${I('x')}Borrar</button></div>`); return; }
+    abrirDialogo(`<h3>Borrar la regla «${esc(r.n)}»</h3><p>Deja de funcionar de inmediato. Esto no se puede deshacer.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626;color:#fff" data-rg-borrar-ok="${i}">${I('x')}Borrar</button></div>`); return; }
   const ed = t.closest('[data-rg-editar]'); if (ed) { e.stopImmediatePropagation(); rgAbrir(+ed.dataset.rgEditar); return; }
   if (t.closest('[data-rg-nueva]')) { e.stopImmediatePropagation(); rgAbrir(null); return; }
   const id = t.closest('[data-rg-idea]'); if (id) { e.stopImmediatePropagation(); rgAbrir(null, RG_IDEAS[+id.dataset.rgIdea]); return; }
