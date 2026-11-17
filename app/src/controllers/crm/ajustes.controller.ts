@@ -436,7 +436,8 @@ export async function invitarPersona(req: Request, res: Response) {
   })
   await prismaGlobal.crmMiembro.create({ data: { espacioId: espacio, userId: u.id } })
   olvidarGenteCrm()
-  await usuariosCrm(true)
+  // La persona nueva aparece en vivo en las demás pantallas abiertas (salidaPersona.ts, 17-nov).
+  await (await import('../../services/crm/salidaPersona')).avisarGente(req.userId!)
   if (p.data.rol === 'ADMIN') {
     const [e, yo] = await Promise.all([prismaGlobal.crmEspacio.findUnique({ where: { id: espacio }, select: { nombre: true } }), prismaGlobal.user.findUnique({ where: { id: req.userId! }, select: { nombre: true, email: true } })])
     await invitar(u.id, [], e?.nombre || 'tu empresa', (yo?.nombre || yo?.email || 'Tu administrador').trim())
@@ -477,7 +478,10 @@ export async function cancelarInvitacion(req: Request, res: Response) {
   await prismaGlobal.crmMiembro.delete({ where: { espacioId_userId: { espacioId: espacio, userId: u.id } } })
   await prismaGlobal.recuperacionClave.updateMany({ where: { userId: u.id, usado: null }, data: { usado: new Date() } })
   olvidarGenteCrm()
-  await usuariosCrm(true)
+  // Sale de los equipos donde la habían puesto y la lista de personas cambia en vivo (salidaPersona.ts, 17-nov).
+  const { quitarDeEquipos, avisarGente } = await import('../../services/crm/salidaPersona')
+  await quitarDeEquipos(u.id, req.userId!)
+  await avisarGente(req.userId!)
   logger.info({ evento: 'INVITACION_CANCELADA', userId: u.id, espacio, por: req.userId })
   return ApiResponse.success(res, { ok: true })
 }

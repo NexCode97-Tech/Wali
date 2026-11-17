@@ -38,10 +38,20 @@ async function crmFetch(metodo, ruta, cuerpo, form){
     return r;
   }
 }
+// La cuenta se suspendió o se borró con la pantalla abierta (17-nov): en vez de seguir intentando, a la entrada, que
+// dice por qué ya no entra. Una sola vez.
+let crmCuentaFuera = false;
+function crmSalirSinCuenta(suspendida){
+  if (crmCuentaFuera) return; crmCuentaFuera = true;
+  const base = String((window.CRM_INICIO && window.CRM_INICIO.api) || '').replace(/\/+$/, '').replace(/\/api$/, '');
+  const a = base + '/entrar' + (suspendida ? '?error=suspendida' : '');
+  try { (window.top || window).location.replace(a); } catch { location.replace(a); }
+}
 async function crmLeer(r){
   let j = null; try { j = await r.json(); } catch { /* sin cuerpo */ }
   if (!r.ok || (j && j.success === false)) {
     const msg = j && (typeof j.error === 'string' ? j.error : (j.error && j.error.message) || j.message);
+    if (r.status === 403 && (msg === 'CUENTA_SUSPENDIDA' || msg === 'USUARIO_NO_REGISTRADO')) crmSalirSinCuenta(msg === 'CUENTA_SUSPENDIDA');
     throw Object.assign(new Error(msg || (r.status === 404 ? 'Esa función del CRM todavía no está disponible en el servidor.' : `El servidor respondió con un error (${r.status}). Intenta de nuevo.`)), {status:r.status, campos:(j && Array.isArray(j.errors) ? j.errors : []).map(e => e && e.field).filter(Boolean)});
   }
   return j && typeof j === 'object' && 'data' in j ? j.data : j;
@@ -736,6 +746,15 @@ const crmDatos = (() => {
         // saber si fue esta sesión; el eco del cambio propio llega con el mismo estado y no hace nada.
         case 'pref': { const u = USUARIOS.find(x => x.id === d.userId); if (u && d.estado) u.estado = d.estado; if (u && typeof d.conectado === 'boolean') u.conectado = d.conectado; if (d.userId === YO_ID && d.estado && d.estado !== AJ.estado && J(prefDe()) === basePref) { AJ.estado = d.estado; if (d.estado === 'Ausente') AJ.reparto = false; if (d.estado === 'En línea') AJ.reparto = true; basePref = J(prefDe()); pintarYo(); } break; }
         case 'usuario-foto': fotoDePersona(d.userId, d.foto); break;   // alguien cambió su foto (48-barra.js)
+        // La lista de personas cambió (alguien entró, salió, lo suspendieron o le cambiaron el rol; 17-nov): se cambia aquí
+        // en vivo, con el estado y el reparto que ya tenía cada quien. Quien sale deja de aparecer también en los equipos.
+        case 'usuarios': if (Array.isArray(d.usuarios)) {
+          const antes = new Map(USUARIOS.map(u => [u.id, u]));
+          USUARIOS.splice(0, USUARIOS.length, ...d.usuarios.map(u => { const a = antes.get(u.id) || {}; return {id: u.id, nombre: u.nombre, foto: u.foto || null, rol: u.rol, pendiente: !!u.pendiente, estado: a.estado || 'En línea', reparto: a.reparto !== false, conectado: !!a.conectado}; }));
+          const quedan = new Set(USUARIOS.map(u => u.id));
+          for (const id of antes.keys()) if (!quedan.has(id) && typeof PERSONAS_EXTRA !== 'undefined') delete PERSONAS_EXTRA[id];
+          rehacerEquipos();
+        } break;
         case 'linea': mezclarLinea(d.linea); break;
         case 'linea-borrada': { const i = LINEAS.findIndex(l => l.id === d.id); if (i >= 0) LINEAS.splice(i, 1); break; }
         case 'conexiones': if (Array.isArray(d.conexiones)) CONEXIONES.splice(0, CONEXIONES.length, ...d.conexiones); break;

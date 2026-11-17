@@ -260,6 +260,8 @@ export async function cadaMinuto() {
     await paso('avisos de WhatsApp pendientes', reintentarWebhooks)
     await pasoPorEspacio('programados', procesarProgramados)
     await pasoPorEspacio('envíos colgados', () => marcarEnviosColgados())
+    // Quien quedó suspendido y sigue guardado en un equipo (de antes del 17-nov) sale de ahí (salidaPersona.ts).
+    await pasoPorEspacio('suspendidos en equipos', () => import('./salidaPersona').then(m => m.limpiarSuspendidosDeEquipos()))
     // Encuesta al finalizar (lote 6): la que quedó «enviando» o con los días reservados porque el API se reinició.
     await pasoPorEspacio('encuestas colgadas', () => barrerEncuestasColgadas())
     await pasoPorEspacio('recordatorios', procesarRecordatorios)

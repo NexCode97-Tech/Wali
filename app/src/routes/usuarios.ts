@@ -9,9 +9,9 @@ import { auditLog } from '../utils/auditLogger'
 import { cerrarDe } from '../utils/sseManager'
 import { TODOS } from '../utils/roles'
 import { cuentaDe, enEspacio, espacioDeUsuario, usuariosDeCuenta, usuariosDeEspacio } from '../services/crm/espacio'
-import { usuariosCrm } from '../services/crm/usuarios'
 import { limiteUsuarios, topeUsuariosTexto } from '../services/crm/plan'
 import { cifrarClave, claveValida } from './auth'
+import { avisarGente, salioDelCrm } from '../services/crm/salidaPersona'
 
 /**
  * Las cuentas del espacio de trabajo: crear, cambiar el rol, suspender y poner una contraseña nueva. Solo el
@@ -55,7 +55,7 @@ router.post('/', asyncHandler(async (req: Request, res: Response) => {
     await tx.crmMiembro.create({ data: { espacioId: espacio, userId: nuevo.id } })
     return nuevo
   })
-  await enEspacio(espacio, () => usuariosCrm(true))
+  await enEspacio(espacio, () => avisarGente(req.userId!))
   auditLog(req, 'CREATE', 'usuario', u.id)
   return ApiResponse.created(res, u)
 }))
@@ -88,7 +88,10 @@ router.patch('/:id', asyncHandler(async (req: Request, res: Response) => {
   })
   // Con otro rol o suspendida, su conexión en vivo se corta: la pestaña vuelve a pedir permiso con los datos de hoy.
   if (d.role || d.suspendido !== undefined) cerrarDe(id)
-  await enEspacio(espacio, () => usuariosCrm(true))
+  // Suspendida: sale de los equipos de todos sus espacios y la lista de personas cambia en vivo en cada pantalla
+  // (17-nov). Cualquier otro cambio (rol, reactivarla): la lista al día.
+  if (d.suspendido === true) await salioDelCrm(id, req.userId!)
+  else await enEspacio(espacio, () => avisarGente(req.userId!))
   auditLog(req, 'UPDATE', 'usuario', id, { cambios: Object.keys(d) })
   return ApiResponse.success(res, u)
 }))
