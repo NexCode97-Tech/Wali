@@ -486,6 +486,37 @@ export async function cancelarInvitacion(req: Request, res: Response) {
   return ApiResponse.success(res, { ok: true })
 }
 
+/**
+ * Quitar a una persona del CRM (17-nov, pedido del usuario: el ícono de eliminar al lado del lápiz, en Personas).
+ * Sale de esta empresa: deja de ser miembro del espacio, sale de sus equipos, sus conversaciones abiertas vuelven al
+ * reparto (usuarios.ts, liberarDeInactivos) y deja de ocupar un usuario del plan. Su cuenta queda (si está en otras
+ * empresas de Wali, allá sigue igual). Solo un administrador; nadie se quita a sí mismo y el espacio no queda sin
+ * un administrador activo.
+ */
+export async function quitarDelCrm(req: Request, res: Response) {
+  exigirEscritura(req)
+  const a = await alcanceDe(req)
+  if (!a.todo && !a.config) throw new ForbiddenError('Solo un administrador quita personas del CRM.')
+  const espacio = espacioActual()
+  const id = String(req.params.id)
+  if (id === req.userId) throw new ValidationError('No puedes quitarte a ti mismo. Pídeselo a otro administrador.')
+  if (!(await prismaGlobal.crmMiembro.findUnique({ where: { espacioId_userId: { espacioId: espacio, userId: id } } }))) throw new NotFoundError('Esa persona ya no está en el CRM')
+  const u = await prismaGlobal.user.findUnique({ where: { id }, select: { id: true, role: true } })
+  if (!u) throw new NotFoundError('Esa persona ya no está en el CRM')
+  if (u.role === 'ADMIN' || u.role === 'LECTOR') {
+    const otros = await prismaGlobal.user.count({ where: { id: { in: (await usuariosDeEspacio(espacio)).filter(x => x !== id) }, role: 'ADMIN', suspendido: false } })
+    if (!otros) throw new ValidationError('El CRM no puede quedar sin un administrador activo.')
+  }
+  const { quitarDeEquipos, avisarGente } = await import('../../services/crm/salidaPersona')
+  await quitarDeEquipos(id, req.userId!)
+  await prismaGlobal.crmMiembro.delete({ where: { espacioId_userId: { espacioId: espacio, userId: id } } })
+  // Sin acceso de una vez: su pantalla abierta lo dice (y ya no le llega nada de este espacio en vivo).
+  emitirAlcance(id, null, req.userId!)
+  await avisarGente(req.userId!)
+  logger.info({ evento: 'PERSONA_QUITADA_DEL_CRM', userId: id, espacio, por: req.userId })
+  return ApiResponse.success(res, { ok: true })
+}
+
 // ─── Guardar un ajuste (con control de versión opcional) ─────────────────────
 
 const ajusteSchema = z.object({

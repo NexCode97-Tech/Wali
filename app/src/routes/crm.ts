@@ -336,6 +336,8 @@ router.post('/equipos/repartir', adminEquipos('repartir las conversaciones de qu
 router.post('/personas/invitar', adminEquipos('invitar personas al CRM'), asyncHandler(ajustes.invitarPersona))
 router.post('/personas/:id/reenviar', adminEquipos('reenviar invitaciones'), asyncHandler(ajustes.reenviarInvitacion))
 router.delete('/personas/:id/invitacion', adminEquipos('cancelar invitaciones'), asyncHandler(ajustes.cancelarInvitacion))
+// Quitar a una persona del CRM (ícono de eliminar en Personas, 17-nov): solo un administrador (en el controlador).
+router.delete('/personas/:id', asyncHandler(ajustes.quitarDelCrm))
 router.get('/personas/:id', adminEquipos('ver los datos de las personas'), asyncHandler(ajustes.verPersona))
 router.put('/ajustes/:clave', asyncHandler(ajustes.guardarAjusteRuta))
 router.put('/preferencias', asyncHandler(ajustes.guardarPreferencias))

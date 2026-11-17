@@ -600,7 +600,7 @@ tabPersonas = function(){
     const pend = !!(USUARIOS.find(u => u.id === p.id) || {}).pendiente;
     return `<tr class="${pend ? 'eqr-pend' : ''}"><td><span class="eqr-pers">${avPer(p)}<span>${esc(p.nombre)}${pend ? '<span class="eqr-inv">Invitación pendiente</span>' : ''}${p.rol === 'ADMIN' || (!eqs.length && !subsTags) ? `<small class="eqr-rolm">${esc(ROL_NOMBRE[p.rol] || p.rol || '')}</small>` : ''}</span></span></td><td>${esc(ROL_NOMBRE[p.rol] || p.rol || '')}</td><td><span class="eqr-tags">${tags}</span><small class="eqr-vem">Ve: ${esc(v.t)}${v.s ? ` · ${esc(v.s)}` : ''}</small></td><td>${esc(v.t)}${v.s ? `<small>${esc(v.s)}</small>` : ''}</td>
       <td><input class="rq-num" data-per-tope="${esc(p.id)}" value="${esc(EQ_CFG.topes[p.id] || '')}" placeholder="Ilimitado" inputmode="numeric" maxlength="3" aria-label="Máximo de conversaciones abiertas de ${esc(p.nombre)}"></td>
-      <td class="eqr-lap">${pend ? `<button type="button" class="btn ic" data-per-reenviar="${esc(p.id)}" aria-label="Reenviar la invitación a ${esc(p.nombre)}" title="Reenviar la invitación">${I('send')}</button><button type="button" class="btn ic eqr-xr" data-per-cancelar="${esc(p.id)}" aria-label="Cancelar la invitación de ${esc(p.nombre)}" title="Cancelar la invitación">${I('x')}</button>` : ''}<button type="button" class="btn ic" data-per-eq="${esc(p.id)}" aria-label="Editar a ${esc(p.nombre)}" title="Editar">${I('pen')}</button></td></tr>`;
+      <td class="eqr-lap">${pend ? `<button type="button" class="btn ic" data-per-reenviar="${esc(p.id)}" aria-label="Reenviar la invitación a ${esc(p.nombre)}" title="Reenviar la invitación">${I('send')}</button><button type="button" class="btn ic eqr-xr" data-per-cancelar="${esc(p.id)}" aria-label="Cancelar la invitación de ${esc(p.nombre)}" title="Cancelar la invitación">${I('x')}</button>` : ''}<button type="button" class="btn ic" data-per-eq="${esc(p.id)}" aria-label="Editar a ${esc(p.nombre)}" title="Editar">${I('pen')}</button>${!pend && (ALCANCE.todo || ALCANCE.config) && p.id !== CRM_YO.id ? `<button type="button" class="btn ic eqr-xr" data-per-quitar="${esc(p.id)}" aria-label="Quitar a ${esc(p.nombre)} del CRM" title="Quitar del CRM">${I('trash')}</button>` : ''}</td></tr>`;
   }).join('');
   return `<div class="eqr-pt"><p class="eqr-pdesc">Quién entra al CRM y qué ve. Los administradores que no están en ningún equipo ven todo; los demás ven lo que les da su rol en el equipo.</p>
     <div class="rq-bar"><label class="cn-q">${I('search')}<input id="per-q" value="${esc(st.perQ || '')}" placeholder="Buscar una persona" autocomplete="off" aria-label="Buscar una persona"></label>
@@ -899,17 +899,50 @@ document.head.insertAdjacentHTML('beforeend', `<style>
   #page:has(.cn-tabs[aria-label="Equipos y reparto"]){padding-bottom:96px}
 }
 .eqr-xr,.eqr-xr svg{color:#dc2626}
+.eqr-lap{white-space:nowrap}.eqr-lap .btn.ic + .btn.ic{margin-left:6px}
+/* Quitar del CRM (17-nov): la fila se apaga y se corre antes de salir de la lista. */
+.eqr-tb tr.eqr-sale{animation:eqr-sale .26s cubic-bezier(.23,1,.32,1) forwards;pointer-events:none}
+@keyframes eqr-sale{to{opacity:0;transform:translateX(16px)}}
+@media (prefers-reduced-motion:reduce){.eqr-tb tr.eqr-sale{animation:eqr-apaga .18s linear forwards}@keyframes eqr-apaga{to{opacity:0}}}
 </style>`);
 document.addEventListener('click', e => {
   const r = e.target.closest('[data-per-reenviar]');
   if (r && !r.disabled) { r.disabled = true;
     crmApi('POST', `/crm/personas/${encodeURIComponent(r.dataset.perReenviar)}/reenviar`).then(() => toast('Invitación reenviada')).catch(err => toast(err.message || 'No se pudo reenviar')).finally(() => { r.disabled = false; });
     return; }
+  const q = e.target.closest('[data-per-quitar]');
+  if (q) {
+    const p = personaDe(q.dataset.perQuitar); if (!p) return;
+    abrirDialogo(`<h3>¿Quitar a ${esc(p.nombre)} del CRM?</h3><p>Deja de entrar al CRM de tu empresa y sale de sus equipos. Sus conversaciones abiertas vuelven al reparto y deja de ocupar un usuario de tu plan. Lo que ya respondió queda con su nombre.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626" data-per-quitarok="${esc(p.id)}">${I('trash')}Quitar del CRM</button></div>`);
+    return;
+  }
   const x = e.target.closest('[data-per-cancelar]'); if (!x) return;
   const p = USUARIOS.find(u => u.id === x.dataset.perCancelar); if (!p) return;
   abrirDialogo(`<h3>Cancelar la invitación de ${esc(p.nombre)}</h3><p>Sale del CRM y el enlace que le llegó deja de servir. La puedes volver a invitar cuando quieras.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Volver</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626" data-per-cancelarok="${esc(p.id)}">${I('x')}Cancelar la invitación</button></div>`);
 });
 document.getElementById('ov-x').addEventListener('click', e => {
+  const qb = e.target.closest('[data-per-quitarok]');
+  if (qb && !qb.disabled) {
+    qb.disabled = true;
+    const id = qb.dataset.perQuitarok, nombre = (personaDe(id) || {}).nombre || 'la persona';
+    crmApi('DELETE', `/crm/personas/${encodeURIComponent(id)}`)
+      .then(() => {
+        cerrarDialogo();
+        const quitar = () => {
+          const i = USUARIOS.findIndex(u => u.id === id); if (i >= 0) USUARIOS.splice(i, 1);
+          for (const eq of Object.keys(EQ_CFG.ids || {})) if (Array.isArray(EQ_CFG.ids[eq])) EQ_CFG.ids[eq] = EQ_CFG.ids[eq].filter(y => y !== id);
+          for (const eq of Object.keys(EQ_CFG.lideres || {})) if (Array.isArray(EQ_CFG.lideres[eq])) EQ_CFG.lideres[eq] = EQ_CFG.lideres[eq].filter(y => y !== id);
+          for (const eq of Object.keys(EQ_CFG.subequipos || {})) (EQ_CFG.subequipos[eq] || []).forEach(s => { s.ids = (s.ids || []).filter(y => y !== id); });
+          if (typeof PERSONAS_EXTRA !== 'undefined') delete PERSONAS_EXTRA[id];
+          render(); toast(`Quitaste a ${nombre} del CRM`);
+        };
+        const fila = document.querySelector(`#page [data-per-quitar="${CSS.escape(id)}"]`);
+        const tr = fila && fila.closest('tr');
+        if (tr) { tr.classList.add('eqr-sale'); setTimeout(quitar, 260); } else quitar();
+      })
+      .catch(err => { qb.disabled = false; toast(err.message || 'No se pudo quitar'); });
+    return;
+  }
   const b = e.target.closest('[data-per-cancelarok]'); if (!b || b.disabled) return; b.disabled = true;
   const id = b.dataset.perCancelarok;
   crmApi('DELETE', `/crm/personas/${encodeURIComponent(id)}/invitacion`)
