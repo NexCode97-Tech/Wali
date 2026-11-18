@@ -320,7 +320,7 @@ function cajaCuentasMeta(){
       ${nums.length ? cxChipModo(cxCoex(c)) : ''}${est}
       <div class="acc"><button type="button" class="btn" data-cxm-revisar="${c.id}">${I('swap')}Revisar</button><button type="button" class="btn" data-cxm-quitar="${c.id}">${I('x')}Desconectar</button></div></div>
       ${lnFilaMarketing(c)}
-      ${c.error ? `<div class="ln-nota">${LN_IC.alerta}<span>${esc(c.error)}</span></div>` : ''}
+      ${c.error ? `<div class="ln-nota">${LN_IC.alerta}<span>${esc(errorExplicado(c.error).t)} · ${errorBoton(c.error)}</span></div>` : ''}
       ${manualPendiente ? `<div class="ln-hook"><p>Si Meta no manda los mensajes solo: en tu app de Meta ve a WhatsApp, Configuración, Webhook; pega esta dirección y este código y suscríbete al campo «messages».</p>${lnCopiable('Dirección de avisos', c.webhookUrl)}${lnCopiable('Código de verificación', c.verifyToken || '')}</div>` : ''}`;
   }).join('')}</div>`;
 }
@@ -592,7 +592,7 @@ function pintarConexion(){
         <div class="ft2"><button type="button" class="btn" data-lc-lineas="1">Ver en Líneas de WhatsApp</button><button type="button" class="btn pri" data-cerrar-dlg="1">Listo</button></div>`;
     } else if (x.estado === 'error') {
       h = `<div class="lc-hero"><span class="lc-mal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 16.5h.01"/><circle cx="12" cy="12" r="9"/></svg></span><h3>No se pudo conectar la línea</h3><p>Meta no dejó terminar la conexión de ${tel}.</p></div>
-        <div class="lc-error"><b>Lo que respondió Meta</b><span>${esc(x.error)}</span></div>
+        <div class="lc-error"><b>${esc(errorExplicado(x.error).t)}</b><span>${errorBoton(x.error)}</span></div>
         <div class="lc-card lc-tareas pad">${tarea(ic.mal, 'Registrar el número en la API de Meta')}${tarea(ic.espera, 'Recibir los mensajes en el CRM', true)}</div>
         <div class="ft2 entre"><button type="button" class="btn" data-cx-ir="3">${I('back')}Atrás</button><button type="button" class="btn pri" data-cx-conectar="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg>Volver a intentar</button></div>`;
     } else {

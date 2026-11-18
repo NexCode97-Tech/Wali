@@ -1113,10 +1113,11 @@ function chBloqueOut(m, ult){
 }
 function chMetaOut(c, m, i){
   if (m._estado === 'fallido') {
-    const e = String(m._error || 'No se pudo enviar'), ventana = /24 horas|131047|plantilla/i.test(e);
+    // Errores explicados (89-errores.js, 18-nov): título en español y «Ver motivo y solución»; Reintentar solo si sirve.
+    const e = String(m._error || 'No se pudo enviar'), x = errorExplicado(e), ventana = !!x.plantilla || /24 horas|131047|plantilla/i.test(e);
     const accion = ventana ? '<button type="button" class="ch-acc" data-ch-plantilla="1">Enviar con plantilla</button>'
-      : !m.file && !m.audio && !m.link && typeof m.out === 'string' && m.out.trim() ? `<button type="button" class="ch-acc" data-ch-reintentar="${i}">Reintentar</button>` : '';
-    return `<span class="ch-meta mal">${CH_SVG_ALERTA}<span>No se entregó: ${esc(e)}${accion ? ' · ' + accion : ''}</span></span>`;
+      : x.r !== false && (x.r || !x.codigo) && !m.file && !m.audio && !m.link && typeof m.out === 'string' && m.out.trim() ? `<button type="button" class="ch-acc" data-ch-reintentar="${i}">Reintentar</button>` : '';
+    return `<span class="ch-meta mal">${CH_SVG_ALERTA}<span>No se entregó · ${esc(x.t)} · ${errorBoton(e)}${accion ? ' · ' + accion : ''}</span></span>`;
   }
   const est = CH_ESTADO[m._estado] || (m._id ? CH_ESTADO.enviado : CH_ESTADO.enviando);
   return `<span class="ch-meta"><b>${esc(m.by || yo)}</b>· ${esc(m.h || '')} ·${m.rq ? `<span class="ch-rq">Respuesta rápida /${esc(m.rq)}</span>·` : ''}<span class="est${m._estado === 'leido' ? ' leido' : ''}">${I(est[0])}</span>${est[1]}</span>`;
@@ -1152,7 +1153,7 @@ function pintarChat(c){
       const cuerpo = k => { const x = ms[k], txtM = l === 'ia' ? x.ia : l === 'recepcion' ? x.recepcion : x.bot, fallo = x._estado === 'fallido';
         const ops = l === 'bot' && Array.isArray(x.botones) ? x.botones.map(b => typeof b === 'string' ? b : b && b.t).filter(Boolean) : [];
         return `<div class="ch-b ia${fallo ? ' fallo' : ''}${k === g[g.length - 1] ? ' ult' : ''}">${esc(txtM)}${ops.length ? `<div class="ch-ops">${ops.map(o => `<span>${esc(o)}</span>`).join('')}</div>` : ''}</div>`; };
-      const meta = ult._estado === 'fallido' ? `<span class="ch-meta mal">${CH_SVG_ALERTA}<span>No se entregó: ${esc(ult._error || 'No se pudo enviar')}</span></span>` : `<span class="ch-meta"><b class="ia">${esc(nombre)}</b>· ${esc(ult.h || '')}</span>`;
+      const meta = ult._estado === 'fallido' ? `<span class="ch-meta mal">${CH_SVG_ALERTA}<span>No se entregó · ${esc(errorExplicado(ult._error || 'No se pudo enviar').t)} · ${errorBoton(ult._error || 'No se pudo enviar')}</span></span>` : `<span class="ch-meta"><b class="ia">${esc(nombre)}</b>· ${esc(ult.h || '')}</span>`;
       out.push(`<div class="ch-fila yo"><div class="ch-col">${g.map(cuerpo).join('')}${meta}</div><span class="av ch-av ch-robot">${l === 'bot' ? I('flow') : CH_SVG_ROBOT}</span></div>`);
     }
     i = j;
