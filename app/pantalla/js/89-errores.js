@@ -53,6 +53,12 @@
     2018278: {t: 'Pasaron más de 24 horas', m: 'Messenger e Instagram solo dejan responder durante las 24 horas siguientes al último mensaje de la persona.', p: ['Espera a que la persona vuelva a escribir.']},
     2534022: {t: 'Pasaron más de 24 horas', m: 'Instagram solo deja responder durante las 24 horas siguientes al último mensaje de la persona.', p: ['Espera a que la persona vuelva a escribir.']},
   };
+  // Errores de Meta con código genérico (como 100) y el motivo real en el texto: se reconocen por el texto, antes del código.
+  const POR_TEXTO = [
+    [/no verificada|not verified|unverified/i, {t: 'Tu cuenta de WhatsApp Business no está verificada', m: 'Meta no deja registrar este número porque el negocio dueño de la cuenta de WhatsApp todavía no pasó la verificación. Las cuentas sin verificar tienen límite de números.', p: ['Entra a business.facebook.com con la cuenta dueña del negocio.', 'Ve a Configuración del negocio, Centro de seguridad, Verificación del negocio, y complétala con el RUT o la cámara de comercio.', 'Cuando Meta la apruebe (suele tardar unos días), vuelve a conectar el número.', 'Si tienes otra cuenta de WhatsApp Business ya verificada, puedes elegir esa al conectar.'], verif: true}],
+    [/two.?step|dos pasos|\bpin\b/i, {t: 'El PIN no coincide', m: 'El PIN de 6 dígitos no es el de la verificación en dos pasos de este número.', p: ['Escribe el PIN que pusiste al activar la verificación en dos pasos.', 'Si no lo recuerdas, cámbialo en WhatsApp Manager, en el número, Configuración, Verificación en dos pasos.']}],
+    [/already registered|ya está registrado|in use|en uso/i, {t: 'Este número ya está en uso en otro lugar', m: 'El número está registrado en otra cuenta o en la app de WhatsApp de un celular.', p: ['Si está en la app de WhatsApp de un celular, conéctalo como «Con tu app de WhatsApp Business».', 'Si está en otra plataforma, quítalo de allá primero.']}],
+  ];
   // Errores propios del CRM, reconocidos por su texto.
   const PROPIOS = [
     [/prueba gratis terminó|plan no está activo/i, {t: 'Tu plan no está activo', m: 'Con el plan vencido el CRM sigue funcionando y los mensajes de tus clientes siguen llegando, pero tus respuestas no salen.', p: ['Ve a Ajustes, Plan y pagos.', 'Elige o renueva tu plan.', 'Vuelve a enviar el mensaje.']}],
@@ -67,10 +73,15 @@
   window.errorExplicado = function(texto){
     const s = String(texto || '').trim();
     const c = s.match(/Meta (\d{1,8})/);
-    let e = c ? CAT[+c[1]] : null;
+    let e = null;
+    if (c) for (const [re, x] of POR_TEXTO) if (re.test(s)) { e = x; break; }
+    if (!e && c) e = CAT[+c[1]] || null;
     if (!e) for (const [re, x] of PROPIOS) if (re.test(s)) { e = x; break; }
-    if (!e) e = {t: c ? 'Meta no entregó el mensaje' : (s.split(/[.(]/)[0] || 'No se pudo completar').slice(0, 80), m: c ? 'Meta rechazó la solicitud con un motivo que todavía no tenemos explicado.' : s, p: c ? ['Revisa el detalle técnico de abajo.', 'Si se repite, escríbenos a soporte con ese detalle.'] : ['Si se repite, escríbenos a soporte.']};
-    return {...e, codigo: c ? +c[1] : null, tecnico: c || e.m !== s ? s : ''};
+    if (!e) e = {t: c ? 'Meta no aceptó la solicitud' : (s.split(/[.(]/)[0] || 'No se pudo completar').slice(0, 80), m: c ? 'Meta rechazó la solicitud con un motivo que todavía no tenemos explicado.' : s, p: c ? ['Revisa el detalle técnico de abajo.', 'Si se repite, escríbenos a soporte con ese detalle.'] : ['Si se repite, escríbenos a soporte.']};
+    // Meta a veces manda HTML en el texto: queda como texto limpio, y su enlace de ayuda como enlace aparte.
+    const ayuda = (s.match(/href="(https:\/\/[^"]+)"/) || [])[1] || '';
+    const limpio = s.replace(/<a [^>]*>([^<]*)<\/a>/g, '$1').replace(/<[^>]+>/g, '');
+    return {...e, codigo: c ? +c[1] : null, tecnico: c || e.m !== s ? limpio : '', ayuda: /^https:\/\/([\w-]+\.)*facebook\.com\//.test(ayuda) ? ayuda : ''};
   };
   /** El botón «Ver motivo y solución» para un error (va junto al título del error). */
   window.errorBoton = texto => `<button type="button" class="err-ver" data-err-ver="${esc(String(texto || ''))}">Ver motivo y solución</button>`;
@@ -80,7 +91,8 @@
     abrirDialogo(`<h3>${esc(e.t)}</h3>
       <div class="err-d"><div><b>Motivo</b><p>${esc(e.m)}</p></div>
       <div><b>Solución</b><ol>${e.p.map(x => `<li>${esc(x)}</li>`).join('')}</ol></div>
-      ${e.codigo === 130497 || e.codigo === 141010 || e.codigo === 131031 || e.codigo === 131042 ? `<a class="err-link" href="${VM}" target="_blank" rel="noopener">${I('link')}Abrir WhatsApp Manager</a>` : ''}
+      ${e.verif ? `<a class="err-link" href="https://business.facebook.com/settings/security" target="_blank" rel="noopener">${I('link')}Abrir el Centro de seguridad de Meta</a>` : e.codigo === 130497 || e.codigo === 141010 || e.codigo === 131031 || e.codigo === 131042 ? `<a class="err-link" href="${VM}" target="_blank" rel="noopener">${I('link')}Abrir WhatsApp Manager</a>` : ''}
+      ${e.ayuda ? `<a class="err-link" href="${esc(e.ayuda)}" target="_blank" rel="noopener">${I('link')}Abrir la ayuda de Meta</a>` : ''}
       ${e.tecnico ? `<small class="err-tec">Detalle técnico${e.codigo ? ` · código de Meta ${e.codigo}` : ''}<br>${esc(e.tecnico)}</small>` : ''}</div>
       <div class="ft2"><button type="button" class="btn pri" data-cerrar-dlg="1">Entendido</button></div>`);
   }
