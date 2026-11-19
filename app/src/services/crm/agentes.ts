@@ -7,6 +7,7 @@ import { leerAjuste } from './ajustes'
 import { prismaGlobal } from './bd'
 import { espacioActual } from './espacio'
 import { consultasDe, consultaPorHerramienta, CONSULTAS, HERRAMIENTA_CONSULTA, usarConsulta } from './integraciones'
+import { equipoRespaldo } from './equipos'
 
 /**
  * Chat de prueba de los agentes IA del CRM (página Agentes de la maqueta):
@@ -145,7 +146,7 @@ export async function nombreEmpresa(espacio: string): Promise<string> {
 
 export const esRecep = (a: { tpl?: string } | null | undefined) => a?.tpl === 'recep'
 export const SOPORTES_DEFECTO = ['Soporte de ventas', 'Soporte']
-export const destinoDe = (a: AgenteMaqueta | null) => txt(a?.destino) || 'Ventas'
+export const destinoDe = (a: AgenteMaqueta | null) => txt(a?.destino) || equipoRespaldo()
 /** Equipos que la Recepcionista puede sugerir (los temas que no son de su destino). */
 export function sugeribles(a: AgenteMaqueta): string[] {
   const d = destinoDe(a)
@@ -221,7 +222,7 @@ export function sistemaDe(a: AgenteMaqueta, kb: string, variante?: VarianteSiste
   const presenta = presentaLimpio(a.presenta) || `el asistente virtual de ${empresa}`
   const soy = nombreDeAgente(a)
   const cuandoPasa = cuandoPasaDe(a)
-  const temas = (Array.isArray(a.temas) ? a.temas : []).filter(t => Array.isArray(t) && t[0]).map(([t, eq]) => `- ${t} → equipo «${eq || a.destino || 'Ventas'}»`)
+  const temas = (Array.isArray(a.temas) ? a.temas : []).filter(t => Array.isArray(t) && t[0]).map(([t, eq]) => `- ${t} → equipo «${eq || a.destino || equipoRespaldo()}»`)
   const contexto = contextoDe(a, variante?.espacio)
   const adicionales = lineas(a.adicionales)
   const habilidades = habilidadesDe(a)
@@ -270,7 +271,7 @@ export function sistemaDe(a: AgenteMaqueta, kb: string, variante?: VarianteSiste
     '',
     '# A quién pasas la conversación',
     ...(variante?.aQuien ?? [
-      `Equipo por defecto: «${txt(a.destino) || 'Ventas'}».`,
+      `Equipo por defecto: «${txt(a.destino) || equipoRespaldo()}».`,
       ...(temas.length ? ['Según el tema:', ...temas] : []),
       `Pasas la conversación ${cuandoPasa.join('; ')}.`,
       ...(criterios.length ? ['También la pasas en estos casos:', ...criterios.map(c => `- ${c}`)] : []),
@@ -391,7 +392,7 @@ export async function probarAgente(agente: AgenteMaqueta, historial: TurnoPrueba
     }
     mensajes.push({ role: 'user', content: resultados })
   }
-  if (r.stop_reason === 'refusal') return { texto: 'Prefiero que esto lo revise una persona del equipo. Ya te paso con un asesor.', pasar: { equipo: txt(agente.destino) || 'Ventas', nota: 'El agente no quiso responder este mensaje: revisar la conversación.' } }
+  if (r.stop_reason === 'refusal') return { texto: 'Prefiero que esto lo revise una persona del equipo. Ya te paso con un asesor.', pasar: { equipo: txt(agente.destino) || equipoRespaldo(), nota: 'El agente no quiso responder este mensaje: revisar la conversación.' } }
   const bruto = r.content.filter((b): b is Anthropic.TextBlock => b.type === 'text').map(b => b.text).join('').trim()
   let salida: { texto?: unknown; pasar?: unknown; datos?: unknown } = {}
   try { salida = JSON.parse(bruto) } catch {

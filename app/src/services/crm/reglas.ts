@@ -11,7 +11,7 @@ import { usuariosCrm, nombreDe, type UsuarioCrm } from './usuarios'
 import { emitirConv, emitirCrm, emitirMsg } from './tiempoReal'
 import { archivosDe, guardarMensaje, mensajeDeArchivo } from './salientes'
 import { configReparto, miembrosDe, repartirA } from './reparto'
-import { equipoDeConv, leerEquipos } from './equipos'
+import { equipoDeConv, leerEquipos, equipoRespaldo } from './equipos'
 import { alcanceDePersona } from './alcance'
 import { fichaDeContacto } from './fichaExterna'
 import { buscarPlantilla, plantillaEnEquipo, variablesDe } from './plantillas'
@@ -348,7 +348,7 @@ async function cumple(crudo: string, c: Conv, datos: Json): Promise<boolean | nu
     const validos = await Promise.all(pedidos.map(equipoValido))
     const faltan = pedidos.filter((_, i) => !validos[i])
     if (faltan.length) return `${faltan.map(x => `«${x}»`).join(' y ')} no ${faltan.length > 1 ? 'son equipos' : 'es un equipo'} del CRM (Ajustes del CRM, Equipos)`
-    const actual = plano(c.equipo || 'Ventas')
+    const actual = plano(c.equipo || equipoRespaldo())
     return validos.some(e => plano(e) === actual) !== !!m[1]
   }
   if (/^(?:no\s+tiene\s+asesor|sin\s+asesor|sin\s+asignar)$/i.test(s)) return !c.asignadoId
@@ -486,7 +486,7 @@ async function accionTurnos(ctx: Ctx, c: Conv, equipoPedido: string | null): Pro
   if (c.asignadoId) return {}
   // Igual que el reparto automático: una conversación finalizada no se le entrega a nadie.
   if (c.estado === 'finalizadas') return { aviso: 'no asignó por turnos: la conversación está finalizada (se reparte sola si el cliente vuelve a escribir)' }
-  const equipo = equipoPedido ? await equipoValido(equipoPedido) : c.equipo || 'Ventas'
+  const equipo = equipoPedido ? await equipoValido(equipoPedido) : c.equipo || equipoRespaldo()
   if (!equipo) return { aviso: `no asignó: el equipo «${equipoPedido}» no existe en Ajustes del CRM, Equipos y reparto` }
   const { id, motivo } = await elegirEnEquipo(equipo, false)
   if (!id) return { aviso: `no asignó por turnos: ${motivo}. La conversación queda sin asignar.` }
@@ -745,7 +745,7 @@ async function accionPlantilla(ctx: Ctx, c: Conv, nombre: string): Promise<Resul
   let p
   try { p = await buscarPlantilla(c.linea!.wabaId, nombre) } catch (e) { return { aviso: `no envió ${que}: Meta no respondió al buscarla (${(e as Error).message})` } }
   if (!p) return { aviso: `no envió ${que}: no existe en Meta para la línea ${c.linea!.nombre}` }
-  if (!(await plantillaEnEquipo(p.name, c.equipo || 'Ventas'))) return { aviso: `no envió ${que}: no es del equipo ${c.equipo || 'Ventas'}` }
+  if (!(await plantillaEnEquipo(p.name, c.equipo || equipoRespaldo()))) return { aviso: `no envió ${que}: no es del equipo ${c.equipo || equipoRespaldo()}` }
   if (p.status !== 'APPROVED') return { aviso: `no envió ${que}: Meta todavía no la aprueba (estado ${p.status.toLowerCase().replace(/_/g, ' ')})` }
   const valores = await valoresDe(ctx, c)
   const faltan = new Set<string>()

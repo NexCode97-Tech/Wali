@@ -5,7 +5,7 @@ import { prisma } from './bd'
 import { espacioActual } from './espacio'
 import { ForbiddenError } from '../../utils/errors'
 import { configura } from '../../utils/roles'
-import { equipoDeConv, genteDe, leerEquipos, type EquiposNorm } from './equipos'
+import { equipoDeConv, genteDe, leerEquipos, type EquiposNorm, equipoRespaldo } from './equipos'
 
 export { equipoDeConv }
 
@@ -101,7 +101,7 @@ export function filtroConvs(a: Alcance): Prisma.CrmConversacionWhereInput {
   if (a.todo) return {}
   const o: Prisma.CrmConversacionWhereInput[] = [{ asignadoId: a.userId, soloLider: false }]
   if (a.lidera.length) o.push({ equipo: { in: a.lidera } })
-  if (a.lidera.includes('Ventas')) o.push({ equipo: null })
+  if (a.lidera.includes(equipoRespaldo())) o.push({ equipo: null })
   return { OR: o }
 }
 
@@ -111,7 +111,7 @@ export function filtroConvs(a: Alcance): Prisma.CrmConversacionWhereInput {
  */
 export function fueraDeLidera(a: Alcance): Prisma.CrmConversacionWhereInput {
   if (!a.lidera.length) return {}
-  if (a.lidera.includes('Ventas')) return { equipo: { notIn: a.lidera } }
+  if (a.lidera.includes(equipoRespaldo())) return { equipo: { notIn: a.lidera } }
   return { OR: [{ equipo: null }, { equipo: { notIn: a.lidera } }] }
 }
 

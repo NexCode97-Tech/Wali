@@ -11,6 +11,7 @@ import { avisar } from '../notificaciones'
 import { avisarLideres } from './avisosCrm'
 import { waConfigurado } from './whatsapp'
 import { buscarPlantilla, equiposDeLineas, plantillaEnEquipo, variablesDe, type PlantillaMeta } from './plantillas'
+import { equipoRespaldo } from './equipos'
 
 /**
  * Motor de difusiones del CRM (26-sep-2026). La pantalla guarda cada difusión
@@ -211,7 +212,7 @@ async function revisarPlantilla(linea: CrmLinea, nombre: string): Promise<InfoPl
     return { ok: false, estado: 'pausada', motivo: `no se pudo consultar la plantilla en Meta (${(e as Error).message}). Se reintenta sola cada minuto` }
   }
   if (!p) return { ok: false, estado: 'error', motivo: `la plantilla «${nombre}» ya no existe en Meta para la línea ${linea.nombre}` }
-  const eq = (await equiposDeLineas()).get(linea.id) ?? 'Ventas'
+  const eq = (await equiposDeLineas()).get(linea.id) ?? equipoRespaldo()
   if (!(await plantillaEnEquipo(p.name, eq))) return { ok: false, estado: 'error', motivo: `la plantilla «${nombre}» no es del equipo ${eq}, el de la línea ${linea.nombre}` }
   if (p.status === 'PAUSED') return { ok: false, estado: 'pausada', motivo: `Meta pausó la plantilla «${nombre}» por baja calidad. Sigue sola cuando Meta la reactive` }
   if (p.status !== 'APPROVED') return { ok: false, estado: 'error', motivo: `la plantilla «${nombre}» no está aprobada en Meta: ${ESTADO_PLANTILLA[p.status] ?? p.status}` }
@@ -307,7 +308,7 @@ interface Contexto {
 }
 
 const equipoDe = (linea: CrmLinea, cfg: Json) =>
-  txt((Array.isArray(cfg.lineas) ? cfg.lineas : []).find((l: Json) => l?.id === linea.id)?.eq) || txt(obj(linea.ajustes).equipo) || 'Ventas'
+  txt((Array.isArray(cfg.lineas) ? cfg.lineas : []).find((l: Json) => l?.id === linea.id)?.eq) || txt(obj(linea.ajustes).equipo) || equipoRespaldo()
 
 /**
  * La conversación donde queda el mensaje: la última del contacto en esa

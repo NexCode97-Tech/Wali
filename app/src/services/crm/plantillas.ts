@@ -5,7 +5,7 @@ import { leerAjuste, guardarAjuste } from './ajustes'
 import { emitirCrm } from './tiempoReal'
 import { archivoPermitido, baseGraph, graph, waConfigurado } from './whatsapp'
 import { credDeWaba, type CredMeta } from './credenciales'
-import { leerEquipos } from './equipos'
+import { leerEquipos, equipoRespaldo } from './equipos'
 
 /**
  * Plantillas de WhatsApp del CRM (26-sep-2026): se leen y se crean en Meta,
@@ -166,7 +166,7 @@ export async function equiposDeLineas(): Promise<Map<string, string>> {
   const cfg = obj(await leerAjuste('cfg'))
   const enCfg = new Map((Array.isArray(cfg.lineas) ? cfg.lineas : []).map(l => [String(obj(l).id ?? ''), String(obj(l).eq ?? '').trim()]))
   const filas = await prisma.crmLinea.findMany({ select: { id: true, ajustes: true } })
-  return new Map(filas.map(f => [f.id, enCfg.get(f.id) || String(obj(f.ajustes).equipo ?? '').trim() || 'Ventas']))
+  return new Map(filas.map(f => [f.id, enCfg.get(f.id) || String(obj(f.ajustes).equipo ?? '').trim() || equipoRespaldo()]))
 }
 
 /** Los equipos de cada plantilla: los guardados o, en las de antes, los de sus líneas. Sin entrada, null (todos). */

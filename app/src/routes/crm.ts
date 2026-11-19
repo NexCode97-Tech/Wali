@@ -37,6 +37,7 @@ import { urlPublica } from './acceso'
 import { prisma } from '../config/prisma'
 import { crearClave, listarClaves, revocarClave } from '../services/crm/apiClaves'
 import { auditLog } from '../utils/auditLogger'
+import { leerEquipos } from '../services/crm/equipos'
 
 /**
  * CRM propio. Todo lo de la bandeja: conversaciones,
@@ -48,6 +49,8 @@ const router = Router()
 // Toda petición del CRM corre dentro del espacio de trabajo de quien la hace (services/crm/espacio.ts).
 // Ventas entra por su rol; cualquier otra persona, si un líder la agregó a un equipo (alcance.ts).
 router.use(authenticate, accesoCrm, conEspacio)
+// El equipo de respaldo del espacio, leído al empezar (equipos.ts, 19-nov).
+router.use((_req: Request, _res: Response, next: NextFunction) => { leerEquipos().then(() => next(), next) })
 
 // Plan y pagos (Whop). Van antes de la guarda: con el plan vencido hay que poder ver el plan y pagar.
 router.get('/plan', asyncHandler(async (req: Request, res: Response) => {

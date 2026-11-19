@@ -8,6 +8,7 @@ import { alEmitirConv, alEmitirMsg } from './tiempoReal'
 import { cifrar, descifrar } from './cifrado'
 import { NotFoundError, ValidationError } from '../../utils/errors'
 import { logger } from '../../utils/logger'
+import { equipoRespaldo } from './equipos'
 
 /**
  * Webhooks de la API de Wali (11-nov): Wali le avisa a otro sistema del cliente cuando pasa algo en su espacio.
@@ -124,7 +125,7 @@ async function cambiosDeConversacion(conv: Json) {
     if (antes.a === ahora.a && antes.e === ahora.e && antes.t === ahora.t && antes.q === ahora.q) return
     await prismaGlobal.$executeRaw`UPDATE crm_conversaciones SET extra = COALESCE(extra, '{}'::jsonb) || ${JSON.stringify({ _wh: ahora })}::jsonb WHERE id = ${id}`
     if (!('e' in antes)) return
-    const conversacion = { id, asignadoId: ahora.a, equipo: ahora.q || 'Ventas', estado: ahora.e, etapa: ahora.t, contactoId: conv.contactoId ?? null }
+    const conversacion = { id, asignadoId: ahora.a, equipo: ahora.q || equipoRespaldo(), estado: ahora.e, etapa: ahora.t, contactoId: conv.contactoId ?? null }
     if (antes.a !== ahora.a || antes.q !== ahora.q) await encolar(espacioId, 'conversacion.asignada', { conversacion, antes: { asignadoId: antes.a ?? null, equipo: antes.q ?? null } })
     if (antes.e !== ahora.e && ahora.e === 'finalizadas') await encolar(espacioId, 'conversacion.finalizada', { conversacion })
     if (antes.t !== ahora.t) await encolar(espacioId, 'conversacion.etapa', { conversacion, antes: { etapa: antes.t ?? null } })

@@ -8,5 +8,5 @@ import type { Prisma } from '@prisma/client'
  */
 export function ajustesIniciales(espacioId: string): Prisma.CrmAjusteCreateManyInput[] {
   const vacias = ['etapas', 'etiquetas', 'reglas', 'flujos'].map(clave => ({ espacioId, clave, valor: [] as Prisma.InputJsonValue }))
-  return [...vacias, { espacioId, clave: 'equipos', valor: { miembros: { Ventas: [] }, ids: { Ventas: [] } } }]
+  return [...vacias, { espacioId, clave: 'equipos', valor: { miembros: { Ventas: [] }, ids: { Ventas: [] }, respaldo: 'Ventas', sinNombre: true } }]
 }

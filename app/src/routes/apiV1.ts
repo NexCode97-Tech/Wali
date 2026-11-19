@@ -6,7 +6,7 @@ import { conClaveApi } from '../services/crm/apiClaves'
 import { prisma } from '../services/crm/bd'
 import { leerAjuste } from '../services/crm/ajustes'
 import { usuariosCrm } from '../services/crm/usuarios'
-import { leerEquipos } from '../services/crm/equipos'
+import { leerEquipos, equipoRespaldo } from '../services/crm/equipos'
 import { auditLog } from '../utils/auditLogger'
 import { ConflictError, NotFoundError, ValidationError } from '../utils/errors'
 import { FLUJOS_DEFECTO } from '../services/crm/flujos'
@@ -28,6 +28,8 @@ import * as contactos from '../controllers/crm/contactos.controller'
 const router = Router()
 
 router.use(conClaveApi)
+// El equipo de respaldo del espacio, leído al empezar (las respuestas lo usan para las conversaciones sin equipo).
+router.use((_req: Request, _res: Response, next: NextFunction) => { leerEquipos().then(() => next(), next) })
 // 120 llamadas por minuto por clave (como Trengo), con las cabeceras estándar de límite.
 router.use(rateLimit({
   windowMs: 60_000, max: 120, standardHeaders: true, legacyHeaders: false,
@@ -55,7 +57,7 @@ const nombres = async (clave: string) => {
 }
 
 const conversacionDe = (c: { id: number; estado: string; canal: string; asignadoId: string | null; equipo: string | null; prioridad: string | null; motivoFin: string | null; lineaId: string | null; noLeidos: number; ultimoMensajeAt: Date | null; finalizadaAt: Date | null; createdAt: Date; contacto?: { id: number; nombre: string | null; telefono: string | null; correo: string | null; etapa: string | null; tags: string[] } | null }) => ({
-  id: c.id, estado: c.estado, canal: c.canal, asignadoId: c.asignadoId, equipo: c.equipo || 'Ventas', prioridad: c.prioridad, lineaId: c.lineaId,
+  id: c.id, estado: c.estado, canal: c.canal, asignadoId: c.asignadoId, equipo: c.equipo || equipoRespaldo(), prioridad: c.prioridad, lineaId: c.lineaId,
   noLeidos: c.noLeidos, motivoFin: c.motivoFin, ultimoMensaje: c.ultimoMensajeAt, finalizada: c.finalizadaAt, creada: c.createdAt,
   contacto: c.contacto ? { id: c.contacto.id, nombre: c.contacto.nombre, telefono: c.contacto.telefono, correo: c.contacto.correo, etapa: c.contacto.etapa, etiquetas: c.contacto.tags } : null,
 })
@@ -137,7 +139,7 @@ async function etapasGuardadas() {
   const lista = Array.isArray(fila?.valor) ? (fila!.valor as unknown[]).filter(Array.isArray) as unknown[][] : ETAPAS_FABRICA.map(x => [...x])
   return { lista, base: fila?.updatedAt ?? null }
 }
-const etapaDe = (x: unknown[]) => ({ nombre: String(x[0] ?? ''), color: x[1] ? String(x[1]) : null, equipo: x[2] ? String(x[2]) : 'Ventas' })
+const etapaDe = (x: unknown[]) => ({ nombre: String(x[0] ?? ''), color: x[1] ? String(x[1]) : null, equipo: x[2] ? String(x[2]) : equipoRespaldo() })
 router.get('/etapas', asyncHandler(async (_req: Request, res: Response) => {
   res.json({ data: (await etapasGuardadas()).lista.map(etapaDe).filter(e => e.nombre) })
 }))
@@ -156,10 +158,10 @@ const PALETA_ETAPAS = ['#EC87C0', '#5D9CEC', '#FC6E51', '#AC92EC', '#48CFAD', '#
 router.post('/etapas', asyncHandler(async (req: Request, res: Response) => {
   const d = etapaSchema.parse(req.body)
   const equipos = Object.keys((await leerEquipos()).miembros)
-  const equipo = d.equipo ?? 'Ventas'
+  const equipo = d.equipo ?? equipoRespaldo()
   if (!equipos.includes(equipo)) throw new ValidationError(`«${equipo}» no es un equipo de este espacio. Los equipos son: ${equipos.join(', ') || 'ninguno'} (GET /equipos).`)
   const { lista, base } = await etapasGuardadas()
-  const delEquipo = (x: unknown[]) => (x[2] ? String(x[2]) : 'Ventas') === equipo
+  const delEquipo = (x: unknown[]) => (x[2] ? String(x[2]) : equipoRespaldo()) === equipo
   if (lista.some(x => delEquipo(x) && String(x[0]).trim().toLowerCase() === d.nombre.toLowerCase())) throw new ConflictError(`${equipo} ya tiene una etapa «${d.nombre}».`)
   const color = d.color ?? PALETA_ETAPAS[lista.filter(delEquipo).length % PALETA_ETAPAS.length]
   // Al final de las de su equipo (el embudo de cada equipo va en el orden de la lista).

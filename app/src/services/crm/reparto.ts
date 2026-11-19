@@ -8,7 +8,7 @@ import { avisar } from '../notificaciones'
 import { leerAjuste, guardarAjuste, leerPreferencias } from './ajustes'
 import { usuariosCrm, type UsuarioCrm } from './usuarios'
 import { emitirConv, emitirMsg } from './tiempoReal'
-import { leerEquipos, metodoValido, subequipoDe, type EquiposNorm, type Subequipo } from './equipos'
+import { leerEquipos, metodoValido, subequipoDe, type EquiposNorm, type Subequipo, equipoRespaldo } from './equipos'
 
 /**
  * Reparto automático de conversaciones (página «Equipos y reparto» de la
@@ -86,7 +86,7 @@ export async function miembrosDe(equipo: string): Promise<UsuarioCrm[]> {
     const set = new Set(nombres.map(n => String(n).trim().toLowerCase()))
     return usuarios.filter(u => set.has(u.nombre.toLowerCase()))
   }
-  return equipo === 'Ventas' ? usuarios.filter(u => u.rol === 'AGENTE') : []
+  return equipo === equipoRespaldo() ? usuarios.filter(u => u.rol === 'AGENTE') : []
 }
 
 /** El equipo que atiende: el de la conversación, el de su línea, o Ventas. */
@@ -100,7 +100,7 @@ async function equipoDe(c: { equipo: string | null; lineaId: string | null; line
     const l = Array.isArray(lineas) ? lineas.map(obj).find(x => x.id === c.lineaId) : null
     if (l && typeof l.eq === 'string' && l.eq) return l.eq
   }
-  return 'Ventas'
+  return equipoRespaldo()
 }
 
 async function abiertasPor(ids: string[]): Promise<Map<string, number>> {
@@ -352,7 +352,7 @@ export async function repartir(convId: number, desdeFila = false): Promise<void>
 export async function repartirAlSalir(userId: string, equipo: string, subequipoId: string | null): Promise<number> {
   const eqs = await leerEquipos()
   const sigueEn = new Set((eqs.subequipos[equipo] ?? []).filter(s => s.ids.includes(userId)).map(s => s.id))
-  const enEquipo = equipo === 'Ventas' ? [{ equipo: 'Ventas' }, { equipo: null }] : [{ equipo }]
+  const enEquipo = equipo === equipoRespaldo() ? [{ equipo: equipoRespaldo() }, { equipo: null }] : [{ equipo }]
   const filas = await prisma.crmConversacion.findMany({
     where: { asignadoId: userId, estado: { not: 'finalizadas' }, OR: enEquipo },
     select: { id: true, extra: true },

@@ -12,6 +12,7 @@ import { buscarPlantilla, plantillaEnEquipo, variablesDe, type PlantillaMeta } f
 import { credDeLinea, hayWhatsapp, type CredMeta } from './credenciales'
 import { leerAjuste } from './ajustes'
 import { esUrlDeWali, leerDeUrl, urlEnFormato } from '../almacen'
+import { equipoRespaldo } from './equipos'
 
 /**
  * WhatsApp Cloud API del CRM (26-sep-2026): el cliente de la Graph API de Meta
@@ -632,7 +633,7 @@ async function armarCuerpo(m: MsgConTodo, cred: CredMeta): Promise<Json> {
     const p = await buscarPlantilla(c.linea.wabaId, plantilla, txt(datos.idioma) || undefined)
     if (!p) throw new ErrorEnvio(`La plantilla «${plantilla}» no existe en Meta para esta línea`)
     if (p.status !== 'APPROVED') throw new ErrorEnvio(`La plantilla «${plantilla}» no está aprobada por Meta todavía`)
-    if (!(await plantillaEnEquipo(p.name, c.equipo || 'Ventas'))) throw new ErrorEnvio(`La plantilla «${plantilla}» no es del equipo ${c.equipo || 'Ventas'}`)
+    if (!(await plantillaEnEquipo(p.name, c.equipo || equipoRespaldo()))) throw new ErrorEnvio(`La plantilla «${plantilla}» no es del equipo ${c.equipo || equipoRespaldo()}`)
     return cuerpoPlantilla(m, datos, p, cred)
   }
 

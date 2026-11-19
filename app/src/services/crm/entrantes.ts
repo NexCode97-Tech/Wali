@@ -23,6 +23,7 @@ import { encuestaNoLlego, respuestaFormulario } from './encuesta'
 import { botonTerminos, respuestaTerminos } from './terminos'
 import { leerLlamadas } from './llamadas'
 import { entrante, estadoSaliente, respuesta, respuestaPermiso, terminada } from './llamadasVivo'
+import { equipoRespaldo, respaldo } from './equipos'
 
 /**
  * Lo que llega por el webhook de WhatsApp Cloud API del CRM (26-sep-2026):
@@ -228,8 +229,8 @@ const CLAVE_CFG: Record<string, string> = { tg: 'telegram', tt: 'tiktok', mail: 
 
 /** «Equipo que los atiende» de cada canal por conexión (Ajustes del CRM, página de cada canal). */
 export function equipoDeCanal(cfg: Json, canal: string): string {
-  if (canal === 'fb' || canal === 'ig') return txt(obj(cfg.meta)[`${canal}Eq`]) || 'Ventas'
-  return txt(obj(cfg[CLAVE_CFG[canal] ?? canal]).eq) || 'Ventas'
+  if (canal === 'fb' || canal === 'ig') return txt(obj(cfg.meta)[`${canal}Eq`]) || equipoRespaldo()
+  return txt(obj(cfg[CLAVE_CFG[canal] ?? canal]).eq) || equipoRespaldo()
 }
 /** «Recibir sus mensajes» de cada canal por conexión: encendido si no se apagó. */
 export function canalEncendido(cfg: Json, canal: string): boolean {
@@ -247,7 +248,7 @@ async function conversacionPara(k: CrmContacto, lugar: Lugar, cuando: Date) {
   const r = await conversacionEnLugar(k, lugar, cuando)
   if (!k.etapa) {
     try {
-      const etapas = await (await import('./iaEmbudo')).etapasDelEquipo(r.conv.equipo || 'Ventas')
+      const etapas = await (await import('./iaEmbudo')).etapasDelEquipo(r.conv.equipo || equipoRespaldo())
       const etapa = etapas.find(e => /^nuevo lead$/i.test(e.trim())) ?? etapas[0]
       if (etapa) { await prisma.crmContacto.update({ where: { id: k.id }, data: { etapa } }); k.etapa = etapa }
     } catch (e) { logger.warn(`[CRM] no se pudo poner la etapa inicial a ${k.id}: ${(e as Error).message}`) }
@@ -277,7 +278,7 @@ async function conversacionEnLugar(k: CrmContacto, lugar: Lugar, cuando: Date) {
   const cfg = obj(await leerAjuste('cfg'))
   if ('visitante' in lugar) {
     const conv = await prisma.crmConversacion.create({
-      data: { contactoId: k.id, canal: 'web', lineaId: null, equipo: txt(obj(cfg.web).eq) || 'Ventas', estado: 'abiertas', extra: json({ webVisitante: lugar.visitante }) },
+      data: { contactoId: k.id, canal: 'web', lineaId: null, equipo: txt(obj(cfg.web).eq) || equipoRespaldo(), estado: 'abiertas', extra: json({ webVisitante: lugar.visitante }) },
     })
     return { conv, nueva: true, reabierta: null, vuelveDe }
   }
@@ -291,7 +292,7 @@ async function conversacionEnLugar(k: CrmContacto, lugar: Lugar, cuando: Date) {
   const linea = lugar.linea
   const eq = (Array.isArray(cfg.lineas) ? cfg.lineas : []).find((l: Json) => l?.id === linea.id)?.eq
   const conv = await prisma.crmConversacion.create({
-    data: { contactoId: k.id, canal: 'wa', lineaId: linea.id, equipo: txt(eq) || txt(obj(linea.ajustes).equipo) || 'Ventas', estado: 'abiertas' },
+    data: { contactoId: k.id, canal: 'wa', lineaId: linea.id, equipo: txt(eq) || txt(obj(linea.ajustes).equipo) || equipoRespaldo(), estado: 'abiertas' },
   })
   return { conv, nueva: true, reabierta: null, vuelveDe }
 }
@@ -478,7 +479,7 @@ async function guardarDeSpam(k: CrmContacto, lugar: Lugar, lista: Json[], waId: 
     conv = await prisma.crmConversacion.create({
       data: {
         contactoId: k.id, canal: 'linea' in lugar ? 'wa' : 'pagina' in lugar ? lugar.canal : 'web', lineaId: 'linea' in lugar ? lugar.linea.id : null,
-        conexionId: 'pagina' in lugar ? lugar.pagina.id : null, equipo: 'Ventas', estado: 'finalizadas', finalizadaAt: cuando, motivoFin: 'Spam',
+        conexionId: 'pagina' in lugar ? lugar.pagina.id : null, equipo: equipoRespaldo(), estado: 'finalizadas', finalizadaAt: cuando, motivoFin: 'Spam',
         ...('visitante' in lugar ? { extra: json({ webVisitante: lugar.visitante }) } : {}),
       },
     })
@@ -501,6 +502,8 @@ async function guardarDeSpam(k: CrmContacto, lugar: Lugar, lista: Json[], waId: 
  * fotos en un solo mensaje): el primero lleva el `waId` y es el que ven los flujos y el agente.
  */
 async function entrar(k: CrmContacto, lugar: Lugar, lista: Json[], waId: string, cuando: Date, etq: string, extraConv?: Json): Promise<void> {
+  // El equipo de respaldo de la empresa, leído antes de crear o mover la conversación (equipos.ts, 19-nov).
+  await respaldo()
   const datos = lista[0]
   // ¿Es la respuesta a la encuesta de satisfacción? Se guarda como csat sin reabrir la conversación.
   if (await respuestaEncuesta(k.id, dondeDe(lugar), waId, datos, cuando)) return

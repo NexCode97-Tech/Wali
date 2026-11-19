@@ -3,7 +3,7 @@ import type { CrmContacto, CrmConversacion, CrmMensaje } from '@prisma/client'
 import { prisma, prismaGlobal } from './bd'
 import { espacioActual } from './espacio'
 import { leerAjuste } from './ajustes'
-import { equipoDeConv, leerEquipos, planoNombre } from './equipos'
+import { equipoDeConv, leerEquipos, planoNombre, equipoRespaldo } from './equipos'
 import { emitirConv, emitirCrm } from './tiempoReal'
 import { guardarMensaje } from './salientes'
 import { nombreDe } from './usuarios'
@@ -87,11 +87,11 @@ const DIAS_VIGENTE = 60
 /** Las etapas de un equipo en el orden del ajuste `etapas` ([nombre, color, equipo?]; sin equipo = Ventas). */
 export async function etapasDelEquipo(equipo: string): Promise<string[]> {
   const v = await leerAjuste<unknown>('etapas')
-  if (!Array.isArray(v)) return equipo === 'Ventas' ? [...ETAPAS_DEFECTO] : []
+  if (!Array.isArray(v)) return equipo === equipoRespaldo() ? [...ETAPAS_DEFECTO] : []
   const salida: string[] = []
   for (const x of v) {
     const n = Array.isArray(x) ? txt(x[0]) : txt(obj(x).n)
-    const eq = (Array.isArray(x) ? txt(x[2]) : txt(obj(x).equipo ?? obj(x).eq)) || 'Ventas'
+    const eq = (Array.isArray(x) ? txt(x[2]) : txt(obj(x).equipo ?? obj(x).eq)) || equipoRespaldo()
     if (n && eq === equipo && !salida.includes(n)) salida.push(n)
   }
   return salida
@@ -101,10 +101,10 @@ export async function etapasDelEquipo(equipo: string): Promise<string[]> {
 async function etapasPorEquipo(equipos: string[]): Promise<Record<string, string[]>> {
   const v = await leerAjuste<unknown>('etapas')
   const out: Record<string, string[]> = Object.fromEntries(equipos.map(eq => [eq, [] as string[]]))
-  if (!Array.isArray(v)) { if (out.Ventas) out.Ventas = [...ETAPAS_DEFECTO]; return out }
+  if (!Array.isArray(v)) { { const r = equipoRespaldo(); if (out[r]) out[r] = [...ETAPAS_DEFECTO] }; return out }
   for (const x of v) {
     const n = Array.isArray(x) ? txt(x[0]) : txt(obj(x).n)
-    const eq = (Array.isArray(x) ? txt(x[2]) : txt(obj(x).equipo ?? obj(x).eq)) || 'Ventas'
+    const eq = (Array.isArray(x) ? txt(x[2]) : txt(obj(x).equipo ?? obj(x).eq)) || equipoRespaldo()
     if (n && out[eq] && !out[eq].includes(n)) out[eq].push(n)
   }
   return out
@@ -113,7 +113,7 @@ async function etapasPorEquipo(equipos: string[]): Promise<Record<string, string
 /** Los equipos del CRM en el orden del ajuste `equipos` (si nunca se guardó, Ventas). */
 async function nombresEquipos(): Promise<string[]> {
   const eqs = Object.keys((await leerEquipos()).miembros)
-  return eqs.length ? eqs : ['Ventas']
+  return eqs.length ? eqs : [equipoRespaldo()]
 }
 
 /** Sin espacios de más: el criterio se guarda en una sola línea. */

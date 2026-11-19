@@ -31,6 +31,7 @@ import { emitirConexiones as emitirConexionesDe } from '../services/crm/conexion
 import { LLAVES_MARKETING, revisarMarketingDeConexion } from '../services/crm/marketingMeta'
 import QRCode from 'qrcode'
 import { cambiarLlamadas, cupoLlamadas, leerLlamadas, saludoDesdeNube, subirSaludo } from '../services/crm/llamadas'
+import { equipoRespaldo } from '../services/crm/equipos'
 
 /**
  * WhatsApp Cloud API del CRM (26-sep-2026). Todo se conecta desde el CRM, sin variables del
@@ -269,7 +270,7 @@ rutasWaCrm.post('/lineas', soloLideres, asyncHandler(async (req: Request, res: R
   const phoneNumberId = String(b.phoneNumberId ?? '').trim()
   const wabaId = String(b.wabaId ?? '').trim()
   const nombre = String(b.nombre ?? '').trim()
-  const equipo = String(b.equipo ?? '').trim() || 'Ventas'
+  const equipo = String(b.equipo ?? '').trim() || equipoRespaldo()
   const pin = String(b.pin ?? '').trim()
   if (!conexionId) throw new ValidationError('Primero conecta la cuenta de WhatsApp de Meta')
   // Los id de Meta son números; basta con que no traigan nada que cambie la ruta de la Graph API.

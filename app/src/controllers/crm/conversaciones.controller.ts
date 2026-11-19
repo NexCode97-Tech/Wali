@@ -30,6 +30,7 @@ import { actualizarContacto, CANALES, CLAVES_CONTACTO, emitirContacto, telefonoV
 import { esUrlDeWali } from '../../services/almacen'
 import { aplicarCambios, sincronizar, unirRecs } from '../../services/crm/googleCalendario'
 import { urlPublica } from '../../routes/acceso'
+import { equipoRespaldo } from '../../services/crm/equipos'
 
 /**
  * Bandeja del CRM: carga inicial, mensajes y cambios de cada conversación.
@@ -236,7 +237,7 @@ export async function enviarMensaje(req: Request, res: Response) {
 async function pasarAContactado(convId: number, por: string) {
   const c = await prisma.crmConversacion.findUnique({ where: { id: convId }, select: { equipo: true, contacto: { select: { id: true, etapa: true } } } })
   if (!c) return
-  const etapas = await (await import('../../services/crm/iaEmbudo')).etapasDelEquipo(c.equipo || 'Ventas')
+  const etapas = await (await import('../../services/crm/iaEmbudo')).etapasDelEquipo(c.equipo || equipoRespaldo())
   const primera = etapas.find(e => /^nuevo lead$/i.test(e.trim())) ?? etapas[0]
   const contactado = etapas.find(e => /^contactad[oa]$/i.test(e.trim()))
   if (!contactado || (c.contacto.etapa && c.contacto.etapa !== primera)) return
@@ -482,9 +483,9 @@ async function equipoDelLugar(canal: string, lineaId: string | null): Promise<st
     const eq = (Array.isArray(cfg.lineas) ? cfg.lineas : []).map(obj).find(l => l.id === lineaId)?.eq
     if (txt(eq)) return txt(eq)
     const l = await prisma.crmLinea.findUnique({ where: { id: lineaId }, select: { ajustes: true } })
-    return txt(obj(l?.ajustes).equipo) || txt(obj(l?.ajustes).eq) || 'Ventas'
+    return txt(obj(l?.ajustes).equipo) || txt(obj(l?.ajustes).eq) || equipoRespaldo()
   }
-  if (canal === 'web') return txt(obj(cfg.web).eq) || 'Ventas'
+  if (canal === 'web') return txt(obj(cfg.web).eq) || equipoRespaldo()
   return equipoDeCanal(cfg, canal)
 }
 

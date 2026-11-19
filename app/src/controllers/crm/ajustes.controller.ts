@@ -15,7 +15,7 @@ import { usuariosCrm } from '../../services/crm/usuarios'
 import { leerWeb, extraerTexto, TIPOS_DOC, EXT_DOC, MENSAJE_TIPOS } from '../../services/crm/kb'
 import { probarAgente } from '../../services/crm/agentes'
 import { alcanceDe, alcanceDePersona, alcanceParaFront, entraPorRol, puedeAdministrar, sincronizarMiembros, type Alcance } from '../../services/crm/alcance'
-import { conGenteDeSubequipos, normalizarEquipos, type EquiposNorm } from '../../services/crm/equipos'
+import { conGenteDeSubequipos, normalizarEquipos, type EquiposNorm, equipoRespaldo, fijarRespaldo } from '../../services/crm/equipos'
 import { conectarShopify, conectarCalendario, conectarHotmart, desconectar, estadoIntegraciones } from '../../services/crm/integraciones'
 import { invitar, invitarNuevos } from '../../services/crm/invitaciones'
 import { limiteUsuarios, topeUsuariosTexto } from '../../services/crm/plan'
@@ -176,7 +176,7 @@ function mezclarDeLider(valor: Record<string, unknown>, antes: EquiposNorm, a: A
   const out = {
     miembros: {} as Record<string, unknown>, ids: {} as Record<string, unknown>, lideres: {} as Record<string, unknown>, roles: {} as Record<string, unknown>,
     subequipos: {} as Record<string, unknown>, metodos: {} as Record<string, unknown>, colores: {} as Record<string, unknown>,
-    transferibles: { ...antes.transferibles }, porNombre: antes.porNombre,
+    transferibles: { ...antes.transferibles }, porNombre: antes.porNombre, respaldo: antes.respaldo, sinNombre: antes.sinNombre,
     cola: {} as Record<string, unknown>, iconos: {} as Record<string, unknown>,
   }
   for (const eq of equipos) {
@@ -334,7 +334,7 @@ async function moverConversaciones(antes: EquiposNorm, despues: EquiposNorm, ped
     }
     // Sin equipo es Ventas (equipoDeConv); se escribe «Ventas» para que el reparto no mire la línea, que puede seguir
     // diciendo el equipo borrado. Un espacio sin Ventas las deja sin equipo.
-    for (const eq of eran) if (!son.includes(eq) && !destino.has(eq)) destino.set(eq, son.includes('Ventas') ? 'Ventas' : null)
+    for (const eq of eran) if (!son.includes(eq) && !destino.has(eq)) destino.set(eq, son.includes(equipoRespaldo()) ? equipoRespaldo() : null)
     const vigentes: number[] = []
     for (const [viejo, nuevo] of destino) {
       const filas = await prisma.crmConversacion.findMany({ where: { AND: [{ equipo: viejo }, convVigente()] }, select: { id: true } })
@@ -603,7 +603,7 @@ export async function guardarAjusteRuta(req: Request, res: Response) {
   const updatedAt = r.updatedAt.toISOString()
   // Los alcances del tiempo real se vuelven a leer ya con lo guardado: un evento que salió entre el primer olvido
   // (equiposConIds) y esta escritura pudo dejar guardados por 15 s los de antes.
-  if (equipos) olvidarGenteCrm()
+  if (equipos) { olvidarGenteCrm(); fijarRespaldo(espacioActual(), equipos.valor.respaldo) }
   emitirCrm({ tipo: 'ajuste', clave, valor: valor ?? null, updatedAt }, req.userId!)
   // A quien le cambió el rol en un equipo o salió del CRM: su alcance nuevo, en vivo.
   if (equipos) await avisarAlcances(equipos.antes, equipos.valor, equipos.quitados, req.userId!)

@@ -1,6 +1,7 @@
 import { leerAjuste } from './ajustes'
 import { usuariosCrm, type UsuarioCrm } from './usuarios'
 import { ValidationError } from '../../utils/errors'
+import { espacioOpcional } from './espacio'
 
 /**
  * Equipos del CRM con sus roles: el ajuste `equipos` (tabla crm_ajustes) ya
@@ -55,6 +56,14 @@ export interface EquiposNorm {
   lideres: Record<string, string[]>
   roles: Record<string, string>
   subequipos: Record<string, Subequipo[]>
+  /**
+   * El equipo de respaldo (19-nov): a él va lo que llega sin equipo (conversaciones sin equipo, flujos sin destino, el
+   * agente de IA que no sabe a quién pasar). En las empresas de antes es Ventas; en una nueva, el equipo inicial con el
+   * nombre que le pone el cliente al conectar su primera línea.
+   */
+  respaldo: string
+  /** La empresa nueva todavía no le pone nombre a su equipo inicial (se pide al conectar la primera línea). */
+  sinNombre: boolean
 }
 
 export const METODOS_VALIDOS = ['turnos', 'menos', 'lider'] as const
@@ -136,7 +145,7 @@ export function normalizarEquipos(valor: unknown, usuarios: UsuarioCrm[], op: Op
   const rolDe = new Map(usuarios.map(u => [u.id, u.rol]))
   const nombreDe = new Map(usuarios.map(u => [u.id, u.nombre]))
   const idPorNombre = new Map(usuarios.map(u => [u.nombre.trim().toLowerCase(), u.id]))
-  const out: EquiposNorm = { miembros: {}, ids: {}, porNombre: {}, colores: {}, metodos: {}, transferibles: {}, cola: {}, iconos: {}, topes: {}, lideres: {}, roles: {}, subequipos: {} }
+  const out: EquiposNorm = { miembros: {}, ids: {}, porNombre: {}, colores: {}, metodos: {}, transferibles: {}, cola: {}, iconos: {}, topes: {}, lideres: {}, roles: {}, subequipos: {}, respaldo: 'Ventas', sinNombre: false }
   const error = (texto: string) => { if (op.estricto) throw new ValidationError(texto) }
 
   const equipos = Object.keys(miembrosIn)
@@ -199,16 +208,30 @@ export function normalizarEquipos(valor: unknown, usuarios: UsuarioCrm[], op: Op
 
   for (const [id, t] of Object.entries(obj(v.topes))) if (Number.isInteger(t) && (t as number) >= 1 && (t as number) <= 500) out.topes[id] = t as number
   for (const [n, id] of Object.entries(obj(v.porNombre))) if (typeof id === 'string' && id) out.porNombre[n] = id
+  // El respaldo: el guardado si sigue existiendo; si no, Ventas si existe; si no, el primer equipo.
+  const r = typeof v.respaldo === 'string' ? v.respaldo : ''
+  out.respaldo = r && r in out.miembros ? r : 'Ventas' in out.miembros ? 'Ventas' : (Object.keys(out.miembros)[0] ?? 'Ventas')
+  out.sinNombre = v.sinNombre === true && out.respaldo in out.miembros
   return out
 }
 
+/** El respaldo de cada espacio, de la última lectura (lo usan las partes sincrónicas: filtros, alcance, reparto). */
+const respaldos = new Map<string, string>()
+export function fijarRespaldo(espacio: string, nombre: string) { if (espacio && nombre) respaldos.set(espacio, nombre) }
+/** El equipo de respaldo del espacio en que se corre (Ventas si todavía no se ha leído: el de todas las empresas de antes). */
+export const equipoRespaldo = (): string => respaldos.get(espacioOpcional() ?? '') ?? 'Ventas'
+/** Lo mismo, leyendo el ajuste si hace falta (para lo que crea conversaciones o decide a dónde va algo). */
+export async function respaldo(): Promise<string> { return (await leerEquipos()).respaldo }
+
 /** El ajuste `equipos` del espacio actual, normalizado (vacío si nunca se guardó). */
 export async function leerEquipos(): Promise<EquiposNorm> {
-  return normalizarEquipos(await leerAjuste('equipos'), await usuariosCrm())
+  const eqs = normalizarEquipos(await leerAjuste('equipos'), await usuariosCrm())
+  fijarRespaldo(espacioOpcional() ?? '', eqs.respaldo)
+  return eqs
 }
 
-/** El equipo de una conversación para saber quién la ve: sin equipo es de Ventas, igual que en la pantalla. */
-export const equipoDeConv = (c: { equipo: string | null }) => c.equipo || 'Ventas'
+/** El equipo de una conversación para saber quién la ve: sin equipo es del equipo de respaldo, igual que en la pantalla. */
+export const equipoDeConv = (c: { equipo: string | null }) => c.equipo || equipoRespaldo()
 
 /** El subequipo de una conversación (`extra.subequipo`), solo si es de ese equipo; si no, se ignora. */
 export function subequipoDe(eqs: EquiposNorm, equipo: string, extra: unknown): Subequipo | null {

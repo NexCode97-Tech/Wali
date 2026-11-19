@@ -219,11 +219,16 @@ async function paso(nombre: string, fn: () => Promise<number>) {
   }
 }
 
+const respaldoLeido = new Set<string>()
 /** Un paso en cada espacio de trabajo, uno tras otro: si falla en uno, los demás siguen. */
 async function pasoPorEspacio(nombre: string, fn: () => Promise<number>) {
   let lista: string[]
   try { lista = await espacios() } catch (e) { logger.error(`[CRM procesos] ${nombre}: no se pudieron leer los espacios: ${(e as Error)?.message ?? e}`); return }
-  for (const e of lista) await enEspacio(e, () => paso(`${nombre} (${e})`, fn))
+  for (const e of lista) await enEspacio(e, async () => {
+    // El equipo de respaldo de cada espacio, leído una vez antes de sus pasos (equipos.ts, 19-nov).
+    if (!respaldoLeido.has(e)) { await (await import('./equipos')).leerEquipos().catch(() => null); respaldoLeido.add(e) }
+    return paso(`${nombre} (${e})`, fn)
+  })
 }
 
 /**

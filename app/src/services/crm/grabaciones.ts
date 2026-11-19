@@ -6,6 +6,7 @@ import { emitirMsg } from './tiempoReal'
 import { logger } from '../../utils/logger'
 import { NotFoundError } from '../../utils/errors'
 import type { Alcance } from './alcance'
+import { equipoRespaldo } from './equipos'
 
 /**
  * Grabaciones de llamadas (maquetas aprobadas el 5-nov). Quedan privadas en el bucket de Railway: call.audio guarda
@@ -39,7 +40,7 @@ export async function direccionDe(audio: string, descargar: boolean): Promise<st
 function filtroPagina(a: Alcance): Prisma.CrmConversacionWhereInput | null {
   if (a.todo) return {}
   if (!a.lidera.length) return null
-  return { OR: [{ equipo: { in: a.lidera } }, ...(a.lidera.includes('Ventas') ? [{ equipo: null }] : [])] }
+  return { OR: [{ equipo: { in: a.lidera } }, ...(a.lidera.includes(equipoRespaldo()) ? [{ equipo: null }] : [])] }
 }
 export const puedeVerGrabaciones = (a: Alcance) => filtroPagina(a) !== null
 
@@ -69,7 +70,7 @@ export async function listarGrabaciones(a: Alcance, f: FiltrosGrabaciones) {
     mas: filas.length > tope,
     filas: filas.slice(0, tope).map(m => {
       const c = obj(obj(m.datos).call)
-      return { id: m.id, convId: m.conversacion.id, cliente: m.conversacion.contacto.nombre || m.conversacion.contacto.telefono || 'Cliente', telefono: m.conversacion.contacto.telefono ?? '', miembro: String(c.quien ?? ''), equipo: m.conversacion.equipo ?? 'Ventas', fecha: m.createdAt.toISOString(), dur: Number(c.dur ?? 0), dir: c.dir === 'in' ? 'in' : 'out' }
+      return { id: m.id, convId: m.conversacion.id, cliente: m.conversacion.contacto.nombre || m.conversacion.contacto.telefono || 'Cliente', telefono: m.conversacion.contacto.telefono ?? '', miembro: String(c.quien ?? ''), equipo: m.conversacion.equipo ?? equipoRespaldo(), fecha: m.createdAt.toISOString(), dur: Number(c.dur ?? 0), dir: c.dir === 'in' ? 'in' : 'out' }
     }),
   }
 }

@@ -13,6 +13,7 @@ import { emitirConv } from './tiempoReal'
 import { idDeNombre, nombreDe } from './usuarios'
 import { esFestivo } from './difusiones'
 import { tieneSalida } from './formas'
+import { equipoRespaldo } from './equipos'
 
 /**
  * Motor de flujos del CRM (26-sep-2026): corre de verdad en WhatsApp los
@@ -604,7 +605,7 @@ class Corrida {
       const enRama = c.rama === 'ventas' || c.rama === 'despues'
       if (enRama) {
         const seq = this.secuencia(c)
-        if ((c.k ?? 0) >= seq.length) return this.terminar({ tipo: 'equipo', equipo: c.rama === 'ventas' ? 'Ventas' : (c.eq || 'Ventas') })
+        if ((c.k ?? 0) >= seq.length) return this.terminar({ tipo: 'equipo', equipo: c.rama === 'ventas' ? equipoRespaldo() : (c.eq || equipoRespaldo()) })
       } else if (c.i >= this.f.pasos.length) {
         return this.terminar({ tipo: 'fin' })
       }
@@ -667,7 +668,7 @@ class Corrida {
       this.est.resumen.push('llegó de un anuncio')
       const cierre = [...(rp.ventas ?? [])].reverse().find(s => s.t === 'mensaje' && txt(s.txt))
       if (cierre && !(await this.decirO({ bot: this.texto(cierre.txt) }))) return
-      return this.terminar({ tipo: 'equipo', equipo: 'Ventas' })
+      return this.terminar({ tipo: 'equipo', equipo: equipoRespaldo() })
     }
     const ops = titulosDe(rp.ops)
     if (!ops.length) return this.mostrarLista(i, this.texto(L.txt))
@@ -677,7 +678,7 @@ class Corrida {
 
   private async mostrarLista(i: number, texto: string): Promise<void> {
     const L = this.f.pasos[i].lista ?? {}
-    if (!titulosDe(L.ops).length) return this.terminar({ tipo: 'equipo', equipo: 'Ventas' })
+    if (!titulosDe(L.ops).length) return this.terminar({ tipo: 'equipo', equipo: equipoRespaldo() })
     if (!(await this.decirO(this.datosLista(texto, L.boton, L.ops ?? [])))) return
     return this.esperar({ i, rama: 'lista' }, 'lista')
   }
@@ -756,10 +757,10 @@ class Corrida {
       if (va === 'ventas') return this.avanzar({ i: c.i, rama: 'ventas', k: 0 })
       if (va === 'lista') return this.mostrarLista(c.i, this.texto(rp.lista?.txt))
       if (va && obj(rp.despues)[va]) { this.est.equipo = va; return this.avanzar({ i: c.i, rama: 'despues', eq: va, k: 0 }) }
-      return this.terminar({ tipo: 'equipo', equipo: va || 'Ventas' })
+      return this.terminar({ tipo: 'equipo', equipo: va || equipoRespaldo() })
     }
     if (c.rama === 'lista') {
-      const eq = txt(obj(opciones[j]).eq) || 'Ventas'
+      const eq = txt(obj(opciones[j]).eq) || equipoRespaldo()
       this.est.resumen.push(`eligió «${titulos[j]}»`)
       this.est.equipo = eq
       return this.avanzar({ i: c.i, rama: 'despues', eq, k: 0 })
@@ -783,10 +784,10 @@ class Corrida {
       else {
         const id = await idDeNombre(fin.a)
         if (id) asesor = { id, nombre: fin.a }
-        else equipo = this.est.equipo || this.conv.equipo || 'Ventas'
+        else equipo = this.est.equipo || this.conv.equipo || equipoRespaldo()
       }
     } else if (fin.tipo === 'equipo') equipo = fin.equipo
-    else if (fin.tipo !== 'lider' && fin.tipo !== 'tomada') equipo = this.est.equipo || this.conv.equipo || 'Ventas'
+    else if (fin.tipo !== 'lider' && fin.tipo !== 'tomada') equipo = this.est.equipo || this.conv.equipo || equipoRespaldo()
 
     if (!(await this.quitarEstado(fin.tipo === 'lider'))) return
 
@@ -915,7 +916,7 @@ async function viaDelVinculo(_k: CrmContacto, _externoId: string): Promise<'tele
 async function elegirFlujo(flujos: Flujo[], conv: ConvConContacto): Promise<Flujo | null> {
   const via = conv.canal === 'wa' ? `wa:${conv.lineaId ?? ''}` : conv.conexionId ? `cx:${conv.conexionId}` : conv.canal
   const porDonde = (f: Flujo) => Array.isArray(f.vias) ? f.vias.includes(via) : Array.isArray(f.canales) ? f.canales.includes(conv.canal) : conv.canal === 'wa'
-  const deEquipo = (f: Flujo) => !Array.isArray(f.equipos) || !f.equipos.length || f.equipos.includes(conv.equipo || 'Ventas')
+  const deEquipo = (f: Flujo) => !Array.isArray(f.equipos) || !f.equipos.length || f.equipos.includes(conv.equipo || equipoRespaldo())
   const activos = flujos.filter(f => f.on === true && f.pasos.length && porDonde(f) && deEquipo(f))
   const tipo = (f: Flujo) => {
     const c = plano(f.cuando || CUANDO_PRIMER)
