@@ -7,7 +7,7 @@
   const CAT = {
     // Cuenta y negocio
     130497: {t: 'Meta limita los envíos a este país', m: 'Meta no deja que tu cuenta de WhatsApp les escriba a números de este país. Casi siempre pasa porque tu negocio todavía no ha pasado la verificación de Meta.', p: ['Entra a business.facebook.com con la cuenta dueña del negocio.', 'Ve a Configuración del negocio, Centro de seguridad, Verificación del negocio, y empieza o termina la verificación.', 'Sube el RUT o la cámara de comercio con el mismo nombre, dirección y teléfono que tienes en Meta.', 'Cuando Meta la apruebe (suele tardar unos días), vuelve a enviar el mensaje.']},
-    141010: {t: 'Tu negocio no ha pasado la verificación de Meta', m: 'Mientras el negocio no esté verificado, Meta limita los mensajes que puede enviar tu WhatsApp.', p: ['Entra a business.facebook.com con la cuenta dueña del negocio.', 'Ve a Configuración del negocio, Centro de seguridad, Verificación del negocio.', 'Sube los documentos de la empresa y espera la aprobación de Meta.']},
+    141010: {t: 'Tu negocio no ha pasado la verificación de Meta', m: 'Mientras el negocio no esté verificado, Meta limita los números que puedes conectar y los mensajes que puede enviar tu WhatsApp, y puede rechazar algunos envíos.', p: ['Entra a business.facebook.com con la cuenta dueña del negocio.', 'Ve a Configuración del negocio, Centro de seguridad, Verificación del negocio, y empieza la verificación.', 'Sube el RUT o la cámara de comercio con el mismo nombre, dirección y teléfono que tienes en Meta.', 'Ten una página web con esos mismos datos. Es lo que más revisa Meta.', 'Meta suele responder en 2 a 5 días hábiles. Al aprobarla, el límite se quita solo.'], verif: true},
     131031: {t: 'Meta bloqueó tu cuenta de WhatsApp', m: 'Meta bloqueó la cuenta por un problema con sus políticas o por un incumplimiento reportado.', p: ['Abre WhatsApp Manager y revisa Calidad de la cuenta. Ahí dice el motivo.', 'Si crees que es un error, pide una revisión desde ese mismo aviso o escribe al soporte de Meta.']},
     131042: {t: 'Falta el método de pago de WhatsApp', m: 'Meta no puede cobrar los mensajes de tu cuenta. No hay tarjeta o la que hay fue rechazada.', p: ['Abre WhatsApp Manager, Configuración de pagos.', 'Agrega o actualiza la tarjeta de tu negocio.', 'Vuelve a enviar el mensaje.']},
     368: {t: 'Meta bloqueó tus envíos por un tiempo', m: 'Meta detectó algo que va contra sus políticas y pausó los envíos de la cuenta por un tiempo.', p: ['Revisa Calidad de la cuenta en WhatsApp Manager.', 'Espera a que termine la pausa antes de volver a enviar.']},
@@ -61,6 +61,7 @@
   ];
   // Errores propios del CRM, reconocidos por su texto.
   const PROPIOS = [
+    [/limita los envíos de esta cuenta/i, {t: 'Meta limita los envíos de esta cuenta', m: 'Meta tiene la cuenta de WhatsApp con envíos limitados por un problema de calidad o de políticas.', p: ['Abre WhatsApp Manager y revisa Calidad de la cuenta. Ahí dice el motivo y qué hacer.']}],
     [/prueba gratis terminó|plan no está activo/i, {t: 'Tu plan no está activo', m: 'Con el plan vencido el CRM sigue funcionando y los mensajes de tus clientes siguen llegando, pero tus respuestas no salen.', p: ['Ve a Ajustes, Plan y pagos.', 'Elige o renueva tu plan.', 'Vuelve a enviar el mensaje.']}],
     [/24 horas/i, CAT[131047]],
     [/conexión se cortó|sin conexión|terminated|ECONNRESET|fetch failed|tiempo de espera/i, {t: 'Se cortó la conexión con Meta', m: 'La conexión se cayó mientras el mensaje salía. No es un problema de tu cuenta.', p: ['Toca Reintentar.'], r: true}],
@@ -81,7 +82,9 @@
     // Meta a veces manda HTML en el texto: queda como texto limpio, y su enlace de ayuda como enlace aparte.
     const ayuda = (s.match(/href="(https:\/\/[^"]+)"/) || [])[1] || '';
     const limpio = s.replace(/<a [^>]*>([^<]*)<\/a>/g, '$1').replace(/<[^>]+>/g, '');
-    return {...e, codigo: c ? +c[1] : null, tecnico: c || e.m !== s ? limpio : '', ayuda: /^https:\/\/([\w-]+\.)*facebook\.com\//.test(ayuda) ? ayuda : ''};
+    // Un aviso armado por el CRM (solo «Meta 141010», sin texto de Meta) no lleva detalle técnico.
+    const soloCodigo = /^Meta \d+$/.test(s);
+    return {...e, codigo: c ? +c[1] : null, tecnico: !soloCodigo && (c || e.m !== s) ? limpio : '', ayuda: /^https:\/\/([\w-]+\.)*facebook\.com\//.test(ayuda) ? ayuda : ''};
   };
   /** El botón «Ver motivo y solución» para un error (va junto al título del error). */
   window.errorBoton = texto => `<button type="button" class="err-ver" data-err-ver="${esc(String(texto || ''))}">Ver motivo y solución</button>`;

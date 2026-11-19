@@ -62,6 +62,36 @@ export const NOMBRE_META_DEFECTO = 'WhatsApp con Meta'
  * El nombre de la cuenta en Meta: el del portafolio (owner_business_info) y el de la cuenta de WhatsApp. Se trae al
  * conectar y la revisión diaria (caidas.ts) lo vuelve a mirar. Si Meta no responde, null: se deja el que había.
  */
+/**
+ * Si Meta limita los envíos de la cuenta (19-nov): `health_status` de la cuenta de WhatsApp. sinVerificar cuando el
+ * negocio no ha pasado la verificación de Meta (141010), que es lo que hace fallar registros y envíos (130497) en
+ * negocios nuevos. Queda en la conexión (datos.salud) y la pantalla avisa con los pasos. null si Meta no respondió.
+ */
+export async function saludDeMeta(wabaId: string, token: string): Promise<{ sinVerificar: boolean; limitado: boolean; revisado: number } | null> {
+  try {
+    type Ent = { can_send_message?: string; errors?: { error_code?: number }[] }
+    const r = await graph<{ health_status?: { can_send_message?: string; entities?: Ent[] } }>(`/${wabaId}`, { cred: { token }, query: { fields: 'health_status' } })
+    const h = r.health_status ?? {}
+    const codigos = (h.entities ?? []).flatMap(e => (e.errors ?? []).map(x => Number(x.error_code) || 0))
+    return { sinVerificar: codigos.includes(141010), limitado: !!h.can_send_message && h.can_send_message !== 'AVAILABLE', revisado: Date.now() }
+  } catch (e) {
+    logger.info(`[CRM conexiones] no se pudo leer el estado de la cuenta ${wabaId} en Meta: ${(e as Error).message}`)
+    return null
+  }
+}
+
+/** Lee el estado de la cuenta en Meta y lo deja en la conexión (sin tocar lo demás de sus datos). */
+export async function refrescarSalud(conexionId: string, token: string): Promise<void> {
+  const fila = await prismaGlobal.crmConexion.findUnique({ where: { id: conexionId }, select: { datos: true } })
+  const d = obj(fila?.datos), waba = Array.isArray(d.wabas) ? String(d.wabas[0] ?? '') : ''
+  if (!fila || !waba) return
+  const salud = await saludDeMeta(waba, token)
+  if (!salud) return
+  const antes = obj(d.salud)
+  await prismaGlobal.crmConexion.update({ where: { id: conexionId }, data: { datos: { ...d, salud } as unknown as Prisma.InputJsonValue } })
+  if (antes.sinVerificar !== salud.sinVerificar || antes.limitado !== salud.limitado) await emitirConexiones(null).catch(() => {})
+}
+
 export async function nombresDeMeta(wabaId: string, token: string): Promise<{ portafolio: string; cuenta: string } | null> {
   try {
     const r = await graph<{ name?: string; owner_business_info?: { name?: string } }>(`/${wabaId}`, { cred: { token }, query: { fields: 'name,owner_business_info' } })
@@ -89,6 +119,8 @@ const azar = (n: number) => crypto.randomBytes(n).toString('hex')
 
 export interface ConexionFront {
   id: string; tipo: string; modo: string; nombre: string; estado: string; error: string | null
+  /** WhatsApp: el negocio no pasó la verificación de Meta / Meta limita sus envíos (saludDeMeta). */
+  sinVerificar?: boolean; limitado?: boolean
   appId: string | null; cuentas: number; lineas: number
   /** Messenger: la página de Facebook (paginas.ts). */
   pagina?: { id: string; nombre: string }
@@ -116,7 +148,7 @@ export function conexionAFront(c: CrmConexion & { _count?: { lineas: number } })
     webhookUrl: manual ? d.webhookUrl ?? null : null, verifyToken: manual ? d.verifyToken ?? null : null, webhookApp: d.webhookApp ?? null,
     verificado: c.verificadoEn?.toISOString() ?? null, ultimoAviso: c.ultimoEventoEn?.toISOString() ?? null,
     vence: d.vence ? new Date(d.vence * 1000).toISOString() : null,
-    ...(c.tipo === 'whatsapp' ? { portafolio: d.portafolio ?? '', coex: d.coex ?? [] } : {}),
+    ...(c.tipo === 'whatsapp' ? { portafolio: d.portafolio ?? '', coex: d.coex ?? [], sinVerificar: !!obj(dj.salud).sinVerificar, limitado: !!obj(dj.salud).limitado } : {}),
     ...(c.tipo === 'pagina' ? { pagina: { id: String(dj.pageId ?? ''), nombre: String(dj.pageNombre ?? '') } } : {}),
     ...(c.tipo === 'instagram' ? { instagram: { id: String(dj.igId ?? ''), usuario: String(dj.igUsuario ?? ''), nombre: String(dj.nombre ?? '') } } : {}),
     ...(c.tipo === 'telegram' ? { bot: { usuario: String(dj.usuario ?? ''), nombre: String(dj.nombre ?? '') } } : {}),
@@ -416,6 +448,7 @@ export async function conectarWhatsappMeta(entrada: Json, por: string | null): P
       data: { tipo: 'whatsapp', modo: 'meta', nombre, clave: azar(24), estado: 'conectada', secretos: cifrar({ token }), datos: datos as unknown as Prisma.InputJsonValue },
       include: { _count: { select: { lineas: true } } },
     })
+  void refrescarSalud(c.id, token).catch(() => {})
   logger.info(`[CRM conexiones] WhatsApp con el botón de Meta: cuenta ${wabaId}, por ${por}`)
   await emitirConexiones(por)
   return { ...conexionAFront(c), phoneNumberId, wabaId }

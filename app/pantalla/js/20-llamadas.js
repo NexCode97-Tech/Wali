@@ -321,6 +321,8 @@ function cajaCuentasMeta(){
       <div class="acc"><button type="button" class="btn" data-cxm-revisar="${c.id}">${I('swap')}Revisar</button><button type="button" class="btn" data-cxm-quitar="${c.id}">${I('x')}Desconectar</button></div></div>
       ${lnFilaMarketing(c)}
       ${c.error ? `<div class="ln-nota">${LN_IC.alerta}<span>${esc(errorExplicado(c.error).t)} · ${errorBoton(c.error)}</span></div>` : ''}
+      ${!c.error && c.sinVerificar ? `<div class="ln-nota">${LN_IC.alerta}<span>Meta limita tus envíos porque tu negocio no ha pasado la verificación · ${errorBoton('Meta 141010')}</span></div>`
+        : !c.error && c.limitado ? `<div class="ln-nota">${LN_IC.alerta}<span>Meta limita los envíos de esta cuenta · ${errorBoton('Meta limita los envíos de esta cuenta')}</span></div>` : ''}
       ${manualPendiente ? `<div class="ln-hook"><p>Si Meta no manda los mensajes solo: en tu app de Meta ve a WhatsApp, Configuración, Webhook; pega esta dirección y este código y suscríbete al campo «messages».</p>${lnCopiable('Dirección de avisos', c.webhookUrl)}${lnCopiable('Código de verificación', c.verifyToken || '')}</div>` : ''}`;
   }).join('')}</div>`;
 }
@@ -493,7 +495,12 @@ function pasoCuenta(x){
   if (x.enviandoCx) return cxCarga('Conectando tu cuenta de Meta…', 'Revisando la app y sus permisos');
   const pros = (si, no) => `<span class="cx-pros">${si.map(t => `<span class="ok">${I('check')}${t}</span>`).join('')}${no.map(t => `<span class="no">${I('x')}${t}</span>`).join('')}</span>`;
   const pronto = prov == null ? '' : '<span class="etq-pronto">No disponible todavía</span>';
-  if (!x.manual) return `<p>¿Cómo quieres conectar tu número?</p>
+  const antes = `<div class="cx-antes"><b>Antes de conectar, ten listo</b><ul>
+      <li>${I('check')}<span>Tu negocio verificado en Meta, o la verificación en proceso · <button type="button" class="err-ver" data-err-ver="Meta 141010">Cómo verificarlo</button></span></li>
+      <li>${I('check')}<span>Una página web con el nombre, la dirección y el teléfono del negocio</span></li>
+      <li>${I('check')}<span>La verificación en dos pasos activa en tu Facebook</span></li></ul>
+      <small>A los negocios nuevos sin esto, Meta les puede frenar la conexión o limitar los mensajes.</small></div>`;
+  if (!x.manual) return `${antes}<p>¿Cómo quieres conectar tu número?</p>
     <div class="cx-list">
       <button type="button" class="opc cx-forma rec" data-cx-fb="1" ${fbListo && !x.fbCargando ? '' : 'disabled'}><span class="marca fb cx-fb">${LOGO.fb.replace('#0866FF', '#fff')}</span><span class="tx"><b>${x.fbCargando && !x.coex ? 'Abriendo Facebook…' : 'Solo en Wali'}${fbListo ? '<span class="etq-rec cx-amarilla">Recomendado</span>' : pronto}</b><small>${prov == null ? 'Revisando…' : fbListo ? 'Inicias sesión con Facebook y eliges o creas el número. Desde ese momento se atiende solo en Wali.' : 'Se activa cuando Meta apruebe este CRM. Mientras tanto, usa los datos de tu app.'}</small>
         ${fbListo ? pros(['Llamadas de WhatsApp desde Wali', 'Envíos rápidos para difusiones', 'Todas las funciones'], ['El número sale de la app del celular']) : ''}</span>${fbListo ? I('chev', 'i ch') : ''}</button>
@@ -851,6 +858,13 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .opc .etq-rec.cx-amarilla{background:#FFD21F;color:#0b0b10}
 .opc.cx-forma:not(.rec) .etq-rec{background:#f1f5f9;color:#4b5563}
 .cx-pros{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px}
+/* Antes de conectar (19-nov): qué tener listo para que Meta no frene a un negocio nuevo. */
+.cx-antes{margin:0 0 14px;padding:14px 16px;border-radius:12px;background:#f7f8fa;box-shadow:inset 0 0 0 1px var(--line);display:grid;gap:8px}
+.cx-antes b{font-size:13.5px;color:var(--ink)}
+.cx-antes ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.cx-antes li{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--ink2);line-height:1.45}
+.cx-antes li svg{width:15px;height:15px;flex:none;margin-top:2px;color:var(--green-ink,#15803d)}
+.cx-antes small{font-size:12px;color:var(--muted,#8a8f98);line-height:1.45}
 .cx-pros span{display:inline-flex;align-items:center;gap:5px;font-size:12.5px}
 .cx-pros svg{width:14px;height:14px;stroke-width:2.4}
 .cx-pros .ok{color:#15803d}

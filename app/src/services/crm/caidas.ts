@@ -202,6 +202,8 @@ export async function revisarConexionesWhatsapp(): Promise<number> {
         // De paso, si el portafolio ya aceptó el marketing optimizado de Meta (marketingMeta.ts).
         await (await import('./marketingMeta')).revisarMarketingDeConexion(c.id)
         if (c.modo === 'meta') await refrescarNombre(c.id, s.token)
+        // Si Meta limita sus envíos (negocio sin verificar): la pantalla lo avisa con los pasos (19-nov).
+        await (await import('./conexiones')).refrescarSalud(c.id, s.token)
       }
       else await marcarCaida(c.id, 'El token de Meta venció o no es válido. Genera uno que nunca venza para el usuario del sistema y vuelve a conectar WhatsApp en Ajustes › Canales', info.vence ? info.vence * 1000 : undefined)
     } catch (e) {
