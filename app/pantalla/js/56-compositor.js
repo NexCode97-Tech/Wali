@@ -474,6 +474,10 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .qd-pref:focus-within,.qd-lab textarea:focus{border-color:#0b0b10;box-shadow:0 0 0 3px #fffde6}
 .qd-pref > span{padding:0 10px;height:100%;display:grid;place-items:center;background:#f8fafc;border-right:1px solid #e5e9f0;color:#6b7280;font-weight:500;font-size:14px}
 .qd-pref input{border:0;outline:none;flex-grow:1;min-width:0;height:100%;padding:0 12px;font:inherit;font-size:14px;font-weight:400;color:#1f2937;background:#fff}
+/* Un campo de una línea suelto dentro de .qd-lab (nombre de una clave de API o de un webhook, 19-nov): igual a los demás. */
+.qd-lab > input{box-sizing:border-box;height:42px;width:100%;border:1px solid #e5e9f0;border-radius:10px;padding:0 12px;font:inherit;font-size:14px;font-weight:400;color:#1f2937;background:#fff;outline:none;transition:border-color .15s,box-shadow .15s}
+.qd-lab > input::placeholder{color:#9ca3af}
+.qd-lab > input:focus{border-color:#0b0b10;box-shadow:0 0 0 3px #fffde6}
 .qd-lab textarea{height:92px;border:1px solid #e5e9f0;border-radius:10px;padding:10px 12px;font:inherit;font-size:14px;font-weight:400;line-height:1.45;color:#1f2937;resize:none;outline:none;width:100%}
 .qd-ar{display:flex;flex-direction:column;gap:8px}
 .qd-rot{font-size:13px;font-weight:600;color:#374151}
