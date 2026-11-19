@@ -571,7 +571,9 @@ function pintarConexion(){
   const sinPin = !!(x.coex && numeroSel(x) && numeroSel(x).phoneNumberId === x.coexNum);
   if (x.paso === 3) h = `${cab(`Conectar ${tel}`, sinPin ? 'Ponle nombre y elige el equipo que la atiende' : 'Ponle nombre, elige el equipo que la atiende y confirma con el PIN')}${pasos}
     <div class="cx-f"><label>Nombre de la línea<input id="cx-n" value="${esc(x.nombre)}" placeholder="Ej. Soporte 1"></label>
-      <div class="fld">Equipo que la atiende${ddSel('data-cx-eq', EQUIPOS.map(e => [e.n, e.n]), x.eq)}</div>
+      <div class="fld">Equipo que la atiende${ddSel('data-cx-eq', EQUIPOS.map(e => [e.n, e.n]), x.eq)}${x.eqCreado && x.eq === x.eqCreado ? `<small class="peq-ayuda peq-ok">${esc(x.eqCreado)} se creó vacío y esta línea queda con él. Lo configuras después en Equipos y reparto.</small>` : ''}${!ALCANCE.todo ? ''
+        : x.eqCrear ? `<div class="peq-nuevo"><input id="peq-nombre" value="${esc(x.eqNombre || '')}" placeholder="Nombre del nuevo equipo" maxlength="40" autocomplete="off" aria-label="Nombre del nuevo equipo"><button type="button" class="btn" data-peq-no="1">Cancelar</button><button type="button" class="btn pri" data-peq-ok="1">Crear</button></div><small class="peq-ayuda">Se crea vacío y esta línea queda con él. Lo configuras después en Equipos y reparto.</small>`
+        : `<button type="button" class="peq-crear" data-peq-crear="1">${I('plus')}Crear equipo</button>`}</div>
       ${sinPin ? '<p class="muted" style="margin:0">Este número sigue en tu app de WhatsApp Business: lo que respondas desde el celular también queda en el CRM.</p>' : ''}<label${sinPin ? ' hidden' : ''}>PIN de seguridad de 6 dígitos<input id="cx-pin" value="${esc(x.pin)}" inputmode="numeric" maxlength="6" placeholder="Ej. 482913"><small>Es la verificación en dos pasos del número en Meta. Se usa solo para registrarlo; el CRM no lo guarda.</small></label>
       ${fila('Activar llamadas por WhatsApp', 'Se prenden cuando Meta las active en la línea, con el botón de llamar visible y el horario de atención', `<button type="button" class="tg" role="switch" data-cx-llam="1" aria-checked="${x.llamadas}" aria-label="Activar llamadas"></button>`)}</div>
     <div class="ft2"><button type="button" class="btn atras" data-cx-ir="2">Atrás</button><button type="button" class="btn pri" data-cx-conectar="1" ${x.nombre.trim() && (sinPin || /^\d{6}$/.test(x.pin)) ? '' : 'disabled'}>${I('check')}Conectar</button></div>`;
@@ -769,6 +771,9 @@ document.getElementById('ov-x').addEventListener('click', e => {
   const s = t.closest('[data-cx-sel]'); if (s && !s.disabled) { x.sel = s.dataset.cxSel; pintarConexion(); return; }
   const ir = t.closest('[data-cx-ir]'); if (ir && !ir.disabled) { const p = +ir.dataset.cxIr; if (p === 2 && x.paso === 1) { x.sel = null; buscarNumeros(x); } x.paso = p; pintarConexion(); return; }
   const eq = t.closest('[data-cx-eq]'); if (eq) { x.eq = eq.dataset.cxEq; pintarConexion(); return; }
+  if (t.closest('[data-peq-crear]')) { x.eqCrear = true; x.eqNombre = ''; pintarConexion(); const n = document.getElementById('peq-nombre'); if (n) n.focus(); return; }
+  if (t.closest('[data-peq-no]')) { x.eqCrear = false; x.eqNombre = ''; pintarConexion(); return; }
+  if (t.closest('[data-peq-ok]')) { cxCrearEquipo(x); return; }
   if (t.closest('[data-cx-llam]')) { x.llamadas = !x.llamadas; pintarConexion(); return; }
   const cn = t.closest('[data-cx-conectar]'); if (cn && !cn.disabled && x.estado !== 'conectando') { conectarLinea(x); return; }
 });
@@ -792,8 +797,22 @@ function waCaidoSin(queda){
   const caidas = WA_CAIDO.caidas.map(c => ({...c})).filter(queda);
   document.dispatchEvent(new CustomEvent('crm:evento', {detail: {tipo: 'wa-caido', caidas, admins: WA_CAIDO.admins}}));
 }
+/* Crea el equipo (vacío) desde el paso 3 y deja la línea con él. Se guarda como en Equipos y reparto: los equipos
+   cambian aquí y el guardado del ajuste «equipos» lo lleva al servidor y a las demás pantallas. */
+function cxCrearEquipo(x){
+  const n = String(x.eqNombre || '').trim().replace(/\s+/g, ' ');
+  if (n.length < 2) { toast('Escribe el nombre del equipo'); return; }
+  if (EQUIPOS.some(q => q.n.toLowerCase() === n.toLowerCase())) { toast('Ya hay un equipo con ese nombre'); return; }
+  EQUIPOS.push({id: 'eq-' + norm(n).replace(/[^a-z0-9]+/g, '-'), n, f: c => c.equipo === n});
+  MIEMBROS[n] = []; EQ_CFG.ids[n] = [];
+  x.eq = n; x.eqCreado = n; x.eqCrear = false; x.eqNombre = '';
+  render(); pintarConexion();
+  toast(`Equipo creado: ${n}`);
+}
+document.getElementById('ov-x').addEventListener('keydown', e => { if (e.target.id === 'peq-nombre' && e.key === 'Enter' && st.cx) { e.preventDefault(); cxCrearEquipo(st.cx); } });
 document.getElementById('ov-x').addEventListener('input', e => {
   const x = st.cx; if (!x) return;
+  if (e.target.id === 'peq-nombre') x.eqNombre = e.target.value;
   if (e.target.id === 'cx-n') { x.nombre = e.target.value; }
   if (e.target.id === 'cx-pin') { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6); x.pin = e.target.value; }
   if (e.target.id === 'cx-app') { e.target.value = e.target.value.replace(/\D/g, ''); x.app.appId = e.target.value; }
@@ -858,6 +877,16 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .opc .etq-rec.cx-amarilla{background:#FFD21F;color:#0b0b10}
 .opc.cx-forma:not(.rec) .etq-rec{background:#f1f5f9;color:#4b5563}
 .cx-pros{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px}
+/* Crear equipo al conectar (maqueta aprobada «Equipo al conectar», 19-nov). */
+.peq-ayuda{display:block;margin-top:6px;font-size:12.5px;color:var(--ink2);line-height:1.45;font-weight:400}
+.peq-ok{color:var(--green-ink,#15803d)}
+.peq-crear{margin-top:10px;justify-self:start;align-self:flex-start;width:max-content;display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:13.5px;font-weight:600;color:var(--ink);background:none;border:0;padding:0;cursor:pointer;transition:opacity .15s,transform .12s}
+.peq-crear:hover{opacity:.75}.peq-crear:active{transform:scale(.97)}.peq-crear svg{width:15px;height:15px}
+.peq-nuevo{margin-top:10px;display:flex;gap:8px;align-items:center;animation:peq-sube .22s cubic-bezier(.23,1,.32,1) both}
+.peq-nuevo input{flex:1;min-width:0;height:40px;border:1px solid var(--line);border-radius:10px;padding:0 12px;font:inherit;font-size:13.5px;font-weight:400;outline:none}
+.peq-nuevo input:focus{border-color:var(--ink);box-shadow:0 0 0 3px rgba(11,11,16,.08)}
+@keyframes peq-sube{from{opacity:0;transform:translateY(-4px)}}
+@media (prefers-reduced-motion:reduce){.peq-nuevo{animation:none}}
 /* Antes de conectar (19-nov): qué tener listo para que Meta no frene a un negocio nuevo. */
 .cx-antes{margin:0 0 14px;padding:14px 16px;border-radius:12px;background:#f7f8fa;box-shadow:inset 0 0 0 1px var(--line);display:grid;gap:8px}
 .cx-antes b{font-size:13.5px;color:var(--ink)}
