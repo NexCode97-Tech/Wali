@@ -229,7 +229,7 @@
     })) return;
     if (g('data-pp-ir', k => {
       cerrarModal();
-      if (k === 'wa') { irA('cfg-lineas'); if (typeof abrirConexion === 'function') setTimeout(() => abrirConexion((EQUIPOS[0] || {}).n || 'Ventas'), 50); return; }
+      if (k === 'wa') { irA('cfg-lineas'); if (typeof abrirConexion === 'function') setTimeout(() => abrirConexion((EQUIPOS[0] || {}).n || eqRespaldo()), 50); return; }
       if (k === 'rep') { cfgPP().reparto = true; crmSincronizar(); irA('cfg-reparto'); return; }
       if (k === 'tpl') { irA('plantillas'); if (typeof tnNueva === 'function') { st.tplNueva = tnNueva(); render(); } return; }
       if (k === 'flow') { const f = flujoBienvenida(); if (f) { f.on = true; crmSincronizar(); render(); toast(`«${f.n}» activa`); abrirModal(); } else irA('flujos'); return; }

@@ -103,7 +103,7 @@ nav = function(){
   const lider = esLiderCrm();
   document.getElementById('app').classList.toggle('vr-int', !lider);
   // El integrante que no es de Ventas (el auditor de la maqueta) no ve Conversación nueva, Carpetas, Equipos ni Canales.
-  document.getElementById('app').classList.toggle('vr-aud', !lider && !(ALCANCE.equipos || []).includes('Ventas'));
+  document.getElementById('app').classList.toggle('vr-aud', !lider && !(ALCANCE.equipos || []).includes(eqRespaldo()));
   document.getElementById('tabs').hidden = !lider;
   if (lider) {
     if (!puedeConfigurarCrm()) { const b = document.querySelector('#principal [data-nav="agentes"]'); if (b && b.closest('li')) b.closest('li').remove(); }

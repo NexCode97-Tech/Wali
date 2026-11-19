@@ -11,12 +11,12 @@ const FL_CANAL_N = {wa: 'WhatsApp', ig: 'Instagram', fb: 'Messenger', tg: 'Teleg
 const FL_LOGO = {wa: () => LOGO.wa, ig: () => LOGO.ig, fb: () => LOGO.msg, tg: () => LOGO.tg, tt: () => LOGO.tt, web: () => I('chat')};
 const flLogo = (k, cls = 'mc') => `<span class="${cls} ${k}">${FL_LOGO[k] ? FL_LOGO[k]() : ''}</span>`;
 // El equipo que atiende cada canal por conexión (Ajustes del CRM, página de cada canal); el mismo que usa el servidor.
-const flEqCanal = k => (k === 'ig' || k === 'fb' ? (CFG.meta || {})[k + 'Eq'] : ((CFG[{tg: 'telegram', tt: 'tiktok'}[k] || k] || {}).eq)) || 'Ventas';
+const flEqCanal = k => (k === 'ig' || k === 'fb' ? (CFG.meta || {})[k + 'Eq'] : ((CFG[{tg: 'telegram', tt: 'tiktok'}[k] || k] || {}).eq)) || eqRespaldo();
 /* Cada número y cada cuenta conectada: {id, canal, n, det, eq}. El id es el que guarda el flujo en `vias`. */
 function flVias(){
-  const out = LINEAS.map(l => ({id: 'wa:' + l.id, canal: 'wa', n: l.n, det: l.tel || '', eq: tpEquipo(l.id) || 'Ventas'}));
+  const out = LINEAS.map(l => ({id: 'wa:' + l.id, canal: 'wa', n: l.n, det: l.tel || '', eq: tpEquipo(l.id) || eqRespaldo()}));
   for (const c of CX_CANALES) if (['ig', 'fb', 'tg', 'tt'].includes(c.canal)) out.push({id: 'cx:' + c.id, canal: c.canal, n: c.nombre, det: {ig: 'Cuenta profesional', fb: 'Página de Facebook', tg: 'Bot de Telegram', tt: 'Cuenta de TikTok'}[c.canal], eq: flEqCanal(c.canal)});
-  if (canalConectado('web')) out.push({id: 'web', canal: 'web', n: 'Burbuja de tu sitio web', det: 'Chat de la web', eq: ((CFG.web || {}).eq) || 'Ventas'});
+  if (canalConectado('web')) out.push({id: 'web', canal: 'web', n: 'Burbuja de tu sitio web', det: 'Chat de la web', eq: ((CFG.web || {}).eq) || eqRespaldo()});
   return out;
 }
 // Por dónde corre: lo guardado o, en los flujos de antes, todas las líneas y cuentas de sus canales.

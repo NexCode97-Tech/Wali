@@ -138,7 +138,7 @@
   /* ── Tablero 8: la página ── */
   function equipoElegido(){
     const l = equiposPg(); if (!l.length) return '';
-    if (!l.includes(st.iaeEq)) st.iaeEq = l.includes('Ventas') ? 'Ventas' : l[0];
+    if (!l.includes(st.iaeEq)) st.iaeEq = l.includes(eqRespaldo()) ? eqRespaldo() : l[0];
     return st.iaeEq;
   }
   function paginaEmbudoAuto(){

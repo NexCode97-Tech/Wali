@@ -443,7 +443,7 @@ function lineasDe(eq){ return CFG.lineas.filter(x => x.eq === eq).map(x => LINEA
 function recibeHTML(eq){
   const ls = lineasDe(eq);
   const partes = ls.map(l => `${esc(l.n)} · ${esc(l.tel)}`);
-  if (eq === 'Ventas' && !partes.length) partes.push('Las que llegan sin un equipo propio');
+  if (eq === eqRespaldo() && !partes.length) partes.push('Las que llegan sin un equipo propio');
   return partes.length ? partes.join('<br>') : '<span class="rq-sub">Ninguna todavía</span>';
 }
 const tabsRep = () => `<div class="cn-bar"><div class="cn-tabs" role="tablist" aria-label="Equipos y reparto">${[['equipos', 'Equipos', EQUIPOS.length], ['personas', 'Personas', personasCrm().length], ['reglas', 'Reglas del reparto', null]].map(([k, n, c]) => `<button type="button" role="tab" aria-selected="${st.repTab === k}" data-rep-tab="${k}">${n}${c != null ? `<span class="kb-n">${c}</span>` : ''}</button>`).join('')}</div></div>`;
@@ -533,7 +533,7 @@ function editorEquipo(){
         <div style="display:grid;gap:8px;margin-top:6px"><span class="lab" style="font-size:12.5px;font-weight:600;color:var(--ink2)">Agregar persona</span>
           <label class="cn-q" style="margin:0">${I('search')}<input id="eq-busca" value="${esc(B.q)}" placeholder="Escribe un nombre o un correo" autocomplete="off" aria-label="Buscar una persona de la plataforma"></label>
           ${res ? `<div class="rq-res" id="eq-res">${res}</div>` : ''}</div></section>
-      ${nuevo || x.orig === 'Ventas' ? '' : `<div><button type="button" class="btn" data-eq-borrar="1" style="color:#b91c1c;border-color:#fecaca">${I('trash')}Eliminar equipo</button></div>`}</div>
+      ${nuevo || x.orig === eqRespaldo() ? '' : `<div><button type="button" class="btn" data-eq-borrar="1" style="color:#b91c1c;border-color:#fecaca">${I('trash')}Eliminar equipo</button></div>`}</div>
       <div><section class="rq-card" aria-label="Nombre y color"><h4>Nombre y color</h4><input class="rq-in" id="eq-nombre" value="${esc(x.n)}" placeholder="Ej. Atención al cliente" aria-label="Nombre del equipo">
           <div class="rq-sw" role="group" aria-label="Color del equipo">${COLORES_EQ.map(([c, n]) => `<button type="button" style="background:${c}" data-eq-color="${c}" aria-pressed="${x.color === c}" aria-label="${n}"></button>`).join('')}</div></section>
         <section class="rq-card" aria-label="Qué conversaciones recibe"><h4>Qué conversaciones recibe</h4>${lineas}
@@ -577,7 +577,7 @@ function guardarEquipo(){
   MIEMBROS[n] = x.ids.map(id => (personaDe(id) || {}).nombre).filter(Boolean);
   EQ_CFG.colores[n] = x.color; EQ_CFG.metodos[n] = x.metodo; EQ_CFG.transferibles[n] = x.transferible;
   // Las líneas marcadas pasan a este equipo; las que se desmarcaron vuelven a Ventas.
-  CFG.lineas.forEach(l => { if (x.lineas.includes(l.id)) l.eq = n; else if (l.eq === n) l.eq = 'Ventas'; });
+  CFG.lineas.forEach(l => { if (x.lineas.includes(l.id)) l.eq = n; else if (l.eq === n) l.eq = eqRespaldo(); });
   st.eqVer = null; st.eqDraft = null; st.eqBusca = null; render();
   toast(viejo ? `Equipo guardado: ${n}` : `Equipo creado: ${n}`);
 }
@@ -767,7 +767,7 @@ document.getElementById('ov-x').addEventListener('click', e => {
   if (t.closest('[data-eq-borrar-ok]') && st.eqDraft) {
     const n = st.eqDraft.orig, i = EQUIPOS.findIndex(q => q.n === n); if (i >= 0) EQUIPOS.splice(i, 1);
     delete MIEMBROS[n]; for (const k of ['ids', 'colores', 'metodos', 'transferibles', 'cola', 'iconos']) if (EQ_CFG[k]) delete EQ_CFG[k][n];
-    CFG.lineas.forEach(l => { if (l.eq === n) l.eq = 'Ventas'; });
+    CFG.lineas.forEach(l => { if (l.eq === n) l.eq = eqRespaldo(); });
     st.eqVer = null; st.eqDraft = null; cerrarDialogo(); render(); toast(`Equipo eliminado: ${n}`); return;
   }
   const pq = t.closest('[data-pe-eq]'); if (pq && st.peDlg) { const n = pq.dataset.peEq, l = st.peDlg.sel || []; st.peDlg.sel = l.includes(n) ? l.filter(y => y !== n) : [...l, n]; pq.setAttribute('aria-checked', String(st.peDlg.sel.includes(n))); return; }
@@ -916,7 +916,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 const PALETA_ETAPAS = ['#5d9cec', '#ffce54', '#fc6e51', '#a0d468', '#ac92ec', '#48cfad', '#ec87c0', '#656d78', '#f6bb42', '#4fc1e9'];
 const svgAsa = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="none" aria-hidden="true"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>';
 const enEtapa = (n, eq) => CONV.filter(c => c.etq[0] === n && equipoConv(c) === eq).length;
-function tabEtapas(){ const eqs = equiposQueVeo(); if (!eqs.includes(st.etTab)) st.etTab = eqs.includes('Ventas') ? 'Ventas' : eqs[0] || 'Ventas'; return st.etTab; }
+function tabEtapas(){ const eqs = equiposQueVeo(); if (!eqs.includes(st.etTab)) st.etTab = eqs.includes(eqRespaldo()) ? eqRespaldo() : eqs[0] || eqRespaldo(); return st.etTab; }
 function paginaEtapas(){
   const volver = `<button type="button" class="volver" data-ir="ajustes-crm">${I('back')}Ajustes del CRM</button>`;
   const eq = tabEtapas(), eqs = equiposQueVeo(), xs = etapasDe(eq), otros = eqs.filter(n => n !== eq && etapasDe(n).length);

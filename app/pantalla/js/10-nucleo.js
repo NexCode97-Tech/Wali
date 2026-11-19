@@ -2,6 +2,9 @@
 const CRM_YO = (window.CRM_INICIO && window.CRM_INICIO.yo) || {};
 // Personas del CRM (usuarios de Ventas) y promesa de la carga inicial: las llena 80-datos.js.
 const USUARIOS = [];
+/* El equipo de respaldo de la empresa (equipos.ts): a él va lo que llega sin equipo. Ventas en las empresas de antes;
+   en una nueva, el equipo inicial con el nombre que le pone el cliente. Función (no constante): EQ_CFG vive en 40-ajustes. */
+function eqRespaldo(){ try { return (EQ_CFG && EQ_CFG.respaldo) || 'Ventas'; } catch { return 'Ventas'; } }
 let crmListoOk = null;
 const crmListo = new Promise(res => { crmListoOk = res; });
 // Líneas de WhatsApp conectadas: llegan del API.
@@ -19,7 +22,7 @@ const colorOk = c => /^#[0-9a-f]{3,8}$/i.test(String(c ?? '').trim()) ? String(c
 const COL = Object.fromEntries(ETQ.map(([n, c]) => [n, colorOk(c)]));
 // Etapas por equipo: [nombre, color, equipo].
 // Las que no traen equipo son de Ventas. En una conversación solo salen las de su equipo.
-const eqDeEtapa = e => (e && typeof e[2] === 'string' && e[2]) || 'Ventas';
+const eqDeEtapa = e => (e && typeof e[2] === 'string' && e[2]) || eqRespaldo();
 const etapasDe = eq => ETQ.filter(e => eqDeEtapa(e) === eq);
 const nombresEtapas = () => [...new Set(ETQ.map(e => e[0]))];
 const equiposQueVeo = () => typeof ALCANCE !== 'undefined' && ALCANCE.on ? ALCANCE.equipos : EQUIPOS.map(e => e.n);
@@ -151,7 +154,7 @@ const eqDeEtiq = e => (e && typeof e[2] === 'string' && e[2]) || '';
 // Las de la barra: las de todos (y las de un equipo que ya no existe) y las de los equipos que la persona ve, sin repetir
 // el nombre. Quien entra solo por otro equipo no ve las de Ventas (como etapasQueVeo).
 function etiquetasQueVeo(){ const eqs = new Set(equiposQueVeo()), vistos = new Set(); return ETIQS.filter(e => { const q = eqDeEtiq(e); return (!q || eqs.has(q) || !EQUIPOS.some(x => x.n === q)) && !vistos.has(e[0]) && vistos.add(e[0]); }); }
-const eqDeConv = c => (c && c.equipo) || 'Ventas';
+const eqDeConv = c => (c && c.equipo) || eqRespaldo();
 // Material de ventas del equipo (Ajustes del CRM, Archivos): se guarda como ajuste «material».
 const MATERIAL = [];
 // Flujos: lo que pasa antes de que el lead llegue al asesor.
@@ -615,14 +618,14 @@ function historial(c){
     ...(c.ficha.previas || []).map(([a, b]) => `<div class="pc-hi">${I('chat')}<span>${esc(a)}<small>${esc(b)}</small></span></div>`)];
 }
 // Equipo de la conversación, su color y sus personas (Equipos y reparto, 40-ajustes.js).
-const equipoConv = c => c.equipo || 'Ventas';
+const equipoConv = c => c.equipo || eqRespaldo();
 // Los enlaces de pago son de quien vende: solo en las conversaciones de Ventas y para quien es de Ventas.
-const usaEnlacesPago = c => equipoConv(c) === 'Ventas';
-const yoVendo = () => typeof ALCANCE === 'undefined' || !ALCANCE.on || ALCANCE.equipos.includes('Ventas');
+const usaEnlacesPago = c => equipoConv(c) === eqRespaldo();
+const yoVendo = () => typeof ALCANCE === 'undefined' || !ALCANCE.on || ALCANCE.equipos.includes(eqRespaldo());
 const colorEquipo = eq => { const i = EQUIPOS.findIndex(q => q.n === eq); return typeof colorDe === 'function' ? colorOk(colorDe(eq, i)) : '#9ca3af'; };
 function personasDeEquipo(eq){
   let ids = typeof idsDe === 'function' ? idsDe(eq) : [];
-  if (!ids.length && eq === 'Ventas') ids = USUARIOS.filter(u => u.rol === 'VENDEDOR').map(u => u.id);
+  if (!ids.length && eq === eqRespaldo()) ids = USUARIOS.filter(u => u.rol === 'VENDEDOR').map(u => u.id);
   return ids.map(id => USUARIOS.find(u => u.id === id)).filter(Boolean);
 }
 // Un solo color por persona en todo el CRM (bandeja, chat, panel, eventos, Personas y Mi perfil): sale de su id, no del orden de la lista.
@@ -720,7 +723,7 @@ function pagina(){
     paginaInformes(el);
   } else if (st.pagina === 'embudo') {
     // Cada equipo tiene su embudo (maqueta aprobada, tablero «Embudo de un equipo»); quien ve un solo equipo no ve el selector.
-    const eqs = equiposQueVeo(); if (!eqs.includes(st.embEq)) st.embEq = eqs.includes('Ventas') ? 'Ventas' : eqs[0] || 'Ventas';
+    const eqs = equiposQueVeo(); if (!eqs.includes(st.embEq)) st.embEq = eqs.includes(eqRespaldo()) ? eqRespaldo() : eqs[0] || eqRespaldo();
     const eq = st.embEq, COLS = etapasDe(eq).map(e => e[0]), tiene = n => COLS.includes(n);
     const vis = ultimasConv().filter(c => equipoConv(c) === eq);
     // Altura fija y de a 20 por columna (maqueta aprobada «Embudo A», 1-nov): las siguientes 20 se pintan solas al bajar
@@ -1300,7 +1303,7 @@ document.getElementById('b-tpl').addEventListener('click', e => {
   e.stopPropagation(); const p = document.getElementById('tplp'); if (!p.hidden) { p.hidden = true; return; }
   const c = CONV.find(x => x.id === st.sel);
   if (sinPlantillas(c)) { toast(`${CANALES[c.canal].n} no usa plantillas: son de WhatsApp`); return; }
-  p.innerHTML = `<div class="hd">Plantillas aprobadas por Meta${/cerrada/i.test(c.ventana) ? ' · la ventana está cerrada, solo sirven estas' : ''}</div>` + (PLANTILLAS.some(x => x.e === 'ok' && tplEnEquipo(x, c.equipo || 'Ventas')) ? PLANTILLAS.filter(x => x.e === 'ok' && tplEnEquipo(x, c.equipo || 'Ventas')).map(x => `<button type="button" data-usar-tpl="${esc(x.n)}"><b>${esc(x.n)}</b><span>${esc(x.b.replace(/\{\{nombre\}\}/g, c.n.split(' ')[0]))}</span></button>`).join('') : '<p class="muted" style="padding:8px 10px;margin:0">Todavía no hay plantillas aprobadas por Meta.</p>');
+  p.innerHTML = `<div class="hd">Plantillas aprobadas por Meta${/cerrada/i.test(c.ventana) ? ' · la ventana está cerrada, solo sirven estas' : ''}</div>` + (PLANTILLAS.some(x => x.e === 'ok' && tplEnEquipo(x, c.equipo || eqRespaldo())) ? PLANTILLAS.filter(x => x.e === 'ok' && tplEnEquipo(x, c.equipo || eqRespaldo())).map(x => `<button type="button" data-usar-tpl="${esc(x.n)}"><b>${esc(x.n)}</b><span>${esc(x.b.replace(/\{\{nombre\}\}/g, c.n.split(' ')[0]))}</span></button>`).join('') : '<p class="muted" style="padding:8px 10px;margin:0">Todavía no hay plantillas aprobadas por Meta.</p>');
   document.getElementById('qr').hidden = true; document.getElementById('lk').hidden = true; p.hidden = false;
 });
 // Las variables que el servidor llena solo (services/crm/whatsapp.ts valorVariable); las demás se piden aquí.
@@ -2220,7 +2223,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .fprev .chatp > *{flex-shrink:0}
 </style>`);
 const AREAS = ['Ventas', 'Soporte de ventas', 'Soporte'];
-EQUIPOS[0].f = c => c.equipo ? c.equipo === 'Ventas' : !c.ficha.compras;
+EQUIPOS[0].f = c => c.equipo ? c.equipo === eqRespaldo() : !c.ficha.compras;
 EQUIPOS[1].f = c => c.equipo ? c.equipo === 'Recuperación de ventas' : !!c.ficha.compras;
 EQUIPOS.push({id:'soporte-ventas', n:'Soporte de ventas', f:c => c.equipo === 'Soporte de ventas'}, {id:'soporte', n:'Soporte', f:c => c.equipo === 'Soporte'});
 (() => {
@@ -2424,7 +2427,7 @@ document.getElementById('page').addEventListener('click', e => {
   // editor
   const rq = t.closest('[data-rp-eq]'); if (rq) { const [i, j, eq] = rq.dataset.rpEq.split('|'); const o = f.pasos[+i].lista.ops[+j]; o.eq = eq; render(); toast(`«${o.t}» ahora pasa a ${eq}`); return; }
   const ld = t.closest('[data-rp-ldel]'); if (ld) { const [i, j] = ld.dataset.rpLdel.split('|').map(Number); const L = f.pasos[i].lista; if (L.ops.length > 1) { const [x] = L.ops.splice(j, 1); st.prueba = null; render(); toast(`Quitaste «${x.t}» de la lista`); } return; }
-  const la = t.closest('[data-rp-ladd]'); if (la) { const L = f.pasos[+la.dataset.rpLadd].lista; if (L.ops.length < 10) { L.ops.push({t:'Opción nueva', d:'', eq:'Ventas'}); st.prueba = null; render(); } return; }
+  const la = t.closest('[data-rp-ladd]'); if (la) { const L = f.pasos[+la.dataset.rpLadd].lista; if (L.ops.length < 10) { L.ops.push({t:'Opción nueva', d:'', eq:eqRespaldo()}); st.prueba = null; render(); } return; }
   const at = t.closest('[data-fl-atajo]'); if (at) { const k = at.dataset.flAtajo; f.atajos[k] = !f.atajos[k]; st.prueba = null; render(); return; }
   const it = t.closest('[data-fl-intentos]'); if (it) { f.atajos.intentos = +it.dataset.flIntentos; st.prueba = null; render(); return; }
 });

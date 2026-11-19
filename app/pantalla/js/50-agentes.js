@@ -404,7 +404,7 @@ function agResponder(a, t){
       if (r && r.texto) ch.msgs.push({ia:r.texto});
       if (r && r.datos && typeof r.datos === 'object') Object.assign(ch.datos, r.datos);
       if (r && r.pasar) {
-        const eq = r.pasar.equipo || a.destino || 'Ventas'; ch.datos.equipo = eq; if (r.pasar.nota) ch.datos.nota = r.pasar.nota;
+        const eq = r.pasar.equipo || a.destino || eqRespaldo(); ch.datos.equipo = eq; if (r.pasar.nota) ch.datos.nota = r.pasar.nota;
         ch.msgs.push({acn:`Pasó la conversación a ${eq}`, ic:'users'}); if (r.pasar.nota) ch.msgs.push({acn:'Dejó una nota interna con el resumen', ic:'note'});
         if (r.pasar.sinRespuesta) ch.msgs.push({acn:`No lo encontró en sus documentos: «${r.pasar.sinRespuesta}»`, ic:'folder'});
         ch.fase = 'pasada';
@@ -505,7 +505,7 @@ document.getElementById('msgs').addEventListener('click', e => {
   const c = CONV.find(x => x.id === st.sel), m = c && c.msgs.find(x => x.sugT && !x.sugT.hecha && !(x._id && c.msgs.some(y => y.sugTDe === x._id))); if (!m) return;
   // La respuesta queda como un evento nuevo en la conversación (los mensajes guardados no se editan).
   const resolver = t => { m.sugT.hecha = true; c.msgs.push({ev:'swap', t, sugTDe:m._id || null}); };
-  if (no) { resolver(`${yo} la sigue atendiendo en ${c.equipo || 'Ventas'}`); chat(); return; }
+  if (no) { resolver(`${yo} la sigue atendiendo en ${c.equipo || eqRespaldo()}`); chat(); return; }
   const eq = m.sugT.eq, as = (MIEMBROS[eq] || []).find(n => USUARIOS.some(u => u.nombre === n)) || null;
   c.equipo = eq; c.asig = as; resolver(`${yo} la transfirió a ${eq}${as ? ' · ' + as : ''}, con la nota de la IA`);
   render(); toast(`Transferida a ${eq}${as ? ': le llega a ' + as : ''}`);

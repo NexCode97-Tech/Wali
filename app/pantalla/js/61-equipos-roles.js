@@ -353,7 +353,7 @@ editorEquipo = function(){
   } else {
     // Como las maquetas: con una línea, «nombre · teléfono»; con varias, sus nombres juntos.
     const ls = lineasDe(x.orig), partes = ls.length === 1 ? [`${ls[0].n} · ${ls[0].tel}`] : ls.length ? [ls.map(l => l.n).join(' · ')] : [];
-    if (x.orig === 'Ventas' && !partes.length) partes.push('Las que llegan sin un equipo propio');
+    if (x.orig === eqRespaldo() && !partes.length) partes.push('Las que llegan sin un equipo propio');
     recibe = partes.length ? partes.map(t => `<span class="eqr-txt">${esc(t)}</span>`).join('') : '<span class="eqr-txt rq-sub">Ninguna todavía</span>';
   }
   const cardRecibe = `<section class="eqr-card" aria-label="Qué conversaciones recibe"><h4>Qué conversaciones recibe</h4>${recibe}</section>`;
@@ -362,7 +362,7 @@ editorEquipo = function(){
       <div class="eqr-dd"><button type="button" class="eqr-sel${abM ? ' abierto' : ''}" data-eqr-abrir="metodo" aria-haspopup="listbox" aria-expanded="${abM}"><span>${esc(m[1])}</span>${eqrSvg(abM ? EQR_IC.arriba : EQR_IC.abajo, 14)}</button>
       ${abM ? `<div class="eqr-menu eqr-menu-m" role="listbox" aria-label="Cómo se reparte">${METODOS_EQ.map(([k, n, d]) => `<button type="button" class="eqr-op${k === m[0] ? ' sel' : ''}" role="option" aria-selected="${k === m[0]}" data-eqr-metodo="${k}"><span><b>${esc(n)}</b><small>${esc(d)}</small></span>${k === m[0] ? eqrSvg(EQR_IC.chulo) : ''}</button>`).join('')}</div>` : ''}</div>
       <p class="eqr-desc eqr-nota">Lo que llega sin subequipo se reparte entre toda la gente del equipo. Cada subequipo tiene su propia forma de repartir.</p></section>`;
-  const borrar = todo && !nuevo && x.orig !== 'Ventas' ? `<div><button type="button" class="btn" data-eq-borrar="1" style="color:#b91c1c;border-color:#fecaca">${eqrSvg(EQR_IC.papelera, 18, 1.75)}Eliminar equipo</button></div>` : '';
+  const borrar = todo && !nuevo && x.orig !== eqRespaldo() ? `<div><button type="button" class="btn" data-eq-borrar="1" style="color:#b91c1c;border-color:#fecaca">${eqrSvg(EQR_IC.papelera, 18, 1.75)}Eliminar equipo</button></div>` : '';
   return `<div class="ajw ancho eqr"><div class="eqr-top"><div class="t"><button type="button" class="volver eqr-vol" data-eq-cerrar="1">${eqrSvg(EQR_IC.atras, 15)}Equipos y reparto</button><h1><span class="eqr-cuadro" style="background:${colorOk(x.color)}"></span><span data-eqr-nom="T">${esc(eqrNom(x) || 'Equipo nuevo')}</span></h1></div>
       <button type="button" class="btn eqr-b" data-eq-cerrar="1">Cancelar</button><button type="button" class="btn eqr-b pri" data-eq-guardar2="1">${eqrSvg(EQR_IC.chulo)}${nuevo ? 'Crear equipo' : 'Guardar cambios'}</button></div>
     <div class="eqr-ed"><div class="eqr-col">${cardPersonas}${cardSubs}${borrar}</div><div class="eqr-col">${cardNombre}${cardRoles}${cardRecibe}${cardReparto}</div></div></div>`;
@@ -402,7 +402,7 @@ guardarEquipo = function(){
   if (todo) {
     EQ_CFG.transferibles[n] = x.transferible;
     // Las líneas marcadas pasan a este equipo; las que se desmarcaron vuelven a Ventas.
-    CFG.lineas.forEach(l => { if (x.lineas.includes(l.id)) l.eq = n; else if (l.eq === n) l.eq = 'Ventas'; });
+    CFG.lineas.forEach(l => { if (x.lineas.includes(l.id)) l.eq = n; else if (l.eq === n) l.eq = eqRespaldo(); });
   }
   eqrCerrarEditor(); render();
   toast(viejo ? `Equipo guardado: ${n}` : `Equipo creado: ${n}`);

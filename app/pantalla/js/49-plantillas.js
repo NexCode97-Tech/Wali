@@ -247,7 +247,7 @@ const tplEnEquipo = (p, eq) => !p || !Array.isArray(p.equipos) || !p.equipos.len
 const tpClave = p => p.borrador ? 'b:' + p.n : p.slug;
 const tpEquipo = id => (CFG.lineas.find(x => x.id === id) || {}).eq || '';
 // Desde una línea (difusiones y mensaje nuevo): cuenta el equipo de esa línea.
-const tplEnLinea = (p, lineaId) => tplEnEquipo(p, lineaId ? tpEquipo(lineaId) || 'Ventas' : '');
+const tplEnLinea = (p, lineaId) => tplEnEquipo(p, lineaId ? tpEquipo(lineaId) || eqRespaldo() : '');
 const tpEqCara = (eq, cls = '') => `<span class="tp-cara eq${cls}" style="background:${colorEquipo(eq)}">${typeof qIconoHTML === 'function' ? qIconoHTML(typeof qIconoDe === 'function' ? qIconoDe(eq) : 'users', 14) : I('users')}</span>`;
 const tpEqLineas = eq => LINEAS.filter(l => tpEquipo(l.id) === eq).length;
 const tpEqPersonas = eq => (typeof idsDe === 'function' ? idsDe(eq) : []).length;

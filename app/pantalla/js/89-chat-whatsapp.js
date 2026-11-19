@@ -40,7 +40,7 @@
   function textoEncuesta(c, m){
     const e = m && m.encuesta && typeof m.encuesta === 'object' ? m.encuesta : {};
     if (typeof e.cuerpo === 'string' && e.cuerpo.trim()) return e.cuerpo.trim();
-    const eq = (c && c.equipo) || 'Ventas', por = CFG && CFG.encuestas && CFG.encuestas[eq] ? CFG.encuestas[eq] : (CFG && CFG.encuesta) || {};
+    const eq = (c && c.equipo) || eqRespaldo(), por = CFG && CFG.encuestas && CFG.encuestas[eq] ? CFG.encuestas[eq] : (CFG && CFG.encuesta) || {};
     return rellenar(String(por.msg || '').trim() || DEF_MSG, {nombre: primera(c && c.n), asesor: primera(c && c.asig), empresa: (ESPACIO && ESPACIO.nombre) || 'la empresa'});
   }
   const esEncuestaEnviada = m => m && m.ev === 'star' && (m.encuesta || /^Encuesta enviada por WhatsApp/.test(m.t || '')) && m._estado !== 'fallido' && !/^La encuesta no salió/.test(m.t || '');

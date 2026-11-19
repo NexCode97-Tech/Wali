@@ -87,14 +87,14 @@ const qIconoHTML = (ic, tam) => /^data:image\/svg\+xml;base64,/.test(ic) ? `<img
 // Disponible: «En línea», con el CRM abierto y recibiendo reparto (lo mismo que mira el reparto automático).
 const qDisponible = id => { const u = USUARIOS.find(x => x.id === id); return !!u && estadoDe(u) === 'En línea' && u.reparto !== false; };
 // Conversaciones abiertas del equipo sin nadie asignado: las que esperan.
-const qEsperando = eq => CONV.filter(c => !c.asig && c.est === 'abiertas' && (c.equipo || 'Ventas') === eq).length;
+const qEsperando = eq => CONV.filter(c => !c.asig && c.est === 'abiertas' && (c.equipo || eqRespaldo()) === eq).length;
 const qSw = (on, attr, label, off) => `<button type="button" class="q-sw" role="switch" aria-checked="${on}" ${attr} aria-label="${esc(label)}"${off ? ' disabled' : ''}></button>`;
 
 /* Canales del equipo: cada línea con el ícono de WhatsApp, su nombre y su número. */
 function qCanalesHTML(eq){
   const ls = lineasDe(eq);
   if (ls.length) return ls.map(l => `<span class="q-can">${I('wa')}${esc(l.n)} <small>${esc(l.tel)}</small></span>`).join('');
-  return eq === 'Ventas' ? 'Las que llegan sin un equipo propio' : '<span class="rq-sub">Ninguno todavía</span>';
+  return eq === eqRespaldo() ? 'Las que llegan sin un equipo propio' : '<span class="rq-sub">Ninguno todavía</span>';
 }
 paginaEquipos = function(){
   const volver = `<button type="button" class="volver" data-ir="ajustes-crm">${I('back')}Ajustes del CRM</button>`;
@@ -165,7 +165,7 @@ editorEquipo = function(){
       + `<label class="qe-chk"><input type="checkbox" data-eq-transf="1" ${x.transferible ? 'checked' : ''}><span><b>Transferidas por otros equipos</b><small>Cuando alguien le pasa una conversación</small></span></label>`;
   } else {
     const ls = lineasDe(x.orig), partes = ls.map(l => [l.n, l.tel]);
-    if (x.orig === 'Ventas' && !partes.length) partes.push(['Las que llegan sin un equipo propio', '']);
+    if (x.orig === eqRespaldo() && !partes.length) partes.push(['Las que llegan sin un equipo propio', '']);
     if (x.transferible) partes.push(['Transferidas por otros equipos', 'Cuando alguien le pasa una conversación']);
     recibe = partes.length ? partes.map(([b, s]) => `<div class="qe-chk"><span><b>${esc(b)}</b>${s ? `<small>${esc(s)}</small>` : ''}</span></div>`).join('') : '<p class="qe-ay">Ninguna todavía.</p>';
   }
@@ -195,7 +195,7 @@ editorEquipo = function(){
           ${x.cola && x.orig && qEsperando(x.orig) ? `<span class="q-cnt">${qEsperando(x.orig)} esperando ahora</span>` : ''}</section>
       </div>
     </div>
-    <div class="qe-pie">${todo && !nuevo && x.orig !== 'Ventas' ? `<button type="button" class="btn qe-borrar" data-eq-borrar="1">Eliminar equipo</button>` : ''}<span class="sp"></span><button type="button" class="btn" data-eq-cerrar="1">Cancelar</button><button type="button" class="btn pri" data-eq-guardar2="1">${I('check')}${nuevo ? 'Crear equipo' : 'Guardar cambios'}</button></div>
+    <div class="qe-pie">${todo && !nuevo && x.orig !== eqRespaldo() ? `<button type="button" class="btn qe-borrar" data-eq-borrar="1">Eliminar equipo</button>` : ''}<span class="sp"></span><button type="button" class="btn" data-eq-cerrar="1">Cancelar</button><button type="button" class="btn pri" data-eq-guardar2="1">${I('check')}${nuevo ? 'Crear equipo' : 'Guardar cambios'}</button></div>
   </div>`;
 };
 // Al guardar, el ícono y «Guardar los leads» van con lo demás del equipo.

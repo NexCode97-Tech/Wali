@@ -64,7 +64,7 @@ function lwRequisitos(l, lim, x){
 
 function lwAjustes(l, x){
   if (!x.ajustes) return `<div class="lw"><div class="lw-carga">${x.error ? `${esc(x.error)} <button type="button" class="ln-lnk" data-lw-releer="${l.id}">Volver a intentar</button>` : 'Leyendo los ajustes en Meta…'}</div></div>`;
-  const a = x.ajustes, c = LLAM.lineas[l.id] || {grabar: true}, i = CFG.lineas.findIndex(y => y.id === l.id), eq = (CFG.lineas[i] || {}).eq || 'Ventas';
+  const a = x.ajustes, c = LLAM.lineas[l.id] || {grabar: true}, i = CFG.lineas.findIndex(y => y.id === l.id), eq = (CFG.lineas[i] || {}).eq || eqRespaldo();
   const hor = (CFG.horario || []).map((f, d) => [d, f]).filter(([, f]) => Array.isArray(f) && f[3]);
   const dias = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
   // Días seguidos con la misma franja van juntos («Lun a vie 8:00 a. m. – 6:00 p. m.»).

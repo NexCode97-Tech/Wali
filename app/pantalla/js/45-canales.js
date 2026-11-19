@@ -21,7 +21,7 @@ const nombreCx = c => c.tipo === 'pagina' ? (c.pagina || {}).nombre || c.nombre
   : c.tipo === 'telegram' ? ((c.bot || {}).usuario ? '@' + c.bot.usuario : c.nombre)
   : c.tipo === 'tiktok' ? ((c.tiktok || {}).usuario ? '@' + String(c.tiktok.usuario).replace(/^@/, '') : 'Cuenta de TikTok') : c.nombre;
 const encendidoCanal = k => { const I2 = INFO_CANAL[k], c = CFG[I2.cfg] || {}; return I2.cfg === 'meta' ? c[k] !== false : c.on !== false; };
-const equipoCanal = k => { const I2 = INFO_CANAL[k], c = CFG[I2.cfg] || {}; return c[I2.eqK] || 'Ventas'; };
+const equipoCanal = k => { const I2 = INFO_CANAL[k], c = CFG[I2.cfg] || {}; return c[I2.eqK] || eqRespaldo(); };
 // La conexión cambió: se vuelve a pedir la lista (las ventanas de TikTok e Instagram terminan en el API).
 function refrescarConexiones(){ return crmApi('GET', '/crm/conexiones').then(cs => { if (Array.isArray(cs)) CONEXIONES.splice(0, CONEXIONES.length, ...cs); }).catch(() => {}); }
 

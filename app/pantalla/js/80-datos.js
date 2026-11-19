@@ -195,7 +195,7 @@ const crmDatos = (() => {
     const orig = Object.keys(renombres).find(k => renombres[k] === viejo) || viejo;
     if (nuevo == null || nuevo === orig) delete renombres[orig]; else renombres[orig] = nuevo;
     // Borrado: pasan a Ventas, igual que en el API.
-    const a = nuevo == null ? 'Ventas' : nuevo;
+    const a = nuevo == null ? eqRespaldo() : nuevo;
     for (const c of CONV) if (c.equipo === viejo) { c.equipo = a; marcarBase(c, ['equipo']); }
   }
 
@@ -219,7 +219,7 @@ const crmDatos = (() => {
       if (!E) return {miembros: m};
       const eqs = Object.keys(m), deEquipos = o => Object.fromEntries(eqs.filter(eq => o && o[eq] !== undefined).map(eq => [eq, o[eq]]));
       return {miembros: m, ids: Object.fromEntries(eqs.map(eq => [eq, idsDe(eq)])), colores: E.colores, metodos: E.metodos, transferibles: E.transferibles, topes: E.topes, cola: E.cola || {}, iconos: E.iconos || {},
-        lideres: deEquipos(E.lideres), roles: deEquipos(E.roles), subequipos: deEquipos(E.subequipos)}; },
+        lideres: deEquipos(E.lideres), roles: deEquipos(E.roles), subequipos: deEquipos(E.subequipos), respaldo: E.respaldo || eqRespaldo(), sinNombre: !!E.sinNombre}; },
     carpetas: () => def('CARP'),
     agentes: () => def('AGENTES'), ag: () => def('AG'), kb: () => def('KB'), difusiones: () => DIFUSIONES, segmentos: () => st.ct.propios, material: () => MATERIAL,
   };
@@ -245,6 +245,8 @@ const crmDatos = (() => {
       if (typeof EQ_CFG !== 'undefined') { EQ_CFG.ids = ids ? {...ids} : {}; for (const k of ['colores', 'metodos', 'transferibles', 'topes', 'cola', 'iconos']) EQ_CFG[k] = v[k] && typeof v[k] === 'object' ? {...v[k]} : {};
         // Líderes, rol de los integrantes y subequipos (lote 4): copias, para que ningún borrador toque lo que llegó.
         const o = x => x && typeof x === 'object' && !Array.isArray(x) ? x : {};
+        EQ_CFG.respaldo = typeof v.respaldo === 'string' && v.respaldo in v.miembros ? v.respaldo : ('Ventas' in v.miembros ? 'Ventas' : Object.keys(v.miembros)[0] || 'Ventas');
+        EQ_CFG.sinNombre = v.sinNombre === true;
         EQ_CFG.lideres = Object.fromEntries(Object.entries(o(v.lideres)).map(([eq, l]) => [eq, Array.isArray(l) ? l.map(String) : []]));
         EQ_CFG.roles = Object.fromEntries(Object.entries(o(v.roles)).filter(([, r]) => typeof r === 'string'));
         EQ_CFG.subequipos = Object.fromEntries(Object.entries(o(v.subequipos)).map(([eq, l]) => [eq, (Array.isArray(l) ? l : []).filter(s => s && typeof s === 'object').map(s => ({id: String(s.id || ''), n: String(s.n || ''), ids: Array.isArray(s.ids) ? s.ids.map(String) : [], metodo: String(s.metodo || '')}))]));
@@ -265,7 +267,7 @@ const crmDatos = (() => {
   function difEstadoDe(v){ for (const k of Object.keys(DIF_ESTADO)) delete DIF_ESTADO[k]; if (v && typeof v === 'object' && !Array.isArray(v)) Object.assign(DIF_ESTADO, v); }
   // Cada línea conectada tiene su fila en Ajustes del CRM (equipo y agente de noche).
   // El equipo elegido al conectar viaja en línea.ajustes.equipo (lo guarda el API).
-  function lineasEnCfg(){ for (const l of LINEAS) if (!CFG.lineas.some(x => x.id === l.id)) CFG.lineas.push({id: l.id, eq: (l.ajustes && (l.ajustes.equipo || l.ajustes.eq)) || 'Ventas', recepcion: !!(l.ajustes && l.ajustes.recepcion)}); }
+  function lineasEnCfg(){ for (const l of LINEAS) if (!CFG.lineas.some(x => x.id === l.id)) CFG.lineas.push({id: l.id, eq: (l.ajustes && (l.ajustes.equipo || l.ajustes.eq)) || eqRespaldo(), recepcion: !!(l.ajustes && l.ajustes.recepcion)}); }
   function fijarAjustes(){ for (const clave of Object.keys(AJUSTES)) { const o = AJUSTES[clave](); if (o !== undefined) baseAj.set(clave, serial(clave, o)); } }
   // Un ajuste que llega de afuera: si aquí no hay cambios sin guardar, se aplica; si los hay, gana lo de aquí y se manda después.
   function ajusteDeAfuera(clave, v){
@@ -520,7 +522,7 @@ const crmDatos = (() => {
   // (sin equipo = Ventas); las demás, solo si son suyas y no son «solo líder».
   function veConvAqui(r){
     if (typeof ALCANCE === 'undefined' || !ALCANCE.on || ALCANCE.todo) return true;
-    if ((ALCANCE.lidera || []).includes(r.equipo || 'Ventas')) return true;
+    if ((ALCANCE.lidera || []).includes(r.equipo || eqRespaldo())) return true;
     return r.asigId === YO_ID && !r.soloLider;
   }
   function patchConv(c, cambios){

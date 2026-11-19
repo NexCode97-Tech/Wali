@@ -178,8 +178,8 @@
   // Finalizar en lote (89-seleccion) usa las mismas reglas: sale a cada conversación que puede, como el interruptor encendido.
   window.crmEncuestaPuede = c => encPuede(c).puede;
   function encPuede(c){
-    const e = encCfg(c.equipo || 'Ventas'), no = why => ({puede: false, why});
-    if (!e.on) return no(`La encuesta de ${c.equipo || 'Ventas'} está apagada en Ajustes del CRM.`);
+    const e = encCfg(c.equipo || eqRespaldo()), no = why => ({puede: false, why});
+    if (!e.on) return no(`La encuesta de ${c.equipo || eqRespaldo()} está apagada en Ajustes del CRM.`);
     if ((c.canal || 'wa') !== 'wa') return no('La encuesta sale solo por WhatsApp.');
     if (!c.linea || !LINEAS.some(l => l.id === c.linea)) return no('La conversación no tiene una línea de WhatsApp conectada.');
     // Meta deja escribirle por su @usuario (BSUID) a quien no comparte el número: la encuesta también le llega.
@@ -194,7 +194,7 @@
     if (f && f.estado === 'error' && Date.parse(f.reintento || '') > Date.now()) return no(`La encuesta todavía no está lista en WhatsApp para esta línea: ${String(f.error || 'Meta no aceptó el formulario').trim().replace(/\.+$/, '')}.`);
     return {puede: true, why: ''};
   }
-  const textoMsg = c => rellenar(encCfg(c.equipo || 'Ventas').msg, {nombre: nombreDe(c), asesor: primera(c.asig), empresa: empresa()});
+  const textoMsg = c => rellenar(encCfg(c.equipo || eqRespaldo()).msg, {nombre: nombreDe(c), asesor: primera(c.asig), empresa: empresa()});
 
   /* ── Tablero 3: el diálogo de finalizar ── */
   const ovRes = document.getElementById('ov-res');
@@ -305,7 +305,7 @@
   // normalizadas (encCfg: si cfg.encuesta no trae p1 o p2, el defecto, y antes el diálogo de finalizar no abría) y con
   // {{nombre}}, {{asesor}} y {{empresa}} llenos: nunca sale una variable sin llenar.
   encuestaTexto = function(c){
-    const e = encCfg(c && (c.equipo || 'Ventas')), v = {nombre: nombreDe(c), asesor: primera(c && c.asig) || 'tu asesor', empresa: empresa()};
+    const e = encCfg(c && (c.equipo || eqRespaldo())), v = {nombre: nombreDe(c), asesor: primera(c && c.asig) || 'tu asesor', empresa: empresa()};
     return `¡Gracias por escribirnos! ¿Nos ayudas con dos preguntas? Toma menos de un minuto.\n\n1. ${rellenar(e.p1, v)} Responde con un número del 1 al 5.\n2. ${rellenar(e.p2, v)} Responde con un número del 0 al 10.\n\nSi quieres, cuéntanos algo más en otro mensaje.`;
   };
 

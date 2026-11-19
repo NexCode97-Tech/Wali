@@ -97,7 +97,7 @@ const estadoLineaHTML = l => { const e = ESTADO_LINEA[l.estado] || [l.estado || 
 const metaLlamadas = l => !!(l && l.llamadas === true);
 const llamadasActivas = id => metaLlamadas(LINEAS.find(l => l.id === id));
 // Cada línea tiene su fila en CFG.lineas (mensajes) y en LLAM.lineas (llamadas); si falta, se crea con los valores de siempre.
-function ajLinea(id, eq = 'Ventas'){
+function ajLinea(id, eq = eqRespaldo()){
   if (!CFG.lineas.some(x => x.id === id)) CFG.lineas.push({id, eq, recepcion:false});
   if (!LLAM.lineas[id]) LLAM.lineas[id] = {on:false, icono:true, eq, buzon:true, grabar:true};
 }
@@ -368,7 +368,7 @@ const lnCopiable = (etq, v) => `<div class="ln-copiable"><small>${etq}</small><d
 
 /* Una línea: encabezado con su estado y menú, y las filas de equipo, calidad, límite y llamadas. */
 function tarjetaLinea(l, lim){
-  const i = CFG.lineas.findIndex(x => x.id === l.id), x = CFG.lineas[i] || {id:l.id, eq:'Ventas'};
+  const i = CFG.lineas.findIndex(x => x.id === l.id), x = CFG.lineas[i] || {id:l.id, eq:eqRespaldo()};
   const cx = lnCuentaDe(l);
   const est = l.estado !== 'conectada' ? ['mal', l.estado === 'desconectada' ? 'Desconectada' : 'Sin conexión'] : cx && cx.estado === 'error' ? ['mal', 'Desconectada'] : cx && !cx.ultimoAviso ? ['espera', 'Esperando mensajes'] : ['ok', 'Conectada'];
   const cal = lnCalidad(l.calidad), ln = limiteNum(l.limite), niv = lnNivel(ln);
@@ -411,7 +411,7 @@ paginaCfg = function(k){ return k === 'lineas' ? paginaLineas() : paginaCfgBase(
 
 document.getElementById('page').addEventListener('click', e => {
   if (st.pagina !== 'cfg-lineas') return; const t = e.target;
-  if (t.closest('[data-ll-conectar]')) { abrirConexion('Ventas'); return; }
+  if (t.closest('[data-ll-conectar]')) { abrirConexion(eqRespaldo()); return; }
   const mn = t.closest('[data-ln-menu]'); if (mn) { st.lnMenu = st.lnMenu === mn.dataset.lnMenu ? null : mn.dataset.lnMenu; render(); return; }
   const vr = t.closest('[data-ln-ver]'); if (vr) { st.lnMenu = null; st.linea = ''; filtrar('linea', vr.dataset.lnVer); return; }
   const ab = t.closest('[data-ln-abrir]'); if (ab) { const [id, k] = ab.dataset.lnAbrir.split('|'); st.lnAbierto[id] = st.lnAbierto[id] === k ? '' : k; render(); return; }
@@ -571,12 +571,12 @@ function pintarConexion(){
   const sinPin = !!(x.coex && numeroSel(x) && numeroSel(x).phoneNumberId === x.coexNum);
   if (x.paso === 3) h = `${cab(`Conectar ${tel}`, sinPin ? 'Ponle nombre y elige el equipo que la atiende' : 'Ponle nombre, elige el equipo que la atiende y confirma con el PIN')}${pasos}
     <div class="cx-f"><label>Nombre de la línea<input id="cx-n" value="${esc(x.nombre)}" placeholder="Ej. Soporte 1"></label>
-      <div class="fld">Equipo que la atiende${ddSel('data-cx-eq', EQUIPOS.map(e => [e.n, e.n]), x.eq)}${x.eqCreado && x.eq === x.eqCreado ? `<small class="peq-ayuda peq-ok">${esc(x.eqCreado)} se creó vacío y esta línea queda con él. Lo configuras después en Equipos y reparto.</small>` : ''}${!ALCANCE.todo ? ''
+      ${cxPideEquipo() ? `<label>Nombre de tu equipo<input id="cx-eqini" value="${esc(x.eqInicial || '')}" placeholder="Ej. Ventas, Soporte, Atención al cliente" maxlength="40" autocomplete="off"><small class="peq-ayuda">Es el equipo que recibe lo que llega por esta línea. Después le agregas personas y el reparto en Equipos y reparto.</small></label>` : `<div class="fld">Equipo que la atiende${ddSel('data-cx-eq', EQUIPOS.map(e => [e.n, e.n]), x.eq)}${x.eqCreado && x.eq === x.eqCreado ? `<small class="peq-ayuda peq-ok">${esc(x.eqCreado)} se creó vacío y esta línea queda con él. Lo configuras después en Equipos y reparto.</small>` : ''}${!ALCANCE.todo ? ''
         : x.eqCrear ? `<div class="peq-nuevo"><input id="peq-nombre" value="${esc(x.eqNombre || '')}" placeholder="Nombre del nuevo equipo" maxlength="40" autocomplete="off" aria-label="Nombre del nuevo equipo"><button type="button" class="btn" data-peq-no="1">Cancelar</button><button type="button" class="btn pri" data-peq-ok="1">Crear</button></div><small class="peq-ayuda">Se crea vacío y esta línea queda con él. Lo configuras después en Equipos y reparto.</small>`
-        : `<button type="button" class="peq-crear" data-peq-crear="1">${I('plus')}Crear equipo</button>`}</div>
+        : `<button type="button" class="peq-crear" data-peq-crear="1">${I('plus')}Crear equipo</button>`}</div>`}
       ${sinPin ? '<p class="muted" style="margin:0">Este número sigue en tu app de WhatsApp Business: lo que respondas desde el celular también queda en el CRM.</p>' : ''}<label${sinPin ? ' hidden' : ''}>PIN de seguridad de 6 dígitos<input id="cx-pin" value="${esc(x.pin)}" inputmode="numeric" maxlength="6" placeholder="Ej. 482913"><small>Es la verificación en dos pasos del número en Meta. Se usa solo para registrarlo; el CRM no lo guarda.</small></label>
       ${fila('Activar llamadas por WhatsApp', 'Se prenden cuando Meta las active en la línea, con el botón de llamar visible y el horario de atención', `<button type="button" class="tg" role="switch" data-cx-llam="1" aria-checked="${x.llamadas}" aria-label="Activar llamadas"></button>`)}</div>
-    <div class="ft2"><button type="button" class="btn atras" data-cx-ir="2">Atrás</button><button type="button" class="btn pri" data-cx-conectar="1" ${x.nombre.trim() && (sinPin || /^\d{6}$/.test(x.pin)) ? '' : 'disabled'}>${I('check')}Conectar</button></div>`;
+    <div class="ft2"><button type="button" class="btn atras" data-cx-ir="2">Atrás</button><button type="button" class="btn pri" data-cx-conectar="1" ${x.nombre.trim() && (sinPin || /^\d{6}$/.test(x.pin)) && cxEquipoListo(x) ? '' : 'disabled'}>${I('check')}Conectar</button></div>`;
   if (x.paso === 4) {
     // Maqueta aprobada «CRM · línea conectada» (28-sep): tres estados centrados, sin la barra de pasos.
     const L = x.linea, lim = L ? limiteNum(L.limite) : null, n = numeroSel(x);
@@ -775,7 +775,11 @@ document.getElementById('ov-x').addEventListener('click', e => {
   if (t.closest('[data-peq-no]')) { x.eqCrear = false; x.eqNombre = ''; pintarConexion(); return; }
   if (t.closest('[data-peq-ok]')) { cxCrearEquipo(x); return; }
   if (t.closest('[data-cx-llam]')) { x.llamadas = !x.llamadas; pintarConexion(); return; }
-  const cn = t.closest('[data-cx-conectar]'); if (cn && !cn.disabled && x.estado !== 'conectando') { conectarLinea(x); return; }
+  const cn = t.closest('[data-cx-conectar]'); if (cn && !cn.disabled && x.estado !== 'conectando') {
+    // Empresa nueva: primero queda guardado el nombre del equipo inicial, después se conecta la línea con él.
+    if (cxPideEquipo()) { if (!cxNombrarInicial(x)) return; cn.disabled = true; crmGuardarYa('equipos').then(() => conectarLinea(x)); return; }
+    conectarLinea(x); return;
+  }
 });
 // Desconectar una cuenta de Meta (confirmado en el diálogo): sus líneas salen del CRM; las conversaciones se quedan.
 document.getElementById('ov-x').addEventListener('click', e => {
@@ -796,6 +800,28 @@ document.getElementById('ov-x').addEventListener('click', e => {
 function waCaidoSin(queda){
   const caidas = WA_CAIDO.caidas.map(c => ({...c})).filter(queda);
   document.dispatchEvent(new CustomEvent('crm:evento', {detail: {tipo: 'wa-caido', caidas, admins: WA_CAIDO.admins}}));
+}
+/* Empresa nueva (maqueta aprobada «Equipo al conectar», 19-nov): su equipo inicial todavía no tiene nombre
+   (equipos.sinNombre). Al conectar la primera línea, el nombre que escriba pasa a ser el de ese equipo, que es el de
+   respaldo (a él va lo que llega sin equipo). Se renombra como en Equipos y reparto: el API mueve lo que tenga. */
+const cxPideEquipo = () => !!(EQ_CFG && EQ_CFG.sinNombre) && ALCANCE.todo;
+const cxEquipoListo = x => !cxPideEquipo() || String(x.eqInicial || '').trim().length >= 2;
+function cxNombrarInicial(x){
+  const n = String(x.eqInicial || '').trim().replace(/\s+/g, ' '), viejo = eqRespaldo();
+  if (n.length < 2) { toast('Escribe el nombre de tu equipo'); return false; }
+  if (n !== viejo && EQUIPOS.some(q => q.n.toLowerCase() === n.toLowerCase())) { toast('Ya hay un equipo con ese nombre'); return false; }
+  if (n !== viejo) {
+    const q = EQUIPOS.find(e => e.n === viejo); if (q) { q.n = n; q.f = c => (c.equipo || eqRespaldo()) === n; }
+    for (const k of ['ids', 'colores', 'metodos', 'transferibles', 'cola', 'iconos', 'lideres', 'roles', 'subequipos']) if (EQ_CFG[k] && viejo in EQ_CFG[k]) { EQ_CFG[k][n] = EQ_CFG[k][viejo]; delete EQ_CFG[k][viejo]; }
+    const M = {}; for (const [k, v] of Object.entries(MIEMBROS)) M[k === viejo ? n : k] = v; for (const k of Object.keys(MIEMBROS)) delete MIEMBROS[k]; Object.assign(MIEMBROS, M);
+    CFG.lineas.forEach(l => { if (l.eq === viejo) l.eq = n; });
+    if (CFG.meta) { if (CFG.meta.igEq === viejo) CFG.meta.igEq = n; if (CFG.meta.fbEq === viejo) CFG.meta.fbEq = n; }
+    for (const k of ['telegram', 'tiktok', 'web', 'correo']) if (CFG[k] && CFG[k].eq === viejo) CFG[k].eq = n;
+    crmRenombrarEquipo(viejo, n);
+  }
+  EQ_CFG.respaldo = n; EQ_CFG.sinNombre = false; x.eq = n;
+  render();
+  return true;
 }
 /* Crea el equipo (vacío) desde el paso 3 y deja la línea con él. Se guarda como en Equipos y reparto: los equipos
    cambian aquí y el guardado del ajuste «equipos» lo lleva al servidor y a las demás pantallas. */
@@ -819,7 +845,8 @@ document.getElementById('ov-x').addEventListener('input', e => {
   if (e.target.id === 'cx-sec') x.app.appSecret = e.target.value;
   if (e.target.id === 'cx-tok') x.app.token = e.target.value;
   if (e.target.id === 'cx-waba') { e.target.value = e.target.value.replace(/\D/g, ''); x.app.wabaId = e.target.value; }
-  const b = document.querySelector('[data-cx-conectar]'); if (b && x.paso === 3) b.disabled = !(x.nombre.trim() && ((x.coex && numeroSel(x) && numeroSel(x).phoneNumberId === x.coexNum) || /^\d{6}$/.test(x.pin)));
+  if (e.target.id === 'cx-eqini') x.eqInicial = e.target.value;
+  const b = document.querySelector('[data-cx-conectar]'); if (b && x.paso === 3) b.disabled = !(x.nombre.trim() && ((x.coex && numeroSel(x) && numeroSel(x).phoneNumberId === x.coexNum) || /^\d{6}$/.test(x.pin)) && cxEquipoListo(x));
   const bc = document.querySelector('[data-cx-conectarcuenta]'); if (bc) bc.disabled = x.enviandoCx || !!faltaCx(x, true);
   // Qué le falta a cada dato, en vivo: el botón deshabilitado sin explicación no dice nada (6-oct).
   const fa = document.getElementById('cx-falta'); if (fa) { const t = faltaCx(x); fa.textContent = t; fa.hidden = !t; }
