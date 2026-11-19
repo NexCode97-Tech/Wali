@@ -130,7 +130,47 @@ router.get('/equipos', asyncHandler(async (_req: Request, res: Response) => {
   const e = await leerEquipos()
   res.json({ data: Object.keys(e.ids).map(n => ({ nombre: n, miembros: e.ids[n] })) })
 }))
-router.get('/etapas', asyncHandler(async (_req: Request, res: Response) => { res.json({ data: await nombres('etapas') }) }))
+/** Las etapas del embudo, cada una con su equipo (sin equipo es del equipo inicial). Las de fábrica si nunca se cambiaron. */
+const ETAPAS_FABRICA: [string, string][] = [['Nuevo lead', '#EC87C0'], ['Contactado', '#5D9CEC'], ['Caliente', '#FC6E51'], ['En seguimiento', '#AC92EC'], ['No interesado/perdido', '#434A54'], ['Pagado', '#A0D468'], ['Link errado', '#AAB2BD'], ['Sin respuesta', '#C9CED6']]
+async function etapasGuardadas() {
+  const fila = await filaAjuste('etapas')
+  const lista = Array.isArray(fila?.valor) ? (fila!.valor as unknown[]).filter(Array.isArray) as unknown[][] : ETAPAS_FABRICA.map(x => [...x])
+  return { lista, base: fila?.updatedAt ?? null }
+}
+const etapaDe = (x: unknown[]) => ({ nombre: String(x[0] ?? ''), color: x[1] ? String(x[1]) : null, equipo: x[2] ? String(x[2]) : 'Ventas' })
+router.get('/etapas', asyncHandler(async (_req: Request, res: Response) => {
+  res.json({ data: (await etapasGuardadas()).lista.map(etapaDe).filter(e => e.nombre) })
+}))
+
+/**
+ * POST /etapas (19-nov): crea una etapa del embudo en un equipo, al final de las de ese equipo, como «Nueva etapa» en
+ * Ajustes › Etapas del embudo. Se guarda por el mismo camino de la pantalla (validación y aviso en vivo a quien tenga
+ * el CRM abierto). Sin color, uno de la paleta de la pantalla; sin equipo, Ventas.
+ */
+const etapaSchema = z.object({
+  nombre: z.string({ required_error: 'Falta «nombre» con el nombre de la etapa.' }).trim().min(1, 'El nombre de la etapa no puede ir vacío.').max(60, 'El nombre de la etapa puede tener máximo 60 caracteres.'),
+  color: z.string().regex(/^#[0-9a-f]{6}$/i, '«color» debe ser un color como #2563eb.').optional(),
+  equipo: z.string().trim().min(1).max(60).optional(),
+}).strict()
+const PALETA_ETAPAS = ['#EC87C0', '#5D9CEC', '#FC6E51', '#AC92EC', '#48CFAD', '#FFCE54', '#A0D468', '#ED5565', '#4FC1E9', '#AAB2BD']
+router.post('/etapas', asyncHandler(async (req: Request, res: Response) => {
+  const d = etapaSchema.parse(req.body)
+  const equipos = Object.keys((await leerEquipos()).miembros)
+  const equipo = d.equipo ?? 'Ventas'
+  if (!equipos.includes(equipo)) throw new ValidationError(`«${equipo}» no es un equipo de este espacio. Los equipos son: ${equipos.join(', ') || 'ninguno'} (GET /equipos).`)
+  const { lista, base } = await etapasGuardadas()
+  const delEquipo = (x: unknown[]) => (x[2] ? String(x[2]) : 'Ventas') === equipo
+  if (lista.some(x => delEquipo(x) && String(x[0]).trim().toLowerCase() === d.nombre.toLowerCase())) throw new ConflictError(`${equipo} ya tiene una etapa «${d.nombre}».`)
+  const color = d.color ?? PALETA_ETAPAS[lista.filter(delEquipo).length % PALETA_ETAPAS.length]
+  // Al final de las de su equipo (el embudo de cada equipo va en el orden de la lista).
+  const ultima = lista.map(delEquipo).lastIndexOf(true)
+  const nueva = [d.nombre, color, equipo]
+  const nuevaLista = [...lista]
+  nuevaLista.splice(ultima >= 0 ? ultima + 1 : nuevaLista.length, 0, nueva)
+  await guardarComoPantalla(req, 'etapas', nuevaLista, base)
+  auditLog(req, 'CREATE', 'api_etapa', d.nombre, { clave: req.apiClave?.id, equipo })
+  res.status(201).json({ data: etapaDe(nueva) })
+}))
 router.get('/etiquetas', asyncHandler(async (_req: Request, res: Response) => { res.json({ data: await nombres('etiquetas') }) }))
 router.get('/lineas', asyncHandler(async (_req: Request, res: Response) => {
   res.json({ data: (await prisma.crmLinea.findMany({ select: { id: true, nombre: true, telefono: true } })) })
@@ -221,7 +261,7 @@ router.patch('/contactos/:id', asyncHandler(async (req: Request, res: Response) 
 const encenderSchema = z.object({ encendido: z.boolean() })
 
 /** Guarda un ajuste con el controlador de la pantalla, a partir de la versión que se leyó. */
-async function guardarComoPantalla(req: Request, clave: 'flujos' | 'agentes' | 'cfg', valor: unknown, base: Date | null) {
+async function guardarComoPantalla(req: Request, clave: 'flujos' | 'agentes' | 'cfg' | 'etapas', valor: unknown, base: Date | null) {
   const r = Object.assign(Object.create(Object.getPrototypeOf(req)), req, { params: { clave }, body: { valor, base: base ? base.toISOString() : null }, query: {} }) as Request
   let estado = 200
   const res = { statusCode: 200, status(c: number) { estado = c; return this }, json() { return this }, send() { return this }, setHeader() { return this } }

@@ -121,7 +121,8 @@ GET /conversaciones?limite=100&amp;cursor=4521</code></pre>
 <table><tr><th>Ruta</th><th>Qué trae</th></tr>
 <tr><td><code>GET /miembros</code></td><td>Las personas del espacio, con su <code>id</code> para asignar.</td></tr>
 <tr><td><code>GET /equipos</code></td><td>Los equipos y los ids de sus miembros.</td></tr>
-<tr><td><code>GET /etapas</code></td><td>Las etapas del embudo.</td></tr>
+<tr><td><code>GET /etapas</code></td><td>Las etapas del embudo, cada una con su color y su equipo.</td></tr>
+<tr><td><code>POST /etapas</code></td><td>Crea una etapa: <code>nombre</code> (obligatorio), <code>color</code> (opcional, como <code>#2563eb</code>) y <code>equipo</code> (opcional, por defecto Ventas). Queda al final de las etapas de ese equipo. Responde 201 con la etapa; 409 si el equipo ya tiene una con ese nombre.</td></tr>
 <tr><td><code>GET /etiquetas</code></td><td>Las etiquetas del espacio.</td></tr>
 <tr><td><code>GET /lineas</code></td><td>Las líneas de WhatsApp conectadas.</td></tr>
 <tr><td><code>GET /yo</code></td><td>El espacio, el nombre y el permiso de la clave.</td></tr></table>
