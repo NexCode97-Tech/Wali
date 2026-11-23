@@ -20,6 +20,17 @@
     lapiz: svg('<path d="M4 20h4L19 9l-4-4L4 16Z"/>'),
     enchufe: svg('<path d="M9 3v5M15 3v5M7 8h10v3a5 5 0 0 1-10 0V8Z"/><path d="M12 16v5"/>'),
     rayo: svg('<path d="M13 3 5 14h6l-1 7 8-11h-6l1-7Z"/>'),
+    candado: svg('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'),
+    bien: svg('<circle cx="12" cy="12" r="9"/><path d="m8.5 12.2 2.4 2.4 4.6-4.9"/>'),
+  };
+  // Lo que puede hacer cada permiso (maqueta «Nueva clave de API», 19-nov): se ve en el modal y cambia al elegir.
+  const LEE = ['Conversaciones y mensajes', 'Contactos', 'Equipos y miembros', 'Etapas y etiquetas', 'Flujos y agentes de IA'];
+  const HACE = ['Asigna conversaciones, también en lote', 'Cambia la etapa y crea etapas', 'Pone etiquetas y finaliza', 'Crea contactos', 'Enciende o apaga flujos y agentes'];
+  const OPS = [['lectura', 'ojo', 'Solo lectura', 'Consulta el CRM sin cambiar nada.'], ['escritura', 'rayo', 'Lectura y acciones', 'Consulta y trabaja en el CRM.']];
+  const cuandoVence = k => {
+    if (k === 'nunca') return 'No vence. Revócala cuando ya no la uses.';
+    const d = new Date(Date.now() + (+k) * 864e5);
+    return 'Deja de funcionar el ' + d.toLocaleDateString('es-CO', {day: 'numeric', month: 'long', year: 'numeric'}) + '.';
   };
   const CASILLA = '<svg class="ak-ck" viewBox="0 0 20 20" aria-hidden="true"><rect class="b" x="1.75" y="1.75" width="16.5" height="16.5" rx="4.5"/><path class="v" d="m5.6 10.2 2.9 2.9 5.9-6.2"/></svg>';
   const EVENTO = {'mensaje.recibido': ['Mensaje recibido', 'Un cliente escribió.'], 'conversacion.asignada': ['Conversación asignada', 'Cambió de persona o de equipo.'],
@@ -79,6 +90,50 @@
 .ak-ck{width:20px;height:20px;flex:none}.ak-ck .b{fill:#fff;stroke:#b6c0d0;stroke-width:1.5;transition:fill .16s,stroke .16s}
 .ak-ck .v{fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:14;stroke-dashoffset:14;transition:stroke-dashoffset .2s cubic-bezier(.23,1,.32,1) .04s}
 .dlg .ak-evo[aria-checked="true"]{border-color:#0b0b10;background:#fafafa}.ak-evo[aria-checked="true"] .ak-ck .b{fill:#0b0b10;stroke:#0b0b10}.ak-evo[aria-checked="true"] .ak-ck .v{stroke-dashoffset:0}
+.dlg.ak-dlg{width:620px;gap:14px;max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain}
+.dlg.ak-dlg .ft2{position:sticky;bottom:0;z-index:3}
+.dlg.ak-dlg .dlg-cab{align-items:flex-start}
+.ak-hic{width:44px;height:44px;border-radius:12px;background:#fff4c2;color:#0b0b10;display:grid;place-items:center;flex:none;box-shadow:inset 0 0 0 1px rgba(11,11,16,.06)}.ak-hic svg.i{width:20px;height:20px}
+.dlg.ak-dlg .dlg-cab h3{font-size:19px;line-height:1.25}.dlg.ak-dlg .dlg-cab p{margin-top:3px}
+.dlg.ak-dlg .qd-lab > input:focus{border-color:#0b0b10;box-shadow:0 0 0 4px rgba(255,210,31,.35)}
+.dlg.ak-dlg .qd-lab small{font-weight:400;color:var(--ink3);font-size:12px}
+.ak-sec2{display:grid;gap:7px}.ak-sec2>.ak-rt{font-size:13px;font-weight:600;color:#374151}
+.ak-ops{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dlg .ak-o{position:relative;display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:center;text-align:left;align-content:start;padding:10px 40px 10px 12px;border:1px solid #e5e9f0;border-radius:12px;background:#fff;font-weight:400;transition:border-color .16s cubic-bezier(.23,1,.32,1),box-shadow .16s cubic-bezier(.23,1,.32,1),transform .12s cubic-bezier(.23,1,.32,1)}
+.dlg .ak-o:active{transform:scale(.98)}
+.ak-o .ak-oi{width:32px;height:32px;border-radius:9px;background:#f2f4f6;color:#4b5563;display:grid;place-items:center;transition:background .2s,color .2s}.ak-o .ak-oi svg.i{width:16px;height:16px}
+.ak-o b{font-size:13.5px;font-weight:600;color:#1f2937}.ak-o small{grid-column:1/-1;font-size:12px;line-height:1.4;color:var(--ink3)}
+.ak-o .ak-r{position:absolute;top:10px;right:12px}
+.dlg .ak-o[aria-checked="true"]{border-color:#0b0b10;box-shadow:0 0 0 1px #0b0b10}
+.ak-o[aria-checked="true"] .ak-oi{background:#0b0b10;color:#ffd21f}
+.ak-o[aria-checked="true"] .ak-r .aro{stroke:#0b0b10}.ak-o[aria-checked="true"] .ak-r .pto{transform:scale(1)}
+.ak-cap{display:grid;grid-template-columns:1fr 1.15fr;gap:4px 18px;padding:10px 14px;border-radius:12px;background:#f7f8fa}
+.ak-cap .ak-ct{font-size:11.5px;font-weight:600;color:#6b7280;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.ak-cap .ak-ct em{font-style:normal;font-weight:500;color:#9ca3af;opacity:0;transform:translateX(-4px);transition:opacity .2s cubic-bezier(.23,1,.32,1),transform .2s cubic-bezier(.23,1,.32,1)}
+.ak-cap ul{list-style:none;margin:0;padding:0;display:grid;gap:3px}
+.ak-cap li{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;line-height:1.35;color:#374151;transition:color .2s cubic-bezier(.23,1,.32,1) var(--d,0ms)}
+.ak-cap .ak-ci{position:relative;width:15px;height:15px;flex:none;margin-top:1px}
+.ak-cap .ak-ci svg.i{position:absolute;inset:0;width:15px;height:15px;transition:opacity .2s cubic-bezier(.23,1,.32,1) var(--d,0ms),transform .2s cubic-bezier(.23,1,.32,1) var(--d,0ms)}
+.ak-cap .ak-ci .si{color:#059669}.ak-cap .ak-ci .no{color:#9ca3af;opacity:0;transform:scale(.6)}
+.ak-cap[data-perm="lectura"] .hace li{color:#9ca3af}
+.ak-cap[data-perm="lectura"] .hace .ak-ci .si{opacity:0;transform:scale(.6)}
+.ak-cap[data-perm="lectura"] .hace .ak-ci .no{opacity:1;transform:none}
+.ak-cap[data-perm="lectura"] .ak-ct em{opacity:1;transform:none}
+.ak-seg{position:relative;display:grid;grid-template-columns:repeat(3,1fr);padding:4px;border-radius:11px;background:#f2f4f6;max-width:340px}
+.ak-seg::before{content:"";position:absolute;top:4px;left:4px;bottom:4px;width:calc((100% - 8px) / 3);border-radius:8px;background:#0b0b10;box-shadow:0 1px 2px rgba(11,11,16,.2);transform:translateX(calc(var(--i,1) * 100%));transition:transform .26s cubic-bezier(.77,0,.175,1)}
+.dlg .ak-sg{position:relative;z-index:1;height:30px;border-radius:8px;font-size:13px;font-weight:500;color:#4b5563;transition:color .2s,transform .12s}
+.dlg .ak-sg[aria-checked="true"]{color:#fff}.dlg .ak-sg:active{transform:scale(.97)}
+.ak-cuando{font-size:12px;color:var(--ink3);transition:opacity .15s,filter .15s}.ak-cuando.cambia{opacity:0;filter:blur(2px)}
+.dlg.ak-dlg .ft2 .btn.pri{color:#0b0b10;font-weight:600;transition:transform .12s cubic-bezier(.23,1,.32,1),opacity .2s,filter .15s}
+.dlg.ak-dlg .ft2 .btn.pri:active{transform:scale(.97)}
+.dlg.ak-dlg .ft2 .btn.pri .ak-rueda{border-color:rgba(11,11,16,.25);border-top-color:#0b0b10}
+@media (max-width:759.98px){
+  .dlg.ak-dlg{gap:16px}
+  .ak-cap{grid-template-columns:1fr;gap:10px;padding:10px 12px}.ak-cap ul{gap:2px}.ak-cap li{font-size:12.5px;line-height:1.3}
+  .dlg.ak-dlg .qd-lab small{display:none}
+  .dlg .ak-o{padding:11px 34px 11px 12px;grid-template-columns:1fr}.ak-o .ak-oi{display:none}.ak-o .ak-r{top:11px;right:10px}
+  .ak-seg{max-width:none}
+}
 @media (max-width:759.98px){
   .ak-w{flex-wrap:wrap}.ak-w .ak-t{flex:1 1 calc(100% - 50px);max-width:calc(100% - 50px)}
   .ak-wa{width:100%;flex-wrap:nowrap}.ak-wa .btn{flex:1;min-width:0;padding:0 8px}.ak-wa .ak-rev{flex:none;padding:7px 6px;margin-left:0}
@@ -86,7 +141,7 @@
   .ak-f{flex-wrap:wrap}.ak-rev{margin-left:50px}.ak-doc{flex-wrap:wrap}.ak-doc .btn{width:100%;justify-content:center}
   .ak-clave{flex-direction:column;align-items:stretch}.ak-cp{width:100%}
 }
-@media (prefers-reduced-motion:reduce){.ak-f,.ak-w,.ak-r .pto,.ak-ck .v,.ak-cp>span,.ak-pr>span{animation:none!important;transition:none!important}}
+@media (prefers-reduced-motion:reduce){.ak-seg::before,.ak-cap .ak-ci svg.i,.ak-o{transition-duration:0s!important}.ak-f,.ak-w,.ak-r .pto,.ak-ck .v,.ak-cp>span,.ak-pr>span{animation:none!important;transition:none!important}}
 </style>`);
 
   const hace = iso => {
@@ -162,13 +217,15 @@
   }
 
   function dlgNueva(){
-    abrirDialogo(`<div class="qd-cab"><h3>Nueva clave de API</h3><span>Para conectar Wali con otro de tus sistemas</span></div>
-      <label class="qd-lab">Nombre<input id="ak-nombre" value="${esc(API.nombre)}" placeholder="Sistema de facturación" maxlength="60" autocomplete="off"><small style="font-weight:400;color:var(--ink3);font-size:12px">Para reconocerla en la lista. Ejemplo: el nombre del sistema que la va a usar.</small></label>
-      <div class="ak-sec" role="radiogroup" aria-label="Qué puede hacer"><span>Qué puede hacer</span>
-        ${[['lectura', 'Solo lectura', 'Lee conversaciones con sus mensajes, contactos, equipos, miembros, etapas, etiquetas, flujos y agentes de IA.'], ['escritura', 'Lectura y acciones', 'Además asigna conversaciones, también en lote, cambia la etapa, pone etiquetas, finaliza, crea contactos y enciende o apaga flujos y agentes de IA.']]
-          .map(([k, t, d]) => `<button type="button" class="ak-op" role="radio" aria-checked="${API.perm === k}" data-ak-perm="${k}">${RADIO}<span><b>${t}</b><small>${d}</small></span></button>`).join('')}</div>
-      <div class="ak-sec"><span>Vence</span><div class="ak-vcs" role="radiogroup" aria-label="Vence">${VENCE.map(([k, t]) => `<button type="button" class="ak-vc" role="radio" aria-checked="${API.vence === k}" data-ak-vence="${k}">${t}</button>`).join('')}</div></div>
-      <div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" data-ak-crear="1" id="ak-crear">${API.creando ? '<span class="ak-rueda"></span>Creando…' : IC.chulo + 'Crear clave'}</button></div>`, 'dlg-qr');
+    const lista = (cl, xs) => `<div class="${cl}"><span class="ak-ct">${cl === 'lee' ? 'Lee' : 'Hace'}${cl === 'hace' ? '<em>· solo con Lectura y acciones</em>' : ''}</span><ul>${xs.map((t, i) => `<li style="--d:${i * 30}ms"><span class="ak-ci">${IC.bien.replace('class="i"', 'class="i si"')}${IC.candado.replace('class="i"', 'class="i no"')}</span>${t}</li>`).join('')}</ul></div>`;
+    const iv = Math.max(0, VENCE.findIndex(([k]) => k === API.vence)), listo = API.nombre.trim().length >= 2;
+    abrirDialogo(`<div class="dlg-cab"><span class="ak-hic">${IC.llave}</span><div><h3>Nueva clave de API</h3><p>Para conectar Wali con otro de tus sistemas</p></div></div>
+      <label class="qd-lab">Nombre<input id="ak-nombre" value="${esc(API.nombre)}" placeholder="Ej. Sistema de facturación" maxlength="60" autocomplete="off"><small>Para reconocerla en la lista. Usa el nombre del sistema que la va a usar.</small></label>
+      <div class="ak-sec2"><span class="ak-rt" id="ak-rt-p">Qué puede hacer</span>
+        <div class="ak-ops" role="radiogroup" aria-labelledby="ak-rt-p">${OPS.map(([k, ic, t, d]) => `<button type="button" class="ak-o" role="radio" aria-checked="${API.perm === k}" data-ak-perm="${k}"><span class="ak-oi">${IC[ic]}</span><b>${t}</b>${RADIO}<small>${d}</small></button>`).join('')}</div>
+        <div class="ak-cap" data-perm="${API.perm}">${lista('lee', LEE)}${lista('hace', HACE)}</div></div>
+      <div class="ak-sec2"><span class="ak-rt" id="ak-rt-v">Vence</span><div class="ak-seg" style="--i:${iv}" role="radiogroup" aria-labelledby="ak-rt-v">${VENCE.map(([k, t]) => `<button type="button" class="ak-sg" role="radio" aria-checked="${API.vence === k}" data-ak-vence="${k}">${t}</button>`).join('')}</div><span class="ak-cuando" id="ak-cuando">${cuandoVence(API.vence)}</span></div>
+      <div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" data-ak-crear="1" id="ak-crear" ${listo || API.creando ? '' : 'disabled'}>${API.creando ? '<span class="ak-rueda"></span>Creando…' : IC.llave + 'Crear clave'}</button></div>`, 'dlg-qr ak-dlg');
     setTimeout(() => { const t = document.getElementById('ak-nombre'); if (t) t.focus(); }, 30);
   }
   function dlgCopia(k){
@@ -182,12 +239,20 @@
       <div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626;color:#fff" data-ak-revocar-si="${esc(k.id)}">Revocar</button></div>`);
   }
 
+  // Crear clave se enciende cuando el nombre tiene al menos dos letras.
+  document.addEventListener('input', e => { if (e.target && e.target.id === 'ak-nombre') { API.nombre = e.target.value; const b = document.getElementById('ak-crear'); if (b && !API.creando) b.disabled = e.target.value.trim().length < 2; } });
   document.addEventListener('click', async e => {
     const t = e.target instanceof Element ? e.target : null; if (!t) return;
     if (await clicWh(t)) return;
     if (t.closest('[data-ak-nueva]')) { API.nombre = ''; API.perm = 'escritura'; API.vence = '365'; dlgNueva(); return; }
-    const p = t.closest('[data-ak-perm]'); if (p) { API.perm = p.dataset.akPerm; document.querySelectorAll('[data-ak-perm]').forEach(b => b.setAttribute('aria-checked', String(b === p))); return; }
-    const v = t.closest('[data-ak-vence]'); if (v) { API.vence = v.dataset.akVence; document.querySelectorAll('[data-ak-vence]').forEach(b => b.setAttribute('aria-checked', String(b === v))); return; }
+    const p = t.closest('[data-ak-perm]'); if (p) { API.perm = p.dataset.akPerm; document.querySelectorAll('[data-ak-perm]').forEach(b => b.setAttribute('aria-checked', String(b === p))); const c = document.querySelector('.ak-cap'); if (c) c.dataset.perm = API.perm; return; }
+    const v = t.closest('[data-ak-vence]');
+    if (v) {
+      API.vence = v.dataset.akVence; document.querySelectorAll('[data-ak-vence]').forEach(b => b.setAttribute('aria-checked', String(b === v)));
+      const sg = v.closest('.ak-seg'); if (sg) sg.style.setProperty('--i', String(VENCE.findIndex(([k]) => k === API.vence)));
+      const q = document.getElementById('ak-cuando'); if (q) { q.classList.add('cambia'); setTimeout(() => { q.textContent = cuandoVence(API.vence); q.classList.remove('cambia'); }, 150); }
+      return;
+    }
     if (t.closest('[data-ak-crear]')) {
       if (API.creando) return;
       const nombre = (document.getElementById('ak-nombre') || {}).value || '';
