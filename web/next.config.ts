@@ -37,12 +37,13 @@ const nextConfig: NextConfig = {
       { source: "/inicio.html", destination: "/", permanent: true },
       { source: "/precios.html", destination: "/precios", permanent: true },
       { source: "/partners.html", destination: "/partners", permanent: true },
+      { source: "/cookies.html", destination: "/cookies", permanent: true },
     ];
   },
   async rewrites() {
     return {
       // El home y los precios son las maquetas aprobadas (8-oct), tal cual: public/inicio.html y public/precios.html.
-      beforeFiles: [{ source: "/", destination: "/inicio.html" }, { source: "/precios", destination: "/precios.html" }, { source: "/partners", destination: "/partners.html" }],
+      beforeFiles: [{ source: "/", destination: "/inicio.html" }, { source: "/precios", destination: "/precios.html" }, { source: "/partners", destination: "/partners.html" }, { source: "/cookies", destination: "/cookies.html" }],
       afterFiles: [
         { source: "/t/:espacio", destination: `${CRM_ORIGEN}/t/:espacio` },
         { source: "/crm", destination: `${CRM_ORIGEN}/` },
@@ -53,7 +54,7 @@ const nextConfig: NextConfig = {
   },
   // Las cabeceras de seguridad van en todo menos /crm: el CRM manda las suyas y con dos CSP se rompe.
   async headers() {
-    return [{ source: "/((?!crm$|crm/).*)", headers: seguridad }, { source: "/", headers: seguridad }, { source: "/precios", headers: seguridad }, { source: "/partners", headers: seguridad }];
+    return [{ source: "/((?!crm$|crm/).*)", headers: seguridad }, { source: "/", headers: seguridad }, { source: "/precios", headers: seguridad }, { source: "/partners", headers: seguridad }, { source: "/cookies", headers: seguridad }];
   },
 };
 

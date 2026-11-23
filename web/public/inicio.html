@@ -336,6 +336,7 @@ p{margin:0}
 html.cargando,html.cargando body{overflow:hidden}
 @media (prefers-reduced-motion:reduce){.w-carga *{animation:none!important}}
 </style>
+<link rel="stylesheet" href="/sitio.css">
 </head>
 <body>
 <script>document.documentElement.classList.add("cargando")</script>
@@ -379,6 +380,7 @@ if(document.readyState==="complete")cuandoListo();else window.addEventListener("
 
 <div class="marco">
   <header class="barra">
+    <button type="button" class="btn sec nav-b" id="nav-b" aria-haspopup="dialog" aria-expanded="false" aria-controls="nav-m" aria-label="Menú"><span class="hb"><i></i><i></i><i></i></span></button>
     <a class="logo" href="#inicio" aria-label="Wali, inicio"><svg width="34" height="34"><use href="#wali"/></svg><b>wal<span class="wi">ı</span></b></a>
     <nav class="pild" aria-label="Principal">
       <a class="on" href="#inicio"><svg><use href="#i-bandeja"/></svg>Bandeja</a>
@@ -388,6 +390,7 @@ if(document.readyState==="complete")cuandoListo();else window.addEventListener("
       <a href="/partners"><svg><use href="#i-pt"/></svg>Partners</a>
     </nav>
     <div class="der">
+      <button type="button" class="btn sec idi-b" id="idi-b" aria-haspopup="menu" aria-expanded="false" aria-controls="idi-m" aria-label="Idioma"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.8 5.6 3.8 9s-1.2 6.4-3.8 9c-2.6-2.6-3.8-5.6-3.8-9s1.2-6.4 3.8-9Z"/></svg><span id="idi-cod">ES</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
       <a class="btn sec" href="/crm/entrar">Ingresar</a>
       <a class="btn pri" href="/crm/entrar?registro=1">Probar gratis</a>
     </div>
@@ -555,7 +558,7 @@ if(document.readyState==="complete")cuandoListo();else window.addEventListener("
 
   <footer class="pie-pag">
     <a class="logo" href="#inicio" aria-label="Wali"><svg width="24" height="24"><use href="#wali"/></svg><b style="font-size:19px">wal<span class="wi">ı</span></b></a>
-    <a href="/precios">Precios</a><a href="/partners">Partners</a><a href="https://www.nexcode97.com/privacidad">Privacidad</a><a href="https://www.nexcode97.com/terminos">Términos</a>
+    <a href="/precios">Precios</a><a href="/partners">Partners</a><a href="https://www.nexcode97.com/privacidad">Privacidad</a><a href="https://www.nexcode97.com/terminos">Términos</a><a href="/cookies">Cookies</a>
     <span class="der">Un producto de NexCode97</span>
   </footer>
 </div>
@@ -604,5 +607,6 @@ if(document.readyState==="complete")cuandoListo();else window.addEventListener("
 })();
 </script>
 
+<script src="/sitio.js" defer></script>
 </body>
 </html>
