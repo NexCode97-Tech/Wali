@@ -277,7 +277,7 @@ const crmDatos = (() => {
   }
 
   /* ── Preferencias propias (PUT /crm/preferencias) ── */
-  const CLAVES_PREF = ['estado','reparto','firma','sonido','navegador','asignada','mencion','resumen','qr','corto','silenciados','borradores','favoritos'];
+  const CLAVES_PREF = ['estado','reparto','firma','sonido','navegador','asignada','mencion','resumen','qr','corto','silenciados','borradores','favoritos','idioma'];
   const prefDe = () => { const o = {}; for (const k of CLAVES_PREF) if (AJ[k] !== undefined) o[k] = AJ[k]; return o; };
   function aplicarPref(p){ for (const k of CLAVES_PREF) if (p && k in p && p[k] !== null && p[k] !== undefined) AJ[k] = p[k]; if (!['En línea','Ocupada','Ausente'].includes(AJ.estado)) AJ.estado = 'En línea'; basePref = J(prefDe()); }
 
