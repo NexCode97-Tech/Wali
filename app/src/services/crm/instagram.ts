@@ -57,7 +57,28 @@ export interface DatosInstagram {
 interface Yo { user_id?: string | number; id?: string; username?: string; name?: string; account_type?: string; provisional?: boolean }
 
 /** Meta responde a veces «Unsupported request - method type: get» (código 100) en llamadas GET válidas, según la cuenta. */
-const esFallaDeMetodo = (e: unknown) => e instanceof ErrorMeta && e.codigo === 100 && /unsupported request/i.test(e.textoMeta || e.message)
+const esFallaDeMetodo = (e: unknown) => e instanceof ErrorMeta && e.codigo === 100 && /unsupported (request|post request|get request)/i.test(e.textoMeta || e.message)
+
+/** Suscribe (o suelta) la cuenta a los avisos de la app. Meta documenta `/{id de la cuenta}/subscribed_apps` en
+ *  graph.instagram.com; `/me/subscribed_apps` a veces responde «Unsupported request - method type: post» (código 100),
+ *  como pasó el 23-nov. Se prueba primero con el id, luego con `/me`, con versión y sin ella. */
+async function suscribirCuenta(token: string, ids: string[], method: 'POST' | 'DELETE' = 'POST'): Promise<void> {
+  const rutas = [...new Set(ids.filter(Boolean))].map(i => `/${encodeURIComponent(i)}/subscribed_apps`).concat('/me/subscribed_apps')
+  let ultimo: unknown = null
+  for (const base of [baseInstagram(), sinVersion()]) {
+    for (const ruta of rutas) {
+      try {
+        await graph(ruta, { cred: { token }, base, method, ...(method === 'POST' ? { query: { subscribed_fields: CAMPOS_APP } } : {}) })
+        return
+      } catch (e) {
+        if (!esFallaDeMetodo(e)) throw e
+        ultimo = e
+        logger.warn(`[CRM instagram] ${method} ${ruta}: ${(e as Error).message}`)
+      }
+    }
+  }
+  throw ultimo
+}
 
 /** La cuenta del token. Con la falla de Meta se intenta sin versión y con menos campos; si tampoco, el id que dio Instagram al entregar el token. */
 async function yo(token: string, idRespaldo = ''): Promise<Yo> {
@@ -185,7 +206,7 @@ async function guardarCuenta(o: { modo: 'manual' | 'meta'; appId: string; appSec
       }
     }
     // La cuenta, suscrita a la app: sin esto no llega ningún mensaje.
-    await graph('/me/subscribed_apps', { cred: { token: o.token }, base: baseInstagram(), method: 'POST', query: { subscribed_fields: CAMPOS_APP } })
+    await suscribirCuenta(o.token, [igId, String(me.id ?? '')])
   } catch (e) {
     error = porQueNoConecta(e, 'La cuenta está bien, pero no se pudo configurar el aviso de mensajes en Meta').message
   }
@@ -336,7 +357,7 @@ export async function revisarInstagram(id: string, por: string | null): Promise<
 export async function soltarInstagram(c: CrmConexion): Promise<void> {
   try {
     const s = descifrar<{ token?: string }>(c.secretos)
-    if (s.token) await graph('/me/subscribed_apps', { cred: { token: s.token }, base: baseInstagram(), method: 'DELETE' })
+    if (s.token) await suscribirCuenta(s.token, [String(obj(c.datos).igId ?? '')], 'DELETE')
   } catch (e) { logger.info(`[CRM instagram] no se pudo desuscribir ${c.id}: ${(e as Error).message}`) }
 }
 
