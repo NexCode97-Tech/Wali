@@ -295,3 +295,17 @@
     - tiene una clave de escritura, «Integracion con Claude», usada hoy a las 12:28 de Colombia;
     - sus flujos están guardados vacíos desde el 19-nov;
     - la API solo lista flujos y los enciende o apaga (GET /flujos, PATCH /flujos/:id), así se definió el 11-nov; crear o editar flujos por la API no existe.
+- API para armar automatizaciones (24-nov, pedido del usuario: «todas las APIs deben poder crear todo esto, lo estoy prometiendo a los clientes»). Commit sin push.
+  - Flujos:
+    - GET /flujos/:id completo, POST, PATCH (parcial y también encender o apagar), PUT y DELETE.
+    - Pasos: mensaje, pregunta (guardarEn y validar), botones (hasta 3 opciones de 20 caracteres, ponerEtiqueta), etiqueta (ya existente), asignar (equipo o miembroId, de último) y avanzado (la pregunta que reparte por área, tal como se leyó).
+    - Campos del flujo: cuando (primer-mensaje, fuera-de-horario, anuncio), canales, equipos, saltarConocidos y esperaMinutos.
+  - Agentes de IA:
+    - GET /agentes/:id completo, POST desde plantilla (recep, ventas, soporte o cero, igual que nuevoAgente de la pantalla), PATCH parcial y DELETE.
+    - Campos: nombre, presentación, queHace, tono, largo, emojis, idioma, contexto, criterios, adicionales, cuandoAtiende, canales, pasaSiempreA, temas, acciones, pasaAPersona, mensajesAntesDePasar, recopilar, silencioso, consultas y encendido (con las mismas condiciones de la pantalla).
+    - El conocimiento se sigue subiendo en el CRM.
+  - Reglas automáticas: GET, POST, PATCH y DELETE /reglas/:nombre. Cuando, condiciones y acciones en forma {tipo, valor}, convertidas a los textos que entiende reglas.ts.
+  - Etiquetas: POST y DELETE. Etapas: PATCH (color) y DELETE (409 si hay contactos en ella).
+  - Todo valida equipos, miembros, etiquetas, etapas y líneas del espacio, y se guarda por guardarAjusteRuta (permisos, aviso en vivo, 409 si alguien guardó al tiempo).
+  - Documentación (api-docs.html): secciones nuevas de Flujos, Agentes de IA y Reglas con ejemplos, y filas nuevas en catálogos. La tarjeta de permisos de la clave (89-api.js) dice «Crea y edita flujos, agentes de IA y reglas».
+  - tsc limpio. Sin pruebas automáticas en el servidor; se revisa en producción después del push.
