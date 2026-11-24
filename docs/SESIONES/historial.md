@@ -289,3 +289,9 @@
   - Ojo: Google puede pedir verificar el permiso calendar.freebusy en la pantalla de consentimiento del proyecto «Wali CRM».
 - Push hasta 587e352 (pedido «súbelo»): agenda del agente con el Google de Mi perfil, desplegable único en portal, tarjetas de Integraciones, círculos de la clave de API y hora de Llamadas. Revisando el despliegue en segundo plano.
 - Despliegue de la agenda del agente: SUCCESS (24-nov, 12:25), /health 200, sin errores en los registros de los primeros 15 minutos.
+- Consulta (24-nov):
+  - Notificaciones: el CRM solo avisa en el navegador del computador, con new Notification, y solo con la pestaña abierta en segundo plano y el permiso dado. No tiene manifest, service worker ni web push. En el celular no llega nada: Android no deja usar new Notification desde la página e iPhone solo avisa si la app está instalada.
+  - CRECER y los flujos por la API, revisado en el servidor solo leyendo:
+    - tiene una clave de escritura, «Integracion con Claude», usada hoy a las 12:28 de Colombia;
+    - sus flujos están guardados vacíos desde el 19-nov;
+    - la API solo lista flujos y los enciende o apaga (GET /flujos, PATCH /flujos/:id), así se definió el 11-nov; crear o editar flujos por la API no existe.
