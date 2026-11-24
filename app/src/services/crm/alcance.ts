@@ -54,8 +54,9 @@ export function alcanceDePersona(userId: string, rolPlataforma: string | null | 
   const equipos = orden.filter(eq => lidera.includes(eq) || integra.includes(eq))
   const enSubequipos = orden.filter(eq => !equipos.includes(eq) && (eqs.subequipos[eq] ?? []).some(s => s.ids.includes(userId)))
   const rol = rolEfectivo(rolPlataforma)
-  // Ver todo es del administrador que no está en ningún equipo ni subequipo: en un subequipo, ve lo que le asignen.
-  return { userId, todo: rol === 'ADMIN' && equipos.length === 0 && enSubequipos.length === 0, lidera, integra, equipos, enSubequipos, config: configura(rol) }
+  // Ver todo es del administrador, esté o no en un equipo (24-nov): en un equipo sigue recibiendo del reparto como los
+  // demás, pero no pierde lo de administrador (antes, al entrar a un equipo, el CRM lo trataba como integrante).
+  return { userId, todo: rol === 'ADMIN', lidera, integra, equipos, enSubequipos, config: configura(rol) }
 }
 
 /** El alcance de quien hace la petición (se calcula una vez por petición). */
