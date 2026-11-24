@@ -777,7 +777,10 @@ document.getElementById('ov-x').addEventListener('click', e => {
    solo ve si cada hora está libre u ocupada. 2) El horario de las citas (duración, días, desde y hasta con el
    desplegable único, enlace opcional) y el mensaje con que el agente ofrece las citas, editable, con el espacio
    «Horas libres» ({horas}). Pie fijo con el resumen y «Conectar». */
-const GC = {yo: null, dur: 30, dias: [1, 2, 3, 4, 5], desde: 480, hasta: 1080, enlace: '', plantilla: '¡Claro! Tengo libre {horas}. ¿Cuál te sirve?', editando: false, enviando: false};
+// Horario de citas por día (24-nov), lunes primero: [día 0-6, desde, hasta (minutos), con citas]. El sábado viene
+// listo hasta el mediodía, apagado; el domingo, apagado.
+const gcHorarioBase = () => [[1, 480, 1080, true], [2, 480, 1080, true], [3, 480, 1080, true], [4, 480, 1080, true], [5, 480, 1080, true], [6, 480, 720, false], [0, 480, 720, false]];
+const GC = {yo: null, dur: 30, horario: gcHorarioBase(), enlace: '', plantilla: '¡Claro! Tengo libre {horas}. ¿Cuál te sirve?', editando: false, enviando: false};
 const GC_DIAS = [[1, 'L'], [2, 'M'], [3, 'M'], [4, 'J'], [5, 'V'], [6, 'S'], [0, 'D']];
 const GC_DIAS_N = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 const GC_DUR = [15, 20, 30, 45, 60, 90];
@@ -786,7 +789,8 @@ const gcFrag = h => document.createRange().createContextualFragment(h);
 const gcDurT = m => m < 60 ? m + ' min' : m === 60 ? '1 hora' : '1 h 30';
 const gcHoraT = m => { const h = Math.floor(m / 60), mi = m % 60; return `${((h + 11) % 12) + 1}:${String(mi).padStart(2, '0')} ${h < 12 ? 'a. m.' : 'p. m.'}`; };
 const gcHHMM = m => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
-const gcOrden = () => [...GC.dias].sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7));
+const gcAbiertos = () => GC.horario.filter(f => f[3]);
+const gcOrden = () => gcAbiertos().map(f => f[0]);
 const GC_OK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
 const GC_G = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z"/><path fill="#FBBC05" d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1A10 10 0 0 0 2 12c0 1.6.4 3.1 1.1 4.6z"/><path fill="#EA4335" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.4L6.4 10C7.2 7.7 9.4 5.9 12 5.9z"/></svg>';
 function gcCuentaHTML(){
@@ -796,16 +800,15 @@ function gcCuentaHTML(){
   const con = y.estado === 'conectado';
   const tx = con ? `<b>${esc(y.correo || 'Tu cuenta de Google')}</b><small>Conectado. Las citas se ofrecen con tus horas libres.</small>`
     : y.estado === 'sin-permiso' ? '<b>Falta un permiso</b><small>Google no dio el permiso de ver tus horas libres. Conecta otra vez y deja marcadas todas las casillas del calendario.</small>'
-    : '<b>Conecta tu cuenta de Google</b><small>Se abre Google en otra ventana. Acepta los permisos del calendario y vuelve aquí.</small>';
-  const bt = con ? `<button type="button" class="btn g3-otra" data-gc-google="1">Usar otra cuenta</button>`
-    : `<button type="button" class="btn pri g3-goo" data-gc-google="1">Continuar con Google${I('ext')}</button>`;
+    : '<b>Todavía sin conectar</b><small>Al final tocas «Continuar con Google», das el permiso de tu calendario y Wali guarda todo solo.</small>';
+  const bt = con ? `<button type="button" class="btn g3-otra" data-gc-google="1">Usar otra cuenta</button>` : '';
   return `<div class="g3-cu${con ? ' on' : y.estado === 'sin-permiso' ? ' falta' : ''}"><span class="g3-cu-g">${GC_G}${con ? `<i>${GC_OK}</i>` : ''}</span><span class="g3-tx">${tx}</span>${bt}</div>`;
 }
 function gcHoras(){
-  const d = gcOrden(); if (!d.length || GC.hasta - GC.desde < GC.dur) return '';
+  const d = gcAbiertos().filter(f => f[2] - f[1] >= GC.dur); if (!d.length) return '';
   const d1 = d[1 % d.length], d2 = d[2 % d.length];
-  const h = k => gcHoraT(Math.max(GC.desde, Math.min(GC.desde + k * GC.dur, GC.hasta - GC.dur)));
-  return `el ${GC_DIAS_N[d1]} a las ${h(2)} o a las ${h(8)}, y el ${GC_DIAS_N[d2]} a las ${h(4)}`;
+  const h = (f, k) => gcHoraT(Math.max(f[1], Math.min(f[1] + k * GC.dur, f[2] - GC.dur)));
+  return `el ${GC_DIAS_N[d1[0]]} a las ${h(d1, 2)} o a las ${h(d1, 8)}, y el ${GC_DIAS_N[d2[0]]} a las ${h(d2, 4)}`;
 }
 const gcEjemplo = () => { const hs = gcHoras(); if (!hs) return esc('Elige al menos un día y un horario donde quepa una cita para ver el mensaje.');
   return esc(GC.plantilla).split('{horas}').join(`<mark class="g6-h">${esc(hs)}</mark>`).replace(/m\.<\/mark>\./g, 'm.</mark>'); };
@@ -817,22 +820,32 @@ function gcMensaje(){
     : `<div class="g3-chat"><div class="g3-bur" id="gc-bur">${gcEjemplo()}</div><button type="button" class="g6-edit" data-gc-editar="1">${I('pen')}Editar mensaje</button></div>`;
 }
 const gcResumen = () => { const ds = gcOrden().map(d => GC_DIAS.find(x => x[0] === d)[1]).join(' ');
-  return `<b>${gcListo() ? 'Tu agenda' : 'Falta conectar tu Google'}</b><span>${ds || 'Sin días'} · ${gcHoraT(GC.desde)} a ${gcHoraT(GC.hasta)}</span>`; };
-const gcSelHora = cual => ddSel('data-gc-' + cual, GC_HORAS.map(m => [String(m), gcHoraT(m)]), String(GC[cual]));
+  const n = gcOrden().length;
+  return `<b>${gcListo() ? 'Tu agenda' : 'Con tu Google'}</b><span>${ds || 'Sin días'} · ${n === 1 ? '1 día' : n + ' días'} con citas</span>`; };
+// Un renglón por día, como el «Horario propio» de las llamadas (88-llamadas-ajustes.js): interruptor y franja con el desplegable único.
+const gcSelHora = (i, k) => `<span class="hp-h" aria-label="${k === 1 ? 'Desde' : 'Hasta'}">${ddSel('data-gc-h', GC_HORAS.map(m => [`${i}|${k}|${m}`, gcHoraT(m)]), `${i}|${k}|${GC.horario[i][k]}`)}</span>`;
+const gcFilaHTML = i => { const [d, , , on] = GC.horario[i], n = GC_DIAS_N[d][0].toUpperCase() + GC_DIAS_N[d].slice(1);
+  return `<div class="hp-fila${on ? '' : ' cerrado'}" data-gc-fila="${i}"><span class="hp-d">${n}</span>${lwTg(on, `Citas el ${GC_DIAS_N[d]}`, `data-gc-dia="${i}"`)}${on ? `<span class="hp-r">${gcSelHora(i, 1)}<i>a</i>${gcSelHora(i, 2)}</span>` : '<span class="hp-c">Sin citas</span>'}</div>`; };
+const gcHorarioHTML = () => `<div class="hp g3-hp">${GC.horario.map((_, i) => gcFilaHTML(i)).join('')}
+  <div class="hp-pie"><button type="button" class="hp-lnk" data-gc-copiar="1">Copiar el horario de atención</button><span><b>Festivos de Colombia</b> se ofrecen como cualquier día</span></div></div>`;
 const gcListo = () => !!GC.yo && GC.yo.estado === 'conectado';
+// Un solo botón: sin Google conectado abre Google y, al volver con el permiso, guarda solo; con Google ya conectado guarda.
+const gcYaConectada = () => !!(INTEG.lista || []).find(x => x.id === 'gcal' && x.conectado);
+const gcBotonHTML = () => GC.enviando ? '<span class="rcp-rueda"></span>Guardando…'
+  : !gcListo() ? `<span class="g3-gbt">${GC_G}</span>Continuar con Google`
+  : gcYaConectada() ? `${I('check')}Guardar cambios` : `${I('link')}Conectar`;
 function gcDialogo(){
   return `<div class="g3-cab"><span class="g3-logo">${integLogo('gcal')}</span><div><h3>Conectar Google Calendar</h3><span>El agente ofrece citas con las horas libres de tu agenda</span></div></div>
   <section class="g3-sec" style="--k:0"><div class="g3-h"><span class="g3-n">1</span><div><b>Tu Google Calendar</b><small>Wali solo ve si cada hora está libre u ocupada</small></div></div>
     <div id="gc-cuenta" aria-live="polite">${gcCuentaHTML()}</div></section>
   <section class="g3-sec" style="--k:1"><div class="g3-h"><span class="g3-n">2</span><div><b>¿Cuándo hay citas?</b><small>El agente solo ofrece horas dentro de este horario</small></div></div>
     <div class="g3-camp"><span class="g3-l">Cada cita dura</span><div class="g3-seg" role="radiogroup" aria-label="Duración" style="--i:${GC_DUR.indexOf(GC.dur)};--n:${GC_DUR.length}"><span class="g3-thumb" aria-hidden="true"></span>${GC_DUR.map(m => `<button type="button" role="radio" aria-checked="${m === GC.dur}" data-gc-dur="${m}">${gcDurT(m)}</button>`).join('')}</div></div>
-    <div class="g3-camp"><span class="g3-l">Días</span><div class="g3-dias">${GC_DIAS.map(([d, l]) => `<button type="button" data-gc-dia="${d}" aria-pressed="${GC.dias.includes(d)}" aria-label="${GC_DIAS_N[d]}">${l}</button>`).join('')}</div></div>
-    <div class="g3-fila"><div class="g3-camp"><span class="g3-l">Desde</span>${gcSelHora('desde')}</div><div class="g3-camp"><span class="g3-l">Hasta</span>${gcSelHora('hasta')}</div></div>
+    <div class="g3-camp"><span class="g3-l">Días y horas</span><div id="gc-hor">${gcHorarioHTML()}</div></div>
     <label class="g3-camp"><span class="g3-l">Enlace para reservar <span class="gc-op">(opcional)</span></span><span class="g3-in">${I('link')}<input id="gc-enlace" type="url" placeholder="calendar.app.google/… o tu página de Calendly" autocomplete="off" value="${esc(GC.enlace)}"></span></label></section>
   <section class="g3-sec g3-ej" style="--k:2"><div class="g3-h"><span class="g3-n">${I('bolt')}</span><div><b>Mensaje con que el agente ofrece las citas</b><small>Lo usan los agentes de IA que tengan Google Calendar encendido en Capacidades</small></div></div>
     <div id="gc-msj">${gcMensaje()}</div>
     <p class="g3-priv">${I('lock')}Solo ve si cada hora está libre u ocupada, nunca el detalle de las citas, y no agenda nada.</p></section>
-  <div class="ft2 g3-pie"><span class="g3-res" id="gc-res">${gcResumen()}</span><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" data-gc-ok="1"${gcListo() ? '' : ' disabled'}>${I('link')}Conectar</button></div>`;
+  <div class="ft2 g3-pie"><span class="g3-res" id="gc-res">${gcResumen()}</span><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri g3-ok" data-gc-ok="1"${GC.yo ? '' : ' disabled'}>${gcBotonHTML()}</button></div>`;
 }
 function gcRefrescar(){
   const b = document.getElementById('gc-bur'), r = document.getElementById('gc-res');
@@ -842,20 +855,37 @@ function gcRefrescar(){
 function gcPintarCuenta(){
   const d = document.getElementById('dlg-x'), c = document.getElementById('gc-cuenta'); if (!d || !c) return;
   c.replaceChildren(gcFrag(gcCuentaHTML()));
-  const ok = d.querySelector('[data-gc-ok]'); if (ok && !GC.enviando) ok.disabled = !gcListo();
+  const ok = d.querySelector('[data-gc-ok]'); if (ok && !GC.enviando && !GC.pendiente) { ok.disabled = !GC.yo || !!GC.yo.error; ok.replaceChildren(gcFrag(gcBotonHTML())); }
   gcRefrescar();
 }
 function gcCargarYo(){
-  crmApi('GET', '/crm/integraciones/gcal/agendas').then(y => { GC.yo = y && y.estado ? y : {estado: 'sin-conectar', correo: null}; gcPintarCuenta(); })
+  return crmApi('GET', '/crm/integraciones/gcal/agendas').then(y => { GC.yo = y && y.estado ? y : {estado: 'sin-conectar', correo: null}; gcPintarCuenta(); })
     .catch(err => { GC.yo = {error: err.message || 'intenta de nuevo'}; gcPintarCuenta(); });
 }
 // Al volver de Google (89-recordatorios.js avisa con «crm:gcal»), se revisa otra vez si quedó con el permiso de horas libres.
-document.addEventListener('crm:gcal', () => { if (!document.getElementById('ov-x').hidden && document.querySelector('#ov-x .dlg-g3')) { GC.yo = null; gcPintarCuenta(); gcCargarYo(); } });
+document.addEventListener('crm:gcal', () => {
+  if (document.getElementById('ov-x').hidden || !document.querySelector('#ov-x .dlg-g3')) return;
+  GC.yo = null; gcPintarCuenta();
+  gcCargarYo().then(() => {
+    if (!GC.pendiente) return;
+    GC.pendiente = false;
+    const ok = document.querySelector('#ov-x [data-gc-ok]'); if (!ok) return;
+    if (gcListo()) { gcGuardar(ok); return; }
+    ok.disabled = false; ok.replaceChildren(gcFrag(gcBotonHTML()));
+    toast('Google no dio el permiso de ver tus horas libres. Toca «Continuar con Google» otra vez y deja marcadas todas las casillas.');
+  });
+});
+function gcGuardar(ok){
+  GC.enviando = true; ok.disabled = true; ok.replaceChildren(gcFrag(gcBotonHTML()));
+  crmApi('POST', '/crm/integraciones/gcal', {duracion: GC.dur, horario: gcAbiertos().map(f => [f[0], gcHHMM(f[1]), gcHHMM(f[2])]), enlace: GC.enlace, plantilla: GC.plantilla})
+    .then(l => { const antes = gcYaConectada(); INTEG.lista = Array.isArray(l) ? l : INTEG.lista; GC.enviando = false; cerrarDialogo(); render(); toast(antes ? 'Guardaste los cambios de la agenda.' : 'Google Calendar quedó conectado con tu agenda. Elige en Capacidades qué agentes lo usan.'); })
+    .catch(err => { GC.enviando = false; ok.disabled = false; ok.replaceChildren(gcFrag(gcBotonHTML())); toast(err.message); });
+}
 document.getElementById('page').addEventListener('click', e => {
   if (st.pagina !== 'cfg-integraciones') return;
   if (!e.target.closest('[data-integ-conectar="gcal"]')) return;
   e.stopImmediatePropagation();
-  Object.assign(GC, {yo: null, editando: false, enviando: false});
+  Object.assign(GC, {yo: null, editando: false, enviando: false, pendiente: false, horario: gcHorarioBase()});
   abrirDialogo(gcDialogo(), 'dlg-per dlg-ig dlg-g3');
   gcCargarYo();
 }, true);
@@ -863,10 +893,17 @@ document.getElementById('ov-x').addEventListener('click', e => {
   if (!e.target.closest('.dlg-g3')) return;
   const gg = e.target.closest('[data-gc-google]'); if (gg) { if (typeof window.crmConectarGoogle === 'function') window.crmConectarGoogle(gg); return; }
   const du = e.target.closest('[data-gc-dur]'); if (du) { GC.dur = +du.dataset.gcDur; const s = du.parentNode; s.style.setProperty('--i', GC_DUR.indexOf(GC.dur)); s.querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', String(b === du))); gcRefrescar(); return; }
-  const di = e.target.closest('[data-gc-dia]'); if (di) { const d = +di.dataset.gcDia, on = di.getAttribute('aria-pressed') !== 'true'; di.setAttribute('aria-pressed', String(on)); GC.dias = on ? [...GC.dias, d] : GC.dias.filter(x => x !== d); gcRefrescar(); return; }
-  for (const cual of ['desde', 'hasta']) {
-    const h = e.target.closest(`[data-gc-${cual}]`);
-    if (h) { GC[cual] = +h.getAttribute(`data-gc-${cual}`); ddCasa(h).replaceWith(gcFrag(gcSelHora(cual))); gcRefrescar(); return; }
+  const pintarFila = i => { const f = document.querySelector(`#gc-hor [data-gc-fila="${i}"]`); if (f) f.replaceWith(gcFrag(gcFilaHTML(i))); gcRefrescar(); };
+  const di = e.target.closest('[data-gc-dia]'); if (di) { const i = +di.dataset.gcDia; GC.horario[i][3] = !GC.horario[i][3]; pintarFila(i); return; }
+  const hh = e.target.closest('[data-gc-h]'); if (hh) { const [i, k, m] = hh.getAttribute('data-gc-h').split('|').map(Number); GC.horario[i][k] = m; pintarFila(i); return; }
+  if (e.target.closest('[data-gc-copiar]')) {
+    // CFG.horario: [nombre, 'H:MM', 'H:MM', abierto], de lunes a domingo. Se ajusta a las horas que ofrece la lista.
+    const aM = t => { const x = String(t || '').match(/^(\d{1,2}):(\d{2})$/); return x ? +x[1] * 60 + +x[2] : null; };
+    const cerca = m => GC_HORAS.reduce((a, b) => Math.abs(b - m) < Math.abs(a - m) ? b : a, GC_HORAS[0]);
+    const h = Array.isArray(CFG.horario) ? CFG.horario : [];
+    if (h.length !== 7) { toast('Todavía no hay horario de atención para copiar'); return; }
+    GC.horario = h.map((f, i) => { const de = aM(f[1]), ha = aM(f[2]); return [(i + 1) % 7, de === null ? 480 : cerca(de), ha === null ? 1080 : cerca(ha), !!f[3]]; });
+    document.getElementById('gc-hor').replaceChildren(gcFrag(gcHorarioHTML())); gcRefrescar(); toast('Se copió el horario de atención'); return;
   }
   const pintarMsj = () => { const m = document.getElementById('gc-msj'); m.replaceChildren(gcFrag(gcMensaje())); const a = document.getElementById('gc-area'); if (a) { a.focus(); const r = document.createRange(); r.selectNodeContents(a); r.collapse(false); const sl = getSelection(); sl.removeAllRanges(); sl.addRange(r); } };
   const leer = a => [...a.childNodes].map(n => n.nodeType === 3 ? n.textContent : (n.classList && n.classList.contains('g6-chip') ? '{horas}' : n.textContent)).join('').replace(/\s+/g, ' ').trim();
@@ -881,13 +918,14 @@ document.getElementById('ov-x').addEventListener('click', e => {
   const ok = e.target.closest('[data-gc-ok]'); if (!ok || GC.enviando) return;
   const a = document.getElementById('gc-area'); if (a) { const t = leer(a).slice(0, 400); if (t) GC.plantilla = t.includes('{horas}') ? t : t + ' {horas}'; }
   GC.enlace = ((document.getElementById('gc-enlace') || {}).value || '').trim();
-  if (!gcListo()) { toast('Primero toca «Continuar con Google»'); return; }
-  if (!GC.dias.length) { toast('Elige al menos un día para las citas'); return; }
-  if (GC.hasta - GC.desde < GC.dur) { toast('La hora final debe ir después de la inicial y caber al menos una cita'); return; }
-  GC.enviando = true; ok.disabled = true; ok.replaceChildren(gcFrag('Revisando la agenda…'));
-  crmApi('POST', '/crm/integraciones/gcal', {duracion: GC.dur, desde: gcHHMM(GC.desde), hasta: gcHHMM(GC.hasta), dias: GC.dias, enlace: GC.enlace, plantilla: GC.plantilla})
-    .then(l => { INTEG.lista = Array.isArray(l) ? l : INTEG.lista; cerrarDialogo(); render(); toast('Google Calendar quedó conectado con tu agenda. Elige en Capacidades qué agentes lo usan.'); })
-    .catch(err => { GC.enviando = false; ok.disabled = false; ok.replaceChildren(gcFrag(`${I('link')}Conectar`)); toast(err.message); });
+  if (!gcAbiertos().length) { toast('Elige al menos un día para las citas'); return; }
+  const mal = gcAbiertos().find(f => f[2] - f[1] < GC.dur);
+  if (mal) { toast(`Revisa el ${GC_DIAS_N[mal[0]]}: la hora final debe ir después de la inicial y caber al menos una cita`); return; }
+  if (gcListo()) { gcGuardar(ok); return; }
+  // Sin Google: se abre Google y, al volver con el permiso («crm:gcal»), se guarda solo.
+  if (typeof window.crmConectarGoogle !== 'function') return;
+  GC.pendiente = true; window.crmConectarGoogle(ok);
+  setTimeout(() => { if (!ok.disabled) GC.pendiente = false; }, 0);
 });
 document.head.insertAdjacentHTML('beforeend', `<style>
 @keyframes g2-pop{0%{transform:scale(.6)}100%{transform:scale(1)}}
@@ -924,6 +962,15 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .g3-cu .btn:active{transform:scale(.97)}
 @media (max-width:560px){.g3-cu{flex-wrap:wrap}.g3-cu .btn{width:100%;justify-content:center}}
 .g3-gente{display:flex;flex-direction:column;gap:8px}
+.g3-hp{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+.g3-hp .hp-fila{min-height:48px;transition:background-color .16s ease-out}
+.g3-hp .hp-h .dsel{width:124px}.g3-hp .hp-h .dsel > .sel{width:100%;justify-content:space-between}
+.g3-hp .hp-fila.cerrado{background:#fafafa}
+.g3-hp .hp-r{animation:g3-sec .24s cubic-bezier(.16,1,.3,1) both}
+.g3-ok{display:inline-flex;align-items:center;gap:8px;transition:transform .1s ease-out,background-color .16s ease-out}
+.g3-ok:active{transform:scale(.97)}
+.g3-gbt{width:20px;height:20px;border-radius:50%;background:#fff;display:grid;place-items:center;flex:none;box-shadow:0 0 0 1px rgba(11,11,16,.08)}
+.g3-gbt svg{width:12px;height:12px}
 .g3-p{display:flex;align-items:center;gap:12px;width:100%;padding:11px 14px;border:1px solid #e5e9f0;border-radius:14px;background:#fff;font:inherit;text-align:left;cursor:pointer;transition:border-color .16s ease-out,box-shadow .16s ease-out,background .16s ease-out,transform .1s ease-out}
 .g3-p:hover{border-color:#cbd5e1;background:#fcfcfd}
 .g3-p:active{transform:scale(.985)}
@@ -955,7 +1002,8 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .g3-dias button{height:42px;border-radius:12px;border:1px solid #e5e9f0;background:#fff;font:inherit;font-weight:600;font-size:13px;color:#6b7280;cursor:pointer;transition:background .16s ease-out,border-color .16s ease-out,color .16s ease-out,transform .12s ease-out}
 .g3-dias button:active,.g3-seg button:active{transform:scale(.94)}
 .g3-dias button[aria-pressed="true"]{background:#FFD21F;border-color:#FFD21F;color:#0b0b10;box-shadow:inset 0 -2px 0 rgba(11,11,16,.12)}
-.g3-fila{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3-fila{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.g3-fila .dsel,.g3-fila .dsel > .sel{min-width:0!important;width:100%;max-width:100%}
 .g3-in{display:flex;align-items:center;gap:10px;height:42px;padding:0 12px;border:1px solid #e5e9f0;border-radius:11px;background:#fff;color:#9ca3af;transition:border-color .15s ease-out,box-shadow .15s ease-out}
 .g3-in:focus-within{border-color:#0b0b10;box-shadow:0 0 0 3px rgba(255,210,31,.45)}
 .g3-in svg.i{width:16px;height:16px;flex:none}
@@ -1014,7 +1062,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .g3-vacio{margin:0;font-size:13px;color:#6b7280}
 .g3-av .av{overflow:hidden}
 .g3-av .av img{width:100%;height:100%;object-fit:cover}
-@media (prefers-reduced-motion:reduce){.g3-cargando span,.g3-logo,.g3-sec,.g3-bur,.g3-thumb,.g3-p,.g3-r,.g3-r svg,.g6-ed,.g6-chip.g6-nuevo,.g2-falta,.g2-av,.g3-cu,.g3-cu-g i{animation:none!important;transition:none!important}}
+@media (prefers-reduced-motion:reduce){.g3-cargando span,.g3-logo,.g3-sec,.g3-bur,.g3-thumb,.g3-p,.g3-r,.g3-r svg,.g6-ed,.g6-chip.g6-nuevo,.g2-falta,.g2-av,.g3-cu,.g3-cu-g i,.g3-hp .hp-r{animation:none!important;transition:none!important}}
 </style>`);
 
 /* ── Motor de IA (5-oct): Claude, Gemini u OpenAI con la clave de la cuenta de la empresa, que le paga directo al

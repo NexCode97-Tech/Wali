@@ -159,7 +159,8 @@
     document.dispatchEvent(new CustomEvent('crm:gcal'));
     const c = conv(); if (c && st.recNuevo && st.recNuevo.id === c.id) st.recNuevo.agendar = true;
     if (c) panel(c);
-    toast('Google Calendar conectado');
+    // En la ventana de la agenda del agente el aviso lo da ella al guardar (50-agentes.js).
+    if (!document.querySelector('#ov-x:not([hidden]) .dlg-g3')) toast('Google Calendar conectado');
   }
   const RESPUESTAS = {'sin-permiso':'Falta el permiso del calendario. En Google deja marcada la casilla del calendario.', cancelado:'No se conectó Google Calendar.', sesion:'Tu sesión se cerró. Vuelve a entrar e inténtalo otra vez.', error:'No se pudo conectar Google Calendar. Intenta de nuevo.'};
   try {

@@ -332,17 +332,36 @@ const ANTICIPACION_MS = 2 * 3_600_000
 const HUECO_HORAS = '{horas}'
 export const PLANTILLA_CITAS = '¡Claro! Tengo libre {horas}. ¿Cuál te sirve?'
 
-interface AjustesCalendario { persona: string; duracion: number; desde: string; hasta: string; dias: number[]; enlace: string; plantilla: string }
+/** `horario`: la franja de cada día con citas, [día 0-6, 'HH:MM', 'HH:MM'] (24-nov: cada día con sus horas, p. ej. el
+ *  sábado hasta el mediodía). `dias`, `desde` y `hasta` quedan como resumen y para lo guardado antes de eso. */
+type FranjaCita = [number, string, string]
+interface AjustesCalendario { persona: string; duracion: number; desde: string; hasta: string; dias: number[]; horario: FranjaCita[]; enlace: string; plantilla: string }
+
 
 const aMin = (h: string) => { const m = h.match(/^(\d{1,2}):(\d{2})$/); return m ? Number(m[1]) * 60 + Number(m[2]) : NaN }
 const hora12 = (min: number) => { const h = Math.floor(min / 60), m = min % 60; return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'a. m.' : 'p. m.'}` }
 
+/** La franja de citas de un día de la semana (en minutos), o null si ese día no hay citas. */
+function franjaDe(a: Json, wd: number): [number, number] | null {
+  if (Array.isArray(a.horario)) {
+    const f = (a.horario as unknown[]).find(x => Array.isArray(x) && Number(x[0]) === wd) as unknown[] | undefined
+    return f ? [aMin(txt(f[1])), aMin(txt(f[2]))] : null
+  }
+  const dias = Array.isArray(a.dias) ? a.dias.map(Number) : []
+  return dias.includes(wd) ? [aMin(txt(a.desde)), aMin(txt(a.hasta))] : null
+}
+
 function datosCalendario(a: Json, agenda: string): [string, string][] {
-  const dias = (Array.isArray(a.dias) ? a.dias.map(Number) : []).sort((x, y) => ((x + 6) % 7) - ((y + 6) % 7)).map(d => DIAS_CORTOS[d]).filter(Boolean)
-  const desde = aMin(txt(a.desde)), hasta = aMin(txt(a.hasta))
+  // Los días con la misma franja van juntos: «lun, mar, mié, jue, vie de 8:00 a. m. a 6:00 p. m.; sáb de 8:00 a. m. a 12:00 p. m.».
+  const grupos = new Map<string, string[]>()
+  for (const wd of [1, 2, 3, 4, 5, 6, 0]) {
+    const f = franjaDe(a, wd); if (!f || !Number.isFinite(f[0]) || !Number.isFinite(f[1])) continue
+    const k = `de ${hora12(f[0])} a ${hora12(f[1])}`; grupos.set(k, [...(grupos.get(k) ?? []), DIAS_CORTOS[wd]])
+  }
+  const citas = [...grupos].map(([k, ds]) => `${ds.join(', ')} ${k}`).join('; ')
   return [
     ['Agenda', agenda || 'Sin agenda'],
-    ['Citas', `${Number(a.duracion) || 30} min, ${dias.join(', ')}${Number.isFinite(desde) && Number.isFinite(hasta) ? `, de ${hora12(desde)} a ${hora12(hasta)}` : ''}`],
+    ['Citas', `${Number(a.duracion) || 30} min${citas ? `, ${citas}` : ''}`],
     ...(txt(a.enlace) ? [['Para reservar', txt(a.enlace)] as [string, string]] : []),
   ]
 }
@@ -363,10 +382,21 @@ export async function conectarCalendario(entrada: Json, por: string | null): Pro
   if (!agenda.libre) throw new ValidationError('Tu Google quedó sin el permiso de ver tus horas libres. Toca «Continuar con Google» otra vez y deja marcadas todas las casillas del calendario.')
   const duracion = Number(entrada.duracion)
   if (!DURACIONES.includes(duracion)) throw new ValidationError('Elige cuánto dura cada cita.')
-  const desde = txt(entrada.desde), hasta = txt(entrada.hasta)
-  if (!(aMin(desde) >= 0 && aMin(hasta) <= 24 * 60 && aMin(hasta) - aMin(desde) >= duracion)) throw new ValidationError('Revisa el horario de citas: la hora final debe ir después de la inicial y caber al menos una cita.')
-  const dias = [...new Set((Array.isArray(entrada.dias) ? entrada.dias : []).map(Number).filter(d => Number.isInteger(d) && d >= 0 && d <= 6))]
-  if (!dias.length) throw new ValidationError('Elige al menos un día para las citas.')
+  // Cada día con su franja. Sin `horario` (versión anterior de la pantalla) se arma con los días y las horas comunes.
+  const crudo: unknown[] = Array.isArray(entrada.horario) ? entrada.horario
+    : (Array.isArray(entrada.dias) ? entrada.dias : []).map(d => [d, entrada.desde, entrada.hasta])
+  const horario: FranjaCita[] = []
+  for (const x of crudo.slice(0, 7)) {
+    if (!Array.isArray(x)) continue
+    const wd = Number(x[0]), de = txt(x[1]), ha = txt(x[2])
+    if (!Number.isInteger(wd) || wd < 0 || wd > 6 || horario.some(f => f[0] === wd)) continue
+    if (!(aMin(de) >= 0 && aMin(ha) <= 24 * 60 && aMin(ha) - aMin(de) >= duracion)) throw new ValidationError(`Revisa el horario del ${DIAS_SEMANA[wd]}: la hora final debe ir después de la inicial y caber al menos una cita.`)
+    horario.push([wd, de, ha])
+  }
+  if (!horario.length) throw new ValidationError('Elige al menos un día para las citas.')
+  horario.sort((x, y) => ((x[0] + 6) % 7) - ((y[0] + 6) % 7))
+  const dias = horario.map(f => f[0])
+  const desde = horario.map(f => f[1]).sort((x, y) => aMin(x) - aMin(y))[0], hasta = horario.map(f => f[2]).sort((x, y) => aMin(y) - aMin(x))[0]
   const enlace = txt(entrada.enlace)
   if (enlace && (!/^https:\/\/[^\s]+$/i.test(enlace) || enlace.length > 300)) throw new ValidationError('El enlace para reservar debe empezar por https:// (por ejemplo, tu página de citas de Google Calendar o de Calendly).')
   let plantilla = txt(entrada.plantilla).replace(/\s+/g, ' ') || PLANTILLA_CITAS
@@ -378,7 +408,7 @@ export async function conectarCalendario(entrada: Json, por: string | null): Pro
     logger.warn(`[CRM calendario] probar la agenda: ${(e as Error).message}`)
     throw new AppError('Google Calendar no respondió. Intenta de nuevo en un momento.', 502)
   }
-  const ajustes: AjustesCalendario = { persona, duracion, desde, hasta, dias: dias.sort(), enlace, plantilla }
+  const ajustes: AjustesCalendario = { persona, duracion, desde, hasta, dias, horario, enlace, plantilla }
   await escribir('gcal', { secretos: cifrar({ persona }), ajustes, desde: new Date().toISOString(), por }, por)
   await avisar(por)
   return estadoIntegraciones()
@@ -405,12 +435,13 @@ export async function horariosLibres(desdeDia: string, dias: number): Promise<{ 
     if (e instanceof SinAgenda) throw new AppError('la agenda de citas ya no está conectada.', 409)
     throw new AppError('Google Calendar no respondió.', 502)
   }
-  const desde = aMin(a.desde), hasta = aMin(a.hasta), dur = Number(a.duracion) || 30
+  const dur = Number(a.duracion) || 30
   const minimo = Date.now() + ANTICIPACION_MS
   const salida: DiaLibre[] = []
   for (const dia of lista) {
     const wd = new Date(`${dia}T12:00:00Z`).getUTCDay()
-    if (!a.dias.includes(wd)) continue
+    const f = franjaDe(a as unknown as Json, wd); if (!f) continue
+    const [desde, hasta] = f
     const horas: string[] = []
     for (let m = desde; m + dur <= hasta && horas.length < 8; m += dur) {
       const ini = instanteCo(dia, m), fin = ini + dur * 60_000
