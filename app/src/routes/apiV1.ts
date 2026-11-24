@@ -73,7 +73,7 @@ router.get('/yo', asyncHandler(async (req: Request, res: Response) => {
 router.get('/conversaciones', asyncHandler(async (req: Request, res: Response) => {
   const q = req.query as Record<string, string | undefined>
   const where: Json = {}
-  if (q.estado) { if (!['abiertas', 'pendientes', 'finalizadas'].includes(q.estado)) throw new ValidationError('estado debe ser abiertas, pendientes o finalizadas.'); where.estado = q.estado }
+  if (q.estado) { const e = String(estadoNorm(q.estado)); if (!['abiertas', 'pendientes', 'finalizadas'].includes(e)) throw new ValidationError('estado debe ser abiertas, pendientes o finalizadas.'); where.estado = e }
   if (q.asignado) where.asignadoId = q.asignado === 'nadie' ? null : q.asignado
   if (q.equipo) where.equipo = q.equipo
   if (q.etapa) where.contacto = { etapa: q.etapa }
@@ -202,10 +202,21 @@ router.post('/conversaciones/asignar', asyncHandler(async (req: Request, res: Re
   res.json({ data: { asignadas: hechas, errores } })
 }))
 
+/* El estado de una conversación acepta también el singular y las formas comunes (24-nov): un integrador que manda
+   «finalizada» o «cerrada» quería «finalizadas», y rechazarlo solo lo hace fallar. */
+const ESTADO_ALIAS: Record<string, string> = {
+  abierta: 'abiertas', abiertas: 'abiertas', abierto: 'abiertas', abiertos: 'abiertas', open: 'abiertas', reabrir: 'abiertas',
+  pendiente: 'pendientes', pendientes: 'pendientes', pending: 'pendientes', espera: 'pendientes',
+  finalizada: 'finalizadas', finalizadas: 'finalizadas', finalizado: 'finalizadas', finalizados: 'finalizadas', finalizar: 'finalizadas',
+  cerrada: 'finalizadas', cerradas: 'finalizadas', cerrado: 'finalizadas', cerrar: 'finalizadas', closed: 'finalizadas', resuelta: 'finalizadas',
+}
+const estadoNorm = (v: unknown) => typeof v === 'string' ? (ESTADO_ALIAS[v.trim().toLowerCase()] ?? v) : v
+const estadoSchema = z.preprocess(estadoNorm, z.enum(['abiertas', 'pendientes', 'finalizadas'], { errorMap: () => ({ message: 'estado debe ser abiertas, pendientes o finalizadas.' }) }))
+
 const editarSchema = z.object({
   etapa: z.string().min(1).max(80).optional(),
   etiquetas: z.object({ agregar: z.array(z.string().min(1).max(60)).max(30).optional(), quitar: z.array(z.string().min(1).max(60)).max(30).optional() }).optional(),
-  estado: z.enum(['abiertas', 'pendientes', 'finalizadas']).optional(),
+  estado: estadoSchema.optional(),
   motivo: z.string().max(200).optional(),
   miembroId: z.string().min(1).max(60).nullable().optional(),
   equipo: z.string().min(1).max(60).optional(),

@@ -915,6 +915,7 @@ window.addEventListener('message', e => {
 
 // Arranque: primero los datos reales, después la pantalla. Mientras tanto, la bandeja muestra la burbuja escribiendo
 // de la maqueta aprobada «CRM · animación de carga de conversaciones» (opción 2, 29-sep; estilos en crm.html).
+let crmIntentos = 0;
 function crmArrancar(){
   pintarYo();
   document.getElementById('app').classList.add('sinchat');
@@ -927,9 +928,14 @@ function crmArrancar(){
     // Los avisos de la campana abren /crm?conv=<id> (esa conversación) o /crm?ir=<página>. Leído el aviso, la
     // dirección vuelve a /crm: así el mismo aviso se puede volver a tocar y recargar no lo repite.
     try { const top = window.top; if (abrirDesdeAviso(new URLSearchParams(top.location.search), false) || top.location.search) top.history.replaceState(top.history.state, '', top.location.pathname); } catch { /* sin acceso al marco */ }
-    crmCargado = true; colLista.removeAttribute('aria-busy');
+    crmCargado = true; crmIntentos = 0; colLista.removeAttribute('aria-busy');
     pintarYo(); render(); crmListoOk(); crmMenciones(); if (window.wCargaFin) window.wCargaFin();
   }, err => {
+    // Mientras se publica una versión nueva, el servidor reinicia unos segundos (502, 503 o 504) o la red se corta: se
+    // reintenta solo, con la animación de carga, antes de mostrar el error (24-nov).
+    const pasajero = [502, 503, 504].includes(err && err.status) || /\((502|503|504)\)|Failed to fetch|NetworkError|Load failed/i.test(String(err && err.message || ''));
+    if (pasajero && crmIntentos < 6) { crmIntentos++; setTimeout(crmArrancar, Math.min(1500 * crmIntentos, 6000)); return; }
+    crmIntentos = 0;
     if (window.wCargaFin) window.wCargaFin();
     colLista.removeAttribute('aria-busy');
     document.getElementById('items').innerHTML = `<div class="nothing"><b>No se pudo cargar el CRM</b><span>${esc(err.message)}</span><button type="button" class="btn" id="crm-reintentar">Intentar de nuevo</button></div>`;
