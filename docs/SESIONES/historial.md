@@ -311,3 +311,6 @@
   - tsc limpio. Sin pruebas automáticas en el servidor; se revisa en producción después del push.
 
 - 24-nov 12:38 · Desplegado 901ccf1 (API de automatizaciones) en Railway, estado SUCCESS. Verificado en producción: /crm/api/v1/reglas sin clave responde 401, la documentación /crm/docs/api trae las secciones flujos, agentes y reglas, y /crm/health responde 200.
+
+- 24-nov · Google Calendar todo dentro de la integración (sin maqueta, pedido del usuario). Ajustes del CRM › Integraciones › Google Calendar: el paso 1 es «Tu Google Calendar» con «Continuar con Google» ahí mismo (misma ventana de Google de los recordatorios); al volver revisa el permiso de horas libres y habilita «Conectar». La agenda es siempre la de quien conecta (el servidor ya no recibe «persona»). Se quitó el bloque de Google Calendar de Mi perfil (89-perfil-google.js). Consulta de solo lectura: en todo Wali había 0 calendarios conectados; Julián (CRECER) entró con Google, pero eso no conecta el calendario.
+- 24-nov · API pública: un paso de botones en un flujo admite hasta 6 opciones (antes 3). En WhatsApp, con más de 3 salen como lista «Ver opciones» (el motor ya lo hacía). Documentación actualizada. Pendiente de push.

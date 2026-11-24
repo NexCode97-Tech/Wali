@@ -141,7 +141,7 @@
 
   // Conectar: Google se abre en una ventana aparte (no se deja abrir dentro del marco del CRM). Al terminar, esa
   // ventana avisa por BroadcastChannel y se cierra; si la cierran antes, el botón vuelve a quedar libre. Lo usan el
-  // diálogo de aquí y Mi perfil (89-perfil-google.js): crmConectarGoogle(botón). El botón muestra la espera y vuelve a
+  // diálogo de aquí y la integración de Google Calendar (50-agentes.js): crmConectarGoogle(botón). El botón muestra la espera y vuelve a
   // su texto si no se conecta.
   let ventana = null, vigia = null, boton = null, botonAntes = null;
   function esperando(si){

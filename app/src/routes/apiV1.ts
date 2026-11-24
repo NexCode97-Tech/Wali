@@ -299,7 +299,7 @@ const VALIDAR: Record<string, string> = { 'nombre-y-apellido': 'Nombre y apellid
 const pasoSchema = z.discriminatedUnion('tipo', [
   z.object({ tipo: z.literal('mensaje'), texto: textoApi('texto', 1000) }).strict(),
   z.object({ tipo: z.literal('pregunta'), texto: textoApi('texto', 1000), guardarEn: z.enum(['nombre', 'correo', 'ciudad', 'producto']), validar: z.enum(['nombre-y-apellido', 'texto-libre', 'correo', 'numero']), reintento: textoApi('reintento', 500).optional() }).strict(),
-  z.object({ tipo: z.literal('botones'), texto: textoApi('texto', 1000), opciones: z.array(textoApi('opción', 20)).min(1, 'Un paso de botones necesita al menos una opción.').max(3, 'WhatsApp permite máximo 3 botones por mensaje.'), ponerEtiqueta: z.boolean().optional() }).strict(),
+  z.object({ tipo: z.literal('botones'), texto: textoApi('texto', 1000), opciones: z.array(textoApi('opción', 20)).min(1, 'Un paso de botones necesita al menos una opción.').max(6, 'Un paso de botones puede tener máximo 6 opciones.'), ponerEtiqueta: z.boolean().optional() }).strict(),
   z.object({ tipo: z.literal('etiqueta'), etiqueta: textoApi('etiqueta', 60) }).strict(),
   z.object({ tipo: z.literal('asignar'), equipo: textoApi('equipo', 80).optional(), miembroId: z.string().min(1).max(60).optional() }).strict(),
   z.object({ tipo: z.literal('avanzado'), datos: z.record(z.unknown()) }).strict(),

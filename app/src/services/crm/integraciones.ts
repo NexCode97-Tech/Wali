@@ -315,8 +315,8 @@ export async function pedidosShopify(correoCrudo: string, numeroCrudo: string): 
 
 // ─── Google Calendar ─────────────────────────────────────────────────────────
 //
-// Agenda del agente (24-nov, maqueta aprobada): cada persona conecta su propio Google en Mi perfil
-// (googleCalendario.ts) y la empresa elige aquí en la agenda de quién se ofrecen las citas. El CRM solo pregunta a
+// Agenda del agente (24-nov): todo pasa en la integración. Quien la conecta da su propio Google ahí mismo
+// (googleCalendario.ts) y las citas se ofrecen con las horas libres de su agenda. El CRM solo pregunta a
 // Google qué franjas están ocupadas (freeBusy, permiso calendar.freebusy): nunca ve títulos, personas ni detalles, y no
 // agenda nada. El agente ofrece horas libres con el mensaje que escribió la empresa y, para reservar, comparte el
 // enlace de agenda (si lo dio) o pasa la conversación a un asesor con la hora elegida.
@@ -349,20 +349,18 @@ function datosCalendario(a: Json, agenda: string): [string, string][] {
 
 export type EstadoAgenda = 'conectado' | 'sin-permiso' | 'sin-conectar'
 
-/** Las personas del espacio y si su Google sirve para la agenda del agente (sin tokens). */
-export async function agendasCalendario(): Promise<{ id: string; correo: string | null; estado: EstadoAgenda }[]> {
-  const ids = await usuariosDeEspacio(espacioActual())
-  const activos = (await prismaGlobal.user.findMany({ where: { id: { in: ids }, suspendido: false }, select: { id: true } })).map(u => u.id)
-  const g = await agendasDe(activos)
-  return activos.map(id => { const x = g.get(id); return { id, correo: x?.correo ?? null, estado: !x ? 'sin-conectar' : x.libre ? 'conectado' : 'sin-permiso' } })
+/** El Google de quien conecta la integración y si sirve para la agenda del agente (sin tokens). */
+export async function agendaPropia(userId: string): Promise<{ correo: string | null; estado: EstadoAgenda }> {
+  const x = (await agendasDe([userId])).get(userId)
+  return { correo: x?.correo ?? null, estado: !x ? 'sin-conectar' : x.libre ? 'conectado' : 'sin-permiso' }
 }
 
 export async function conectarCalendario(entrada: Json, por: string | null): Promise<EstadoSistema[]> {
-  const persona = txt(entrada.persona)
-  if (!persona || !(await usuariosDeEspacio(espacioActual())).includes(persona)) throw new ValidationError('Elige en la agenda de quién se ofrecen las citas.')
-  const agenda = (await agendasDe([persona])).get(persona)
-  if (!agenda) throw new ValidationError('Esa persona todavía no conecta su Google. Pídele que entre a Mi perfil y toque «Continuar con Google».')
-  if (!agenda.libre) throw new ValidationError('Esa persona conectó su Google sin el permiso de ver sus horas libres. Pídele que lo desconecte y lo vuelva a conectar en Mi perfil.')
+  // La agenda es siempre la de quien conecta: su Google se da en esta misma ventana.
+  const persona = por ?? ''
+  const agenda = persona ? (await agendasDe([persona])).get(persona) : undefined
+  if (!agenda) throw new ValidationError('Primero toca «Continuar con Google» y da los permisos del calendario.')
+  if (!agenda.libre) throw new ValidationError('Tu Google quedó sin el permiso de ver tus horas libres. Toca «Continuar con Google» otra vez y deja marcadas todas las casillas del calendario.')
   const duracion = Number(entrada.duracion)
   if (!DURACIONES.includes(duracion)) throw new ValidationError('Elige cuánto dura cada cita.')
   const desde = txt(entrada.desde), hasta = txt(entrada.hasta)
@@ -376,7 +374,7 @@ export async function conectarCalendario(entrada: Json, por: string | null): Pro
   if (!plantilla.includes(HUECO_HORAS)) plantilla = `${plantilla} ${HUECO_HORAS}`
   // Se prueba antes de guardarlo: si Google no deja ver la disponibilidad, no queda conectado.
   try { await ocupadoDe(persona, new Date(), new Date(Date.now() + 86_400_000)) } catch (e) {
-    if (e instanceof SinAgenda) throw new ValidationError('No pudimos ver las horas libres de esa agenda. Pídele a esa persona que desconecte y vuelva a conectar su Google en Mi perfil.')
+    if (e instanceof SinAgenda) throw new ValidationError('No pudimos ver las horas libres de tu agenda. Toca «Continuar con Google» otra vez y deja marcadas todas las casillas del calendario.')
     logger.warn(`[CRM calendario] probar la agenda: ${(e as Error).message}`)
     throw new AppError('Google Calendar no respondió. Intenta de nuevo en un momento.', 502)
   }
