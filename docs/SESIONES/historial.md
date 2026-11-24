@@ -257,3 +257,4 @@
   - Mi disponibilidad: rediseño profesional para poner el horario de trabajo.
   - Plantillas: en el celular de la vista previa, el mensaje no ocupa todo el ancho.
   - Pasar a ddSel los dos select nativos que quedan (50-agentes.js y 88-llamadas-ajustes.js).
+- Maqueta de la agenda, versión 3 (lienzo, versión 362): «Conectar» de Integraciones en estilo claro con borde, porque el usuario no quiso los botones negros; zonas para bajar dentro del modal (duración y días), porque la maqueta es de imágenes y no se puede deslizar. Despliegue de la clave de API: SUCCESS (24-nov, 11:18), /health 200.
