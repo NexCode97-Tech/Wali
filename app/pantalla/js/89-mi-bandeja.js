@@ -25,6 +25,8 @@
     mbEstabaAbierto = st.mbAbierto;
     let tras = bandeja;
     for (const k of ['menciones', 'finalizadas']) {
+      // Una sola vez cada uno (24-nov): la barra del integrante (62-vistas-rol.js) y 66-finalizadas también los ponen.
+      [...ul.querySelectorAll(`[data-nav="${k}"]`)].slice(1).forEach(y => { const l = y.closest('li'); if (l) l.remove(); });
       const x = li(k); if (!x) continue;
       if (!st.mbAbierto) { x.remove(); continue; }
       x.className = 'sub mb-sub' + (animar ? ' mb-entra' : ''); tras.after(x); tras = x;

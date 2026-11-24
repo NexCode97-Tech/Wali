@@ -314,14 +314,14 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .list-h .lq:focus-within{background:#fff}
 #tabs > button{line-height:normal}
 /* La barra del integrante como la maqueta RolesAuditor: alto de línea normal (opciones de 36 px), 16 px entre secciones,
-   títulos de sección sin raya, texto #374151, íconos de 18 en #6b7280 (azules en la actual) y puntos de 8. */
+   títulos de sección sin raya, íconos de 18 y puntos de 8. */
 .app.vr-int > .nav{gap:16px;line-height:normal}
 /* En celular 57-celular-menu.js mete lo de la barra en .cj-medio: por eso no va con «>». */
 #app.vr-aud .nav .topbar,#app.vr-aud .nav div:has(> #carpetas),#app.vr-aud .nav div:has(> #equipos),#app.vr-aud .nav div:has(> #canales){display:none}
 .app.vr-int > .nav .sec{margin:2px 0 6px;border-bottom:0}
-.app.vr-int > .nav li button:not(.bl-gr){color:#374151}
-.app.vr-int > .nav #principal button > svg.vr-ic{width:18px;height:18px;color:#6b7280;stroke-width:1.8}
-.app.vr-int > .nav #principal button[aria-current="true"],.app.vr-int > .nav #principal button[aria-current="true"] > svg.vr-ic{color:#0b0b10}
+/* Los colores los pone el tema oscuro de la barra (69-tema.js), igual que al líder: aquí no van los de la barra clara
+   de antes, que dejaban el módulo seleccionado en negro sobre negro (24-nov). */
+.app.vr-int > .nav #principal button > svg.vr-ic{width:18px;height:18px;stroke-width:1.8}
 .app.vr-int > .nav #etiquetas .dot,.app.vr-int > .nav #tags .dot{width:8px;height:8px}
 /* Sin acceso al CRM: sin buscador, filtrar, ordenar ni el estado de la lista (no hay nada que buscar). */
 .app.vr-sin .list-h .t > .dd,.app.vr-sin .list-h .t > .ic,.app.vr-sin .list-h .lq{display:none}
