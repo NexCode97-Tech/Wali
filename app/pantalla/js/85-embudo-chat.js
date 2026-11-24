@@ -7,7 +7,7 @@
 (() => {
   let abierta = 0, menuEtapa = false, menuTags = false, recien = '', selAntes = 0, compCasa = null;
   const conv2 = () => CONV.find(x => x.id === abierta);
-  const colorEtq = n => { const e = (typeof ETQ !== 'undefined' ? ETQ : []).find(x => x[0] === n); return e ? colorOk(e[1]) : '#9ca3af'; };
+  const colorEtq = (n, c) => { const e = (typeof ETQ !== 'undefined' ? ETQ : []).find(x => x[0] === n && (!c || eqDeEtapa(x) === equipoConv(c))) || (typeof ETQ !== 'undefined' ? ETQ : []).find(x => x[0] === n); return e ? colorOk(e[1]) : '#9ca3af'; };
   const canalN = k => ({wa:'WhatsApp', ig:'Instagram', fb:'Messenger', tg:'Telegram', tt:'TikTok', mail:'Correo', web:'Chat de la web'})[k] || 'WhatsApp';
   const frag = h => document.createRange().createContextualFragment(h);
 
@@ -80,9 +80,9 @@
     const et = (c.etq || [])[0] || 'Sin etapa', etapas = [...etapasActivas(), ...etapasPerdidas()];
     const det = [canalN(c.canal), equipoConv(c), c.asig || 'Sin asignar'].join(' · ');
     document.getElementById('ec-cab').replaceChildren(frag(`<div class="ec-cab"><span class="av" style="background:${AVC[c.id % AVC.length]}">${esc(ini(trNombreConv(c)))}</span><div class="ec-nm"><b>${esc(trNombreConv(c))}</b><small>${esc(det)}</small></div>
-      <button type="button" class="ec-et" data-ec-etapa="1" aria-haspopup="listbox" aria-expanded="${menuEtapa}"><i style="background:${colorEtq(et)}"></i>${esc(et)}${I('chev')}</button>
+      <button type="button" class="ec-et" data-ec-etapa="1" aria-haspopup="listbox" aria-expanded="${menuEtapa}"><i style="background:${colorEtq(et, c)}"></i>${esc(et)}${I('chev')}</button>
       <button type="button" class="ec-x" data-ec-cerrar="1" aria-label="Cerrar">${I('x')}</button>
-      ${menuEtapa ? `<div class="ec-menu" role="listbox">${etapas.map(n => `<button type="button" role="option" aria-selected="${n === et}" data-ec-pon="${esc(n)}"><i style="background:${colorEtq(n)}"></i>${esc(n)}</button>`).join('')}</div>` : ''}</div>${tagsHTML(c)}`));
+      ${menuEtapa ? `<div class="ec-menu" role="listbox">${etapas.map(n => `<button type="button" role="option" aria-selected="${n === et}" data-ec-pon="${esc(n)}"><i style="background:${colorEtq(n, c)}"></i>${esc(n)}</button>`).join('')}</div>` : ''}</div>${tagsHTML(c)}`));
     if (menuTags) { const q = document.getElementById('ec-tq'); if (q) q.focus({preventScroll: true}); }
     recien = '';
   }

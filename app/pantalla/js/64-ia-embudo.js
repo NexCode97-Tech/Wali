@@ -82,7 +82,7 @@
     const c = CONV.find(y => y.id === st.sel), ie = iaDeConv(c), a = String(x.a);
     const deshacer = !!(c && ie && m._id && ie.msgId === m._id && !ie.deshecha && (c.etq || [])[0] === a && !lectura());
     const razon = typeof x.razon === 'string' && x.razon.trim() ? `: ${esc(x.razon.trim())}` : '';
-    return `<div class="iae-evia">${I('ia')}<span>La IA la pasó a <i style="background:${colorOk(COL[a])}"></i> <b>${esc(a)}</b>${razon}</span>`
+    return `<div class="iae-evia">${I('ia')}<span>La IA la pasó a <i style="background:${c ? colorEtapa(a, equipoConv(c)) : colorOk(COL[a])}"></i> <b>${esc(a)}</b>${razon}</span>`
       + `${deshacer ? `<button type="button" class="iae-desh" data-iae-deshacer="${esc(m._id)}"${DESHACIENDO.has(c.id) ? ' disabled' : ''}>Deshacer</button>` : ''}</div>`;
   };
   document.getElementById('msgs').addEventListener('click', e => {
