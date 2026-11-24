@@ -299,7 +299,7 @@ const VALIDAR: Record<string, string> = { 'nombre-y-apellido': 'Nombre y apellid
 const pasoSchema = z.discriminatedUnion('tipo', [
   z.object({ tipo: z.literal('mensaje'), texto: textoApi('texto', 1000) }).strict(),
   z.object({ tipo: z.literal('pregunta'), texto: textoApi('texto', 1000), guardarEn: z.enum(['nombre', 'correo', 'ciudad', 'producto']), validar: z.enum(['nombre-y-apellido', 'texto-libre', 'correo', 'numero']), reintento: textoApi('reintento', 500).optional() }).strict(),
-  z.object({ tipo: z.literal('botones'), texto: textoApi('texto', 1000), opciones: z.array(textoApi('opción', 20)).min(1, 'Un paso de botones necesita al menos una opción.').max(6, 'Un paso de botones puede tener máximo 6 opciones.'), ponerEtiqueta: z.boolean().optional() }).strict(),
+  z.object({ tipo: z.literal('botones'), texto: textoApi('texto', 1000), opciones: z.array(textoApi('opción', 24)).min(1, 'Un paso de botones necesita al menos una opción.').max(6, 'Un paso de botones puede tener máximo 6 opciones.'), ponerEtiqueta: z.boolean().optional() }).strict(),
   z.object({ tipo: z.literal('etiqueta'), etiqueta: textoApi('etiqueta', 60) }).strict(),
   z.object({ tipo: z.literal('asignar'), equipo: textoApi('equipo', 80).optional(), miembroId: z.string().min(1).max(60).optional() }).strict(),
   z.object({ tipo: z.literal('avanzado'), datos: z.record(z.unknown()) }).strict(),
@@ -332,6 +332,9 @@ async function pasoAInterno(p: z.infer<typeof pasoSchema>, c: Catalogo): Promise
   if (p.tipo === 'pregunta') return { t: 'pregunta', txt: p.texto, guardar: GUARDAR_EN[p.guardarEn], validar: VALIDAR[p.validar], ...(p.reintento ? { reintento: p.reintento } : {}) }
   if (p.tipo === 'botones') {
     if (new Set(p.opciones.map((o: string) => o.toLowerCase())).size !== p.opciones.length) throw new ValidationError('Las opciones de un paso de botones no se pueden repetir.')
+    // Hasta 3 opciones van como botones de WhatsApp (20 caracteres); de 4 a 6 salen como lista (24 caracteres).
+    const largo = p.opciones.length <= 3 ? 20 : 24, pasada = p.opciones.find((o: string) => o.length > largo)
+    if (pasada) throw new ValidationError(`La opción «${pasada}» es muy larga: con ${p.opciones.length <= 3 ? '3 opciones o menos' : '4 a 6 opciones'} cada una puede tener máximo ${largo} caracteres.`)
     return { t: 'botones', txt: p.texto, ops: p.opciones, ...(p.ponerEtiqueta ? { guardar: 'Etiqueta' } : {}) }
   }
   if (p.tipo === 'etiqueta') { exigirEtiqueta(c, p.etiqueta); return { t: 'etiqueta', tag: p.etiqueta } }

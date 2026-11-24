@@ -151,7 +151,7 @@ GET /conversaciones?limite=100&amp;cursor=4521</code></pre>
 <table><tr><th>Paso</th><th>Campos</th></tr>
 <tr><td><code>mensaje</code></td><td><code>texto</code>. Puedes usar <code>{{nombre}}</code> si ya lo preguntaste.</td></tr>
 <tr><td><code>pregunta</code></td><td><code>texto</code>, <code>guardarEn</code> (nombre, correo, ciudad o producto), <code>validar</code> (nombre-y-apellido, texto-libre, correo o numero) y <code>reintento</code> (lo que dice si la respuesta no sirve).</td></tr>
-<tr><td><code>botones</code></td><td><code>texto</code> y <code>opciones</code> (hasta 6, de máximo 20 caracteres; en WhatsApp, con más de 3 opciones salen como lista con el botón «Ver opciones»). Con <code>ponerEtiqueta: true</code>, la opción elegida queda como etiqueta.</td></tr>
+<tr><td><code>botones</code></td><td><code>texto</code> y <code>opciones</code> (hasta 6; con 3 o menos, de máximo 20 caracteres cada una, y con 4 a 6, de máximo 24, porque en WhatsApp salen como lista con el botón «Ver opciones»). Con <code>ponerEtiqueta: true</code>, la opción elegida queda como etiqueta.</td></tr>
 <tr><td><code>etiqueta</code></td><td><code>etiqueta</code>: una que ya exista (créala con <code>POST /etiquetas</code>).</td></tr>
 <tr><td><code>asignar</code></td><td><code>equipo</code> (reparto automático en ese equipo) o <code>miembroId</code>. Termina el flujo, así que va de último. Sin este paso, al terminar pasa al equipo de la conversación.</td></tr>
 <tr><td><code>avanzado</code></td><td>Pasos que solo se arman en el CRM (la pregunta que reparte por área). Llegan así en <code>GET /flujos/:id</code>; para conservarlos, mándalos igual.</td></tr></table>
