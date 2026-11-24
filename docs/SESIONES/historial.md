@@ -288,3 +288,4 @@
   - Lienzo vacío (versión 366).
   - Ojo: Google puede pedir verificar el permiso calendar.freebusy en la pantalla de consentimiento del proyecto «Wali CRM».
 - Push hasta 587e352 (pedido «súbelo»): agenda del agente con el Google de Mi perfil, desplegable único en portal, tarjetas de Integraciones, círculos de la clave de API y hora de Llamadas. Revisando el despliegue en segundo plano.
+- Despliegue de la agenda del agente: SUCCESS (24-nov, 12:25), /health 200, sin errores en los registros de los primeros 15 minutos.
