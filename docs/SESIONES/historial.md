@@ -265,3 +265,25 @@
   - Desplegable «Hasta» tocable.
   - Se arregló que ningún toque respondía: las zonas quedaban sin alto.
   - Se quitaron los chips de escenarios y el texto de ayuda de los tableros. Es regla general, guardada en la memoria maquetas-interactivas.
+- Aprobada la maqueta de la agenda del agente y construida (ad91f96, sin push):
+  - Servidor:
+    - googleCalendario.ts pide también calendar.freebusy al conectar Google en Mi perfil y guarda si lo dio (libre). Nuevas funciones agendasDe() y ocupadoDe(), con freeBusy sobre el calendario principal de la persona.
+    - integraciones.ts sin cuenta de servicio (fuera GOOGLE_CALENDAR_SA y createSign). La conexión guarda persona, duración, horario, días, enlace y plantilla (mensaje con {horas}, hasta 400 caracteres).
+    - agendasCalendario() y la ruta GET /crm/integraciones/gcal/agendas devuelven las personas del espacio con su estado: conectado, sin-permiso o sin-conectar.
+    - El agente recibe «mensaje» y la nota de usarlo tal cual, cambiando {horas} por dos o tres opciones.
+  - Pantalla:
+    - 50-agentes.js trae el modal aprobado con datos reales. La tarjeta de Google Calendar dice «Con el Google de una persona de tu equipo», y las tarjetas de Integraciones tienen la ayuda en su línea y el botón claro a todo el ancho.
+    - 10-nucleo.js tiene el desplegable único rediseñado y en portal: la lista flota en document.body y, al tocar una opción, vuelve a su sitio y el clic se repite ahí, así los manejadores de siempre lo reciben. También se cierra con Esc y se recoloca al deslizar.
+    - 89-api.js: círculos .ak-n en amarillo con número negro.
+    - 88-llamadas-ajustes.js: la hora del horario propio deja de ser un select nativo y usa ddSel.
+  - Pruebas en Edge sobre el CRM armado, en escritorio y celular:
+    - personas y aviso (sin-permiso);
+    - la lista flota dentro de la pantalla y abre en la hora elegida;
+    - elegir 9:00 a. m. actualiza el ejemplo;
+    - editar el mensaje;
+    - el envío al servidor lleva persona, horario, días y plantilla;
+    - el modal se cierra.
+    En Agentes, el desplegable cambia la opción. tsc limpio.
+  - El error de Contactos con los datos de prueba ya existía antes de este cambio.
+  - Lienzo vacío (versión 366).
+  - Ojo: Google puede pedir verificar el permiso calendar.freebusy en la pantalla de consentimiento del proyecto «Wali CRM».
