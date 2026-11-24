@@ -309,3 +309,5 @@
   - Todo valida equipos, miembros, etiquetas, etapas y líneas del espacio, y se guarda por guardarAjusteRuta (permisos, aviso en vivo, 409 si alguien guardó al tiempo).
   - Documentación (api-docs.html): secciones nuevas de Flujos, Agentes de IA y Reglas con ejemplos, y filas nuevas en catálogos. La tarjeta de permisos de la clave (89-api.js) dice «Crea y edita flujos, agentes de IA y reglas».
   - tsc limpio. Sin pruebas automáticas en el servidor; se revisa en producción después del push.
+
+- 24-nov 12:38 · Desplegado 901ccf1 (API de automatizaciones) en Railway, estado SUCCESS. Verificado en producción: /crm/api/v1/reglas sin clave responde 401, la documentación /crm/docs/api trae las secciones flujos, agentes y reglas, y /crm/health responde 200.
