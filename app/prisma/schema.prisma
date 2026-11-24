@@ -645,3 +645,26 @@ model CrmApiEnvio {
   @@index([webhookId])
   @@map("crm_api_envios")
 }
+
+/// Registro interno de errores (24-nov, utils/registroErrores.ts): cada error o aviso de la plataforma agrupado por huella.
+/// Solo lo leen las herramientas internas; no tiene pantalla. Sin datos de clientes ni credenciales (se tachan al guardar).
+model RegistroError {
+  huella   String   @id
+  /// aviso, error o fatal.
+  nivel    String
+  /// De dónde viene: el prefijo del registro («crm instagram»), pantalla o proceso.
+  area     String
+  mensaje  String
+  /// La última vez que pasó: datos del registro, página, pila (tachados).
+  ejemplo  Json     @default("{}")
+  /// Empresas donde pasó.
+  espacios String[] @default([])
+  veces    Int      @default(0)
+  primera  DateTime @default(now())
+  ultima   DateTime @default(now())
+  /// nuevo, revisando, resuelto o reabierto.
+  estado   String   @default("nuevo")
+
+  @@index([ultima])
+  @@map("registro_errores")
+}

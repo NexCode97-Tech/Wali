@@ -1,5 +1,7 @@
 import './setTz'
 import './instrument'
+import { vigilarProceso } from './utils/registroErrores'
+vigilarProceso()
 import crypto from 'crypto'
 import express, { Request, Response, NextFunction } from 'express'
 import helmet from 'helmet'

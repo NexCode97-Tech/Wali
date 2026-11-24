@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import type { Request, Response } from 'express'
 import { BASE } from '../utils/base'
 import { logger } from '../utils/logger'
+import { registrarError } from '../utils/registroErrores'
 
 /**
  * Vigilante de las pantallas (13-nov, aprobado): los errores del navegador (CRM, superadmin, inicio de sesión y el
@@ -38,8 +39,25 @@ const destino = (() => {
 })()
 const PERMITIDOS = new Set(['event', 'client_report'])
 
+/** Los errores de las pantallas también quedan en el registro interno (utils/registroErrores.ts), con o sin Sentry. */
+function anotarDePantalla(cuerpo: string) {
+  try {
+    const salto = String.fromCharCode(10), lineas = cuerpo.split(salto)
+    for (let i = 1; i + 1 < lineas.length; i += 2) {
+      if (String((JSON.parse(lineas[i]) as { type?: unknown }).type ?? '') !== 'event') continue
+      const ev = JSON.parse(lineas[i + 1]) as { exception?: { values?: { type?: string; value?: string; stacktrace?: { frames?: { filename?: string; function?: string; lineno?: number }[] } }[] }; message?: string | { formatted?: string }; request?: { url?: string }; tags?: Record<string, unknown>; level?: string }
+      const x = ev.exception?.values?.[0]
+      const msg = x ? `${x.type ?? 'Error'}: ${x.value ?? ''}` : typeof ev.message === 'string' ? ev.message : ev.message?.formatted ?? '(sin texto)'
+      const marcos = (x?.stacktrace?.frames ?? []).slice(-6).reverse().map(f => `${f.function ?? '?'} (${String(f.filename ?? '').split('/').pop()}:${f.lineno ?? ''})`)
+      const donde = String(ev.request?.url ?? '').replace(/^https?:\/\/[^/]+/, '').split('?')[0]
+      registrarError({ nivel: ev.level === 'warning' ? 'aviso' : 'error', area: 'pantalla', mensaje: msg, detalle: { pagina: donde, pila: marcos.join(salto), ...(ev.tags ?? {}) } })
+    }
+  } catch { /* un aviso mal formado no se anota */ }
+}
+
 export async function tunelVigia(req: Request, res: Response) {
   const cuerpo = typeof req.body === 'string' ? req.body : ''
+  if (cuerpo) anotarDePantalla(cuerpo)
   if (!destino || !cuerpo) { res.status(204).end(); return }
   try {
     const lineas = cuerpo.split('\n')
