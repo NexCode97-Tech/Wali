@@ -24,8 +24,8 @@
     bien: svg('<circle cx="12" cy="12" r="9"/><path d="m8.5 12.2 2.4 2.4 4.6-4.9"/>'),
   };
   // Lo que puede hacer cada permiso (maqueta «Nueva clave de API», 19-nov): se ve en el modal y cambia al elegir.
-  const LEE = ['Conversaciones y mensajes', 'Contactos', 'Equipos y miembros', 'Etapas y etiquetas', 'Flujos y agentes de IA'];
-  const HACE = ['Asigna conversaciones, también en lote', 'Cambia la etapa y crea etapas', 'Pone etiquetas y finaliza', 'Crea contactos', 'Enciende o apaga flujos y agentes'];
+  const LEE = ['Conversaciones y mensajes', 'Contactos', 'Equipos y miembros', 'Etapas y etiquetas', 'Flujos, agentes de IA y reglas'];
+  const HACE = ['Asigna conversaciones, también en lote', 'Cambia la etapa y crea etapas y etiquetas', 'Pone etiquetas y finaliza', 'Crea contactos', 'Crea y edita flujos, agentes de IA y reglas'];
   const OPS = [['lectura', 'ojo', 'Solo lectura', 'Consulta el CRM sin cambiar nada.'], ['escritura', 'rayo', 'Lectura y acciones', 'Consulta y trabaja en el CRM.']];
   const cuandoVence = k => {
     if (k === 'nunca') return 'No vence. Revócala cuando ya no la uses.';
