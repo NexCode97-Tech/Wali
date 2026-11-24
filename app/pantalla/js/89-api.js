@@ -73,6 +73,16 @@
 .ak-cp{position:relative;height:36px;min-width:104px;border-radius:9px;background:#0b0b10;color:#fff;font-size:13px;font-weight:600;overflow:hidden;transition:background .2s,transform .14s}.ak-cp:active{transform:scale(.96)}
 .ak-cp>span{display:flex;align-items:center;justify-content:center;gap:6px;transition:transform .3s cubic-bezier(.32,.72,0,1),opacity .2s}.ak-cp svg.i{width:15px;height:15px}
 .ak-cp-b{position:absolute;inset:0;transform:translateY(100%);opacity:0}.ak-cp.ok{background:#059669}.ak-cp.ok .ak-cp-a{transform:translateY(-100%);opacity:0}.ak-cp.ok .ak-cp-b{transform:none;opacity:1}
+.ak-meta{margin:-4px 0 0;font-size:12.5px;color:var(--ink3)}.ak-meta b{color:var(--ink2);font-weight:600}
+.ak-con{display:grid;gap:10px;padding:14px;border-radius:14px;background:#f7f8fa}
+.ak-con-t{font-size:13px;font-weight:600;color:#1f2937}
+.ak-pasos{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.ak-pasos li{display:flex;gap:12px;align-items:flex-start;opacity:0;transform:translateY(6px);animation:ak-paso .32s cubic-bezier(.23,1,.32,1) forwards;animation-delay:calc(120ms + var(--i) * 60ms)}
+@keyframes ak-paso{to{opacity:1;transform:none}}
+.ak-n{width:24px;height:24px;border-radius:50%;background:#0b0b10;color:#ffd21f;display:grid;place-items:center;font-size:12px;font-weight:700;line-height:1;flex:none}
+.ak-pasos li>span:last-child{display:grid;gap:2px;min-width:0}.ak-pasos b{font-size:13.5px;font-weight:600;color:#1f2937}.ak-pasos small{font-size:12.5px;color:var(--ink3);line-height:1.45}
+.ak-pasos small a{color:#0b0b10;font-weight:600;text-decoration:underline;text-underline-offset:2px}
+.ak-cp2{justify-self:start;margin-top:6px;min-width:178px;background:#fff;color:#0b0b10;box-shadow:inset 0 0 0 1px #d6dae1}.ak-cp2.ok{background:#059669;color:#fff;box-shadow:none}
 .ak-pts{list-style:none;margin:0;padding:0;display:grid;gap:8px;font-size:12.5px;color:var(--ink2)}.ak-pts li{display:flex;gap:9px;align-items:flex-start}.ak-pts svg.i{width:16px;height:16px;color:var(--ink3);margin-top:1px;flex:none}
 .ak-w{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line2,#eef0f3);border-radius:12px;transition:background .5s,border-color .5s}
 .ak-w.nueva{animation:ak-entra .5s cubic-bezier(.32,.72,0,1) both;background:#fffbea;border-color:#f2d24c}.ak-w.sale{animation:ak-sale .38s cubic-bezier(.32,.72,0,1) both;overflow:hidden}
@@ -141,7 +151,7 @@
   .ak-f{flex-wrap:wrap}.ak-rev{margin-left:50px}.ak-doc{flex-wrap:wrap}.ak-doc .btn{width:100%;justify-content:center}
   .ak-clave{flex-direction:column;align-items:stretch}.ak-cp{width:100%}
 }
-@media (prefers-reduced-motion:reduce){.ak-seg::before,.ak-cap .ak-ci svg.i,.ak-o{transition-duration:0s!important}.ak-f,.ak-w,.ak-r .pto,.ak-ck .v,.ak-cp>span,.ak-pr>span{animation:none!important;transition:none!important}}
+@media (prefers-reduced-motion:reduce){.ak-pasos li{animation:none!important;opacity:1;transform:none}.ak-seg::before,.ak-cap .ak-ci svg.i,.ak-o{transition-duration:0s!important}.ak-f,.ak-w,.ak-r .pto,.ak-ck .v,.ak-cp>span,.ak-pr>span{animation:none!important;transition:none!important}}
 </style>`);
 
   const hace = iso => {
@@ -231,9 +241,16 @@
   function dlgCopia(k){
     abrirDialogo(`<div class="qd-cab"><span class="ak-okic">${IC.escudo}</span><h3>Copia tu clave ahora</h3><span>Por seguridad solo la vas a ver esta vez. Guárdala en un lugar seguro. Si la pierdes, revócala y crea otra.</span></div>
       <div class="ak-clave"><code id="ak-c">${esc(API.clave)}</code><button type="button" class="ak-cp" data-ak-copiar="1"><span class="ak-cp-a">${IC.copia}Copiar</span><span class="ak-cp-b">${IC.chulo}Copiada</span></button></div>
-      <ul class="ak-pts"><li>${IC.lapiz}<span><b>${esc(k.nombre)}</b> · ${(PERMISO[k.permiso] || '').toLowerCase()}${k.venceEn ? ' · vence el ' + new Date(k.venceEn).toLocaleDateString('es-CO', {day: 'numeric', month: 'short', year: 'numeric'}) : ' · no vence'}</span></li><li>${IC.ojo}<span>No la compartas por chat ni correo. Pégala directo en el sistema que la va a usar.</span></li></ul>
+      <p class="ak-meta"><b>${esc(k.nombre)}</b> · ${(PERMISO[k.permiso] || '').toLowerCase()}${k.venceEn ? ' · vence el ' + new Date(k.venceEn).toLocaleDateString('es-CO', {day: 'numeric', month: 'short', year: 'numeric'}) : ' · no vence'}</p>
+      <div class="ak-con"><b class="ak-con-t">Conéctala en 3 pasos</b>
+        <ol class="ak-pasos">
+          <li style="--i:0"><span class="ak-n">1</span><span><b>Guárdala en tu sistema</b><small>Como clave secreta. Nunca la pegues en un chat ni en un correo.</small></span></li>
+          <li style="--i:1"><span class="ak-n">2</span><span><b>Copia las instrucciones para tu IA</b><small>Pégalas en Claude o en la IA que uses.</small><button type="button" class="ak-cp ak-cp2" data-ak-ia="1"><span class="ak-cp-a">${IC.copia}Copiar instrucciones</span><span class="ak-cp-b">${IC.chulo}Copiadas</span></button></span></li>
+          <li style="--i:2"><span class="ak-n">3</span><span><b>Dile qué quieres lograr</b><small>Lee la documentación y te arma la conexión. <a href="__BASE__/docs/api" target="_blank" rel="noopener">Ver la documentación</a></small></span></li>
+        </ol></div>
       <div class="ft2"><button type="button" class="btn pri" data-ak-listo="1">${IC.chulo}Ya la guardé</button></div>`, 'ak-copia');
   }
+  const textoIA = () => `Quiero conectar mi sistema con el CRM Wali por su API. La dirección es ${location.origin}__BASE__/api/v1 y la documentación está en ${location.origin}__BASE__/docs/api. La clave va en el encabezado Authorization: Bearer y la tengo guardada como WALI_API_KEY. Léela, pregúntame qué quiero lograr y hazme la integración paso a paso.`;
   function dlgRevocar(k){
     abrirDialogo(`<div class="qd-cab"><h3>¿Revocar «${esc(k.nombre)}»?</h3><span>Deja de funcionar en este momento y el sistema que la usa ya no podrá entrar. No se puede deshacer.</span></div>
       <div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" style="background:#dc2626;border-color:#dc2626;color:#fff" data-ak-revocar-si="${esc(k.id)}">Revocar</button></div>`);
@@ -265,6 +282,8 @@
       } catch (err) { API.creando = false; dlgNueva(); toast(err.message || 'No se pudo crear la clave'); }
       return;
     }
+    const ia = t.closest('[data-ak-ia]');
+    if (ia) { try { await navigator.clipboard.writeText(textoIA()); ia.classList.add('ok'); } catch { toast('No se pudo copiar. Abre la documentación y cópialas desde ahí.'); } return; }
     const cp = t.closest('[data-ak-copiar]');
     if (cp) { try { await navigator.clipboard.writeText(API.clave || ''); cp.classList.add('ok'); API.copiada = true; } catch { toast('No se pudo copiar. Selecciónala y cópiala a mano.'); } return; }
     if (t.closest('[data-ak-listo]')) { API.clave = null; cerrarDialogo(); await cargar(); setTimeout(() => { API.nueva = null; }, 1800); return; }
