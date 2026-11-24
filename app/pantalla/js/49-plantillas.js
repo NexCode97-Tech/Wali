@@ -275,8 +275,10 @@ function tpCuentas(){
 }
 const tpVisible = p => (!st.tp.estado || (!p.borrador && p.e === st.tp.estado)) && (!st.tp.eq || (Array.isArray(p.equipos) && p.equipos.length ? p.equipos.includes(st.tp.eq) : true));
 const tpBusca = p => norm(`${p.n} ${p.b || ''} ${p.c || ''}`);
-// Las plantillas las crean, editan y borran los líderes (las rutas del servidor son solo para ellos).
-const puedeEditarTpl = () => st.rol === 'l';
+// Las plantillas las crean, editan y borran quienes configuran el CRM (rol ADMIN o LIDER_VENTAS de la plataforma), la
+// misma regla de las rutas del servidor (soloLideres en crmWhatsapp.ts). No depende de liderar un equipo: un ADMIN que
+// está en un equipo como integrante también las crea, y el líder de un equipo sin ese rol no (24-nov).
+const puedeEditarTpl = () => puedeConfigurarCrm();
 
 function paginaPlantillas(){
   const costos = `<div class="tp-costos"><span class="tp-costo"><i style="background:${TP_CAT_COL.Marketing}"></i>Marketing <b>0,0125 USD</b> por envío</span><span class="tp-costo"><i style="background:${TP_CAT_COL.Utilidad}"></i>Utilidad <b>0,0008 USD</b> por envío</span><span class="tp-costo">Precios de Meta en Colombia</span></div>`;
