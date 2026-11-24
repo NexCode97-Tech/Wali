@@ -259,3 +259,9 @@
   - Pasar a ddSel los dos select nativos que quedan (50-agentes.js y 88-llamadas-ajustes.js).
 - Maqueta de la agenda, versión 3 (lienzo, versión 362): «Conectar» de Integraciones en estilo claro con borde, porque el usuario no quiso los botones negros; zonas para bajar dentro del modal (duración y días), porque la maqueta es de imágenes y no se puede deslizar. Despliegue de la clave de API: SUCCESS (24-nov, 11:18), /health 200.
 - Maqueta de la agenda, versión 4 (lienzo, versión 363): por pedido del usuario se dejó un solo modal (sin dividirlo) y la pantalla de cada equipo se desliza. Los estados con el modal abierto se capturaron en una pantalla alta (escritorio 1220 px, celular 1300 px) y gen_gcal5.py arma el tablero con la pantalla deslizable, cada imagen con su proporción y las zonas en porcentaje.
+- Maqueta de la agenda, versión 5 (lienzo, versión 364):
+  - El ejemplo pasó a ser el mensaje editable con que el agente ofrece las citas. Lleva el espacio «Horas libres» (en producción, {horas}), que se inserta con un botón, y la aclaración de que solo lo usan los agentes de IA con Google Calendar encendido en Capacidades.
+  - Círculos de los pasos en amarillo con el número negro, como Primeros pasos, Plantillas y Llamadas. Ojo: el modal de la clave de API (.ak-n, ya en producción) quedó negro con amarillo y hay que igualarlo.
+  - Desplegable «Hasta» tocable.
+  - Se arregló que ningún toque respondía: las zonas quedaban sin alto.
+  - Se quitaron los chips de escenarios y el texto de ayuda de los tableros. Es regla general, guardada en la memoria maquetas-interactivas.
