@@ -57,9 +57,6 @@ export interface DatosInstagram {
 interface Yo { user_id?: string | number; id?: string; username?: string; name?: string; account_type?: string; provisional?: boolean }
 
 /** Meta responde a veces «Unsupported request - method type: get» (código 100) en llamadas GET válidas, según la cuenta. */
-/** Lo que se le dice al cliente cuando Meta entrega el token pero no deja usarlo para nada (24-nov, Nacarbe): pasa con
- *  cuentas personales o recién cambiadas a profesionales. El texto técnico de Meta («Unsupported request…») no le sirve. */
-export const CUENTA_NO_PROFESIONAL = 'Instagram no deja usar esta cuenta para mensajes. Revisa que sea una cuenta profesional (Empresa): en Instagram, Configuración › Tipo de cuenta y herramientas. Después vuelve a conectarla.'
 const esFallaDeMetodo = (e: unknown) => e instanceof ErrorMeta && e.codigo === 100 && /unsupported (request|post request|get request)/i.test(e.textoMeta || e.message)
 
 /** Suscribe (o suelta) la cuenta a los avisos de la app. Meta documenta `/{id de la cuenta}/subscribed_apps` en
@@ -211,7 +208,7 @@ async function guardarCuenta(o: { modo: 'manual' | 'meta'; appId: string; appSec
     // La cuenta, suscrita a la app: sin esto no llega ningún mensaje.
     await suscribirCuenta(o.token, [igId, String(me.id ?? '')])
   } catch (e) {
-    error = esFallaDeMetodo(e) ? CUENTA_NO_PROFESIONAL : porQueNoConecta(e, 'La cuenta está bien, pero no se pudo configurar el aviso de mensajes en Meta').message
+    error = porQueNoConecta(e, 'La cuenta está bien, pero no se pudo configurar el aviso de mensajes en Meta').message
   }
   if (error) logger.warn(`[CRM instagram] ${c.id}: ${error}`)
   return prisma.crmConexion.update({ where: { id: c.id }, data: { estado: error ? 'error' : 'conectada', error, datos: json(datos) }, include: { _count: { select: { lineas: true } } } })
@@ -318,8 +315,6 @@ export async function terminarInstagram(query: Json, baseApi: string): Promise<{
     const hecha = await import('./espacio').then(m => m.enEspacio(c.espacioId, () => guardarCuenta({ modo: 'meta', appId: p.appId, token, baseApi, previaId: c.id, igIdRespaldo, tokenCorto: !largo })))
     await import('./espacio').then(m => m.enEspacio(c.espacioId, () => emitirConexiones(null)))
     const u = obj(hecha.datos).igUsuario
-    // Si Meta no dejó usar la cuenta para nada, no quedó conectada: la ventana no dice «Conectado».
-    if (hecha.error === CUENTA_NO_PROFESIONAL) return { ok: false, texto: CUENTA_NO_PROFESIONAL }
     return { ok: true, texto: hecha.estado === 'error' ? `La cuenta quedó conectada, pero falta un paso: ${hecha.error}` : `Listo: ${u ? `@${u}` : 'la cuenta de Instagram'} quedó conectada. Ya puedes cerrar esta ventana.`, espacioId: c.espacioId }
   } catch (e) {
     logger.warn(`[CRM instagram] no se pudo terminar la conexión ${c.id}: ${(e as Error).message}`)
@@ -352,7 +347,7 @@ export async function revisarInstagram(id: string, por: string | null): Promise<
         error = 'Los avisos de Instagram de tu app no llegan al CRM. En tu app de Meta, Webhooks, «Instagram», pon la dirección y el código de esta conexión'
       }
     }
-  } catch (e) { estado = 'error'; error = esFallaDeMetodo(e) ? CUENTA_NO_PROFESIONAL : porQueNoConecta(e, 'No se pudo revisar la cuenta').message }
+  } catch (e) { estado = 'error'; error = porQueNoConecta(e, 'No se pudo revisar la cuenta').message }
   const f = await prisma.crmConexion.update({ where: { id }, data: { estado, error }, include: { _count: { select: { lineas: true } } } })
   await emitirConexiones(por)
   return conexionAFront(f)
