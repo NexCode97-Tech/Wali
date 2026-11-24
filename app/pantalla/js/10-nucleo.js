@@ -105,12 +105,70 @@ function ponerEstado(v){ AJ.estado = v; if (AJ.estado === 'Ausente') AJ.reparto 
 // Desplegable propio para elegir UNA opción.
 // Cada opción lleva el mismo data-atributo que usaban las píldoras, así los manejadores no cambian.
 const ddSel = (attr, opciones, sel, ph = 'Elige una opción') => { const o = opciones.map(x => Array.isArray(x) ? x : [x, x]); const act = o.find(([v]) => v === sel); return `<div class="dd dsel" style="position:relative;min-width:220px"><button type="button" class="sel" data-dsel-open="1"><span style="flex:1;text-align:left;${act ? '' : 'color:var(--ink4)'}">${esc(act ? act[1] : ph)}</span>${I('chev')}</button><div class="menu" style="left:0;right:auto;width:100%;max-height:260px;overflow-y:auto" hidden>${o.map(([v, l]) => `<button type="button" ${attr}="${esc(v)}" aria-selected="${v === sel}">${esc(l)}${v === sel ? I('check') : ''}</button>`).join('')}</div></div>`; };
+// Desplegable único (24-nov, maqueta aprobada «Agenda del agente»): al abrir, la lista se monta en document.body con
+// position fixed, así ningún modal, tarjeta ni tabla la corta. Abre hacia abajo; si no cabe y arriba hay más espacio,
+// hacia arriba. Arranca con la opción elegida a la vista. Al tocar una opción, la lista vuelve a su sitio y el clic se
+// repite ahí: los manejadores de cada pantalla (delegados en #page, #ov-x, etc.) siguen recibiéndolo igual que antes.
+const ddAbierto = () => document.querySelector('.menu.dd-flota');
+function ddColocar(){
+  const m = ddAbierto(); if (!m) return;
+  const b = m._b; if (!b || !b.isConnected) { ddCerrar(); return; }
+  const r = b.getBoundingClientRect();
+  if (r.bottom < 0 || r.top > innerHeight) { ddCerrar(); return; }
+  const abajo = innerHeight - r.bottom - 12, arriba = r.top - 12, sube = abajo < 240 && arriba > abajo;
+  Object.assign(m.style, {position: 'fixed', right: 'auto', width: 'max-content', minWidth: r.width + 'px', maxWidth: Math.min(380, innerWidth - 16) + 'px',
+    top: sube ? 'auto' : (r.bottom + 6) + 'px', bottom: sube ? (innerHeight - r.top + 6) + 'px' : 'auto', maxHeight: Math.max(160, Math.min(320, sube ? arriba : abajo)) + 'px', left: r.left + 'px'});
+  const w = m.offsetWidth; if (r.left + w > innerWidth - 8) m.style.left = Math.max(8, r.right - w) + 'px';
+  m.classList.toggle('arriba', sube);
+}
+function ddCerrar(){
+  const m = ddAbierto(); if (!m) return;
+  m.hidden = true; m.classList.remove('dd-flota', 'arriba'); m.style.cssText = m._css || '';
+  const b = m._b; m._b = null;
+  if (b) { b.classList.remove('abierto'); b.setAttribute('aria-expanded', 'false'); }
+  if (b && b.isConnected) b.after(m); else m.remove();
+}
+function ddAbrir(b){
+  const m = b.nextElementSibling; if (!m || !m.classList.contains('menu')) return;
+  m._b = b; m._css = m.style.cssText; b.classList.add('abierto'); b.setAttribute('aria-expanded', 'true');
+  document.body.append(m); m.classList.add('dd-flota'); m.hidden = false; ddColocar();
+  const s = m.querySelector('[aria-selected="true"]'); if (s) m.scrollTop = Math.max(0, s.offsetTop - m.clientHeight / 2 + s.offsetHeight / 2);
+}
+/** El .dsel de un elemento, también cuando la lista está flotando en document.body. */
+const ddCasa = el => { const m = el.closest('.dd-flota'); return m && m._b ? m._b.parentNode : el.closest('.dsel'); };
 document.addEventListener('click', e => {
-  if (e.target.closest('.msearch')) return;
+  const m = ddAbierto();
+  if (m && m.contains(e.target)) {
+    if (e.target.closest('.msearch')) return;
+    const op = e.target.closest('button'); if (!op) return;
+    e.stopPropagation(); e.preventDefault();
+    ddCerrar(); op.click();
+    return;
+  }
   const b = e.target.closest('[data-dsel-open]');
-  document.querySelectorAll('.dsel .menu').forEach(m => { if (!b || m !== b.nextElementSibling) m.hidden = true; });
-  if (b) { e.stopPropagation(); b.nextElementSibling.hidden = !b.nextElementSibling.hidden; }
+  if (b) { e.stopPropagation(); const mismo = m && m._b === b; ddCerrar(); if (!mismo) ddAbrir(b); return; }
+  if (m) ddCerrar();
 }, true);
+document.addEventListener('keydown', e => { const m = ddAbierto(); if (e.key === 'Escape' && m) { e.stopPropagation(); const b = m._b; ddCerrar(); if (b) b.focus(); } }, true);
+addEventListener('scroll', e => { const m = ddAbierto(); if (m && !(e.target instanceof Node && m.contains(e.target))) ddColocar(); }, true);
+addEventListener('resize', () => ddColocar());
+document.head.insertAdjacentHTML('beforeend', `<style>
+.dsel > .sel{min-height:40px;padding:0 12px;border:1px solid #e5e9f0;border-radius:11px;background:#fff;font-size:13.5px;color:#0b0b10;gap:10px;transition:border-color .15s ease-out,box-shadow .15s ease-out,background .15s ease-out}
+.dsel > .sel:hover{border-color:#cbd5e1;background:#fcfcfd}
+.dsel > .sel:focus-visible,.dsel > .sel.abierto{outline:0;border-color:#0b0b10;box-shadow:0 0 0 3px rgba(255,210,31,.45)}
+.dsel > .sel > svg{transition:transform .22s cubic-bezier(.16,1,.3,1)}
+.dsel > .sel.abierto > svg{transform:rotate(180deg);color:#0b0b10}
+.menu.dd-flota{z-index:400;padding:6px;border:1px solid #e9edf3;border-radius:14px;background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.06),0 18px 44px -14px rgba(15,23,42,.28);display:grid;gap:1px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;transform-origin:top center;animation:dd-abre .18s cubic-bezier(.16,1,.3,1)}
+.menu.dd-flota.arriba{transform-origin:bottom center;animation-name:dd-abre-arriba}
+@keyframes dd-abre{from{opacity:0;transform:translateY(-4px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes dd-abre-arriba{from{opacity:0;transform:translateY(4px) scale(.98)}to{opacity:1;transform:none}}
+.menu.dd-flota > button{min-height:38px;padding:8px 10px;border-radius:9px;font-size:13.5px;font-weight:400;color:#374151;transition:background .12s ease-out,color .12s ease-out}
+.menu.dd-flota > button:hover{background:#f4f5f7;color:#0b0b10}
+.menu.dd-flota > button[aria-selected="true"]{background:#fff8d6;color:#0b0b10;font-weight:600}
+.menu.dd-flota > button > svg{width:16px;height:16px;margin-left:auto;color:#0b0b10;flex:none}
+.menu.dd-flota .msearch{position:sticky;top:-6px;z-index:1;min-height:38px;border-radius:9px!important;background:#fff;box-shadow:0 -6px 0 #fff}
+@media (prefers-reduced-motion:reduce){.menu.dd-flota{animation:none}.dsel > .sel > svg{transition:none}}
+</style>`);
 /* Origen del contacto (8-oct, maqueta aprobada): megáfono, el logo real de la plataforma y el nombre del anuncio;
    sin anuncio, el logo y el nombre del canal por el que llegó. */
 const LOGOS_ORIGEN = {

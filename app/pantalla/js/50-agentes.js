@@ -599,7 +599,7 @@ const INTEG_UI = {
     pasos:['En Shopify, entra a Configuración, Apps y canales de venta, Desarrollar apps, y crea una app.', 'En Configuración de la API de Admin, dale solo el permiso read_orders (leer pedidos) e instálala.', 'Copia aquí el dominio de tu tienda (termina en .myshopify.com) y el token de acceso de la API de Admin.']},
   // El ícono oficial de Google Calendar (2020).
   gcal:{logo:'<svg viewBox="0 0 200 200" aria-hidden="true"><g transform="translate(3.75 3.75)"><path fill="#fff" d="M148.882 43.618l-47.368-5.263-57.895 5.263L38.355 96.25l5.263 52.632 52.632 6.579 52.632-6.579 5.263-53.947z"/><path fill="#1A73E8" d="M65.211 125.276c-3.934-2.658-6.658-6.539-8.145-11.671l9.132-3.763c.829 3.158 2.276 5.605 4.342 7.342 2.053 1.737 4.553 2.592 7.474 2.592 2.987 0 5.553-.908 7.697-2.724s3.224-4.132 3.224-6.934c0-2.868-1.132-5.211-3.395-7.026s-5.105-2.724-8.5-2.724h-5.276v-9.039H76.5c2.921 0 5.382-.789 7.382-2.368 2-1.579 3-3.737 3-6.487 0-2.447-.895-4.395-2.684-5.855s-4.053-2.197-6.803-2.197c-2.684 0-4.816.711-6.395 2.145s-2.724 3.197-3.447 5.276l-9.039-3.763c1.197-3.395 3.395-6.395 6.618-8.987 3.224-2.592 7.342-3.895 12.342-3.895 3.697 0 7.026.711 9.974 2.145 2.947 1.434 5.263 3.421 6.934 5.947 1.671 2.539 2.5 5.382 2.5 8.539 0 3.224-.776 5.947-2.329 8.184-1.553 2.237-3.461 3.947-5.724 5.145v.539c2.987 1.25 5.421 3.158 7.342 5.724 1.908 2.566 2.868 5.632 2.868 9.211s-.908 6.776-2.724 9.579c-1.816 2.803-4.329 5.013-7.513 6.618-3.197 1.605-6.789 2.421-10.776 2.421-4.618.013-8.881-1.316-12.815-3.974zM121.25 79.961l-9.974 7.25-5.013-7.605 17.987-12.974h6.895v61.197h-9.895z"/><path fill="#EA4335" d="M148.882 196.25l47.368-47.368-23.684-10.526-23.684 10.526-10.526 23.684z"/><path fill="#34A853" d="M33.092 172.566l10.526 23.684h105.263v-47.368H43.618z"/><path fill="#4285F4" d="M12.039-3.75C3.316-3.75-3.75 3.316-3.75 12.039v136.842l23.684 10.526 23.684-10.526V43.618h105.263l10.526-23.684L148.882-3.75z"/><path fill="#188038" d="M-3.75 148.882v31.579c0 8.724 7.066 15.789 15.789 15.789h31.579v-47.368z"/><path fill="#FBBC04" d="M148.882 43.618v105.263h47.368V43.618l-23.684-10.526z"/><path fill="#1967D2" d="M196.25 43.618V12.039c0-8.724-7.066-15.789-15.789-15.789h-31.579v47.368z"/></g></svg>',
-    cat:'Agenda', ayuda:'Compartiendo tu calendario con el CRM', para:'Para que los agentes IA ofrezcan los horarios libres de tu agenda'},
+    cat:'Agenda', ayuda:'Con el Google de una persona de tu equipo', para:'Para que los agentes IA ofrezcan los horarios libres de tu agenda'},
 };
 const integLogo = id => (INTEG_UI[id] || {}).logo || I('plug');
 function integCargar(){
@@ -772,52 +772,260 @@ document.getElementById('ov-x').addEventListener('click', e => {
     .catch(err => { g.disabled = false; g.textContent = ''; g.insertAdjacentHTML('beforeend', `${I('link')}Conectar`); toast(err.message); });
 });
 
-/* Google Calendar (6-oct): se conecta compartiendo el calendario con el correo del CRM («Ver solo información de
-   disponible/ocupado») y diciendo cuánto dura cada cita, en qué horario y días se dan, y el enlace para reservar. */
+/* Google Calendar del agente (24-nov, maqueta aprobada «Agenda del agente»): sin cuenta robot. Cada persona conecta
+   su propio Google en Mi perfil y aquí se elige en la agenda de quién se ofrecen las citas; el CRM solo ve si cada hora
+   está libre u ocupada. Un solo modal: 1) la agenda, 2) el horario de las citas (duración, días, desde y hasta con el
+   desplegable único, enlace opcional) y el mensaje con que el agente ofrece las citas, editable, con el espacio
+   «Horas libres» ({horas}) que el agente llena con las horas reales. Pie fijo con el resumen y «Conectar». */
+const GC = {gente: null, sel: '', dur: 30, dias: [1, 2, 3, 4, 5], desde: 480, hasta: 1080, enlace: '', plantilla: '¡Claro! Tengo libre {horas}. ¿Cuál te sirve?', editando: false, enviando: false};
 const GC_DIAS = [[1, 'L'], [2, 'M'], [3, 'M'], [4, 'J'], [5, 'V'], [6, 'S'], [0, 'D']];
 const GC_DIAS_N = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-document.head.insertAdjacentHTML('beforeend', `<style>
-.gc-cuenta{display:flex;align-items:center;gap:8px;margin-top:6px;padding:8px 10px;border:1px solid #e5e9f0;border-radius:9px;background:#fff;font-size:12.5px;font-family:ui-monospace,monospace;word-break:break-all}
-.gc-cuenta button{margin-left:auto;flex:none;height:28px;padding:0 10px;border-radius:7px;font:inherit;font-family:Inter,system-ui,sans-serif;font-size:12px}
-.gc-fila{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.ig-f select{height:42px;border:1px solid #e5e9f0;border-radius:10px;padding:0 10px;font:inherit;font-size:14px;font-weight:400;background:#fff}
-.gc-dias{display:flex;gap:6px;flex-wrap:wrap}
-.gc-dias button{width:38px;height:38px;border-radius:10px;border:1px solid #e5e9f0;background:#fff;font-weight:600;font-size:13px;color:#4b5563;cursor:pointer}
-.gc-dias button[aria-pressed="true"]{background:var(--nx-negro,#0b0b10);border-color:var(--nx-negro,#0b0b10);color:#fff}
-.ig-f .gc-op{font-weight:400;color:#6b7280}
-@media (max-width:560px){.gc-fila{grid-template-columns:1fr}}
-</style>`);
+const GC_DUR = [15, 20, 30, 45, 60, 90];
+const GC_HORAS = []; for (let m = 6 * 60; m <= 22 * 60; m += 30) GC_HORAS.push(m);
+const gcFrag = h => document.createRange().createContextualFragment(h);
+const gcDurT = m => m < 60 ? m + ' min' : m === 60 ? '1 hora' : '1 h 30';
+const gcHoraT = m => { const h = Math.floor(m / 60), mi = m % 60; return `${((h + 11) % 12) + 1}:${String(mi).padStart(2, '0')} ${h < 12 ? 'a. m.' : 'p. m.'}`; };
+const gcHHMM = m => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+const gcOrden = () => [...GC.dias].sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7));
+const gcPersona = () => (GC.gente || []).find(p => p.id === GC.sel) || null;
+const GC_OK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+const GC_G = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z"/><path fill="#FBBC05" d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1A10 10 0 0 0 2 12c0 1.6.4 3.1 1.1 4.6z"/><path fill="#EA4335" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.4L6.4 10C7.2 7.7 9.4 5.9 12 5.9z"/></svg>';
+function gcPersonaHTML(p){
+  const on = GC.sel === p.id, con = p.estado === 'conectado';
+  const sub = con ? esc(p.correo || '') : p.estado === 'sin-permiso' ? 'Debe volver a conectar su Google' : 'Todavía no conecta su Google';
+  const etq = con ? '<span class="g3-est on">Conectado</span>' : p.estado === 'sin-permiso' ? '<span class="g3-est off">Reconectar</span>' : '<span class="g3-est off">Sin conectar</span>';
+  return `<button type="button" role="radio" aria-checked="${on}" class="g3-p${con ? '' : ' sin'}" data-gc-p="${esc(p.id)}">
+    <span class="g3-av"><span class="av" style="background:${colorPersona(p.nombre)}">${fotoAv(p.foto, p.nombre)}</span>${con ? `<i class="g3-g">${GC_G}</i>` : ''}</span>
+    <span class="g3-tx"><b>${esc(p.nombre)}${p.yo ? '<em>Tú</em>' : ''}</b><small>${sub}</small></span>${etq}
+    <span class="g3-r" aria-hidden="true">${GC_OK}</span></button>`;
+}
+function gcAviso(p){
+  if (!p || p.estado === 'conectado') return '';
+  const n = esc(p.nombre.split(' ')[0]);
+  return p.estado === 'sin-permiso'
+    ? `<b>${n} conectó su Google sin el permiso de ver sus horas libres.</b> Pídele que lo desconecte y lo vuelva a conectar en Mi perfil.`
+    : `<b>${n} todavía no conecta su Google.</b> Pídele que entre a Mi perfil y toque «Continuar con Google». Apenas lo haga, puedes elegir su agenda.`;
+}
+function gcHoras(){
+  const d = gcOrden(); if (!d.length || GC.hasta - GC.desde < GC.dur) return '';
+  const d1 = d[1 % d.length], d2 = d[2 % d.length];
+  const h = k => gcHoraT(Math.max(GC.desde, Math.min(GC.desde + k * GC.dur, GC.hasta - GC.dur)));
+  return `el ${GC_DIAS_N[d1]} a las ${h(2)} o a las ${h(8)}, y el ${GC_DIAS_N[d2]} a las ${h(4)}`;
+}
+const gcEjemplo = () => { const hs = gcHoras(); if (!hs) return esc('Elige al menos un día y un horario donde quepa una cita para ver el mensaje.');
+  return esc(GC.plantilla).split('{horas}').join(`<mark class="g6-h">${esc(hs)}</mark>`).replace(/m\.<\/mark>\./g, 'm.</mark>'); };
+const gcPlantillaHTML = () => esc(GC.plantilla).split('{horas}').join('<span class="g6-chip" contenteditable="false">Horas libres</span>');
+function gcMensaje(){
+  return GC.editando
+    ? `<div class="g6-ed"><div class="g6-area" id="gc-area" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Mensaje con que el agente ofrece las citas" spellcheck="true">${gcPlantillaHTML()}</div>
+       <div class="g6-bar"><button type="button" class="g6-ins" data-gc-ins="1">${I('plus')}Horas libres</button><span>El agente pone aquí las horas libres de la agenda</span><button type="button" class="btn pri g6-ok" data-gc-listo="1">${I('check')}Listo</button></div></div>`
+    : `<div class="g3-chat"><div class="g3-bur" id="gc-bur">${gcEjemplo()}</div><button type="button" class="g6-edit" data-gc-editar="1">${I('pen')}Editar mensaje</button></div>`;
+}
+const gcResumen = () => { const p = gcPersona(); const ds = gcOrden().map(d => GC_DIAS.find(x => x[0] === d)[1]).join(' ');
+  return `<b>${p ? 'Agenda de ' + esc(p.nombre.split(' ')[0]) : 'Elige una agenda'}</b><span>${ds || 'Sin días'} · ${gcHoraT(GC.desde)} a ${gcHoraT(GC.hasta)}</span>`; };
+const gcSelHora = cual => ddSel('data-gc-' + cual, GC_HORAS.map(m => [String(m), gcHoraT(m)]), String(GC[cual]));
+const gcListo = () => { const p = gcPersona(); return !!p && p.estado === 'conectado'; };
+function gcGenteHTML(){
+  if (!GC.gente) return '<div class="g3-cargando" aria-busy="true"><span></span><span></span><span></span></div>';
+  if (!GC.gente.length) return '<p class="g3-vacio">Todavía no hay personas en este espacio de trabajo.</p>';
+  return GC.gente.map(gcPersonaHTML).join('');
+}
+function gcDialogo(){
+  const p = gcPersona();
+  return `<div class="g3-cab"><span class="g3-logo">${integLogo('gcal')}</span><div><h3>Conectar Google Calendar</h3><span>El agente ofrece citas con las horas libres de una agenda del equipo</span></div></div>
+  <section class="g3-sec" style="--k:0"><div class="g3-h"><span class="g3-n">1</span><div><b>¿En qué agenda se ofrecen las citas?</b><small>Es el Google Calendar que esa persona conectó en Mi perfil</small></div></div>
+    <div class="g3-gente" id="gc-gente" role="radiogroup" aria-label="Agenda de las citas">${gcGenteHTML()}</div>
+    <div class="g2-falta${p && p.estado !== 'conectado' ? ' on' : ''}" aria-live="polite"><div><span class="g2-av">${I('calendar')}<span class="g2-avt">${gcAviso(p)}</span></span></div></div></section>
+  <section class="g3-sec" style="--k:1"><div class="g3-h"><span class="g3-n">2</span><div><b>¿Cuándo hay citas?</b><small>El agente solo ofrece horas dentro de este horario</small></div></div>
+    <div class="g3-camp"><span class="g3-l">Cada cita dura</span><div class="g3-seg" role="radiogroup" aria-label="Duración" style="--i:${GC_DUR.indexOf(GC.dur)};--n:${GC_DUR.length}"><span class="g3-thumb" aria-hidden="true"></span>${GC_DUR.map(m => `<button type="button" role="radio" aria-checked="${m === GC.dur}" data-gc-dur="${m}">${gcDurT(m)}</button>`).join('')}</div></div>
+    <div class="g3-camp"><span class="g3-l">Días</span><div class="g3-dias">${GC_DIAS.map(([d, l]) => `<button type="button" data-gc-dia="${d}" aria-pressed="${GC.dias.includes(d)}" aria-label="${GC_DIAS_N[d]}">${l}</button>`).join('')}</div></div>
+    <div class="g3-fila"><div class="g3-camp"><span class="g3-l">Desde</span>${gcSelHora('desde')}</div><div class="g3-camp"><span class="g3-l">Hasta</span>${gcSelHora('hasta')}</div></div>
+    <label class="g3-camp"><span class="g3-l">Enlace para reservar <span class="gc-op">(opcional)</span></span><span class="g3-in">${I('link')}<input id="gc-enlace" type="url" placeholder="calendar.app.google/… o tu página de Calendly" autocomplete="off" value="${esc(GC.enlace)}"></span></label></section>
+  <section class="g3-sec g3-ej" style="--k:2"><div class="g3-h"><span class="g3-n">${I('bolt')}</span><div><b>Mensaje con que el agente ofrece las citas</b><small>Lo usan los agentes de IA que tengan Google Calendar encendido en Capacidades</small></div></div>
+    <div id="gc-msj">${gcMensaje()}</div>
+    <p class="g3-priv">${I('lock')}Solo ve si cada hora está libre u ocupada, nunca el detalle de las citas, y no agenda nada.</p></section>
+  <div class="ft2 g3-pie"><span class="g3-res" id="gc-res">${gcResumen()}</span><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" data-gc-ok="1"${gcListo() ? '' : ' disabled'}>${I('link')}Conectar</button></div>`;
+}
+function gcRefrescar(){
+  const b = document.getElementById('gc-bur'), r = document.getElementById('gc-res');
+  if (b) { b.replaceChildren(gcFrag(gcEjemplo())); b.classList.remove('g3-nuevo'); void b.offsetWidth; b.classList.add('g3-nuevo'); }
+  if (r) r.replaceChildren(gcFrag(gcResumen()));
+}
+function gcElegir(id){
+  GC.sel = id; const d = document.getElementById('dlg-x'); if (!d) return;
+  d.querySelectorAll('[data-gc-p]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.gcP === id)));
+  const p = gcPersona(), f = d.querySelector('.g2-falta');
+  f.querySelector('.g2-avt').replaceChildren(gcFrag(gcAviso(p))); f.classList.toggle('on', !!p && p.estado !== 'conectado');
+  const ok = d.querySelector('[data-gc-ok]'); if (ok) ok.disabled = !gcListo();
+  gcRefrescar();
+}
+function gcCargarGente(){
+  crmApi('GET', '/crm/integraciones/gcal/agendas').then(l => {
+    const est = new Map((Array.isArray(l) ? l : []).map(x => [x.id, x]));
+    const yo = typeof CRM_YO !== 'undefined' && CRM_YO ? CRM_YO.id : '';
+    const rango = p => (p.yo ? 0 : 2) + (p.estado === 'conectado' ? 0 : 1);
+    GC.gente = USUARIOS.filter(u => !u.pendiente && est.has(u.id)).map(u => ({id: u.id, nombre: u.nombre || 'Sin nombre', foto: u.foto, yo: u.id === yo, correo: est.get(u.id).correo, estado: est.get(u.id).estado}))
+      .sort((a, b) => rango(a) - rango(b) || a.nombre.localeCompare(b.nombre, 'es'));
+    if (!GC.sel || !gcPersona()) GC.sel = (GC.gente.find(p => p.estado === 'conectado') || GC.gente[0] || {}).id || '';
+    const g = document.getElementById('gc-gente'); if (!g) return;
+    g.replaceChildren(gcFrag(gcGenteHTML())); gcElegir(GC.sel);
+  }).catch(err => { const g = document.getElementById('gc-gente'); if (g) g.replaceChildren(gcFrag(`<p class="g3-vacio">No se pudo cargar el equipo: ${esc(err.message)}</p>`)); });
+}
 document.getElementById('page').addEventListener('click', e => {
   if (st.pagina !== 'cfg-integraciones') return;
-  const cn = e.target.closest('[data-integ-conectar="gcal"]'); if (!cn) return;
+  if (!e.target.closest('[data-integ-conectar="gcal"]')) return;
   e.stopImmediatePropagation();
-  const s = (INTEG.lista || []).find(x => x.id === 'gcal'); if (!s) return;
-  const sin = !s.cuenta;
-  const pasos = ['En Google Calendar, abre la configuración del calendario de las citas y entra a «Compartir con personas o grupos específicos».', 'Agrega este correo con el permiso «Ver solo información de disponible/ocupado (ocultar detalles)»:', 'Escribe aquí el ID del calendario: para el principal es el correo de tu cuenta de Google. Está en la misma configuración, en «Integrar el calendario».'];
-  abrirDialogo(`<div class="ig-dcab"><span class="ig-logo">${integLogo('gcal')}</span><div><h3>Conectar Google Calendar</h3><span>${esc(INTEG_UI.gcal.para)}</span></div></div>
-    ${sin ? `<div class="mt-aviso">${I('lock')}<span>Google Calendar todavía no está disponible en este CRM. Escríbenos y lo activamos.</span></div>` : `<div class="ig-pasos">${pasos.map((p, i) => `<span class="ig-paso"><i>${i + 1}</i><span>${esc(p)}${i === 1 ? `<span class="gc-cuenta" id="gc-cuenta">${esc(s.cuenta)}<button type="button" class="btn" data-gc-copiar="1">Copiar</button></span>` : ''}</span></span>`).join('')}</div>`}
-    <div class="ig-f"><label>ID del calendario<input id="gc-cal" type="email" placeholder="agenda@tuempresa.com" autocomplete="off" spellcheck="false"></label>
-      <div class="gc-fila"><label>Cada cita dura<select id="gc-dur">${[15, 20, 30, 45, 60, 90, 120].map(m => `<option value="${m}"${m === 30 ? ' selected' : ''}>${m < 60 ? m + ' minutos' : m === 60 ? '1 hora' : (m / 60) + ' horas'}</option>`).join('')}</select></label>
-        <label>Desde<input id="gc-desde" type="time" value="08:00" step="900"></label><label>Hasta<input id="gc-hasta" type="time" value="18:00" step="900"></label></div>
-      <label>Días de citas<span class="gc-dias" id="gc-dias">${GC_DIAS.map(([d, l]) => `<button type="button" data-gc-dia="${d}" aria-pressed="${d >= 1 && d <= 5}" aria-label="${GC_DIAS_N[d]}">${l}</button>`).join('')}</span></label>
-      <label>Enlace para reservar <span class="gc-op">(opcional)</span><input id="gc-enlace" type="url" placeholder="https://calendar.app.google/… o tu página de Calendly" autocomplete="off"></label></div>
-    <p class="ig-nota">${I('lock')}El CRM solo ve si cada hora está libre u ocupada, nunca el detalle de tus citas, y no agenda nada. Con el enlace, el agente lo comparte para que la persona reserve; sin él, pasa la conversación a tu equipo con la hora que eligió.</p>
-    <div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cancelar</button><button type="button" class="btn pri" data-gc-guardar="1"${sin ? ' disabled' : ''}>${I('link')}Conectar</button></div>`, 'dlg-per dlg-ig');
-  setTimeout(() => { const x = document.getElementById('gc-cal'); if (x) x.focus(); }, 30);
+  Object.assign(GC, {gente: null, editando: false, enviando: false});
+  abrirDialogo(gcDialogo(), 'dlg-per dlg-ig dlg-g3');
+  gcCargarGente();
 }, true);
 document.getElementById('ov-x').addEventListener('click', e => {
-  const d = e.target.closest('[data-gc-dia]'); if (d) { d.setAttribute('aria-pressed', String(d.getAttribute('aria-pressed') !== 'true')); return; }
-  if (e.target.closest('[data-gc-copiar]')) { const s = (INTEG.lista || []).find(x => x.id === 'gcal'); try { navigator.clipboard.writeText(s.cuenta); toast('Correo copiado'); } catch { toast('No se pudo copiar: selecciónalo y cópialo'); } return; }
-  const g = e.target.closest('[data-gc-guardar]'); if (!g) return;
-  const v = id => ((document.getElementById(id) || {}).value || '').trim();
-  const dias = [...document.querySelectorAll('#gc-dias [aria-pressed="true"]')].map(b => Number(b.dataset.gcDia));
-  if (!v('gc-cal')) { toast('Escribe el ID del calendario'); return; }
-  if (!dias.length) { toast('Elige al menos un día para las citas'); return; }
-  g.disabled = true; g.textContent = 'Revisando el calendario…';
-  crmApi('POST', '/crm/integraciones/gcal', {calendario: v('gc-cal'), duracion: Number(v('gc-dur')), desde: v('gc-desde'), hasta: v('gc-hasta'), dias, enlace: v('gc-enlace')})
-    .then(l => { INTEG.lista = Array.isArray(l) ? l : INTEG.lista; cerrarDialogo(); render(); toast('Google Calendar quedó conectado. Elige en Capacidades qué agentes lo usan.'); })
-    .catch(err => { g.disabled = false; g.textContent = ''; g.insertAdjacentHTML('beforeend', `${I('link')}Conectar`); toast(err.message); });
+  if (!e.target.closest('.dlg-g3')) return;
+  const p = e.target.closest('[data-gc-p]'); if (p) { gcElegir(p.dataset.gcP); return; }
+  const du = e.target.closest('[data-gc-dur]'); if (du) { GC.dur = +du.dataset.gcDur; const s = du.parentNode; s.style.setProperty('--i', GC_DUR.indexOf(GC.dur)); s.querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', String(b === du))); gcRefrescar(); return; }
+  const di = e.target.closest('[data-gc-dia]'); if (di) { const d = +di.dataset.gcDia, on = di.getAttribute('aria-pressed') !== 'true'; di.setAttribute('aria-pressed', String(on)); GC.dias = on ? [...GC.dias, d] : GC.dias.filter(x => x !== d); gcRefrescar(); return; }
+  for (const cual of ['desde', 'hasta']) {
+    const h = e.target.closest(`[data-gc-${cual}]`);
+    if (h) { GC[cual] = +h.getAttribute(`data-gc-${cual}`); ddCasa(h).replaceWith(gcFrag(gcSelHora(cual))); gcRefrescar(); return; }
+  }
+  const pintarMsj = () => { const m = document.getElementById('gc-msj'); m.replaceChildren(gcFrag(gcMensaje())); const a = document.getElementById('gc-area'); if (a) { a.focus(); const r = document.createRange(); r.selectNodeContents(a); r.collapse(false); const sl = getSelection(); sl.removeAllRanges(); sl.addRange(r); } };
+  const leer = a => [...a.childNodes].map(n => n.nodeType === 3 ? n.textContent : (n.classList && n.classList.contains('g6-chip') ? '{horas}' : n.textContent)).join('').replace(/\s+/g, ' ').trim();
+  if (e.target.closest('[data-gc-editar]')) { GC.editando = true; pintarMsj(); return; }
+  if (e.target.closest('[data-gc-listo]')) { const a = document.getElementById('gc-area'); if (a) { const t = leer(a).slice(0, 400); if (t) GC.plantilla = t.includes('{horas}') ? t : t + ' {horas}'; } GC.editando = false; pintarMsj(); return; }
+  if (e.target.closest('[data-gc-ins]')) {
+    e.preventDefault(); const a = document.getElementById('gc-area'); if (!a) return; a.focus();
+    const sl = getSelection(); let r = sl.rangeCount ? sl.getRangeAt(0) : null;
+    if (!r || !a.contains(r.startContainer)) { r = document.createRange(); r.selectNodeContents(a); r.collapse(false); }
+    r.deleteContents(); r.insertNode(gcFrag('<span class="g6-chip g6-nuevo" contenteditable="false">Horas libres</span> ')); return;
+  }
+  const ok = e.target.closest('[data-gc-ok]'); if (!ok || GC.enviando) return;
+  const a = document.getElementById('gc-area'); if (a) { const t = leer(a).slice(0, 400); if (t) GC.plantilla = t.includes('{horas}') ? t : t + ' {horas}'; }
+  GC.enlace = ((document.getElementById('gc-enlace') || {}).value || '').trim();
+  if (!gcListo()) { toast('Elige una agenda con Google conectado'); return; }
+  if (!GC.dias.length) { toast('Elige al menos un día para las citas'); return; }
+  if (GC.hasta - GC.desde < GC.dur) { toast('La hora final debe ir después de la inicial y caber al menos una cita'); return; }
+  GC.enviando = true; ok.disabled = true; ok.replaceChildren(gcFrag('Revisando la agenda…'));
+  crmApi('POST', '/crm/integraciones/gcal', {persona: GC.sel, duracion: GC.dur, desde: gcHHMM(GC.desde), hasta: gcHHMM(GC.hasta), dias: GC.dias, enlace: GC.enlace, plantilla: GC.plantilla})
+    .then(l => { INTEG.lista = Array.isArray(l) ? l : INTEG.lista; cerrarDialogo(); render(); const p = gcPersona(); toast(`Google Calendar quedó conectado con la agenda de ${p ? p.nombre.split(' ')[0] : 'tu equipo'}. Elige en Capacidades qué agentes lo usan.`); })
+    .catch(err => { GC.enviando = false; ok.disabled = false; ok.replaceChildren(gcFrag(`${I('link')}Conectar`)); toast(err.message); });
 });
+document.head.insertAdjacentHTML('beforeend', `<style>
+@keyframes g2-pop{0%{transform:scale(.6)}100%{transform:scale(1)}}
+.g2-falta{display:grid;grid-template-rows:0fr;transition:grid-template-rows .24s cubic-bezier(.16,1,.3,1)}
+.g2-falta > div{overflow:hidden;min-height:0}
+.g2-falta.on{grid-template-rows:1fr}
+.g2-av{display:flex;gap:10px;align-items:flex-start;padding:11px 13px;border-radius:11px;background:#fffbeb;border:1px solid #fde68a;font-size:12.5px;line-height:1.5;color:#78350f;opacity:0;transform:translateY(-4px);transition:opacity .2s ease-out,transform .24s cubic-bezier(.16,1,.3,1)}
+.g2-falta.on .g2-av{opacity:1;transform:none}
+.g2-av > svg.i{width:16px;height:16px;flex:none;margin-top:1px;color:#b45309}
+.g2-av b{font-weight:600}
+.dlg.dlg-g3{width:min(640px,100%);padding:0;gap:0;max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain}
+.dlg.dlg-g3 > .dlg-x,.dlg.dlg-g3 > button:first-child{z-index:4}
+.g3-cab{display:flex;align-items:center;gap:16px;padding:26px 64px 22px 28px;background:radial-gradient(120% 140% at 0% 0%,#fff6cc 0%,#fffdf3 38%,#fff 72%);border-bottom:1px solid #f0f2f5}
+.g3-logo{width:56px;height:56px;border-radius:16px;background:#fff;display:grid;place-items:center;flex:none;box-shadow:0 1px 2px rgba(15,23,42,.06),0 8px 20px -8px rgba(15,23,42,.18);animation:g3-logo .5s cubic-bezier(.34,1.56,.64,1)}
+.g3-logo svg{width:32px;height:32px}
+@keyframes g3-logo{from{transform:scale(.7) rotate(-8deg);opacity:0}to{transform:none;opacity:1}}
+.g3-cab h3{margin:0;font-size:20px;font-weight:600;letter-spacing:-.01em;color:#0b0b10}
+.g3-cab > div > span{display:block;margin-top:3px;font-size:13px;line-height:1.45;color:#6b7280}
+.g3-sec{display:flex;flex-direction:column;gap:14px;padding:22px 28px;border-bottom:1px solid #f0f2f5;animation:g3-sec .42s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(80ms + var(--k) * 70ms)}
+@keyframes g3-sec{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.g3-h{display:flex;gap:12px;align-items:flex-start}
+.g3-h b{display:block;font-size:14.5px;font-weight:600;color:#0b0b10}
+.g3-h small{display:block;margin-top:2px;font-size:12.5px;color:#6b7280;line-height:1.45}
+.g3-n{width:26px;height:26px;border-radius:50%;background:#FFD21F;color:#0b0b10;display:grid;place-items:center;font-size:12.5px;font-weight:700;flex:none;margin-top:-1px}
+.g3-n svg.i{width:14px;height:14px;color:#0b0b10}
+.g3-gente{display:flex;flex-direction:column;gap:8px}
+.g3-p{display:flex;align-items:center;gap:12px;width:100%;padding:11px 14px;border:1px solid #e5e9f0;border-radius:14px;background:#fff;font:inherit;text-align:left;cursor:pointer;transition:border-color .16s ease-out,box-shadow .16s ease-out,background .16s ease-out,transform .1s ease-out}
+.g3-p:hover{border-color:#cbd5e1;background:#fcfcfd}
+.g3-p:active{transform:scale(.985)}
+.g3-p[aria-checked="true"]{border-color:#0b0b10;background:#fffdf3;box-shadow:inset 0 0 0 1px #0b0b10,0 6px 18px -10px rgba(15,23,42,.35)}
+.g3-av{position:relative;flex:none}
+.g3-av .av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:13.5px;font-weight:600}
+.g3-p.sin .g3-av .av{filter:grayscale(.5);opacity:.75}
+.g3-g{position:absolute;right:-3px;bottom:-3px;width:18px;height:18px;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 0 0 2px #fff,0 1px 3px rgba(15,23,42,.25)}
+.g3-g svg{width:12px;height:12px}
+.g3-tx{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.g3-tx b{font-size:14px;font-weight:600;color:#0b0b10;display:flex;align-items:center;gap:6px}
+.g3-tx em{font-style:normal;font-size:11px;font-weight:500;color:#6b7280;background:#f3f4f6;border-radius:999px;padding:1px 7px}
+.g3-tx small{font-size:12.5px;color:#6b7280;overflow-wrap:anywhere;line-height:1.4}
+.g3-p.sin .g3-tx small{color:#9ca3af}
+.g3-est{flex:none;font-size:11.5px;font-weight:500;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.g3-est.on{background:#e8f7ee;color:#15803d}
+.g3-est.off{background:#f3f4f6;color:#6b7280}
+.g3-r{width:22px;height:22px;border-radius:50%;border:1.5px solid #d1d5db;display:grid;place-items:center;flex:none;transition:background .16s ease-out,border-color .16s ease-out}
+.g3-r svg{width:13px;height:13px;fill:none;stroke:#FFD21F;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:24;stroke-dashoffset:24;transition:stroke-dashoffset .2s ease-out .05s}
+.g3-p[aria-checked="true"] .g3-r{background:#0b0b10;border-color:#0b0b10;animation:g2-pop .32s cubic-bezier(.34,1.56,.64,1)}
+.g3-p[aria-checked="true"] .g3-r svg{stroke-dashoffset:0}
+.g3-camp{display:flex;flex-direction:column;gap:7px;min-width:0}
+.g3-l{font-size:12.5px;font-weight:600;color:#4b5563}
+.g3-seg{position:relative;display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));padding:4px;border-radius:13px;background:#f3f4f6}
+.g3-thumb{position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px) / var(--n));border-radius:10px;background:#0b0b10;box-shadow:0 4px 12px -4px rgba(11,11,16,.45);transform:translateX(calc(var(--i) * 100%));transition:transform .3s cubic-bezier(.34,1.3,.64,1)}
+.g3-seg button{position:relative;z-index:1;height:36px;border:0;background:none;font:inherit;font-size:13px;color:#4b5563;cursor:pointer;white-space:nowrap;transition:color .2s ease-out}
+.g3-seg button[aria-checked="true"]{color:#fff;font-weight:600}
+.g3-dias{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.g3-dias button{height:42px;border-radius:12px;border:1px solid #e5e9f0;background:#fff;font:inherit;font-weight:600;font-size:13px;color:#6b7280;cursor:pointer;transition:background .16s ease-out,border-color .16s ease-out,color .16s ease-out,transform .12s ease-out}
+.g3-dias button:active,.g3-seg button:active{transform:scale(.94)}
+.g3-dias button[aria-pressed="true"]{background:#FFD21F;border-color:#FFD21F;color:#0b0b10;box-shadow:inset 0 -2px 0 rgba(11,11,16,.12)}
+.g3-fila{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3-in{display:flex;align-items:center;gap:10px;height:42px;padding:0 12px;border:1px solid #e5e9f0;border-radius:11px;background:#fff;color:#9ca3af;transition:border-color .15s ease-out,box-shadow .15s ease-out}
+.g3-in:focus-within{border-color:#0b0b10;box-shadow:0 0 0 3px rgba(255,210,31,.45)}
+.g3-in svg.i{width:16px;height:16px;flex:none}
+.g3-in input{flex:1;min-width:0;border:0;outline:0;background:none;font:inherit;font-size:13.5px;color:#0b0b10}
+.g3-in input::placeholder{color:#9ca3af}
+.g3-ej{background:#fafbfc}
+.g3-chat{padding:16px;border-radius:14px;background-color:#efeae2;background-image:url('__BASE__/img/fondo-chat.png?v=gris');background-size:260px auto}
+.g3-bur{position:relative;max-width:100%;width:fit-content;padding:9px 12px;border-radius:12px 12px 12px 4px;background:#fff;font-size:13.5px;line-height:1.5;color:#111827;box-shadow:0 1px 1px rgba(0,0,0,.08)}
+.g3-bur.g3-nuevo{animation:g3-bur .32s cubic-bezier(.16,1,.3,1)}
+@keyframes g3-bur{from{opacity:.4;transform:translateY(4px) scale(.98)}to{opacity:1;transform:none}}
+.g3-priv{display:flex;gap:8px;align-items:flex-start;margin:0;font-size:12.5px;line-height:1.5;color:#6b7280}
+.g3-priv svg.i{width:15px;height:15px;flex:none;margin-top:1px}
+.dlg.dlg-g3 .g3-pie{position:sticky;bottom:0;z-index:3;margin:0;padding:14px 28px calc(env(safe-area-inset-bottom, 0px) + 14px);background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-top:1px solid #eef1f5;display:flex;align-items:center;gap:10px}
+.g3-res{flex:1;min-width:0;display:flex;flex-direction:column;font-size:12px;color:#6b7280;line-height:1.35}
+.g3-res b{font-size:13px;color:#0b0b10;font-weight:600}
+@media (max-width:560px){
+  .g3-cab{padding:22px 56px 18px 20px;gap:12px}.g3-logo{width:46px;height:46px;border-radius:13px}.g3-logo svg{width:26px;height:26px}.g3-cab h3{font-size:18px}
+  .g3-sec{padding:18px 20px}.dlg.dlg-g3 .g3-pie{padding-left:20px;padding-right:20px}
+  .g3-seg{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:4px}.g3-thumb{width:calc((100% - 8px) / 3);height:36px;bottom:auto;transform:translate(calc(mod(var(--i), 3) * 100%), calc(round(down, var(--i) / 3) * 40px))}
+  .g3-est{display:none}.g3-res{display:none}.g3-pie .btn{flex:1;justify-content:center}
+}
+.ig-c .ig-pie{display:flex;flex-direction:column;align-items:stretch;gap:12px}
+.ig-c .ig-pie .sp{display:flex;align-items:flex-start;gap:7px;font-size:12.5px;line-height:1.45;color:#6b7280;min-height:0}
+.ig-c .ig-pie .sp:empty{display:none}
+.ig-c .ig-pie .btn{width:100%;height:40px;justify-content:center;border-radius:11px;font-weight:500;transition:background .15s ease-out,border-color .15s ease-out,color .15s ease-out,transform .1s ease-out}
+.ig-c .ig-pie .btn:active{transform:scale(.98)}
+.ig-c .ig-pie [data-integ-conectar],.ig-c .ig-pie [data-motor-conectar]{background:#f7f8fa;border:1px solid #e5e9f0;color:#0b0b10}
+.ig-c .ig-pie [data-integ-conectar]:hover,.ig-c .ig-pie [data-motor-conectar]:hover{background:#fff;border-color:#0b0b10;box-shadow:0 4px 12px -6px rgba(15,23,42,.25)}
+.ig-c .ig-pie [data-integ-conectar] svg,.ig-c .ig-pie [data-motor-conectar] svg{color:#0b0b10}
+.ig-c .ig-pie [data-integ-quitar],.ig-c .ig-pie [data-motor-quitar]{background:#fff;border-color:#f3d4d4;color:#b42318}
+.ig-c .ig-pie [data-integ-quitar]:hover,.ig-c .ig-pie [data-motor-quitar]:hover{background:#fef3f2;border-color:#fecdca}
+.ig-c{display:flex;flex-direction:column}
+.ig-c .ig-pie{margin-top:auto}
+.g3-sec .g2-falta:not(.on){margin-top:-14px}
+.g3-chat{position:relative}
+.g6-h{background:#fff3b0;color:#0b0b10;border-radius:5px;padding:0 3px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.g6-edit{display:inline-flex;align-items:center;gap:6px;margin-top:10px;height:32px;padding:0 12px;border:1px solid rgba(11,11,16,.12);border-radius:999px;background:rgba(255,255,255,.92);font:inherit;font-size:12.5px;font-weight:500;color:#0b0b10;cursor:pointer;box-shadow:0 1px 2px rgba(15,23,42,.08);transition:background .15s ease-out,border-color .15s ease-out,transform .1s ease-out}
+.g6-edit:hover{background:#fff;border-color:#0b0b10}
+.g6-edit:active{transform:scale(.97)}
+.g6-edit svg.i{width:14px;height:14px}
+.g6-ed{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:14px;background:#fff;border:1px solid #0b0b10;box-shadow:0 0 0 3px rgba(255,210,31,.45);animation:g6-abre .26s cubic-bezier(.16,1,.3,1)}
+@keyframes g6-abre{from{opacity:.4;transform:scale(.985)}to{opacity:1;transform:none}}
+.g6-area{min-height:64px;outline:0;font-size:14px;line-height:1.7;color:#111827;white-space:pre-wrap;word-break:break-word}
+.g6-chip{display:inline-flex;align-items:center;height:24px;padding:0 9px;margin:0 2px;border-radius:999px;background:#0b0b10;color:#FFD21F;font-size:12.5px;font-weight:600;vertical-align:1px;user-select:all}
+.g6-chip.g6-nuevo{animation:g2-pop .34s cubic-bezier(.34,1.56,.64,1)}
+.g6-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-top:10px;border-top:1px solid #f0f2f5}
+.g6-bar > span{flex:1;min-width:160px;font-size:12px;color:#6b7280}
+.g6-ins{display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 11px;border:1px dashed #cbd5e1;border-radius:999px;background:#fff;font:inherit;font-size:12.5px;font-weight:500;color:#0b0b10;cursor:pointer;transition:border-color .15s ease-out,background .15s ease-out}
+.g6-ins:hover{border-style:solid;border-color:#0b0b10;background:#fafafa}
+.g6-ins svg.i{width:14px;height:14px}
+.g6-ok{height:34px;padding:0 14px}
+@media (prefers-reduced-motion:reduce){.g6-ed,.g6-chip.g6-nuevo{animation:none}}
+.g3-cargando{display:flex;flex-direction:column;gap:8px}
+.g3-cargando span{height:64px;border-radius:14px;background:linear-gradient(90deg,#f3f4f6 0%,#fafafa 50%,#f3f4f6 100%);background-size:200% 100%;animation:g3-brillo 1.2s ease-in-out infinite}
+@keyframes g3-brillo{from{background-position:100% 0}to{background-position:-100% 0}}
+.g3-vacio{margin:0;font-size:13px;color:#6b7280}
+.g3-av .av{overflow:hidden}
+.g3-av .av img{width:100%;height:100%;object-fit:cover}
+@media (prefers-reduced-motion:reduce){.g3-cargando span,.g3-logo,.g3-sec,.g3-bur,.g3-thumb,.g3-p,.g3-r,.g3-r svg,.g6-ed,.g6-chip.g6-nuevo,.g2-falta,.g2-av{animation:none!important;transition:none!important}}
+</style>`);
 
 /* ── Motor de IA (5-oct): Claude, Gemini u OpenAI con la clave de la cuenta de la empresa, que le paga directo al
    proveedor (api/src/services/crm/motorIA.ts). El proveedor solo pone el modelo: instrucciones, conocimiento,

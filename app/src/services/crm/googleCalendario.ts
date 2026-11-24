@@ -9,6 +9,8 @@ import { logger } from '../../utils/logger'
  * Cada quien conecta su propia cuenta de Google con el mismo cliente OAuth del botón «Entrar con Google»
  * (GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET) y el mismo regreso autorizado (/api/auth/google/regreso). El único
  * permiso es `calendar.events`: crear, mover y borrar los eventos que Wali agenda; nunca se leen los demás.
+ * Desde el 24-nov también pide `calendar.freebusy` (solo libre u ocupado, sin detalles): con él, el agente de IA ofrece
+ * citas con la agenda de la persona que la empresa elija en Integraciones (maqueta aprobada «Agenda del agente»).
  * El refresh token va cifrado (cifrado.ts) en crm_google_calendario y nunca sale del servidor.
  *
  * Cada recordatorio con `gcal: true` guarda su evento (`gev`), la persona dueña del calendario (`gu`) y, si Google
@@ -17,6 +19,8 @@ import { logger } from '../../utils/logger'
  */
 
 export const ALCANCE_CALENDARIO = 'https://www.googleapis.com/auth/calendar.events'
+export const ALCANCE_LIBRE = 'https://www.googleapis.com/auth/calendar.freebusy'
+const LIBRE_OCUPADO = 'https://www.googleapis.com/calendar/v3/freeBusy'
 const TOKEN = 'https://oauth2.googleapis.com/token'
 const EVENTOS = 'https://www.googleapis.com/calendar/v3/calendars/primary/events'
 const TIEMPO = 10_000
@@ -33,7 +37,7 @@ export const calendarioListo = () => !!(process.env.GOOGLE_CLIENT_ID && process.
 export function urlPermiso(regreso: string, estado: string, correo: string | null): string {
   const q = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID!, redirect_uri: regreso, response_type: 'code',
-    scope: `openid email ${ALCANCE_CALENDARIO}`, state: estado,
+    scope: `openid email ${ALCANCE_CALENDARIO} ${ALCANCE_LIBRE}`, state: estado,
     // offline + consent: Google entrega el refresh token aunque la persona ya haya entrado con Google antes.
     access_type: 'offline', prompt: 'consent', include_granted_scopes: 'true',
     ...(correo ? { login_hint: correo } : {}),
@@ -60,13 +64,16 @@ export async function guardarConexion(userId: string, code: string, regreso: str
     if (!r.ok) { logger.warn({ evento: 'GCAL_TOKEN_FALLO', userId, estado: r.status, error: txt(j.error) }); return 'error' }
   } catch (e) { logger.warn({ evento: 'GCAL_TOKEN_FALLO', userId, err: (e as Error).message }); return 'error' }
   // En la pantalla de Google la persona puede desmarcar el permiso del calendario.
-  if (!txt(j.scope).split(/\s+/).includes(ALCANCE_CALENDARIO)) return 'sin-permiso'
+  const alcances = txt(j.scope).split(/\s+/)
+  if (!alcances.includes(ALCANCE_CALENDARIO)) return 'sin-permiso'
+  // El de horas libres es aparte: sin él, sus recordatorios funcionan pero su agenda no sirve para las citas del agente.
+  const libre = alcances.includes(ALCANCE_LIBRE)
   const refresh = txt(j.refresh_token)
   if (!refresh) { logger.warn({ evento: 'GCAL_SIN_REFRESH', userId }); return 'error' }
   const correo = correoDeIdToken(txt(j.id_token)) || 'tu cuenta de Google'
   // Si ya tenía otra cuenta conectada, el permiso viejo se le devuelve a Google.
   const previo = await prisma.crmGoogleCalendario.findUnique({ where: { userId } })
-  const secreto = cifrar({ refresh })
+  const secreto = cifrar({ refresh, libre })
   await prisma.crmGoogleCalendario.upsert({ where: { userId }, create: { userId, correo, secreto }, update: { correo, secreto, conectadoAt: new Date() } })
   accesos.delete(userId)
   if (previo) void revocar(previo.secreto)
@@ -94,6 +101,39 @@ export async function desconectar(userId: string): Promise<void> {
 export async function estadoConexion(userId: string): Promise<{ conectado: boolean; correo: string | null }> {
   const fila = await prisma.crmGoogleCalendario.findUnique({ where: { userId }, select: { correo: true } })
   return { conectado: !!fila, correo: fila?.correo ?? null }
+}
+
+/** Si la persona dio el permiso de ver sus horas libres u ocupadas. */
+function conLibre(secreto: string): boolean {
+  try { return descifrar<{ libre?: boolean }>(secreto).libre === true } catch { return false }
+}
+
+/** La conexión de Google de cada persona de la lista: su correo y si sirve para la agenda del agente. */
+export async function agendasDe(ids: string[]): Promise<Map<string, { correo: string; libre: boolean }>> {
+  if (!ids.length) return new Map()
+  const filas = await prisma.crmGoogleCalendario.findMany({ where: { userId: { in: ids } }, select: { userId: true, correo: true, secreto: true } })
+  return new Map(filas.map(f => [f.userId, { correo: f.correo, libre: conLibre(f.secreto) }]))
+}
+
+/** La persona ya no tiene Google conectado o quitó el permiso de horas libres. */
+export class SinAgenda extends Error {}
+
+/** Las franjas ocupadas del calendario principal de la persona (solo libre u ocupado, sin detalles). */
+export async function ocupadoDe(userId: string, desde: Date, hasta: Date): Promise<{ ini: number; fin: number }[]> {
+  let token: string
+  try { token = await tokenDe(userId) } catch (e) { if (e instanceof SinConexion) throw new SinAgenda(); throw e }
+  const r = await fetch(LIBRE_OCUPADO, {
+    method: 'POST', signal: AbortSignal.timeout(TIEMPO),
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ timeMin: desde.toISOString(), timeMax: hasta.toISOString(), timeZone: 'America/Bogota', items: [{ id: 'primary' }] }),
+  })
+  if (r.status === 401) accesos.delete(userId)
+  // 403: el permiso que dio no incluye las horas libres.
+  if (r.status === 403) throw new SinAgenda()
+  if (!r.ok) throw new Error(`Google ${r.status}`)
+  const cal = obj(obj(obj(await r.json().catch(() => ({}))).calendars).primary)
+  if (Array.isArray(cal.errors) && cal.errors.length) throw new SinAgenda()
+  return (Array.isArray(cal.busy) ? cal.busy.map(obj) : []).map(b => ({ ini: Date.parse(txt(b.start)), fin: Date.parse(txt(b.end)) })).filter(b => b.ini < b.fin)
 }
 
 // ─── Acceso a la API de Google ──────────────────────────────────────────────

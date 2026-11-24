@@ -79,7 +79,7 @@
 .ak-pasos{list-style:none;margin:0;padding:0;display:grid;gap:12px}
 .ak-pasos li{display:flex;gap:12px;align-items:flex-start;opacity:0;transform:translateY(6px);animation:ak-paso .32s cubic-bezier(.23,1,.32,1) forwards;animation-delay:calc(120ms + var(--i) * 60ms)}
 @keyframes ak-paso{to{opacity:1;transform:none}}
-.ak-n{width:24px;height:24px;border-radius:50%;background:#0b0b10;color:#ffd21f;display:grid;place-items:center;font-size:12px;font-weight:700;line-height:1;flex:none}
+.ak-n{width:24px;height:24px;border-radius:50%;background:#FFD21F;color:#0b0b10;display:grid;place-items:center;font-size:12px;font-weight:700;line-height:1;flex:none}
 .ak-pasos li>span:last-child{display:grid;gap:2px;min-width:0}.ak-pasos b{font-size:13.5px;font-weight:600;color:#1f2937}.ak-pasos small{font-size:12.5px;color:var(--ink3);line-height:1.45}
 .ak-pasos small a{color:#0b0b10;font-weight:600;text-decoration:underline;text-underline-offset:2px}
 .ak-cp2{justify-self:start;margin-top:6px;min-width:178px;background:#fff;color:#0b0b10;box-shadow:inset 0 0 0 1px #d6dae1}.ak-cp2.ok{background:#059669;color:#fff;box-shadow:none}

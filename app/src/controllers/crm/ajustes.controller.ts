@@ -16,7 +16,7 @@ import { leerWeb, extraerTexto, TIPOS_DOC, EXT_DOC, MENSAJE_TIPOS } from '../../
 import { probarAgente } from '../../services/crm/agentes'
 import { alcanceDe, alcanceDePersona, alcanceParaFront, entraPorRol, puedeAdministrar, sincronizarMiembros, type Alcance } from '../../services/crm/alcance'
 import { conGenteDeSubequipos, normalizarEquipos, type EquiposNorm, equipoRespaldo, fijarRespaldo } from '../../services/crm/equipos'
-import { conectarShopify, conectarCalendario, conectarHotmart, desconectar, estadoIntegraciones } from '../../services/crm/integraciones'
+import { conectarShopify, conectarCalendario, conectarHotmart, desconectar, estadoIntegraciones, agendasCalendario } from '../../services/crm/integraciones'
 import { invitar, invitarNuevos } from '../../services/crm/invitaciones'
 import { limiteUsuarios, topeUsuariosTexto } from '../../services/crm/plan'
 import { cuentaDe, usuariosDeCuenta } from '../../services/crm/espacio'
@@ -840,6 +840,11 @@ export async function integracionCalendario(req: Request, res: Response) {
   exigirEscritura(req)
   exigirLider(req, 'conectar Google Calendar')
   return ApiResponse.success(res, await conectarCalendario(obj(req.body), req.userId ?? null))
+}
+/** Las personas del espacio y si su Google sirve para la agenda del agente (para elegirla al conectar). */
+export async function integracionAgendas(req: Request, res: Response) {
+  exigirLider(req, 'conectar Google Calendar')
+  return ApiResponse.success(res, await agendasCalendario())
 }
 export async function integracionQuitar(req: Request, res: Response) {
   exigirEscritura(req)

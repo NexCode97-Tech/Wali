@@ -414,6 +414,7 @@ router.get('/integraciones', soloLideres('ver las conexiones con otros sistemas'
 router.post('/integraciones/manychat', soloLideres('conectar ManyChat'), asyncHandler(ajustes.integracionManychat))
 router.post('/integraciones/hotmart', soloLideres('conectar Hotmart'), asyncHandler(ajustes.integracionHotmart))
 router.post('/integraciones/shopify', soloLideres('conectar Shopify'), asyncHandler(ajustes.integracionShopify))
+router.get('/integraciones/gcal/agendas', soloLideres('conectar Google Calendar'), asyncHandler(ajustes.integracionAgendas))
 router.post('/integraciones/gcal', soloLideres('conectar Google Calendar'), asyncHandler(ajustes.integracionCalendario))
 router.delete('/integraciones/:sistema', soloLideres('desconectar otros sistemas'), asyncHandler(ajustes.integracionQuitar))
 router.get('/motor-ia', soloLideres('ver el motor de IA'), asyncHandler(ajustes.motorLista))

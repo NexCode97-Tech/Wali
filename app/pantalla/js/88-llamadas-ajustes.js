@@ -103,17 +103,18 @@ const LW_HORAS = Array.from({length: 48}, (_, i) => `${Math.floor(i / 2)}:${i % 
 function lwHora(id, d, k, v){
   const min = s => { const m = String(s).match(/^(\d{1,2}):(\d{2})$/); return m ? +m[1] * 60 + +m[2] : 0; };
   const ops = LW_HORAS.includes(v) ? LW_HORAS : [...LW_HORAS, v].sort((x, y) => min(x) - min(y));
-  return `<label class="hp-h"><select data-lw-hora="${id}|${d}|${k}" aria-label="${k === 1 ? 'Desde' : 'Hasta'}">${ops.map(h => `<option value="${h}"${h === v ? ' selected' : ''}>${esc(horaCfg(h))}</option>`).join('')}</select><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></label>`;
+  // El desplegable único del CRM (24-nov): ningún select nativo.
+  return `<span class="hp-h" aria-label="${k === 1 ? 'Desde' : 'Hasta'}">${ddSel('data-lw-hora', ops.map(h => [`${id}|${d}|${k}|${h}`, horaCfg(h)]), `${id}|${d}|${k}|${v}`)}</span>`;
 }
 function lwHorPropio(id, a){
   return `<div class="hp">${lwFilasPropio(a).map(([d, de, ha, on], i) => `<div class="hp-fila${on ? '' : ' cerrado'}"><span class="hp-d">${esc(d)}</span>${lwTg(on, `Recibir llamadas el ${esc(d)}`, `data-lw-dia="${id}|${i}"`)}${on ? `<span class="hp-r">${lwHora(id, i, 1, de)}<i>a</i>${lwHora(id, i, 2, ha)}</span>` : '<span class="hp-c">No recibe llamadas</span>'}</div>`).join('')}
     <div class="hp-pie"><button type="button" class="hp-lnk" data-lw-copiarhor="${id}">Copiar el horario de atención</button><span><b>Festivos de Colombia</b> cerrado, se cargan solos</span></div></div>`;
 }
 function lwGuardarPropio(id, filas, ok){ return lwCambiar(id, {horario: 'propio', horarioPropio: filas}, ok); }
-document.getElementById('page').addEventListener('change', e => {
+document.getElementById('page').addEventListener('click', e => {
   const s = e.target.closest && e.target.closest('[data-lw-hora]'); if (!s || st.pagina !== 'cfg-lineas') return;
-  const [id, d, k] = s.dataset.lwHora.split('|'), x = LW[id]; if (!x || !x.ajustes) return;
-  const filas = lwFilasPropio(x.ajustes); filas[+d][+k] = s.value;
+  const [id, d, k, h] = s.dataset.lwHora.split('|'), x = LW[id]; if (!x || !x.ajustes) return;
+  const filas = lwFilasPropio(x.ajustes); if (filas[+d][+k] === h) return; filas[+d][+k] = h;
   lwGuardarPropio(id, filas, 'Horario de llamadas guardado en Meta');
 });
 const lwBotonesSaludo = (id, x) => x.grabando
@@ -237,10 +238,10 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .hp-fila:first-child{border-top:0}
 .hp-d{width:86px;font-size:13px;font-weight:600}
 .hp-r{display:flex;align-items:center;gap:6px;margin-left:auto}.hp-r i{font-style:normal;font-size:12.5px;color:var(--ink3)}
-.hp-h{position:relative;display:inline-flex;align-items:center;height:30px;border:1px solid var(--line);border-radius:8px;background:#fff;white-space:nowrap}
-.hp-h select{appearance:none;-webkit-appearance:none;border:0;background:none;height:100%;padding:0 28px 0 10px;font:inherit;font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--ink);cursor:pointer}
-.hp-h select:focus-visible{outline:2px solid #FFD21F;outline-offset:1px;border-radius:7px}
-.hp-h svg{position:absolute;right:8px;pointer-events:none;color:var(--ink3)}
+.hp-h{display:inline-flex;white-space:nowrap}
+.hp-h .dsel{min-width:0!important}
+.hp-h .dsel > .sel{min-height:32px;height:32px;padding:0 9px 0 10px;border-radius:9px;font-size:12.5px;font-variant-numeric:tabular-nums;gap:6px}
+.hp-h .dsel > .sel > svg{width:14px;height:14px}
 .hp-c{margin-left:auto;font-size:12.5px;color:var(--ink3)}
 .hp-fila.cerrado .hp-d{color:var(--ink3)}
 .hp-pie{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:9px 12px;background:#fbfbfc;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink2)}
