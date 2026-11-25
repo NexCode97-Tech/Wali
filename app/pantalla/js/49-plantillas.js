@@ -139,7 +139,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .tn-subir .tx b{display:block;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tn-subir .tx small{display:block;font-size:12.5px;color:var(--ink3)}
 .tn-subir .btn svg{color:#dc2626}
-.tn-seg .tag{font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:999px;background:#0b0b10;color:#FFD21F;letter-spacing:.02em;line-height:1.4}
+.tn-seg .tag{font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:999px;background:#FFD21F;color:#0b0b10;letter-spacing:.02em;line-height:1.4}
 .tn-seg button:disabled{opacity:.45;cursor:not-allowed}
 .tn-vig{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .tn-vig button{height:40px;border:1px solid var(--line);border-radius:10px;background:#fff;font:inherit;font-size:13px;font-weight:500;color:var(--ink2);cursor:pointer}

@@ -52,7 +52,7 @@
 /* En el modal de invitar: el permiso entre las columnas y el pie; en el celular, los datos se resumen en un renglón. */
 .pu-en-inv{padding:0 24px}.pu-en-inv .pu-perm{margin:16px 0}
 .pu-quien{display:none;align-items:center;gap:12px;margin:14px 18px 0;padding:12px 14px;border:1px solid var(--line);border-radius:14px}
-.pu-quien-av{width:34px;height:34px;border-radius:50%;background:#0b0b10;color:#fff;display:grid;place-items:center;font:600 12.5px/1 Inter,system-ui,sans-serif;flex:none}
+.pu-quien-av{width:34px;height:34px;border-radius:50%;background:#FFD21F;color:#0b0b10;display:grid;place-items:center;font:600 12.5px/1 Inter,system-ui,sans-serif;flex:none}
 .pu-quien b{display:block;font-size:14px}.pu-quien small{color:var(--ink3);font-size:12.5px}
 @media (max-width:760px){.bq-cols.pu-oculta{display:none}.pu-quien{display:flex}.pu-en-inv{padding:0 18px}}
 /* En Plan y pagos: el encabezado de Usuarios con Invitar persona y el selector. */

@@ -72,13 +72,13 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .mm-ic svg{width:19px;height:19px}
 .mm-ic.cuando{background:#FFD21F;color:#0b0b10}
 .mm-ic.si{background:#eef2ff;color:#3730a3}
-.mm-ic.ent{background:#0b0b10;color:#fff}
+.mm-ic.ent{background:#FFD21F;color:#0b0b10}
 .mm-tx{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
 .mm-tx small{font-size:12px;font-weight:600;color:#6b7280}
 .mm-tx b{font-size:14px;font-weight:600;line-height:1.35}
 .mm-tx span{font-size:13px;color:#4b5563}
 .mm-tx span.falta{color:#b45309}
-.mm-num{position:absolute;top:-9px;right:12px;font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;background:#0b0b10;color:#fff}
+.mm-num{position:absolute;top:-9px;right:12px;font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;background:#fff;border:1.5px solid var(--line);color:var(--ink3);font-variant-numeric:tabular-nums}
 .mm-linea{width:2px;height:22px;background:#cbd5e1}
 .mm-mas{width:28px;height:28px;border-radius:50%;border:1.5px solid #cbd5e1;background:#fff;display:grid;place-items:center;cursor:pointer;color:#6b7280}
 .mm-mas:hover{border-color:#0b0b10;color:#0b0b10}

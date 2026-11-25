@@ -217,7 +217,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .lw-audio{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:#f6f7f9}
 .lw-audio > div{flex:1;min-width:0;display:grid}.lw-audio b{font-size:13px}.lw-audio small{font-size:12px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lw-audio.sin small{white-space:normal}
-.lw-pl{width:32px;height:32px;border-radius:50%;border:0;background:#0b0b10;color:#fff;display:grid;place-items:center;flex:none;cursor:pointer}.lw-pl svg{width:13px;height:13px;fill:#fff;stroke:none}
+.lw-pl{width:32px;height:32px;border-radius:50%;border:0;background:#FFD21F;color:#0b0b10;display:grid;place-items:center;flex:none;cursor:pointer}.lw-pl svg{width:13px;height:13px;fill:#0b0b10;stroke:none}
 .lw-pl:disabled{opacity:.4;cursor:default}
 .lw-mini{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:#fff;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap}
 .lw-mini svg{width:14px;height:14px}
