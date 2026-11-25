@@ -259,7 +259,16 @@ async function conversacionPara(k: CrmContacto, lugar: Lugar, cuando: Date) {
 /** La conversación del contacto en esa línea, en ese navegador del chat de la web o en esa página. */
 async function conversacionEnLugar(k: CrmContacto, lugar: Lugar, cuando: Date) {
   const donde = dondeDe(lugar)
-  const ultima = await prisma.crmConversacion.findFirst({ where: { contactoId: k.id, ...donde }, orderBy: { createdAt: 'desc' } })
+  let ultima = await prisma.crmConversacion.findFirst({ where: { contactoId: k.id, ...donde }, orderBy: { createdAt: 'desc' } })
+  // Si la cuenta o la línea se quitó y se volvió a conectar, sus conversaciones quedaron sin ella (SetNull) y la persona
+  // abría una conversación nueva al escribir (24-nov, Instagram de NexCode97). Se retoma la suya y queda en la nueva.
+  if (!ultima && !('visitante' in lugar)) {
+    const suelta = await prisma.crmConversacion.findFirst({
+      where: { contactoId: k.id, ...('linea' in lugar ? { canal: 'wa', lineaId: null } : { canal: lugar.canal, conexionId: null }) },
+      orderBy: { createdAt: 'desc' },
+    })
+    if (suelta) ultima = await prisma.crmConversacion.update({ where: { id: suelta.id }, data: 'linea' in lugar ? { lineaId: lugar.linea.id } : { conexionId: lugar.pagina.id } })
+  }
   if (ultima && ultima.estado !== 'finalizadas') return { conv: ultima, nueva: false, reabierta: null, vuelveDe: null as number | null }
   // Lote 6b: escribe a una conversación finalizada (se reabra o empiece otra): «La persona vuelve a escribir después de finalizar».
   const vuelveDe = ultima ? ultima.id : null
