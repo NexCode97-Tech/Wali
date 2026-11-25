@@ -82,7 +82,7 @@ const campo = (id, etq, v, extra = '', ayuda = '') => `<label>${etq}<input id="$
 const opcionBoton = (x, logo, marca, titulo, txtListo, txtNo) => { const p = x.prov, listo = p && p.listo;
   // Mientras la ventana de la red está abierta, el botón lo dice (y se puede tocar otra vez para reabrirla).
   const espera = listo && x.esperando, red = {ig:'Instagram', tt:'TikTok'}[x.canal] || 'la red';
-  const sub = p == null ? 'Revisando…' : espera ? `<i></i>Esperando a que termines en la ventana de ${red}. Si la cerraste, toca de nuevo.` : listo ? txtListo : txtNo;
+  const sub = p == null ? 'Revisando…' : espera ? `Esperando a que termines en la ventana de ${red}. Si la cerraste, toca de nuevo.` : listo ? txtListo : txtNo;
   return `<button type="button" class="opc${espera ? ' mt-espera' : ''}" data-cc-boton="1" ${listo && !x.fbCargando ? '' : 'disabled'}><span class="marca ${marca}">${logo}</span><span class="tx"><b>${x.fbCargando ? 'Abriendo…' : titulo}${listo ? '<span class="etq-rec">Recomendado</span>' : p == null ? '' : '<span class="etq-pronto">No disponible todavía</span>'}</b><small${espera ? ' class="mt-esp"' : ''}>${sub}</small></span>${listo ? I('chev', 'i ch') : ''}</button>`; };
 const opcionManual = (titulo, detalle) => `<button type="button" class="opc" data-cc-manual="1"><span class="marca neutra">${LOGO.llave}</span><span class="tx"><b>${titulo}</b><small>${detalle}</small></span>${I('chev', 'i ch')}</button>`;
 const ayudaCx = pasos => `<details class="cx-ayuda"><summary>Cómo conseguir estos datos</summary><ol>${pasos.map(p => `<li>${p}</li>`).join('')}</ol></details>`;

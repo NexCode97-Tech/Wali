@@ -29,18 +29,15 @@
 :where(.opc,.cx-op):not(:disabled):active{scale:.985;translate:0 0}
 .opc .marca{transition:scale .3s ${RESORTE}}
 @media (hover:hover) and (pointer:fine){.opc:not(:disabled):hover .marca{scale:1.06}}
-.opc.mt-espera .marca{position:relative}
-.opc.mt-espera .marca::after{content:"";position:absolute;inset:-4px;border-radius:inherit;border:2px solid #FFD21F;opacity:0;animation:mt-pulso 1.6s ${SALE} infinite}
-@keyframes mt-pulso{0%{opacity:.9;scale:.92}100%{opacity:0;scale:1.18}}
-.opc small.mt-esp{display:flex;align-items:center;gap:7px;color:var(--ink2)}
-.opc small.mt-esp i{width:12px;height:12px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--ink2);animation:mt-gira .8s linear infinite;flex:none}
-@keyframes mt-gira{to{rotate:360deg}}
+.opc.mt-espera .marca{animation:mt-pulso 1.6s ${SALE} infinite}
+@keyframes mt-pulso{0%{box-shadow:0 0 0 0 rgba(255,210,31,.75)}70%{box-shadow:0 0 0 9px rgba(255,210,31,0)}100%{box-shadow:0 0 0 0 rgba(255,210,31,0)}}
+.opc small.mt-esp{color:var(--ink2)}
 #toast.on{animation:mt-toast .36s ${ENTRA}}
 @keyframes mt-toast{from{opacity:0;translate:0 14px;scale:.96}}
 @media (prefers-reduced-motion: reduce){
   :where(button,.btn,[role="button"],a.btn,summary,.chip,.opc,.cx-op):active{scale:none!important}
   @media (hover:hover){:where(.opc,.cx-op):hover{translate:none!important}}
-  .opc.mt-espera .marca::after,.opc small.mt-esp i{animation-duration:3s}
+  .opc.mt-espera .marca{animation-duration:3s}
   #toast.on{animation:mt-fade .2s ease-out}
   @keyframes mt-fade{from{opacity:0}}
 }`;
