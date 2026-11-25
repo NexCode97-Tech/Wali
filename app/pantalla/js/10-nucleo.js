@@ -2352,7 +2352,7 @@ function campoRamas(p, i){
   return `<div class="rp">
     <div class="rp-sec"><div class="rp-h"><b>Primero pregunta si ya es cliente</b><small>Botones de WhatsApp de hasta 20 letras</small></div>
       <textarea data-rp-set="${i}|txt" rows="2">${esc(p.txt)}</textarea>
-      <div class="rp-bts">${p.ops.map((o, j) => `<div class="rp-bt"><span class="rbt" style="width:20px;height:20px;border-radius:50%;background:var(--blue);color:#fff;font-size:11px;font-weight:600;display:grid;place-items:center;flex:none">${j + 1}</span><input data-rp-op="${i}|${j}" value="${esc(o.op)}" maxlength="20" aria-label="Texto del botón ${j + 1}"><small class="cnt20" id="rpc-${i}-${j}">${o.op.length}/20</small><span class="rp-va">${o.va === 'ventas' ? 'Pasa a Ventas' : 'Le muestra la lista de clientes'}</span></div>`).join('')}</div>
+      <div class="rp-bts">${p.ops.map((o, j) => `<div class="rp-bt"><span class="rbt" style="width:20px;height:20px;border-radius:50%;background:#fff;border:1.5px solid var(--line);color:var(--ink3);box-sizing:border-box;font-variant-numeric:tabular-nums;line-height:1;padding:0;font-size:11px;font-weight:600;display:grid;place-items:center;flex:none">${j + 1}</span><input data-rp-op="${i}|${j}" value="${esc(o.op)}" maxlength="20" aria-label="Texto del botón ${j + 1}"><small class="cnt20" id="rpc-${i}-${j}">${o.op.length}/20</small><span class="rp-va">${o.va === 'ventas' ? 'Pasa a Ventas' : 'Le muestra la lista de clientes'}</span></div>`).join('')}</div>
     </div>
     <div class="rp-cols">
       <div class="rama"><div class="rama-h"><span class="rbt">1</span><b>Si elige «${esc(p.ops[0].op)}»</b></div>

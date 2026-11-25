@@ -33,7 +33,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .mr-paso .mr-nada{font-size:13px;color:#9ca3af}
 .mr-paso ol{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
 .mr-paso li{display:flex;gap:8px;font-size:13.5px;line-height:1.4}
-.mr-paso li i{width:18px;height:18px;border-radius:50%;background:#0b0b10;color:#fff;font-style:normal;font-size:11px;font-weight:600;display:grid;place-items:center;flex:none;margin-top:1px}
+.mr-paso li i{width:18px;height:18px;border-radius:50%;background:#fff;border:1.5px solid var(--line);color:var(--ink3);box-sizing:border-box;font-variant-numeric:tabular-nums;line-height:1;padding:0;font-style:normal;font-size:11px;font-weight:600;display:grid;place-items:center;flex:none;margin-top:1px}
 .mr-flecha{display:grid;place-items:center;color:#9ca3af}
 .mr-flecha svg{width:16px;height:16px}
 .mr-c.off .mr-paso{opacity:.65}
