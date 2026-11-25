@@ -47,8 +47,10 @@ function vigilarConexion(x){
   const tipo = CC_TIPO[x.canal]; if (!tipo) return;
   const antes = new Map(CONEXIONES.filter(c => c.tipo === tipo).map(c => [c.id, firmaCx(c)]));
   const fin = Date.now() + 15 * 60_000;
+  // Si la persona cierra la ventana y vuelve a tocar el botón, arranca otra vuelta y la anterior se detiene.
+  const vez = x.vigila = (x.vigila || 0) + 1;
   const vuelta = () => {
-    if (!x.esperando || st.cc !== x || Date.now() > fin) return;
+    if (!x.esperando || st.cc !== x || x.vigila !== vez || Date.now() > fin) return;
     crmApi('GET', '/crm/conexiones').then(cs => {
       if (!x.esperando || !Array.isArray(cs)) return;
       const c = cs.filter(y => y.tipo === tipo && y.estado !== 'pendiente').find(y => antes.get(y.id) !== firmaCx(y));
@@ -56,7 +58,7 @@ function vigilarConexion(x){
       const u = (c.instagram && c.instagram.usuario) || (c.tiktok && c.tiktok.usuario) || '';
       if (c.estado === 'conectada' && !c.error) terminarEspera(x, true, `Listo: ${u ? '@' + u : 'la cuenta'} quedó conectada.`);
       else terminarEspera(x, false, c.error || 'No se pudo terminar la conexión. Vuelve a intentarlo.');
-    }).catch(() => {}).finally(() => { if (x.esperando) setTimeout(vuelta, 3000); });
+    }).catch(() => {}).finally(() => { if (x.esperando && x.vigila === vez) setTimeout(vuelta, 3000); });
   };
   setTimeout(vuelta, 3000);
 }
@@ -78,7 +80,7 @@ abrirConexion = function(...a){ st.cc = null; return abrirConexionBaseCc(...a); 
 // Las claves van con autocomplete="new-password": con «off» el navegador igual las llenaba con una contraseña guardada.
 const campo = (id, etq, v, extra = '', ayuda = '') => `<label>${etq}<input id="${id}" value="${esc(v || '')}" autocomplete="${/type="password"/.test(extra) ? 'new-password' : 'off'}" ${extra}>${ayuda ? `<small>${ayuda}</small>` : ''}</label>`;
 const opcionBoton = (x, logo, marca, titulo, txtListo, txtNo) => { const p = x.prov, listo = p && p.listo;
-  return `<button type="button" class="opc" data-cc-boton="1" ${listo && !x.fbCargando && !x.esperando ? '' : 'disabled'}><span class="marca ${marca}">${logo}</span><span class="tx"><b>${x.fbCargando ? 'Abriendo…' : titulo}${listo ? '<span class="etq-rec">Recomendado</span>' : p == null ? '' : '<span class="etq-pronto">No disponible todavía</span>'}</b><small>${p == null ? 'Revisando…' : listo ? txtListo : txtNo}</small></span>${listo ? I('chev', 'i ch') : ''}</button>`; };
+  return `<button type="button" class="opc" data-cc-boton="1" ${listo && !x.fbCargando ? '' : 'disabled'}><span class="marca ${marca}">${logo}</span><span class="tx"><b>${x.fbCargando ? 'Abriendo…' : titulo}${listo ? '<span class="etq-rec">Recomendado</span>' : p == null ? '' : '<span class="etq-pronto">No disponible todavía</span>'}</b><small>${p == null ? 'Revisando…' : listo ? txtListo : txtNo}</small></span>${listo ? I('chev', 'i ch') : ''}</button>`; };
 const opcionManual = (titulo, detalle) => `<button type="button" class="opc" data-cc-manual="1"><span class="marca neutra">${LOGO.llave}</span><span class="tx"><b>${titulo}</b><small>${detalle}</small></span>${I('chev', 'i ch')}</button>`;
 const ayudaCx = pasos => `<details class="cx-ayuda"><summary>Cómo conseguir estos datos</summary><ol>${pasos.map(p => `<li>${p}</li>`).join('')}</ol></details>`;
 const nota = t => t ? `<div class="ll-nota">${esc(t)}</div>` : '';
