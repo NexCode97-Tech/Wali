@@ -4,6 +4,8 @@
    Se aplica sobre lo que arma pintarChat (ya escapado), así vale igual en la bandeja, en el cajón del embudo y en el celular.
    Se lee con DOMParser: un documento aparte e inerte, nada se ejecuta. */
 const wbPintarSin = pintarChat;
+// La burbuja de un mensaje: la misma, o la que va dentro del contenedor de reacciones (.rr-m, 89-chat-whatsapp.js).
+const burbujaDe = el => !el ? null : el.classList.contains('ch-b') ? el : el.querySelector(':scope > .ch-b');
 pintarChat = function(c){
   const doc = new DOMParser().parseFromString(`<body>${wbPintarSin.apply(this, arguments)}</body>`, 'text/html');
   for (const f of doc.body.querySelectorAll('.ch-fila')) {
@@ -31,12 +33,16 @@ pintarChat = function(c){
     if (rq) { parte('rq', rq.textContent); parte('', '·'); }
     if (hora) parte('', hora);
     if (est) pie.append(est);
-    bs[bs.length - 1].append(pie);
+    // El pie del grupo es del último mensaje: va dentro de su burbuja si es de texto; si es una foto o un archivo, suelto
+    // debajo. Antes iba siempre a la última burbuja de texto, que ya traía su propio pie, y la hora salía dos veces (25-nov).
+    let ult = meta.previousElementSibling; while (ult && ult.classList.contains('ch-pie')) ult = ult.previousElementSibling;
+    const bu = burbujaDe(ult);
+    if (bu) bu.append(pie); else { pie.classList.add('suelto'); meta.before(pie); }
     meta.remove();
   }
   // Las demás burbujas del grupo también llevan su hora y sus chulitos (11-nov).
   for (const x of doc.body.querySelectorAll('.ch-pie')) {
-    const b = x.previousElementSibling, est = x.querySelector('.est');
+    const b = burbujaDe(x.previousElementSibling), est = x.querySelector('.est');
     const pie = doc.createElement('span');
     pie.className = 'wb-t' + (est && est.classList.contains('leido') ? ' leido' : '');
     const h = x.querySelector('.h'); if (h && h.textContent) pie.append(h);
