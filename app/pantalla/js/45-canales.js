@@ -28,12 +28,38 @@ function refrescarConexiones(){ return crmApi('GET', '/crm/conexiones').then(cs 
 /* Ventana de autorización (TikTok e Instagram): se abre vacía en el clic (así el navegador no la bloquea) y luego se
    le pone el enlace. La página de regreso del API avisa con postMessage {tipo:'crm-conexion'} y se cierra. */
 function abrirVentana(){ return window.open('', 'crm-conexion', 'width=560,height=760'); }
+function terminarEspera(x, ok, texto){
+  if (!x.esperando) return;
+  x.esperando = false; x.resultado = {ok:!!ok, texto:String(texto || '')};
+  refrescarConexiones().then(() => { x.paso = x.pasos.length; if (st.cc === x && dlgAbierto()) pintarCanal(); if (st.pagina && st.pagina.startsWith('cfg-')) render(); });
+}
 window.addEventListener('message', ev => {
   const d = ev.data; if (!d || d.tipo !== 'crm-conexion') return;
   const x = st.cc; if (!x || !x.esperando) return;
-  x.esperando = false; x.resultado = {ok:!!d.ok, texto:String(d.texto || '')};
-  refrescarConexiones().then(() => { x.paso = x.pasos.length; if (st.cc === x && dlgAbierto()) pintarCanal(); if (st.pagina && st.pagina.startsWith('cfg-')) render(); });
+  terminarEspera(x, d.ok, d.texto);
 });
+/* El aviso de la ventana no siempre llega (24-nov): Instagram aísla sus páginas (Cross-Origin-Opener-Policy) y, al
+   volver, la ventana ya no tiene `window.opener`, así que Wali se quedaba en el paso 1 aunque la cuenta hubiera
+   conectado. Mientras espera, Wali revisa cada 3 s sus conexiones: si la de este canal cambió, termina solo. */
+const CC_TIPO = {ig: 'instagram', tt: 'tiktok'};
+const firmaCx = c => [c.id, c.estado, c.error || '', c.actualizada || '', JSON.stringify(c.instagram || c.tiktok || {})].join('|');
+function vigilarConexion(x){
+  const tipo = CC_TIPO[x.canal]; if (!tipo) return;
+  const antes = new Map(CONEXIONES.filter(c => c.tipo === tipo).map(c => [c.id, firmaCx(c)]));
+  const fin = Date.now() + 15 * 60_000;
+  const vuelta = () => {
+    if (!x.esperando || st.cc !== x || Date.now() > fin) return;
+    crmApi('GET', '/crm/conexiones').then(cs => {
+      if (!x.esperando || !Array.isArray(cs)) return;
+      const c = cs.filter(y => y.tipo === tipo && y.estado !== 'pendiente').find(y => antes.get(y.id) !== firmaCx(y));
+      if (!c) return;
+      const u = (c.instagram && c.instagram.usuario) || (c.tiktok && c.tiktok.usuario) || '';
+      if (c.estado === 'conectada' && !c.error) terminarEspera(x, true, `Listo: ${u ? '@' + u : 'la cuenta'} quedó conectada.`);
+      else terminarEspera(x, false, c.error || 'No se pudo terminar la conexión. Vuelve a intentarlo.');
+    }).catch(() => {}).finally(() => { if (x.esperando) setTimeout(vuelta, 3000); });
+  };
+  setTimeout(vuelta, 3000);
+}
 
 /* ── Asistente ── */
 function abrirConexionCanal(k){
@@ -154,7 +180,7 @@ function botonCanal(x){
     return;
   }
   const w = abrirVentana();
-  x.esperando = true; if (k === 'tt') x.paso = 2; pintarCanal();
+  x.esperando = true; if (k === 'tt') x.paso = 2; pintarCanal(); vigilarConexion(x);
   (k === 'ig' ? crmApi('POST', '/crm/conexiones/instagram/empezar') : crmApi('POST', '/crm/conexiones/tiktok', {modo:'plataforma'}))
     .then(r => { x.url = r.url; if (w) w.location.href = r.url; else { x.esperando = false; x.error = 'El navegador bloqueó la ventana: permite las ventanas emergentes de esta página y vuelve a intentarlo.'; } })
     .catch(err => { if (w) w.close(); x.esperando = false; x.error = err.message || 'No se pudo empezar la conexión'; })
@@ -169,7 +195,7 @@ document.getElementById('ov-x').addEventListener('click', e => {
   const b = t.closest('[data-cc-boton]'); if (b && !b.disabled) { botonCanal(x); return; }
   const s = t.closest('[data-cc-sel]'); if (s) { x.elegida = s.dataset.ccSel; pintarCanal(); return; }
   const en = t.closest('[data-cc-enviar]'); if (en && !en.disabled && !x.enviando) { enviarCanal(x); return; }
-  const au = t.closest('[data-cc-autorizar]'); if (au && !au.disabled && x.url) { const w = abrirVentana(); if (w) { w.location.href = x.url; x.esperando = true; x.error = ''; } else x.error = 'El navegador bloqueó la ventana: permite las ventanas emergentes de esta página y vuelve a intentarlo.'; pintarCanal(); return; }
+  const au = t.closest('[data-cc-autorizar]'); if (au && !au.disabled && x.url) { const w = abrirVentana(); if (w) { w.location.href = x.url; x.esperando = true; x.error = ''; vigilarConexion(x); } else x.error = 'El navegador bloqueó la ventana: permite las ventanas emergentes de esta página y vuelve a intentarlo.'; pintarCanal(); return; }
 });
 document.getElementById('ov-x').addEventListener('input', e => {
   const x = st.cc; if (!x || x.paso !== 1) return;

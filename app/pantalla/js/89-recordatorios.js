@@ -179,6 +179,16 @@
     clearInterval(vigia);
     // La cerraron sin terminar: se espera un momento por si el aviso de la ventana viene en camino.
     vigia = setInterval(() => { if (ventana && ventana.closed) { clearInterval(vigia); vigia = null; setTimeout(() => { if (ventana && !gcalConectado()) soltar(); }, 1200); } }, 500);
+    // El aviso de la ventana (BroadcastChannel) solo llega si Google vuelve al mismo dominio de esta página (24-nov):
+    // mientras se espera, se pregunta cada 3 s si el calendario ya quedó, y si quedó, se termina igual.
+    // Con otra cuenta ya conectada («Usar otra cuenta»), solo cuenta si cambió el correo.
+    const antes = gcalConectado() ? String(CRM_YO.gcal || '') : null;
+    const sondear = () => {
+      if (!ventana && !vigia) return;
+      crmApi('GET', '/auth/me/google-calendario').then(r => { if (r && r.conectado && (antes === null || String(r.correo || '') !== antes) && (ventana || vigia)) conectado(); }, () => {})
+        .finally(() => { if (ventana || vigia) setTimeout(sondear, 3000); });
+    };
+    setTimeout(sondear, 3000);
   }
   window.crmConectarGoogle = conectarGoogle;
   document.getElementById('ov-x').addEventListener('click', e => { const b = e.target.closest('[data-rcp-google]'); if (b) conectarGoogle(b); });

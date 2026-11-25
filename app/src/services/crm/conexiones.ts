@@ -119,6 +119,8 @@ const azar = (n: number) => crypto.randomBytes(n).toString('hex')
 
 export interface ConexionFront {
   id: string; tipo: string; modo: string; nombre: string; estado: string; error: string | null
+  /** Cuándo cambió por última vez (la pantalla lo usa para saber que una conexión en otra ventana ya terminó). */
+  actualizada?: string
   /** WhatsApp: el negocio no pasó la verificación de Meta / Meta limita sus envíos (saludDeMeta). */
   sinVerificar?: boolean; limitado?: boolean
   appId: string | null; cuentas: number; lineas: number
@@ -143,7 +145,7 @@ export function conexionAFront(c: CrmConexion & { _count?: { lineas: number } })
   const dj = obj(c.datos)
   const manual = c.modo === 'manual'
   return {
-    id: c.id, tipo: c.tipo, modo: c.modo, nombre: c.nombre, estado: c.estado, error: c.error,
+    id: c.id, tipo: c.tipo, modo: c.modo, nombre: c.nombre, estado: c.estado, error: c.error, actualizada: c.updatedAt.toISOString(),
     appId: d.appId ?? null, cuentas: (d.wabas ?? []).length, lineas: c._count?.lineas ?? 0,
     webhookUrl: manual ? d.webhookUrl ?? null : null, verifyToken: manual ? d.verifyToken ?? null : null, webhookApp: d.webhookApp ?? null,
     verificado: c.verificadoEn?.toISOString() ?? null, ultimoAviso: c.ultimoEventoEn?.toISOString() ?? null,
