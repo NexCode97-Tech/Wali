@@ -2,7 +2,8 @@
 // Es opcional: sin GEMINI_API_KEY las notas de voz se escuchan pero no se transcriben.
 
 // Google retira modelos sin aviso (gemini-2.5-flash dejó de existir el 19-nov y respondía 404). Se prueban en orden
-// y el que responda queda fijado mientras el servidor siga arriba; un 404 pasa al siguiente.
+// y el que responda queda fijado mientras el servidor siga arriba; un 404 (retirado) o un 429, 500 o 503 (saturado) pasa
+// al siguiente.
 const MODELOS = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-2.5-flash']
 let modeloBueno: string | null = null
 const urlModelo = (m: string) => `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`
@@ -28,7 +29,8 @@ export async function transcribirAudio(audio: Buffer, mime: string): Promise<str
       body: cuerpo,
       signal: AbortSignal.timeout(90_000),
     })
-    if (res.status !== 404) { if (res.ok) modeloBueno = m; break }
+    // 404: el modelo ya no existe. 429, 500 y 503: está saturado o falló en Google (pasó el 25-nov). Se prueba el siguiente.
+    if (![404, 429, 500, 503].includes(res.status)) { if (res.ok) modeloBueno = m; break }
   }
   if (!res || !res.ok) throw new ErrorTranscriptor(`Gemini respondió ${res?.status}: ${(await res?.text().catch(() => '') ?? '').slice(0, 300)}`)
   const datos = await res.json() as { candidates?: { content?: { parts?: { text?: string }[] } }[] }
