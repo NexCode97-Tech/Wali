@@ -90,6 +90,50 @@
   #ov-res .res > .phone.enc-pv{background:#efeae2;padding:18px 14px;display:flex;flex-direction:column;gap:10px}
   #ov-res .res .opt > .dsel{min-width:210px!important}
 }
+/* Encuesta con lista (25-nov): la vista previa de Finalizar como el WhatsApp del cliente */
+#ov-res .res > .phone.enc-pv.enl{position:relative;overflow:hidden;contain:size;min-height:430px}
+#ov-res .phone.enl .enl-hilo{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:8px;scrollbar-width:none;padding-bottom:4px}
+#ov-res .phone.enl .enl-hilo::-webkit-scrollbar{display:none}
+#ov-res .phone.enl .enl-hilo > *{flex:none}
+.enl-cta{width:100%;color:#027eb5;background:none;border:0;border-top:1px solid #e9edef;border-radius:0 0 8px 8px;cursor:pointer;font-family:inherit;transition:background-color .15s ease}
+.enl-cta:hover:not(:disabled){background:#f5f6f6}
+.enl-cta:disabled{color:#8696a0;cursor:default}
+.enl-out{align-self:flex-end;max-width:100%;background:#d9fdd3;border-radius:8px;border-top-right-radius:0;box-shadow:0 1px .5px rgba(11,20,26,.13);padding:6px 9px 5px;font:13px/1.42 Roboto,system-ui,sans-serif;color:#111b21}
+.enl-out .enc-hr{display:flex;justify-content:flex-end;align-items:center;gap:3px;font-size:10.5px;color:#667781;margin-top:1px}
+.enl-vv{width:16px;height:11px;color:#53bdeb}
+.enl-hilo > :last-child:not(:first-child){animation:enl-entra .26s cubic-bezier(.23,1,.32,1) both}
+.enl-hilo > .enl-out:nth-last-child(2){animation:enl-entra .26s cubic-bezier(.23,1,.32,1) both}
+@keyframes enl-entra{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+.enl-velo{position:absolute;inset:0;background:rgba(11,20,26,.32);animation:enl-velo .22s ease-out both;z-index:2}
+@keyframes enl-velo{from{opacity:0}}
+.enl-hoja{position:absolute;left:0;right:0;bottom:0;max-height:86%;display:flex;flex-direction:column;background:#fff;border-radius:16px 16px 0 0;box-shadow:0 -6px 24px rgba(11,20,26,.18);z-index:3;animation:enl-sube .34s cubic-bezier(.32,.72,0,1) both;font-family:Roboto,system-ui,sans-serif}
+@keyframes enl-sube{from{transform:translateY(100%)}}
+.enl-cab{display:grid;grid-template-columns:36px 1fr 36px;align-items:center;padding:10px 8px 8px;border-bottom:1px solid #e9edef}
+.enl-cab b{text-align:center;font-size:15px;font-weight:500;color:#111b21}
+.enl-x{width:32px;height:32px;display:grid;place-items:center;border:0;background:none;border-radius:50%;color:#dc2626;cursor:pointer;transition:background-color .15s ease,scale .12s ease}
+.enl-x:active{scale:.94}
+.enl-x svg{width:20px;height:20px}
+.enl-filas{overflow-y:auto;scrollbar-width:none;padding:4px 0}
+.enl-filas::-webkit-scrollbar{display:none}
+.enl-fila{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 16px;border:0;background:none;text-align:left;cursor:pointer;font-family:inherit;transition:background-color .15s ease}
+.enl-fila:hover{background:#f5f6f6}
+.enl-fila:active{background:#eceff1}
+.enl-fila > span{display:grid;gap:1px}
+.enl-fila b{font-size:14px;font-weight:400;color:#111b21}
+.enl-fila small{font-size:12px;color:#667781}
+.enl-fila i{flex:none;width:20px;height:20px;border-radius:50%;border:2px solid #8696a0;box-sizing:border-box;display:grid;place-items:center;transition:border-color .15s ease}
+.enl-fila i::after{content:"";width:10px;height:10px;border-radius:50%;background:#00a884;scale:0;transition:scale .2s cubic-bezier(.34,1.56,.64,1)}
+.enl-fila.on i{border-color:#00a884}
+.enl-fila.on i::after{scale:1}
+.enl-pie{display:flex;justify-content:flex-end;padding:8px 14px 12px;border-top:1px solid #e9edef}
+.enl-env{width:44px;height:44px;border-radius:50%;border:0;background:#00a884;color:#fff;display:grid;place-items:center;cursor:pointer;transition:opacity .2s ease,scale .12s ease}
+.enl-env svg{width:20px;height:20px;margin-left:2px}
+.enl-env:disabled{opacity:.4;cursor:default}
+.enl-env:not(:disabled):active{scale:.94}
+@media (prefers-reduced-motion:reduce){
+  .enl-hilo > *,.enl-hoja,.enl-velo{animation-duration:.01s!important}
+  .enl-fila i::after{transition:none}
+}
 /* Tablero 4: la tarjeta de la respuesta (a todo el ancho del chat, como la maqueta) y los eventos de finalizar y de la
    encuesta como la pastilla gris del tablero */
 .csat.enc-csat{width:100%}
@@ -190,8 +234,7 @@
     const ult = Date.parse(c._encuestaUltima || '');
     // Días de calendario en Colombia, como el texto («desde el 17 de octubre») y el API (bloqueanDias).
     if (ult && Math.max(0, hcDias(ult)) < e.dias) return no(whyDias(ult, e.dias));
-    const f = FORM[c.linea];
-    if (f && f.estado === 'error' && Date.parse(f.reintento || '') > Date.now()) return no(`La encuesta todavía no está lista en WhatsApp para esta línea: ${String(f.error || 'Meta no aceptó el formulario').trim().replace(/\.+$/, '')}.`);
+    // Si Meta no deja usar el formulario en la línea, la encuesta sale con lista (25-nov): no la frena.
     return {puede: true, why: ''};
   }
   const textoMsg = c => rellenar(encCfg(c.equipo || eqRespaldo()).msg, {nombre: nombreDe(c), asesor: primera(c.asig), empresa: empresa()});
@@ -218,8 +261,90 @@
     const ph = ovRes.querySelector('.res > .phone'); if (!ph) return;
     ph.classList.add('enc-pv');
     const sale = encPuede(c).puede && !!st.resEnc;
+    if (sale && conLista(c)) { pintarLista(ph, c); return; }
+    ph.classList.remove('enl');
     ph.innerHTML = `<div class="hd">Así le llega por WhatsApp</div>${sale ? globo(textoMsg(c)) : '<p class="enc-nada">Esta vez no se envía encuesta</p>'}<div id="res-prev" hidden></div>`;
   }
+  /* ── Encuesta con lista (25-nov, maqueta aprobada «Encuesta con lista») ──
+     Si Meta no deja usar el formulario en la línea, la encuesta sale pregunta por pregunta como lista, botones o texto
+     (services/crm/encuesta.ts, piezaPregunta). La vista previa de Finalizar la muestra así y se puede tocar como el
+     cliente: «Calificar» abre la lista, se elige y se envía, y sale la siguiente; las de texto se responden solas. */
+  const conLista = c => { const f = FORM[c.linea]; return !!(f && f.estado === 'error'); };
+  const ENL = {conv: null, paso: 0, sel: null, resp: [], hoja: false};
+  const ATEN = [[5, 'Excelente'], [4, 'Buena'], [3, 'Regular'], [2, 'Mala'], [1, 'Muy mala']];
+  const ENL_LISTA = SVG('<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>');
+  const ENL_X = SVG('<path d="M6 6l12 12M18 6L6 18"/>');
+  const ENL_ENVIAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.4 20.4l17.4-7.5c.8-.4.8-1.5 0-1.8L3.4 3.6c-.7-.3-1.4.3-1.2 1l1.9 6.4 9 1-9 1-1.9 6.4c-.2.7.5 1.3 1.2 1z" fill="currentColor"/></svg>';
+  const ENL_VISTO = '<svg viewBox="0 0 16 11" class="enl-vv" aria-hidden="true"><path d="M1 6l3 3 6-7M6 9l1 1 6-8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const unoADiez = t => String(t).replace(/\b0 al 10\b/g, '1 al 10').replace(/\b0 a 10\b/g, '1 a 10');
+  // Las preguntas del equipo (87-encuesta-equipo.js) con las variables puestas; sin ese archivo, las de siempre.
+  function enlCfg(c){
+    const eq = c.equipo || eqRespaldo(), v = {nombre: nombreDe(c), asesor: primera(c.asig), empresa: empresa()};
+    const e = typeof window.crmEncuestaDeEquipo === 'function' ? window.crmEncuestaDeEquipo(eq) : null;
+    const base = encCfg(eq);
+    const ps = e && Array.isArray(e.preguntas) && e.preguntas.length ? e.preguntas : [{t: 'estrellas', txt: base.p1, ops: []}, {t: 'nps', txt: base.p2, ops: []}, ...(base.comentario ? [{t: 'libre', txt: '¿Quieres contarnos algo más?', ops: []}] : [])];
+    return {msg: rellenar((e && e.msg) || base.msg, v), gracias: rellenar(e ? e.gracias : base.gracias, v), ps: ps.map(p => ({...p, txt: rellenar(p.txt, v)}))};
+  }
+  // Cómo sale cada pregunta: lo mismo que piezaPregunta del API.
+  function forma(p){
+    if (p.t === 'estrellas') return {k: 'lista', boton: 'Calificar', filas: ATEN.map(([n, d]) => ({v: n, t: `${n} · ${d}`})), txt: p.txt};
+    if (p.t === 'nps') return {k: 'lista', boton: 'Elegir', filas: [10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map(n => ({v: n, t: String(n), d: n === 10 ? 'Sí, sin duda' : n === 1 ? 'Para nada' : ''})), txt: unoADiez(p.txt)};
+    if (p.t === 'sino') return {k: 'botones', filas: [{v: 'si', t: 'Sí'}, {v: 'no', t: 'No'}], txt: p.txt};
+    if (p.t === 'opcion') {
+      const ops = p.ops || [];
+      if (ops.length <= 3 && ops.every(o => o.length <= 20)) return {k: 'botones', filas: ops.map((o, i) => ({v: i + 1, t: o})), txt: p.txt};
+      if (ops.length <= 10) return {k: 'lista', boton: 'Elegir', filas: ops.map((o, i) => ({v: i + 1, t: o})), txt: p.txt};
+      return {k: 'texto', txt: `${p.txt}\n\n${ops.map((o, i) => `${i + 1}. ${o}`).join('\n')}\n\nResponde con el número.`, ejemplo: '1'};
+    }
+    return {k: 'texto', txt: /escr[ií]b/i.test(p.txt) ? p.txt : `${p.txt} Escríbelo aquí.`, ejemplo: 'Todo muy claro, gracias'};
+  }
+  const enlEntra = (t, extra) => `<div class="enc-bi enl-in"><div class="enc-tx"><span class="enc-t">${esc(t)}</span><span class="enc-hr">ahora</span></div>${extra || ''}</div>`;
+  const enlSale = t => `<div class="enl-out"><span class="enc-t">${esc(t)}</span><span class="enc-hr">ahora${ENL_VISTO}</span></div>`;
+  function enlHoja(f){
+    return `<div class="enl-velo" data-enl-x="1"></div><div class="enl-hoja" role="dialog" aria-label="${esc(f.boton)}"><div class="enl-cab"><button type="button" class="enl-x" data-enl-x="1" aria-label="Cerrar">${ENL_X}</button><b>${esc(f.boton)}</b></div>`
+      + `<div class="enl-filas">${f.filas.map(o => `<button type="button" class="enl-fila${ENL.sel === o.v ? ' on' : ''}" data-enl-fila="${esc(o.v)}"><span><b>${esc(o.t)}</b>${o.d ? `<small>${esc(o.d)}</small>` : ''}</span><i></i></button>`).join('')}</div>`
+      + `<div class="enl-pie"><button type="button" class="enl-env" data-enl-env="1" ${ENL.sel == null ? 'disabled' : ''} aria-label="Enviar">${ENL_ENVIAR}</button></div></div>`;
+  }
+  let enlTimer = 0;
+  function pintarLista(ph, c){
+    if (ENL.conv !== c.id) Object.assign(ENL, {conv: c.id, paso: 0, sel: null, resp: [], hoja: false});
+    const e = enlCfg(c);
+    let h = '';
+    e.ps.forEach((p, i) => {
+      if (i > ENL.paso) return;
+      const f = forma(p), abierta = i === ENL.paso;
+      const txt = (i === 0 ? `${e.msg}\n\n` : '') + f.txt;
+      const extra = f.k === 'lista' ? `<button type="button" class="enc-cta enl-cta" data-enl-cta="${i}" ${abierta ? '' : 'disabled'}>${ENL_LISTA}${esc(f.boton)}</button>`
+        : f.k === 'botones' ? f.filas.map(o => `<button type="button" class="enc-cta enl-cta" data-enl-bt="${esc(o.v)}" ${abierta ? '' : 'disabled'}>${esc(o.t)}</button>`).join('') : '';
+      h += enlEntra(txt, extra);
+      if (ENL.resp[i] != null) h += enlSale(ENL.resp[i]);
+    });
+    if (ENL.paso >= e.ps.length && e.gracias) h += enlEntra(e.gracias);
+    const p = e.ps[ENL.paso], f = p ? forma(p) : null;
+    ph.classList.add('enl');
+    ph['inner' + 'HTML'] = `<div class="hd">Así le llega por WhatsApp</div><div class="enl-hilo">${h}</div>${ENL.hoja && f && f.k === 'lista' ? enlHoja(f) : ''}<div id="res-prev" hidden></div>`;
+    const hilo = ph.querySelector('.enl-hilo'); if (hilo) hilo.scrollTop = hilo.scrollHeight;
+    // Las de texto las responde la vista previa sola, como si el cliente escribiera.
+    clearTimeout(enlTimer);
+    if (f && f.k === 'texto') enlTimer = setTimeout(() => { if (ENL.conv === c.id && ENL.paso === e.ps.indexOf(p)) responder(c, f.ejemplo); }, 1400);
+  }
+  function responder(c, etiqueta){
+    ENL.resp[ENL.paso] = etiqueta; ENL.paso++; ENL.sel = null; ENL.hoja = false;
+    const ph = ovRes.querySelector('.res > .phone.enc-pv.enl'); if (ph) pintarLista(ph, c);
+  }
+  // Cada vez que se abre Finalizar, la vista previa arranca desde la primera pregunta.
+  document.getElementById('cerrar').addEventListener('click', () => { ENL.conv = null; clearTimeout(enlTimer); }, true);
+  ovRes.addEventListener('click', e => {
+    const ph = e.target.closest('.phone.enc-pv.enl'); if (!ph) return;
+    const c = CONV.find(x => x.id === ENL.conv); if (!c) return;
+    const p = enlCfg(c).ps[ENL.paso], f = p ? forma(p) : null; if (!f) return;
+    const t = e.target;
+    const cta = t.closest('[data-enl-cta]'); if (cta) { if (!cta.disabled) { ENL.hoja = true; ENL.sel = null; pintarLista(ph, c); } return; }
+    const bt = t.closest('[data-enl-bt]'); if (bt) { if (!bt.disabled) { const o = f.filas.find(x => String(x.v) === bt.dataset.enlBt); if (o) responder(c, o.t); } return; }
+    if (t.closest('[data-enl-x]')) { ENL.hoja = false; ENL.sel = null; pintarLista(ph, c); return; }
+    const fi = t.closest('[data-enl-fila]'); if (fi) { const o = f.filas.find(x => String(x.v) === fi.dataset.enlFila); ENL.sel = o ? o.v : null; pintarLista(ph, c); return; }
+    if (t.closest('[data-enl-env]') && ENL.sel != null) { const o = f.filas.find(x => x.v === ENL.sel); if (o) responder(c, o.t); }
+  });
   // La encuesta de texto de siempre en los otros canales: el diálogo de 10-nucleo.js decía «por WhatsApp» y la empresa
   // fija aunque la conversación fuera de Instagram o del correo. Dice el canal de verdad y el nombre del espacio.
   const CANAL_TXT = {web: 'el chat de la web', mail: 'correo'};

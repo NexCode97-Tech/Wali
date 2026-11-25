@@ -31,6 +31,7 @@
   const fijado = m => !!(m && m.fijado);
   const destacado = m => !!(m && Array.isArray(m.dest) && m.dest.includes(YO()));
   const ESTRELLA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.5l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg>';
+  const LISTA_ENC = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>';
   const angosto = () => matchMedia('(hover:none), (max-width:1000px)').matches;
   const primera = s => { const p = String(s ?? '').trim().split(/\s+/)[0] || ''; return /\p{L}/u.test(p) && !p.includes('@') ? p : ''; };
 
@@ -48,8 +49,11 @@
   chSuelto = function(m){
     if (!esEncuestaEnviada(m)) return sueltoAntes.apply(this, arguments);
     const c = CONV.find(x => x.id === st.sel);
-    const boton = (m.encuesta && typeof m.encuesta === 'object' && m.encuesta.boton) || 'Responder encuesta';
-    return `<div class="ch-fila yo enc-fila"><div class="ch-col"><div class="ch-b out ult enc"><span class="wb-n">${ESTRELLA}Encuesta de satisfacción</span>${esc(textoEncuesta(c, m))}<span class="enc-bt">${I('template')}${esc(boton)}</span></div>${chPie(m, true)}</div>${chAvatarPersona((c && c.asig) || yo)}</div>`;
+    // La encuesta con lista (25-nov): su botón es el de la lista («Calificar»), los botones juntos o ninguno (texto).
+    const e = m.encuesta && typeof m.encuesta === 'object' ? m.encuesta : {}, conLista = e.modo === 'lista';
+    const boton = conLista ? String(e.boton || '') : (e.boton || 'Responder encuesta');
+    const cta = boton ? `<span class="enc-bt">${conLista ? LISTA_ENC : I('template')}${esc(boton)}</span>` : '';
+    return `<div class="ch-fila yo enc-fila"><div class="ch-col"><div class="ch-b out ult enc"><span class="wb-n">${ESTRELLA}Encuesta de satisfacción</span>${esc(textoEncuesta(c, m))}${cta}</div>${chPie(m, true)}</div>${chAvatarPersona((c && c.asig) || yo)}</div>`;
   };
 
   /* ── 2 y 4 · El pintado del chat: la hora dentro de su burbuja, la flechita y el emoji, y las casillas ── */

@@ -645,10 +645,7 @@ export async function puedeEnviar(c: ConvEncuesta, cfg: CfgEncuesta, ahora = Dat
   if (!(await ventanaAbierta(c.contactoId, c.lineaId, ahora, c.ultimoEntranteAt))) return MOTIVO_VENTANA
   const ultima = Date.parse(txt(obj(c.contacto.extra)._encuestaUltima))
   if (ultima && bloqueanDias(ultima, ahora, cfg.dias)) return motivoDias(ultima, ahora)
-  const reg = (await leerRegistros())[c.linea.wabaId]
-  if (reg && reg.version === VERSION_FORMULARIO && reg.estado === 'error' && Date.parse(reg.reintento ?? '') > ahora && !enCurso.has(claveCurso(c.linea.wabaId))) {
-    return `el formulario no está listo en WhatsApp (${reg.error ?? 'Meta no lo aceptó'})`
-  }
+  // Un formulario que Meta no acepta ya no frena la encuesta: sale con lista (25-nov).
   return null
 }
 
@@ -793,14 +790,15 @@ async function salir(ev: CrmMensaje, c: ConvEncuesta, cfg: CfgEncuesta, token: s
   const linea = c.linea!
   const datos = obj(ev.datos)
   // 1. Lo de Meta: el formulario y el mensaje. Si algo falla aquí, no salió: se suelta la reserva y el evento lo dice.
-  let enviado: { wamid: string; waIdCliente: string | null; flowId: string }
+  let enviado!: { wamid: string; waIdCliente: string | null; flowId: string }
   // Las preguntas que salieron, con sus textos: la respuesta se lee con ellas aunque después se cambie la encuesta.
   let preguntas: PreguntaEncuesta[] = []
   // Lo que le llegó al cliente (texto y botón): el chat lo muestra como ese mensaje (12-nov, maqueta aprobada 316).
   let cuerpo = '', boton = ''
+  // Encuesta con lista (25-nov, maqueta aprobada «Encuesta con lista»): si Meta no deja usar el formulario en la cuenta
+  // (bloqueo de integridad, retirado…), las preguntas salen una a una como mensajes de lista, botones o texto.
+  let lista: PiezaEncuesta | null = null
   try {
-    let reg = await asegurarFormulario(linea.wabaId)
-    if (reg.estado !== 'listo' || !reg.id) throw new ErrorEncuesta(`el formulario no está listo en WhatsApp (${reg.error ?? 'Meta no lo aceptó'})`)
     const vars = await variablesDe(c.contacto.nombre, asesor)
     preguntas = preguntasDeEnvio(cfg, vars)
     cuerpo = rellenar(cfg.msg, vars).slice(0, 1024)
@@ -812,19 +810,33 @@ async function salir(ev: CrmMensaje, c: ConvEncuesta, cfg: CfgEncuesta, token: s
     })
     // La primera vez por cuenta, preparar el formulario puede tardar: la ventana de 24 h se mira otra vez justo antes de
     // mandar, para no intentar nunca con la ventana cerrada.
+    const ventana = async () => { if (!(await ventanaAbierta(c.contactoId, c.lineaId))) throw new ErrorEncuesta(MOTIVO_VENTANA) }
     const mandar = async (flowId: string) => {
-      if (!(await ventanaAbierta(c.contactoId, c.lineaId))) throw new ErrorEncuesta(MOTIVO_VENTANA)
+      await ventana()
       return { ...(await mandarFormulario(envio(flowId))), flowId }
     }
-    try {
-      enviado = await mandar(reg.id)
-    } catch (e) {
-      if (!esDelFormulario(e)) throw e
-      // Meta dice que el formulario no sirve (retirado, de otra cuenta…): se revisa, se rehace si hace falta y una vez más.
-      logger.warn(`[CRM encuesta] Meta rechazó el formulario ${reg.id} al enviar: ${(e as Error).message}`)
-      reg = await asegurarFormulario(linea.wabaId, { vencido: true })
-      if (reg.estado !== 'listo' || !reg.id) throw new ErrorEncuesta(`el formulario no está listo en WhatsApp (${reg.error ?? 'Meta no lo aceptó'})`)
-      enviado = await mandar(reg.id)
+    let reg = await asegurarFormulario(linea.wabaId)
+    let conFormulario = reg.estado === 'listo' && !!reg.id
+    if (conFormulario) {
+      try {
+        enviado = await mandar(reg.id!)
+      } catch (e) {
+        if (!esDelFormulario(e)) throw e
+        // Meta dice que el formulario no sirve (retirado, de otra cuenta…): se revisa, se rehace si hace falta y una vez más.
+        logger.warn(`[CRM encuesta] Meta rechazó el formulario ${reg.id} al enviar: ${(e as Error).message}`)
+        reg = await asegurarFormulario(linea.wabaId, { vencido: true })
+        conFormulario = reg.estado === 'listo' && !!reg.id
+        if (conFormulario) enviado = await mandar(reg.id!)
+      }
+    }
+    if (!conFormulario) {
+      if (!preguntas.length) throw new ErrorEncuesta('la encuesta no tiene preguntas')
+      logger.info(`[CRM encuesta] conversación ${c.id}: el formulario no está listo en la cuenta ${linea.wabaId} (${reg.error ?? 'sin formulario'}), sale con lista`)
+      await ventana()
+      lista = piezaPregunta(preguntas[0], 0, token, cuerpo)
+      enviado = { ...(await mandarPieza(linea, destinoWa(c.contacto), lista.envio)), flowId: '' }
+      cuerpo = lista.cuerpo
+      boton = lista.boton
     }
   } catch (e) {
     const motivo = e instanceof ErrorEncuesta || e instanceof AppError ? e.message : `no se pudo hablar con Meta: ${(e as Error)?.message ?? e}`
@@ -843,7 +855,8 @@ async function salir(ev: CrmMensaje, c: ConvEncuesta, cfg: CfgEncuesta, token: s
   // 2. Meta lo aceptó: al cliente ya le llegó. Desde aquí nada suelta la reserva ni dice «no salió»; si la base falla,
   // se reintenta y, si no, queda en el registro.
   const { wamid, waIdCliente, flowId } = enviado
-  const enc = { ...obj(datos.encuesta), flowId, preguntas, cuerpo, boton }
+  const enc = { ...obj(datos.encuesta), flowId, preguntas, cuerpo, boton, ...(lista ? { modo: 'lista', paso: 0, r: {}, espera: lista.espera } : {}) }
+  if (lista?.espera === 'texto') await conReintento(`esperar el texto de la encuesta del contacto ${c.contactoId}`, () => ponerEsperaTexto(c.contactoId, token))
   const f = await conReintento(`guardar el envío ${wamid} en el evento ${ev.id}`, () =>
     prisma.crmMensaje.update({ where: { id: ev.id }, data: { waId: wamid, estado: 'enviado', error: null, datos: json({ ...datos, encuesta: enc }) } }))
   await conReintento(`confirmar la reserva del contacto ${c.contactoId}`, () => confirmarReserva(c.contactoId, token))
@@ -1118,30 +1131,241 @@ export async function respuestaFormulario(linea: CrmLinea, m: MensajeFormulario,
   emitirCrm({ tipo: 'encuestas' })
   logger.info(`[CRM encuesta] respuesta de la conversación ${hecho.convId}: atención ${aten}, recomienda ${nps}`)
 
-  // Calificación baja: a la campana de cada líder (o administrador sin equipo), con el enlace a la conversación.
-  if (aviso.personas.length && aten !== null) {
-    const k = ev.conversacion.contacto
-    const quien = txt(k.nombre) || telVisible(k.telefono) || 'Un contacto'
-    const texto = `Calificación baja: ${quien} le dio ${aten} de 5 a la atención de ${asesor || 'su asesor'}.`
-    for (const p of aviso.personas) {
-      await avisar({ userId: p.id, tipo: 'CAMBIOS_PEDIDOS', titulo: 'Calificación baja', texto, url: `/?conv=${hecho.convId}&aviso=encuesta` })
-    }
+  await avisarBaja(aviso, hecho.convId, ev.conversacion.contacto, aten, asesor)
+  await mandarGracias(linea, cfg, ev.conversacion.contacto.nombre, asesor, tel, uid, hecho.convId)
+  return true
+}
+
+/** Calificación baja: a la campana de cada líder (o administrador sin equipo), con el enlace a la conversación. */
+async function avisarBaja(aviso: Avisados, convId: number, k: { nombre: string | null; telefono: string | null }, aten: number | null, asesor: string | null): Promise<void> {
+  if (!aviso.personas.length || aten === null) return
+  const quien = txt(k.nombre) || telVisible(k.telefono) || 'Un contacto'
+  const texto = `Calificación baja: ${quien} le dio ${aten} de 5 a la atención de ${asesor || 'su asesor'}.`
+  for (const p of aviso.personas) {
+    await avisar({ userId: p.id, tipo: 'CAMBIOS_PEDIDOS', titulo: 'Calificación baja', texto, url: `/?conv=${convId}&aviso=encuesta` })
+  }
+}
+
+/** El gracias: por texto (la ventana está abierta), si no está vacío. No se guarda en la conversación (tablero 4). */
+async function mandarGracias(linea: CrmLinea, cfg: CfgEncuesta, nombre: string | null, asesor: string | null, tel: string, uid: string, convId: number): Promise<void> {
+  const vars = await variablesDe(nombre, asesor)
+  const gracias = rellenar(cfg.gracias, vars).slice(0, 4096)
+  if (!gracias || await (await import('./plan')).sinResponder(espacioActual())) return
+  try {
+    await graph(`/${linea.phoneNumberId}/messages`, {
+      cred: await credDeLinea(linea), method: 'POST', timeoutMs: TIEMPO_META,
+      body: { messaging_product: 'whatsapp', recipient_type: 'individual', ...(tel ? { to: tel } : { recipient: uid }), type: 'text', text: { body: gracias, preview_url: false } },
+    })
+  } catch (e) {
+    logger.warn(`[CRM encuesta] el gracias de la conversación ${convId} no salió: ${(e as Error)?.message ?? e}`)
+  }
+}
+
+// ─── Encuesta con lista (25-nov, maqueta aprobada «Encuesta con lista») ────────
+// Cuando Meta no deja usar el formulario en una cuenta, cada pregunta sale como un mensaje: lista (calificación, del 5
+// al 1; recomendación, del 10 al 1, porque una lista admite máximo 10 opciones y en el NPS el 0 y el 1 son detractores
+// igual), botones (sí o no, y opción única de hasta 3 opciones cortas), lista de opciones (hasta 10) o texto (respuesta
+// libre y opción única de más de 10, que se responde con el número). Las respuestas se guardan con las mismas claves del
+// formulario (r1…r8, d1…d8, t1…t8) y se leen con leerRespuestas: la tarjeta, Informes y el aviso al líder no cambian.
+
+export interface PiezaEncuesta {
+  /** Lo que va en el mensaje (para el chat del CRM). */
+  cuerpo: string
+  /** El botón de la lista, o los botones juntos («Sí · No»); vacío si es texto. */
+  boton: string
+  /** `toque`: se responde tocando (lista o botón); `texto`: escribiendo. */
+  espera: 'toque' | 'texto'
+  /** El cuerpo de Meta sin el destino (type + interactive o text). */
+  envio: Json
+}
+
+const ETIQUETAS_ESTRELLAS: [number, string][] = [[5, 'Excelente'], [4, 'Buena'], [3, 'Regular'], [2, 'Mala'], [1, 'Muy mala']]
+/** Cuánto se espera la respuesta escrita: después, lo que escriba el cliente es un mensaje normal. */
+const ESPERA_TEXTO = 60 * 60_000
+const ID_LISTA = /^enc:(enc_\d+_[a-z0-9]{12}):(\d):(.{1,20})$/
+const corta = (s: string, n: number) => (s.length <= n ? s : `${s.slice(0, n - 1).trimEnd()}…`)
+/** La recomendación con lista va del 1 al 10: el texto que diga «0 al 10» o «0 a 10» se ajusta. */
+export const textoDeUnoADiez = (t: string) => t.replace(/\b0 al 10\b/g, '1 al 10').replace(/\b0 a 10\b/g, '1 a 10')
+
+/** El mensaje de una pregunta. `antes`: el texto de invitación, que va arriba en la primera. */
+export function piezaPregunta(p: PreguntaEncuesta, i: number, token: string, antes = ''): PiezaEncuesta {
+  const id = (v: string | number) => `enc:${token}:${i}:${v}`
+  const con = (t: string) => `${antes ? `${antes}\n\n` : ''}${t}`.slice(0, 1024)
+  const listaDe = (t: string, boton: string, rows: Json[]): PiezaEncuesta => ({
+    cuerpo: con(t), boton, espera: 'toque',
+    envio: { type: 'interactive', interactive: { type: 'list', body: { text: con(t) }, action: { button: boton, sections: [{ title: 'Elige una opción', rows }] } } },
+  })
+  const botones = (t: string, ops: { id: string; title: string }[]): PiezaEncuesta => ({
+    cuerpo: con(t), boton: ops.map(o => o.title).join(' · '), espera: 'toque',
+    envio: { type: 'interactive', interactive: { type: 'button', body: { text: con(t) }, action: { buttons: ops.map(o => ({ type: 'reply', reply: o })) } } },
+  })
+  const texto = (t: string): PiezaEncuesta => ({ cuerpo: con(t), boton: '', espera: 'texto', envio: { type: 'text', text: { body: con(t), preview_url: false } } })
+  if (p.t === 'estrellas') return listaDe(p.txt, 'Calificar', ETIQUETAS_ESTRELLAS.map(([n, e]) => ({ id: id(n), title: `${n} · ${e}` })))
+  if (p.t === 'nps') {
+    return listaDe(textoDeUnoADiez(p.txt), 'Elegir', [10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map(n => ({ id: id(n), title: String(n), ...(n === 10 ? { description: 'Sí, sin duda' } : n === 1 ? { description: 'Para nada' } : {}) })))
+  }
+  if (p.t === 'sino') return botones(p.txt, [{ id: id('si'), title: 'Sí' }, { id: id('no'), title: 'No' }])
+  if (p.t === 'opcion') {
+    if (p.ops.length <= 3 && p.ops.every(o => o.length <= 20)) return botones(p.txt, p.ops.map((o, k) => ({ id: id(k + 1), title: o })))
+    if (p.ops.length <= 10) return listaDe(p.txt, 'Elegir', p.ops.map((o, k) => ({ id: id(k + 1), title: corta(o, 24), ...(o.length > 24 ? { description: corta(o, 72) } : {}) })))
+    return texto(`${p.txt}\n\n${p.ops.map((o, k) => `${k + 1}. ${o}`).join('\n')}\n\nResponde con el número.`)
+  }
+  return texto(/escr[ií]b/i.test(p.txt) ? p.txt : `${p.txt} Escríbelo aquí.`)
+}
+
+/** Un mensaje de la encuesta con lista (mismo freno del plan que el formulario). */
+async function mandarPieza(linea: CrmLinea, destino: { to: string } | { recipient: string }, envio: Json): Promise<{ wamid: string; waIdCliente: string | null }> {
+  const porPlan = await (await import('./plan')).sinResponder(espacioActual())
+  if (porPlan) throw new AppError(porPlan, 402)
+  const r = await graph<{ messages?: { id?: string }[]; contacts?: { wa_id?: string }[] }>(`/${linea.phoneNumberId}/messages`, {
+    cred: await credDeLinea(linea), method: 'POST', timeoutMs: TIEMPO_META,
+    body: { messaging_product: 'whatsapp', recipient_type: 'individual', ...destino, ...envio },
+  })
+  const wamid = r.messages?.[0]?.id
+  if (!wamid) throw new ErrorEncuesta('Meta no devolvió el id del mensaje')
+  return { wamid, waIdCliente: telDigitos(r.contacts?.[0]?.wa_id) }
+}
+
+/** La encuesta espera una respuesta escrita (`_encuestaTexto` del contacto, con su plazo) o deja de esperarla (null). */
+async function ponerEsperaTexto(contactoId: number, token: string | null): Promise<void> {
+  const espacio = espacioActual()
+  if (token) {
+    const marca = JSON.stringify({ _encuestaTexto: { token, hasta: new Date(Date.now() + ESPERA_TEXTO).toISOString() } })
+    await prismaGlobal.$executeRaw`UPDATE crm_contactos SET extra = (CASE WHEN jsonb_typeof(extra) = 'object' THEN extra ELSE '{}'::jsonb END) || ${marca}::jsonb WHERE id = ${contactoId} AND espacio_id = ${espacio}`
+  } else {
+    await prismaGlobal.$executeRaw`UPDATE crm_contactos SET extra = extra - '_encuestaTexto' WHERE id = ${contactoId} AND espacio_id = ${espacio} AND jsonb_typeof(extra) = 'object'`
+  }
+}
+
+/** Lo que trae el webhook de un toque en la lista o en un botón, o de un texto. */
+export interface MensajeLista {
+  id: string
+  type: string
+  text?: { body?: string }
+  interactive?: { type?: string; button_reply?: { id?: string; title?: string }; list_reply?: { id?: string; title?: string } }
+}
+
+/** El valor de una respuesta para su pregunta, en la clave del formulario; null si no vale (se sigue esperando). */
+function valorDe(p: PreguntaEncuesta, i: number, v: string, escrito: boolean): Json | null {
+  const n = i + 1
+  if (p.t === 'estrellas') { const x = entero(v, 1, 5); return x === null ? null : { [`r${n}`]: String(x) } }
+  if (p.t === 'nps') { const x = entero(v, 1, 10); return x === null ? null : { [`d${n}`]: x } }
+  if (p.t === 'sino') return v === 'si' || v === 'no' ? { [`r${n}`]: v } : null
+  if (p.t === 'opcion') {
+    const num = escrito ? (v.match(/^\s*(\d{1,2})\s*\.?\s*$/)?.[1] ?? '') : v
+    const x = entero(num, 1, p.ops.length)
+    return x === null ? null : { [`r${n}`]: String(x) }
+  }
+  const t = comentarioLimpio(v)
+  return t ? { [`t${n}`]: t } : null
+}
+
+/**
+ * La respuesta a una pregunta de la encuesta con lista: un toque (id `enc:{token}:{pregunta}:{valor}`) o, si la
+ * encuesta espera texto del contacto (`_encuestaTexto`, una hora), lo que escribió. false si no es de la encuesta: sigue
+ * como mensaje normal. Si es, no abre ni reabre nada (como el formulario): se guarda, sale la siguiente pregunta y, al
+ * terminar, la tarjeta y el gracias. Corre dentro de la fila del contacto (entrantes.ts enFila).
+ */
+export async function respuestaLista(linea: CrmLinea, m: MensajeLista, tel: string, uid: string, cuando: Date): Promise<boolean> {
+  let token = '', pregunta = -1, valor = '', escrito = false
+  const toque = m.type === 'interactive' ? (m.interactive?.list_reply ?? m.interactive?.button_reply) : undefined
+  const k = await prisma.crmContacto.findFirst({ where: { OR: [...(tel ? [{ telefono: tel }] : []), ...(uid ? [{ waUid: uid }] : [])] }, select: { id: true, extra: true } })
+  if (toque) {
+    const mt = txt(toque.id).match(ID_LISTA)
+    if (!mt) return false
+    token = mt[1]; pregunta = Number(mt[2]); valor = mt[3]
+  } else if (m.type === 'text') {
+    const espera = obj(obj(k?.extra)._encuestaTexto)
+    if (!txt(espera.token) || !(Date.parse(txt(espera.hasta)) > cuando.getTime())) return false
+    token = txt(espera.token); valor = txt(m.text?.body); escrito = true
+    if (!valor) return false
+  } else return false
+
+  const mt = token.match(TOKEN)
+  if (!mt || !k) { logger.info(`[CRM encuesta] respuesta ${m.id} de la lista sin su encuesta: se ignora`); return !escrito }
+  const ev = await prisma.crmMensaje.findFirst({ where: { tipo: 'ev', datos: { path: ['encuesta', 'token'], equals: token }, conversacion: { contactoId: k.id } }, include: { conversacion: { include: { contacto: true } } } })
+  const enc = obj(obj(ev?.datos).encuesta)
+  const ps = Array.isArray(enc.preguntas) ? enc.preguntas as PreguntaEncuesta[] : []
+  const paso = typeof enc.paso === 'number' ? enc.paso : -1
+  if (!ev || enc.modo !== 'lista' || paso < 0 || paso >= ps.length) {
+    if (escrito) await ponerEsperaTexto(k.id, null)
+    logger.info(`[CRM encuesta] respuesta ${m.id} con el token ${token}: no hay una encuesta con lista abierta, se ignora`)
+    return !escrito
+  }
+  if (txt(enc.lineaId) && txt(enc.lineaId) !== linea.id) { logger.warn(`[CRM encuesta] respuesta ${m.id} de la lista por otra línea: se ignora`); return !escrito }
+  // Un toque en una lista vieja (ya respondida) no cuenta: vale la pregunta que está abierta.
+  if (!escrito && pregunta !== paso) { logger.info(`[CRM encuesta] toque ${m.id} en la pregunta ${pregunta + 1}, y la abierta es la ${paso + 1}: se ignora`); return true }
+  const dato = valorDe(ps[paso], paso, valor, escrito)
+  if (!dato) {
+    // Escribió algo que no responde (otra cosa, o una opción que no existe): sigue como mensaje normal y la encuesta espera.
+    logger.info(`[CRM encuesta] respuesta ${m.id} que no vale para la pregunta ${paso + 1}: ${escrito ? 'sigue como mensaje' : 'se ignora'}`)
+    return !escrito
   }
 
-  // El gracias: por texto (la ventana está abierta), si no está vacío. No se guarda en la conversación (tablero 4).
-  const vars = await variablesDe(ev.conversacion.contacto.nombre, asesor)
-  const gracias = rellenar(cfg.gracias, vars).slice(0, 4096)
-  if (gracias && !(await (await import('./plan')).sinResponder(espacioActual()))) {
+  const r = { ...obj(enc.r), ...dato }
+  const sig = paso + 1
+  const c = ev.conversacion
+  const destino = tel ? { to: tel } : { recipient: uid }
+  let pieza: PiezaEncuesta | null = null
+  if (sig < ps.length) {
+    pieza = piezaPregunta(ps[sig], sig, token)
     try {
-      await graph(`/${linea.phoneNumberId}/messages`, {
-        cred: await credDeLinea(linea), method: 'POST', timeoutMs: TIEMPO_META,
-        body: { messaging_product: 'whatsapp', recipient_type: 'individual', ...(tel ? { to: tel } : { recipient: uid }), type: 'text', text: { body: gracias, preview_url: false } },
-      })
+      await mandarPieza(linea, destino, pieza.envio)
     } catch (e) {
-      logger.warn(`[CRM encuesta] el gracias de la conversación ${hecho.convId} no salió: ${(e as Error)?.message ?? e}`)
+      logger.warn(`[CRM encuesta] la pregunta ${sig + 1} de la encuesta ${ev.id} no salió: ${(e as Error)?.message ?? e}`)
+      pieza = null
     }
   }
+  // Termina cuando no quedan preguntas, cuando la siguiente no salió o cuando solo quedan respuestas libres opcionales
+  // (la tarjeta queda ya; si escribe, se le suma).
+  const quedan = pieza ? ps.slice(sig) : []
+  const lista = quedan.length > 0
+  await prisma.crmMensaje.update({ where: { id: ev.id }, data: { datos: json({ ...obj(ev.datos), encuesta: { ...enc, r, paso: lista ? sig : ps.length, espera: pieza?.espera ?? null } }) } })
+  await ponerEsperaTexto(k.id, pieza?.espera === 'texto' ? token : null)
+  if (!lista || quedan.every(p => p.t === 'libre' && !p.oblig)) await guardarLista(ev.id, linea, r, m.id, cuando, tel, uid, !lista)
+  logger.info(`[CRM encuesta] encuesta con lista ${ev.id} de la conversación ${c.id}: respondió la pregunta ${paso + 1}${lista ? `, sale la ${sig + 1}` : ', terminó'}`)
   return true
+}
+
+/**
+ * La tarjeta de la encuesta con lista: la crea con lo respondido (y el aviso al líder si es baja) o, si ya estaba (quedaba
+ * una respuesta libre opcional), le suma lo nuevo. `fin`: terminó, sale el gracias.
+ */
+async function guardarLista(evId: string, linea: CrmLinea, r: Json, waId: string, cuando: Date, tel: string, uid: string, fin: boolean): Promise<void> {
+  const ev = await prisma.crmMensaje.findUnique({ where: { id: evId }, include: { conversacion: { include: { contacto: true } } } })
+  if (!ev) return
+  const enc = obj(obj(ev.datos).encuesta)
+  const leidas = leerRespuestas(Array.isArray(enc.preguntas) ? enc.preguntas as PreguntaEncuesta[] : [], r)
+  const equipo = txt(enc.equipo) || equipoDeConv(ev.conversacion)
+  const cfg = await cfgEncuestaDe(equipo)
+  const asesorId = txt(enc.asesorId) || null
+  const asesor = txt(enc.asesor) || null
+  const ya = txt(enc.csatId) ? await prisma.crmMensaje.findUnique({ where: { id: txt(enc.csatId) } }) : null
+  if (ya) {
+    const d = obj(ya.datos)
+    const csat = await prisma.crmMensaje.update({ where: { id: ya.id }, data: { datos: json({ ...d, csat: { ...obj(d.csat), aten: leidas.aten, nps: leidas.nps, com: leidas.com, respuestas: leidas.respuestas } }) } })
+    emitirMsg(ev.conversacionId, csat)
+  } else {
+    if (!leidas.respuestas.length) return
+    const aviso: Avisados = leidas.aten !== null && leidas.aten <= 2 && cfg.aviso ? await destinatarios(equipo, asesorId, ev.conversacion) : { personas: [], equipo: null }
+    const csatDatos = {
+      csat: {
+        asesor, asesorId, equipo, aten: leidas.aten, nps: leidas.nps, com: leidas.com, enc: ev.id, token: txt(enc.token), baja: leidas.aten !== null && leidas.aten <= 2,
+        respuestas: leidas.respuestas, avisados: aviso.personas.map(p => p.nombre), avisoEquipo: aviso.personas.length ? aviso.equipo : null, via: 'lista',
+      },
+    }
+    const csat = await prisma.crmMensaje.create({ data: { conversacionId: ev.conversacionId, tipo: 'csat', autorId: null, waId, createdAt: cuando, datos: json(csatDatos) } })
+    const evNuevo = await prisma.crmMensaje.update({ where: { id: ev.id }, data: { datos: json({ ...obj(ev.datos), encuesta: { ...enc, respondida: cuando.toISOString(), csatId: csat.id } }) } })
+    const conv = await prisma.crmConversacion.findUnique({ where: { id: ev.conversacionId }, select: { ultimoEntranteAt: true, lineaId: true } })
+    const masTarde = conv?.lineaId === linea.id && (!conv.ultimoEntranteAt || cuando > conv.ultimoEntranteAt)
+    await prisma.crmConversacion.update({ where: { id: ev.conversacionId }, data: { encuestada: true, ...(masTarde ? { ultimoEntranteAt: cuando } : {}) } })
+    emitirMsg(ev.conversacionId, csat)
+    emitirMsg(ev.conversacionId, evNuevo)
+    await emitirConv(ev.conversacionId)
+    await avisarBaja(aviso, ev.conversacionId, ev.conversacion.contacto, leidas.aten, asesor)
+  }
+  emitirCrm({ tipo: 'encuestas' })
+  if (fin) await mandarGracias(linea, cfg, ev.conversacion.contacto.nombre, asesor, tel, uid, ev.conversacionId)
 }
 
 // ─── Informes › Encuestas ────────────────────────────────────────────────────

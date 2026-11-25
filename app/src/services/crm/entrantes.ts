@@ -19,7 +19,7 @@ import { baseGraph, descargarMedia, explicarErrorMeta, graph, calidadTexto, limi
 import { perfilDe, tokenDePagina } from './paginas'
 import { bajarDeTelegram, contestarBoton } from './telegram'
 import { bajarDeTiktok } from './tiktok'
-import { encuestaNoLlego, respuestaFormulario } from './encuesta'
+import { encuestaNoLlego, respuestaFormulario, respuestaLista } from './encuesta'
 import { botonTerminos, respuestaTerminos } from './terminos'
 import { leerLlamadas } from './llamadas'
 import { entrante, estadoSaliente, respuesta, respuestaPermiso, terminada } from './llamadasVivo'
@@ -449,6 +449,8 @@ export async function procesarEntrante(linea: CrmLinea, m: WaMensaje, perfiles: 
     // La respuesta del formulario de la encuesta al finalizar (lote 6): tarjeta en su conversación, sin reabrirla.
     if (m.type === 'interactive' && m.interactive?.type === 'nfm_reply' && await respuestaTerminos(m, cuando)) return
     if (m.type === 'interactive' && m.interactive?.type === 'nfm_reply' && await respuestaFormulario(linea, m, tel, cuando, uid)) return
+    // La encuesta con lista (25-nov): un toque en su lista o sus botones, o lo que escribió si la encuesta espera texto.
+    if ((m.type === 'text' || (m.type === 'interactive' && (m.interactive?.type === 'list_reply' || m.interactive?.type === 'button_reply'))) && await respuestaLista(linea, m, tel, uid, cuando)) return
     const nombre = txt(perfil?.profile?.name) || txt(perfiles[0]?.profile?.name)
     // Aceptó o no las llamadas: aviso en su conversación, sin abrirla ni repartirla (no escribió nada).
     const cpr = m.type === 'interactive' && m.interactive?.type === 'call_permission_reply' ? m.interactive.call_permission_reply : null

@@ -61,6 +61,8 @@
   }
   const por = () => { if (!CFG.encuestas || typeof CFG.encuestas !== 'object') CFG.encuestas = {}; return CFG.encuestas; };
   const deEquipo = eq => norm(por()[eq] || CFG.encuesta);
+  // La encuesta con lista de la ventana de Finalizar (65-encuesta.js) arma su vista previa con las preguntas del equipo.
+  window.crmEncuestaDeEquipo = deEquipo;
   const rellenar = (t, v) => { let s = String(t || ''); for (const [k, x] of Object.entries(v)) s = x ? s.split(`{{${k}}}`).join(x) : s.replace(new RegExp(`\\s*,?\\s*\\{\\{${k}\\}\\}`, 'g'), ''); return s.replace(/[ \t]{2,}/g, ' ').trim(); };
   const ejemplo = () => ({nombre: 'Camila', asesor: String((typeof yo === 'string' && yo) || 'Sara').split(' ')[0], empresa: String(ESPACIO.nombre || 'tu empresa').trim()});
   const eqCara = (eq, cls = '') => `<span class="ee-eqa${cls}" style="background:${colorEquipo(eq)}">${typeof qIconoHTML === 'function' ? qIconoHTML(typeof qIconoDe === 'function' ? qIconoDe(eq) : 'users', cls ? 19 : 15) : I('users')}</span>`;
