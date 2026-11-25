@@ -172,7 +172,7 @@ function botonCanal(x){
   x.error = '';
   if (k === 'fb') {
     x.fbCargando = true; pintarCanal();
-    cargarSdkFacebook(p.appId).then(() => new Promise(ok => FB.login(r => ok(r), {config_id:p.configId, response_type:'code', override_default_response_type:true})))
+    loginMeta(p, null, 10)
       .then(r => { const code = r && r.authResponse && r.authResponse.code; if (!code) throw new Error('No se terminó la conexión con Meta.'); return crmApi('POST', '/crm/conexiones/pagina/meta', {code}); })
       .then(hechas => terminarCanal(x, Array.isArray(hechas) ? hechas : []))
       .catch(err => { x.error = err.message || 'No se pudo conectar con Meta'; })

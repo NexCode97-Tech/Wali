@@ -716,6 +716,15 @@ function cargarSdkFacebook(appId){
   });
   return fbSdk;
 }
+/* La ventana oficial de Meta (FB.login) con tope (24-nov): si Meta nunca responde (el navegador cortó la ventana, un
+   bloqueador, la sesión de Facebook), la pantalla no se queda en «Abriendo…» para siempre: pasado el tope, dice qué
+   pasó y deja volver a intentar. Lo usan WhatsApp (aquí) y Messenger (45-canales.js). */
+function loginMeta(p, extra, minutos){
+  let reloj = null;
+  const tope = new Promise((_, mal) => { reloj = setTimeout(() => mal(new Error('Meta no respondió. Cierra la ventana de Meta si sigue abierta y vuelve a intentarlo.')), minutos * 60_000); });
+  const login = cargarSdkFacebook(p.appId).then(() => new Promise(ok => FB.login(r => ok(r), Object.assign({config_id:p.configId, response_type:'code', override_default_response_type:true}, extra || {}))));
+  return Promise.race([login, tope]).finally(() => clearTimeout(reloj));
+}
 function conectarConFacebook(x, coex){
   const p = x.prov; if (!p || !p.listo) return;
   x.coex = !!coex; x.fbCargando = true; x.errorCx = ''; pintarConexion();
@@ -728,7 +737,7 @@ function conectarConFacebook(x, coex){
     } } catch { /* otro mensaje de Facebook */ }
   };
   window.addEventListener('message', oir);
-  cargarSdkFacebook(p.appId).then(() => new Promise(ok => FB.login(r => ok(r), {config_id:p.configId, response_type:'code', override_default_response_type:true, extras:coex ? {featureType:'whatsapp_business_app_onboarding'} : {}})))
+  loginMeta(p, {extras:coex ? {featureType:'whatsapp_business_app_onboarding'} : {}}, 20)
     .then(r => {
       const code = r && r.authResponse && r.authResponse.code;
       if (!code) throw new Error(x.errorCx || 'No se terminó la conexión con Meta.');
