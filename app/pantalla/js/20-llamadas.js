@@ -876,11 +876,33 @@ burbuja = function(m){
     <div class="ft">${m.h || ''}</div></div>`;
 };
 
-/* Botón de llamar de la conversación: dice el motivo real cuando no se puede llamar */
-function motivoSinLlamar(c){
+/* Botón de llamar de la conversación (y «Llamar» de la ficha). Si la línea no tiene las llamadas activas, la ventana
+   dice qué falta y cómo resolverlo (25-nov), con el mismo panel de requisitos de Líneas de WhatsApp (lwRequisitos, un
+   solo componente): el límite real de Meta, el número en la API y el método de pago. Si ya cumple, se activan ahí mismo
+   y se llama. Quien no administra el CRM ve qué pedirle a un administrador. */
+function dlgSinLlamadas(c){
   const l = LINEAS.find(x => x.id === c.linea);
-  if (!l) return 'Esta conversación no tiene una línea de WhatsApp conectada.';
-  return `Las llamadas por WhatsApp no están activadas en la línea ${l.n}. Se activan en Ajustes del CRM, Líneas de WhatsApp.`;
+  const cab = (t, sub) => dlgCab('wa', LOGO.wa, t, sub);
+  const cerrar = (t = 'Entendido') => `<button type="button" class="btn" data-cerrar-dlg="1">${t}</button>`;
+  st.slConv = c.id;
+  if (!l) { abrirDialogo(`${cab(`Llamar a ${esc(c.n)}`, 'Esta conversación no tiene una línea de WhatsApp conectada')}<p>Escríbele por el chat mientras tanto.</p><div class="ft2">${cerrar()}</div>`); return; }
+  if (lnCoex(l)) { abrirDialogo(`${cab('Llamadas no disponibles en esta línea', esc(l.n))}<p>El número también está en la app de WhatsApp del celular, y Meta no deja llamar desde Wali en ese modo. Para llamar desde Wali, el número tiene que estar solo en la API oficial.</p><div class="ft2">${cerrar()}</div>`); return; }
+  const lim = limiteNum(l.limite), listo = lim != null && lim >= 2000, x = LW[l.id] || (LW[l.id] = {});
+  if (metaLlamadas(l)) {
+    abrirDialogo(`${cab(`Llamadas activadas en ${esc(l.n)}`, 'Tus clientes ya te pueden llamar por WhatsApp')}<div class="ll-ok-g">${I('check')}<span>Ya puedes llamar a ${esc(c.n)} desde Wali.</span></div><div class="ft2">${cerrar('Cerrar')}<button type="button" class="btn pri" data-sl-llamar="${c.id}">${I('phone')}Llamar a ${esc(c.n)}</button></div>`, 'ancho');
+    return;
+  }
+  const titulo = listo ? `Activa las llamadas en ${esc(l.n)}` : `Las llamadas de ${esc(l.n)} aún no están activas`;
+  const sub = `Para llamar a ${esc(c.n)} y que tus clientes te llamen por WhatsApp`;
+  if (!puedeConfigurarCrm()) {
+    abrirDialogo(`${cab(titulo, sub)}<p>Pídele a un administrador de tu empresa que las active en Ajustes del CRM, Canales, Llamadas de WhatsApp. Mientras tanto, escríbele a ${esc(c.n)} por el chat.</p><div class="ft2">${cerrar()}</div>`);
+    return;
+  }
+  const subir = listo ? '' : `<div class="sl-subir"><b>Cómo subir a 2.000 conversaciones al día</b>
+      <ol><li><span>Verifica tu negocio en Meta con los documentos de la empresa (RUT o cámara de comercio).</span><a href="https://business.facebook.com/settings/security" target="_blank" rel="noopener noreferrer">Verificar mi negocio ${LW_IC.ext}</a></li>
+      <li><span>O envía plantillas a 2.000 clientes distintos en 30 días, con buena calidad.</span></li></ol>
+      <small>Meta revisa la calidad de tus mensajes, sube el límite a 2.000 y te avisa por correo.</small></div>`;
+  abrirDialogo(`${cab(titulo, sub)}${lwRequisitos(l, lim, x)}${subir}<div class="ft2">${cerrar('Cerrar')}<button type="button" class="btn" data-sl-lineas="1">Ir a Líneas de WhatsApp</button></div>`, 'ancho');
 }
 document.addEventListener('click', e => {
   if (!e.target.closest('#b-call')) return;
@@ -891,10 +913,34 @@ document.addEventListener('click', e => {
   if (llamadasActivas(c.linea) && !hl.ok) { abrirDialogo(`<h3>Ahora no se puede llamar a ${esc(c.n)}</h3><p>${esc(hl.motivo)} La Ley 2300 solo permite llamadas de venta de lunes a viernes de 7 a. m. a 7 p. m. y los sábados de 8 a. m. a 3 p. m., nunca domingos ni festivos.</p><p class="muted">Si el cliente te llama, sí puedes contestar: esa restricción es solo para las llamadas que hace el asesor.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Cerrar</button><button type="button" class="btn pri" data-ll-recordar="${esc(hl.siguiente)}" data-para="${hl.para || ''}">${I('bell')}Recordarme ${esc(hl.siguiente)}</button></div>`); return; }
   if (llamadasActivas(c.linea) && PD.rneOn && c.rne && !c.aut) { abrirDialogo(`<h3>No se puede llamar a ${esc(c.n)}</h3><p>Su número está en el Registro de Números Excluidos de la CRC y no ha autorizado a la empresa. No se le puede llamar ni incluir en difusiones.</p><p class="muted">Como escribió primero, sí le puedes responder por el chat. Si autoriza sus datos, se le puede llamar.</p><div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Entendido</button><button type="button" class="btn pri" data-ll-aut="1">${I('send')}Pedirle autorización</button></div>`); return; }
   if (llamadasActivas(c.linea)) { lvLlamar(c); return; }
-  abrirDialogo(`<h3>Llamar a ${esc(c.n)}</h3><p>${esc(motivoSinLlamar(c))} Mientras tanto, escríbele por el chat.</p>${st.rol === 'l' ? '<p class="muted">Las llamadas de cada línea se ven en Ajustes del CRM, Líneas de WhatsApp.</p>' : ''}<div class="ft2"><button type="button" class="btn" data-cerrar-dlg="1">Entendido</button></div>`);
+  dlgSinLlamadas(c);
 }, true);
+// Dentro de la ventana: activar ahí mismo (el mismo botón del panel de Líneas), ir a Líneas o llamar ya activadas.
+document.getElementById('ov-x').addEventListener('click', e => {
+  const t = e.target, c = CONV.find(x => x.id === st.slConv);
+  const ac = t.closest('[data-lw-activar]');
+  if (ac && !ac.disabled && c) {
+    const id = ac.dataset.lwActivar, x = LW[id] || (LW[id] = {});
+    x.guardando = true; dlgSinLlamadas(c);
+    lwCambiar(id, {activas: true}, 'Llamadas activadas').then(() => { if (!document.getElementById('ov-x').hidden) dlgSinLlamadas(c); });
+    return;
+  }
+  if (t.closest('[data-sl-lineas]')) { cerrarDialogo(); st.pagina = 'cfg-lineas'; render(); return; }
+  const ll = t.closest('[data-sl-llamar]'); if (ll) { const cc = CONV.find(x => x.id === +ll.dataset.slLlamar); cerrarDialogo(); if (cc) lvLlamar(cc); }
+});
 
 document.head.insertAdjacentHTML('beforeend', `<style>
+.sl-subir{display:grid;gap:8px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--bg2)}
+.sl-subir b{font-size:13.5px;font-weight:600}
+.sl-subir ol{margin:0;padding-left:18px;display:grid;gap:8px;font-size:13px;color:var(--ink2)}
+.sl-subir li > span{display:block}
+.sl-subir li a{display:inline-flex;align-items:center;gap:4px;margin-top:4px;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:2px}
+.sl-subir li a svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+/* En la ventana, el panel de requisitos va a todo el ancho (en la tarjeta de Líneas lleva la sangría de su fila). */
+.dlg > .lw{padding:0;animation:none}
+.sl-subir small{font-size:12px;color:var(--ink3)}
+.ll-ok-g{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;background:#ecfdf3;color:#15803d;font-size:13.5px;font-weight:500}
+.ll-ok-g svg{width:18px;height:18px;flex:none}
 .cx-cm{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border:1px solid var(--line);border-radius:10px;font-size:12px;font-weight:600;white-space:nowrap;background:#fff;flex:none}
 .cx-cm svg{width:14px;height:14px}
 .cx-cm.solo{color:#15803d}
@@ -938,3 +984,18 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .ln-nd{font-size:12px;font-weight:600;color:var(--ink3);white-space:nowrap}
 @media (max-width:640px){.cx-cuenta{flex-wrap:wrap}.cx-cuenta .cx-cm{margin-left:48px}}
 </style>`);
+
+/* Llamar desde la cabecera del chat (25-nov). Con menos de 1.360 px el panel del contacto (donde está «Llamar») se
+   oculta, y en tablet y celular no quedaba ninguna forma de llamar. Este ícono aparece en esos tamaños, solo en
+   conversaciones de WhatsApp, y usa el mismo botón de llamar de siempre (un solo componente): llama, o explica qué
+   falta si la línea no tiene las llamadas activas. */
+document.querySelector('.chat-h .acts').insertAdjacentHTML('afterbegin', `<button type="button" class="btn ic" id="b-call-h" aria-label="Llamar" data-tip="Llamar" hidden>${I('phone')}</button>`);
+document.head.insertAdjacentHTML('beforeend', '<style>#b-call-h{display:none}@media (max-width:1360px){#b-call-h:not([hidden]){display:inline-grid}}</style>');
+document.addEventListener('click', e => { if (!e.target.closest('#b-call-h')) return; const b = document.getElementById('b-call'); if (b) b.click(); });
+const renderLlamarCab = render;
+render = function(...a){
+  const r = renderLlamarCab.apply(this, a);
+  const b = document.getElementById('b-call-h'), c = CONV.find(x => x.id === st.sel);
+  if (b) b.hidden = !c || c.canal !== 'wa';
+  return r;
+};

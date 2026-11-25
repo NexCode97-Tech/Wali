@@ -200,7 +200,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .lw-it a{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
 .lw-it a svg{width:13px;height:13px}
 .lw-pie{display:flex;align-items:center;gap:12px;padding-top:10px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink3)}.lw-pie span{flex:1}
-.lw-btn{height:36px;padding:0 14px;border:0;border-radius:10px;background:#FFD21F;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.lw-btn{height:36px;padding:0 14px;border:0;border-radius:10px;background:#FFD21F;color:#0b0b10;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
 .lw-btn:disabled{background:#f1f5f9;color:var(--ink4);cursor:not-allowed}
 .lw-sync{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:#15803d;font-weight:600}
 .lw-sync em{font-style:normal;font-weight:400;color:var(--ink3);flex-basis:100%;padding-left:24px}

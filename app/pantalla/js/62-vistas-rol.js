@@ -205,14 +205,6 @@ document.addEventListener('click', e => {
   const ct = st.ct, n = ct.sel.size, ids = ctTodos().filter(c => ct.sel.has(c.id)).map(c => c.contactoId).filter(Boolean);
   ct.sel.clear(); st.pagina = 'difusiones'; st.dif = {...base, aud: new Set(), seleccion: n, ids, publico: 'sel', n: `Difusión a ${n} contactos elegidos`}; render();
 }, true);
-// Llamar (20-llamadas.js): la nota de «Ajustes del CRM, Líneas de WhatsApp» solo a quien puede entrar ahí.
-document.addEventListener('click', e => {
-  if (!(e.target instanceof Element) || !e.target.closest('#b-call') || document.getElementById('ov-x').hidden) return;
-  const d = document.getElementById('dlg-x'), h = [...d.querySelectorAll('p.muted')].find(x => /Líneas de WhatsApp/.test(x.textContent));
-  const llamar = /^Llamar a /.test((d.querySelector('h3') || {}).textContent || ''), ft = d.querySelector('.ft2');
-  if (h && !puedeConfigurarCrm()) h.remove();
-  else if (!h && llamar && ft && puedeConfigurarCrm()) ft.insertAdjacentHTML('beforebegin', '<p class="muted">Las llamadas de cada línea se ven en Ajustes del CRM, Líneas de WhatsApp.</p>');
-}, true);
 
 /* ── 6 · Equipo en vivo: «Pasar sus conversaciones» solo a la gente de sus equipos ── */
 const vrDlgReasignarBase = dlgReasignar;
