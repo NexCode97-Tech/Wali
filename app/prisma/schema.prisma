@@ -668,3 +668,21 @@ model RegistroError {
   @@index([ultima])
   @@map("registro_errores")
 }
+
+/// Dispositivos de cada persona que reciben las notificaciones push de Wali (25-nov): computador, Android o iPhone
+/// con Wali instalado. Uno por navegador o app; el servidor manda cada aviso a todos los de la persona.
+model PushDispositivo {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  /// La dirección del servicio de push del navegador (Google, Apple, Mozilla…). Única.
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  /// Para reconocerlo en la lista (navegador y sistema), sin datos personales.
+  agente    String?
+  createdAt DateTime @default(now()) @map("created_at")
+  usadoAt   DateTime @default(now()) @map("usado_at")
+
+  @@index([userId])
+  @@map("push_dispositivos")
+}

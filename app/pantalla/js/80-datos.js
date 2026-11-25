@@ -801,7 +801,6 @@ const crmDatos = (() => {
     if (!(c.asig === yo || !c.asig) || (AJ.silenciados || []).includes(c.contactoId || c.id)) return;
     sonarAviso(); avisoNavegador(c.n, resumenIn(m.in), 'crm-' + c.id);
   }
-  document.addEventListener('click', e => { if (e.target.closest('[data-aj-tg="navegador"]') && !AJ.navegador && window.Notification && Notification.permission === 'default') Notification.requestPermission(); }, true);
 
   /* ── Informes y ficha del cliente ── */
   const inf = {en:0, datos:null, pidiendo:false, falla:0};
@@ -934,6 +933,63 @@ window.addEventListener('message', e => {
   if (abrirDesdeAviso(new URLSearchParams(String(e.data.q || '')), true)) render();
 });
 
+/* Notificaciones push y Wali instalable (25-nov, sw.js y services/push.ts). El service worker se registra siempre:
+   con él y el manifiesto, Wali se puede instalar como aplicación en el computador, Android y iPhone. Con «Avisos del
+   navegador» encendido y el permiso dado, este dispositivo se suscribe y el servidor le manda los avisos aunque Wali
+   esté cerrado (en iPhone, solo con Wali agregado a la pantalla de inicio: así lo exige Apple). */
+const crmPushPosible = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+let crmRegSW = null;
+function crmServiceWorker(){
+  if (!('serviceWorker' in navigator)) return Promise.resolve(null);
+  return crmRegSW || (crmRegSW = navigator.serviceWorker.register('__BASE__/sw.js', {scope: '__BASE__/'}).catch(err => { console.warn('[CRM] service worker', err && err.message); return null; }));
+}
+const crmBytesClave = s => { const r = '='.repeat((4 - s.length % 4) % 4); const b = atob((s + r).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(b, c => c.charCodeAt(0)); };
+async function crmActivarPush(){
+  if (!crmPushPosible() || Notification.permission !== 'granted' || AJ.navegador === false || crmSoloLectura()) return false;
+  try {
+    const reg = await crmServiceWorker(); if (!reg) return false;
+    await navigator.serviceWorker.ready;
+    let sus = await reg.pushManager.getSubscription();
+    if (!sus) {
+      const d = await crmApi('GET', '/crm/push/clave'); if (!d || !d.clave) return false;
+      sus = await reg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: crmBytesClave(d.clave)});
+    }
+    await crmApi('POST', '/crm/push/dispositivo', sus.toJSON());
+    return true;
+  } catch (err) { console.warn('[CRM] avisos push', err && err.message); return false; }
+}
+async function crmDesactivarPush(){
+  try {
+    const reg = await crmServiceWorker(); const sus = reg && await reg.pushManager.getSubscription();
+    if (sus) { await crmApi('DELETE', '/crm/push/dispositivo', {endpoint: sus.endpoint}).catch(() => {}); await sus.unsubscribe(); }
+  } catch { /* nada que quitar */ }
+}
+// «Avisos del navegador» en Mis ajustes: al encenderlo pide el permiso y suscribe este dispositivo; al apagarlo lo quita.
+document.addEventListener('click', e => {
+  if (!e.target.closest('[data-aj-tg="navegador"]')) return;
+  if (AJ.navegador) { crmDesactivarPush(); return; }
+  if (!window.Notification) return;
+  const seguir = () => setTimeout(crmActivarPush, 400);
+  if (Notification.permission === 'default') Notification.requestPermission().then(p => { if (p === 'granted') seguir(); }); else seguir();
+}, true);
+// Al tocar una notificación con Wali ya abierto, el service worker lo trae al frente y pide abrir esa conversación.
+if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', e => {
+  const d = e.data || {};
+  if (d.tipo !== 'crm-push-abrir' || !crmCargado) return;
+  try { if (abrirDesdeAviso(new URL(d.url, location.href).searchParams, true)) render(); } catch { /* dirección rara */ }
+});
+crmServiceWorker();
+// Primera vez en este dispositivo: con «Avisos del navegador» encendido (viene así) y el permiso sin pedir, el navegador
+// lo pide con su propio cuadro al primer toque en Wali (los navegadores solo dejan pedirlo después de un toque). Una sola
+// vez por dispositivo: si la persona dice que no, no se le vuelve a preguntar; lo puede encender en Mis ajustes.
+document.addEventListener('pointerdown', function pedirPermisoPush(){
+  if (!crmCargado) return;
+  document.removeEventListener('pointerdown', pedirPermisoPush, true);
+  if (!crmPushPosible() || Notification.permission !== 'default' || AJ.navegador === false || crmSoloLectura()) return;
+  try { if (localStorage.getItem('wali-push-preguntado')) return; localStorage.setItem('wali-push-preguntado', '1'); } catch { /* sin almacenamiento: se pregunta igual */ }
+  Notification.requestPermission().then(p => { if (p === 'granted') crmActivarPush(); }).catch(() => {});
+}, true);
+
 // Arranque: primero los datos reales, después la pantalla. Mientras tanto, la bandeja muestra la burbuja escribiendo
 // de la maqueta aprobada «CRM · animación de carga de conversaciones» (opción 2, 29-sep; estilos en crm.html).
 let crmIntentos = 0;
@@ -950,7 +1006,7 @@ function crmArrancar(){
     // dirección vuelve a /crm: así el mismo aviso se puede volver a tocar y recargar no lo repite.
     try { const top = window.top; if (abrirDesdeAviso(new URLSearchParams(top.location.search), false) || top.location.search) top.history.replaceState(top.history.state, '', top.location.pathname); } catch { /* sin acceso al marco */ }
     crmCargado = true; crmIntentos = 0; colLista.removeAttribute('aria-busy');
-    pintarYo(); render(); crmListoOk(); crmMenciones(); if (window.wCargaFin) window.wCargaFin();
+    pintarYo(); render(); crmListoOk(); crmMenciones(); crmActivarPush(); if (window.wCargaFin) window.wCargaFin();
   }, err => {
     // Mientras se publica una versión nueva, el servidor reinicia unos segundos (502, 503 o 504) o la red se corta: se
     // reintenta solo, con la animación de carga, antes de mostrar el error (24-nov).

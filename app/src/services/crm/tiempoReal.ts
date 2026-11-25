@@ -185,6 +185,16 @@ export function emitirAPersona(userId: string, evento: Record<string, unknown>, 
   enOrden(() => { broadcastUsuarios(new Set([userId]), 'crm', { ...evento, por }) })
 }
 
+/** Quiénes del espacio actual ven una conversación con esos datos (el mismo alcance que el tiempo real). */
+export async function quienesVen(fila: { equipo: string | null; asignadoId: string | null; soloLider: boolean }): Promise<string[]> {
+  const espacio = espacioOpcional()
+  if (!espacio) return []
+  const gente = await genteDelEspacio(espacio)
+  if (!gente.size) return []
+  const personas = await alcancesDelEspacio(espacio, gente)
+  return personas.filter(p => veConv(p.a, fila)).map(p => p.a.userId)
+}
+
 /** Lo que se hace después de cada cambio de conversación o mensaje (webhooks de la API, 11-nov; los registra webhooks.ts). */
 export const alEmitirConv: ((conv: Record<string, unknown>) => void)[] = []
 export const alEmitirMsg: ((convId: number, m: CrmMensaje) => void)[] = []

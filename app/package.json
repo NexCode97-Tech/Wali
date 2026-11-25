@@ -49,6 +49,7 @@
     "pino-pretty": "^11.0.0",
     "prisma": "^5.0.0",
     "qrcode": "1.5.4",
+    "web-push": "^3.6.7",
     "xlsx": "file:vendor/xlsx-0.20.3.tgz",
     "zod": "^3.22.0"
   },
@@ -66,6 +67,7 @@
     "@types/node-fetch": "^2.6.13",
     "@types/nodemailer": "^6.4.24",
     "@types/qrcode": "1.5.5",
+    "@types/web-push": "^3.6.4",
     "esbuild": "0.28.2",
     "tsx": "^4.0.0",
     "typescript": "^5.0.0"

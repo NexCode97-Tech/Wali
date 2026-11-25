@@ -28,6 +28,7 @@ import { accesoCrm, alcanceDe } from '../services/crm/alcance'
 import { borrarEnlace, crearEnlace, editarEnlace, listarEnlaces } from '../services/crm/enlaces'
 import { ApiResponse } from '../utils/response'
 import { z } from 'zod'
+import { clavePublicaPush, guardarDispositivo, quitarDispositivo } from '../services/push'
 import * as webhooks from '../services/crm/webhooks'
 import { estadoPlan, historialPagos, pagarPlan, cobrarPlan, cotizarUsuarios, usuariosParaInvitar, medioDePago, prepararMedio, guardarMedio, confirmarMedio, cancelarPlan, reanudarPlan, aprobarUsuarios, bajarUsuarios, precioUsuarios, USUARIOS_MIN, USUARIOS_MAX, pagoDeEspacio, planesDelSitio, portalPagos, usoDeCuenta, PLANES, type Plan } from '../services/crm/plan'
 import { nombreRecibo, reciboPdf } from '../services/crm/recibo'
@@ -344,6 +345,23 @@ router.delete('/personas/:id', asyncHandler(ajustes.quitarDelCrm))
 router.get('/personas/:id', adminEquipos('ver los datos de las personas'), asyncHandler(ajustes.verPersona))
 router.put('/ajustes/:clave', asyncHandler(ajustes.guardarAjusteRuta))
 router.put('/preferencias', asyncHandler(ajustes.guardarPreferencias))
+
+// Notificaciones push (25-nov, services/push.ts): cada dispositivo de la persona se registra al activar los avisos.
+const suscripcionPush = z.object({
+  endpoint: z.string().url().max(2000).refine(u => u.startsWith('https://'), 'La dirección del servicio de avisos debe ser https.'),
+  keys: z.object({ p256dh: z.string().min(20).max(300), auth: z.string().min(8).max(100) }),
+})
+router.get('/push/clave', (_req: Request, res: Response) => { res.json({ success: true, data: { clave: clavePublicaPush() } }) })
+router.post('/push/dispositivo', asyncHandler(async (req: Request, res: Response) => {
+  const s = suscripcionPush.parse(req.body)
+  await guardarDispositivo(req.userId!, s, String(req.headers['user-agent'] ?? '').slice(0, 300) || null)
+  res.json({ success: true, data: { ok: true } })
+}))
+router.delete('/push/dispositivo', asyncHandler(async (req: Request, res: Response) => {
+  const { endpoint } = z.object({ endpoint: z.string().max(2000) }).parse(req.body)
+  await quitarDispositivo(req.userId!, endpoint)
+  res.json({ success: true, data: { ok: true } })
+}))
 
 // Archivos, catálogo de enlaces de pago e informes
 router.post('/archivos', unArchivo(25), asyncHandler(ajustes.subirArchivo))

@@ -182,13 +182,46 @@ router.get('/chat.js', (req: Request, res: Response) => {
 })
 
 /** El favicon de Wali (maqueta aprobada el 8-oct): 32 px para la pestaña, 180 para iPhone y el .ico de respaldo. */
-router.get(/^\/img\/wali-(32|180|512|w)\.png$/, (req: Request, res: Response) => {
+router.get(/^\/img\/wali-(32|180|192|512|w|maskable-512|badge-96)\.png$/, (req: Request, res: Response) => {
   res.setHeader('Cache-Control', 'public, max-age=604800')
   res.sendFile(join(PANTALLA, 'img', `wali-${req.params[0]}.png`))
 })
 router.get('/favicon.ico', (_req: Request, res: Response) => {
   res.setHeader('Cache-Control', 'public, max-age=604800')
   res.sendFile(join(PANTALLA, 'img', 'wali.ico'))
+})
+
+/**
+ * Wali como aplicación instalable (PWA, 25-nov) en el computador (Chrome, Edge), Android y iPhone, y el service worker
+ * que recibe las notificaciones push (services/push.ts). El service worker no se guarda en caché: el navegador revisa
+ * cada vez si cambió, así un arreglo llega de una.
+ */
+router.get('/sw.js', (_req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-cache')
+  res.type('text/javascript')
+  res.send(leer('sw.js'))
+})
+router.get('/manifest.webmanifest', (_req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'public, max-age=3600')
+  res.type('application/manifest+json')
+  const marca = MARCA()
+  res.send(JSON.stringify({
+    id: BASE + '/',
+    name: marca === 'CRM' ? 'Wali CRM' : marca,
+    short_name: marca === 'CRM' ? 'Wali' : marca.slice(0, 12),
+    description: 'Atiende WhatsApp, Instagram, Messenger y más desde una sola bandeja.',
+    lang: 'es',
+    start_url: BASE + '/',
+    scope: BASE + '/',
+    display: 'standalone',
+    background_color: '#0b0b10',
+    theme_color: '#0b0b10',
+    icons: [
+      { src: BASE + '/img/wali-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+      { src: BASE + '/img/wali-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+      { src: BASE + '/img/wali-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+    ],
+  }))
 })
 
 /** El logo de la cabecera de los correos (CRM_CORREO_LOGO): lo cargan Gmail, Outlook y Apple Mail desde otro sitio. */

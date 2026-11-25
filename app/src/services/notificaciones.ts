@@ -5,6 +5,7 @@
  */
 import { prisma } from '../config/prisma'
 import { broadcastUsuarios } from '../utils/sseManager'
+import { enviarPush } from './push'
 
 export type TipoNotificacion = string
 
@@ -31,4 +32,20 @@ export async function avisar(a: Aviso) {
   } catch {
     // Un aviso que no se puede guardar no debe tumbar la acción que lo provocó.
   }
+  void pushDeAviso(a)
+}
+
+/**
+ * El mismo aviso como notificación push en todos los dispositivos de la persona (push.ts), según sus Mis ajustes del
+ * espacio: «Avisos del navegador» apagado no manda nada; menciones y asignaciones siguen además su propio interruptor.
+ */
+async function pushDeAviso(a: Aviso): Promise<void> {
+  try {
+    const { leerPreferencias } = await import('./crm/ajustes')
+    const p = await leerPreferencias(a.userId).catch(() => ({} as Record<string, unknown>))
+    if (p.navegador === false) return
+    if (a.tipo === 'ETIQUETADO' && p.mencion === false) return
+    if (a.tipo === 'TAREA_ASIGNADA' && p.asignada === false) return
+    await enviarPush([a.userId], { t: a.titulo, b: a.texto, url: a.url, tag: a.contenidoId ? `n-${a.contenidoId}` : undefined })
+  } catch { /* un push que falla no tumba el aviso */ }
 }

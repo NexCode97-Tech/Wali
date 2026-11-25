@@ -26,6 +26,7 @@ import apiV1Routes from './routes/apiV1'
 import { servirArchivo } from './services/almacen'
 // Webhooks de la API: se registran en los avisos del CRM al cargar el módulo.
 import './services/crm/webhooks'
+import './services/crm/pushMensajes'
 import crmWebRoutes from './routes/crmWeb'
 import crmPautaRoutes from './routes/crmPauta'
 import { regresoCrm, webhookCrmManychat, webhookCrmMeta, webhookCrmTelegram, webhookCrmTiktok, webhookCrmWa } from './routes/crmWhatsapp'
