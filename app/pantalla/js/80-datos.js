@@ -731,13 +731,16 @@ const crmDatos = (() => {
         case 'conv': {
           // Una que según su alcance ya no ve (un evento que salió con el alcance de antes de un cambio de rol) se quita.
           if (d.conv && d.conv.id != null && !veConvAqui(d.conv)) { quitarConv(d.conv.id); break; }
+          const antes = d.conv ? CONV.find(x => x.id === d.conv.id) : null, eraMia = !!antes && antes.asigId === YO_ID;
           const nueva = !!d.conv && !CONV.some(x => x.id === d.conv.id), c = mezclarConv(d.conv);
+          // Te la acaban de asignar: suena y avisa (Mis ajustes, «Cuando me asignan una conversación»).
+          if (c && c.asigId === YO_ID && !eraMia && AJ.asignada) { sonarAviso(); avisoNavegador('Te asignaron una conversación', c.n, 'crm-asig-' + c.id); }
           // Se la acaban de pasar: la nota de «Transferir» que la menciona se guardó antes, así que sus Menciones cambian.
           if (nueva && c && c.asigId === YO_ID) crmMenciones();
           break;
         }
         case 'conv-borrada': quitarConv(d.id); break;
-        case 'msg': { const c = CONV.find(x => x.id === d.convId); if (c && d.msg) { const m = msgLocal(d.msg); ponerMsg(c, m); if (m.in && d.por == null) avisarEntrante(c, m); if (m.note && Array.isArray(m.menciones) && m.menciones.includes(CRM_YO.nombre)) crmMenciones(); } break; }
+        case 'msg': { const c = CONV.find(x => x.id === d.convId); if (c && d.msg) { const m = msgLocal(d.msg); ponerMsg(c, m); if (m.in && d.por == null) avisarEntrante(c, m); if (m.note && Array.isArray(m.menciones) && m.menciones.includes(CRM_YO.nombre)) { crmMenciones(); if (AJ.mencion && d.por !== YO_ID) { sonarAviso(); avisoNavegador('Te mencionaron', c.n, 'crm-men-' + c.id); } } } break; }
         case 'msg-borrado': { const c = CONV.find(x => x.id === d.convId); if (c) { c.msgs = c.msgs.filter(m => m._id !== d.msgId); const bp = baseProg.get(c.id); if (bp) bp.delete(d.msgId); } break; }
         case 'contacto': mezclarCt(d.contacto); break;
         case 'contacto-borrado': quitarCt(d.id); break;
@@ -774,11 +777,29 @@ const crmDatos = (() => {
     document.dispatchEvent(new CustomEvent('crm:evento', {detail: d}));
     repintarPronto();
   }
+  /* Sonido de aviso (25-nov: «Wali siempre debe hacer sonar los dispositivos»). Los navegadores no dejan sonar nada
+     hasta que la persona toca la página: el audio se despierta con el primer toque o tecla, así el primer mensaje que
+     llega después ya suena. Dos notas cortas, como un timbre. */
+  let ctxAviso = null;
+  const audioListo = () => { try { ctxAviso = ctxAviso || new (window.AudioContext || window.webkitAudioContext)(); if (ctxAviso.state === 'suspended') ctxAviso.resume(); } catch { /* sin audio */ } };
+  ['pointerdown', 'keydown', 'touchstart'].forEach(t => document.addEventListener(t, audioListo, {capture:true, passive:true}));
+  function sonarAviso(){
+    if (!AJ.sonido) return;
+    try {
+      audioListo(); if (!ctxAviso) return;
+      const t0 = ctxAviso.currentTime;
+      [[880, 0], [1320, 0.13]].forEach(([f, d]) => { const o = ctxAviso.createOscillator(), g = ctxAviso.createGain(); o.type = 'sine'; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t0 + d); g.gain.exponentialRampToValueAtTime(0.16, t0 + d + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d + 0.28);
+        o.connect(g).connect(ctxAviso.destination); o.start(t0 + d); o.stop(t0 + d + 0.3); });
+    } catch { /* sin audio */ }
+  }
+  function avisoNavegador(titulo, cuerpo, tag){
+    if (AJ.navegador && document.hidden && window.Notification && Notification.permission === 'granted') { try { new Notification(titulo, {body: cuerpo, tag}); } catch { /* sin avisos */ } }
+  }
   // Sonido y aviso del navegador cuando escribe alguien de mi bandeja (o sin asignar), según Mis ajustes.
   function avisarEntrante(c, m){
     if (!(c.asig === yo || !c.asig) || (AJ.silenciados || []).includes(c.contactoId || c.id)) return;
-    if (AJ.sonido) { try { const ctx = avisarEntrante.ctx || (avisarEntrante.ctx = new (window.AudioContext || window.webkitAudioContext)()); const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = 880; g.gain.setValueAtTime(0.0001, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.3); o.connect(g).connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.32); } catch { /* sin audio */ } }
-    if (AJ.navegador && document.hidden && window.Notification && Notification.permission === 'granted') { try { new Notification(c.n, {body: resumenIn(m.in), tag: 'crm-' + c.id}); } catch { /* sin avisos */ } }
+    sonarAviso(); avisoNavegador(c.n, resumenIn(m.in), 'crm-' + c.id);
   }
   document.addEventListener('click', e => { if (e.target.closest('[data-aj-tg="navegador"]') && !AJ.navegador && window.Notification && Notification.permission === 'default') Notification.requestPermission(); }, true);
 
