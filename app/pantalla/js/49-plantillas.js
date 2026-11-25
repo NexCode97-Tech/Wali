@@ -168,6 +168,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .tn-vista-tit b{font-size:13px;font-weight:600}
 .tn-vista-tit span{font-size:12.5px;color:var(--ink3)}
 /* iPhone 18 Pro Max con WhatsApp */
+.con-foto[data-ava-linea]{background:#fff!important;padding:0;overflow:hidden}.con-foto[data-ava-linea] > img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
 .tn-tel{position:sticky;top:12px;width:420px;height:900px;border-radius:68px;background:#1b1b1d;padding:12px;box-shadow:0 0 0 2px #3a3a3e,0 40px 80px -30px rgba(15,23,42,.45);box-sizing:border-box}
 .tn-tel::before{content:"";position:absolute;left:-3px;top:180px;width:3px;height:64px;border-radius:2px;background:#2a2a2d;box-shadow:0 84px 0 #2a2a2d}
 .tn-tel::after{content:"";position:absolute;right:-3px;top:230px;width:3px;height:100px;border-radius:2px;background:#2a2a2d}
@@ -374,11 +375,29 @@ function tnCampoArchivo(t){
   return `<div class="tn-subir"><span class="pre">${pre}</span><div class="tx"><b>${esc(m.n)}</b><small>${det}</small></div><button type="button" class="btn" id="t-vx">${TP_IC.x}Quitar</button></div>
     <span class="tn-ayuda">${ayuda}</span>`;
 }
+/* La foto de perfil de la línea en el encabezado de WhatsApp de los celulares de vista previa (24-nov): la trae el
+   servidor desde Meta (GET /crm/lineas/:id/foto, una vez por línea); mientras llega, o si la línea no tiene foto, va la
+   inicial de la empresa. Lo usan Plantillas, Difusiones, Flujos y Encuesta. */
+const FOTO_LINEA = {};
+// `ini` es texto (se escapa); `iniHtml`, un ícono del CRM que va tal cual (el probador de agentes).
+function avaLinea(id, ini, cls = 'ava', iniHtml = ''){
+  id = id || (LINEAS[0] && LINEAS[0].id) || '';
+  const f = id ? FOTO_LINEA[id] : '';
+  if (id && f === undefined) {
+    FOTO_LINEA[id] = '';
+    crmApi('GET', `/crm/lineas/${encodeURIComponent(id)}/foto`).then(r => {
+      FOTO_LINEA[id] = (r && typeof r.foto === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(r.foto)) ? r.foto : '';
+      if (!FOTO_LINEA[id]) return;
+      document.querySelectorAll('[data-ava-linea]').forEach(e => { if (e.dataset.avaLinea !== id || e.querySelector('img')) return; const im = new Image(); im.alt = ''; im.src = FOTO_LINEA[id]; e.replaceChildren(im); e.classList.add('con-foto'); });
+    }, () => {});
+  }
+  return `<span class="${cls}${f ? ' con-foto' : ''}" data-ava-linea="${esc(id)}">${f ? `<img alt="" src="${esc(f)}">` : (iniHtml || esc(ini))}</span>`;
+}
 /** El iPhone 18 Pro Max con WhatsApp donde se ve un mensaje como le llega al cliente. Lo usan Plantillas y Difusiones. */
-function tnCelular(marca, cuerpo, idFondo){
+function tnCelular(marca, cuerpo, idFondo, lineaId){
   return `<div class="tn-tel" aria-label="Vista previa en WhatsApp"><div class="tn-pant"><span class="tn-isla"></span>
         <div class="tn-estado"><span>9:41</span><span class="der"><svg viewBox="0 0 18 12" aria-hidden="true"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg viewBox="0 0 16 12" aria-hidden="true"><path d="M8 11.5 5.6 9a3.4 3.4 0 0 1 4.8 0Z"/><path d="M3.4 6.8a6.5 6.5 0 0 1 9.2 0l-1.2 1.2a4.8 4.8 0 0 0-6.8 0Z"/><path d="M1.1 4.5a9.8 9.8 0 0 1 13.8 0l-1.2 1.2a8.1 8.1 0 0 0-11.4 0Z"/></svg><svg viewBox="0 0 27 12" aria-hidden="true"><rect x=".5" y=".5" width="22" height="11" rx="3.5" fill="none" stroke="#000" stroke-opacity=".4"/><rect x="2" y="2" width="17" height="8" rx="2"/><path d="M24.5 4v4a2 2 0 0 0 0-4Z" fill-opacity=".4"/></svg></span></div>
-        <div class="tn-wcab"><span class="atras">${I('back')}</span><span class="ava">${esc(marca.charAt(0).toUpperCase())}</span><span class="q"><b>${esc(marca)}<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#25D366" d="M12 1.5 14.6 4l3.5-.4.9 3.4 3.1 1.7-1.3 3.3 1.3 3.3-3.1 1.7-.9 3.4-3.5-.4L12 22.5 9.4 20l-3.5.4-.9-3.4-3.1-1.7L3.2 12 1.9 8.7 5 7l.9-3.4 3.5.4Z"/><path d="m8 12 3 3 5-6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></b><small>Cuenta de empresa</small></span><span class="ic">${TP_IC.video}${TP_IC.llamar}</span></div>
+        <div class="tn-wcab"><span class="atras">${I('back')}</span>${avaLinea(lineaId, marca.charAt(0).toUpperCase())}<span class="q"><b>${esc(marca)}<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#25D366" d="M12 1.5 14.6 4l3.5-.4.9 3.4 3.1 1.7-1.3 3.3 1.3 3.3-3.1 1.7-.9 3.4-3.5-.4L12 22.5 9.4 20l-3.5.4-.9-3.4-3.1-1.7L3.2 12 1.9 8.7 5 7l.9-3.4 3.5.4Z"/><path d="m8 12 3 3 5-6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></b><small>Cuenta de empresa</small></span><span class="ic">${TP_IC.video}${TP_IC.llamar}</span></div>
         <div class="tn-fondo"${idFondo ? ` id="${idFondo}"` : ''}>${cuerpo}</div>
         <div class="tn-escribir">${I('plus')}<span class="campo2"></span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4Z"/><circle cx="12" cy="13" r="3.5"/></svg>${I('mic')}</div>
         <span class="tn-barrita"></span></div></div>`;
@@ -535,7 +554,7 @@ function tpPrimeraVez(){
     <li style="--i:2"><span class="v2-st">3</span><div><b>Úsalo cuando quieras</b><small>En difusiones y al escribirle a un cliente</small></div></li></ol>`;
   const ideas = `<div class="v2-sec"><small>O empieza con una idea</small><div class="v2-ideas">${TP_IDEAS.map((x, i) => `<button type="button" style="--i:${i}" data-tp-idea="${x.k}"><span class="v2-iic">${tpSv(x.ic)}</span><span class="v2-itx"><b>${x.n}</b><small>${x.cat}</small></span>${flecha}</button>`).join('')}</div></div>`;
   const tel = `<div class="v2-tel" aria-hidden="true"><div class="tn-tel"><div class="tn-pant"><span class="tn-isla"></span><div class="tn-estado"><span>9:41</span><span class="der">●●● ▮</span></div>
-    <div class="tn-wcab"><span class="atras">${tpSv('<path d="m15 18-6-6 6-6"/>')}</span><span class="ava">${ini2}</span><div class="q"><b>${emp}</b><small>Cuenta de empresa</small></div></div>
+    <div class="tn-wcab"><span class="atras">${tpSv('<path d="m15 18-6-6 6-6"/>')}</span>${avaLinea('', ini(ESPACIO.nombre || 'Tu empresa'))}<div class="q"><b>${emp}</b><small>Cuenta de empresa</small></div></div>
     <div class="tn-fondo"><span class="tn-dia">Hoy</span><div class="v2-escribe"><i></i><i></i><i></i></div>
       <div class="tn-msj v2-msj"><div class="tn-bur"><div class="h">Recordatorio de tu cita</div>Hola, <span class="v2-var">Valentina</span>. Te esperamos mañana a las <span class="v2-var">10:00 a. m.</span> ¿Nos confirmas?<div class="f">${emp}</div><div class="t">9:41</div></div>
       <div class="tn-boton">Confirmar</div><div class="tn-boton">Cambiar la hora</div></div></div>

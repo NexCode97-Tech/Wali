@@ -56,11 +56,11 @@ function flPorDonde(f){
       <span class="fl-ayuda">Cada número y cada cuenta conectada en Ajustes del CRM sale aquí con su equipo. Si eliges una de otro equipo, el flujo corre allá cuando la conversación sea de ${esc(quien)}.</span></div>`;
 }
 // El teléfono de la prueba: el mismo iPhone del formulario de plantillas.
-function flIphone(chat){
+function flIphone(chat, lineaId){
   const marca = (ESPACIO.nombre || 'Tu empresa').trim(), ini = marca.charAt(0).toUpperCase();
   return `<div class="tn-tel fl-tel" aria-label="Así lo vive el cliente"><div class="tn-pant"><span class="tn-isla"></span>
     <div class="tn-estado"><span>9:41</span><span class="der"><svg viewBox="0 0 18 12" aria-hidden="true"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg viewBox="0 0 16 12" aria-hidden="true"><path d="M8 11.5 5.6 9a3.4 3.4 0 0 1 4.8 0Z"/><path d="M3.4 6.8a6.5 6.5 0 0 1 9.2 0l-1.2 1.2a4.8 4.8 0 0 0-6.8 0Z"/><path d="M1.1 4.5a9.8 9.8 0 0 1 13.8 0l-1.2 1.2a8.1 8.1 0 0 0-11.4 0Z"/></svg><svg viewBox="0 0 27 12" aria-hidden="true"><rect x=".5" y=".5" width="22" height="11" rx="3.5" fill="none" stroke="#000" stroke-opacity=".4"/><rect x="2" y="2" width="17" height="8" rx="2"/><path d="M24.5 4v4a2 2 0 0 0 0-4Z" fill-opacity=".4"/></svg></span></div>
-    <div class="tn-wcab"><span class="atras">${I('back')}</span><span class="ava">${esc(ini)}</span><span class="q"><b>${esc(marca)}<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#25D366" d="M12 1.5 14.6 4l3.5-.4.9 3.4 3.1 1.7-1.3 3.3 1.3 3.3-3.1 1.7-.9 3.4-3.5-.4L12 22.5 9.4 20l-3.5.4-.9-3.4-3.1-1.7L3.2 12 1.9 8.7 5 7l.9-3.4 3.5.4Z"/><path d="m8 12 3 3 5-6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></b><small>Cuenta de empresa</small></span><span class="ic">${TP_IC.video}${TP_IC.llamar}</span></div>
+    <div class="tn-wcab"><span class="atras">${I('back')}</span>${avaLinea(lineaId, ini)}<span class="q"><b>${esc(marca)}<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#25D366" d="M12 1.5 14.6 4l3.5-.4.9 3.4 3.1 1.7-1.3 3.3 1.3 3.3-3.1 1.7-.9 3.4-3.5-.4L12 22.5 9.4 20l-3.5.4-.9-3.4-3.1-1.7L3.2 12 1.9 8.7 5 7l.9-3.4 3.5.4Z"/><path d="m8 12 3 3 5-6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></b><small>Cuenta de empresa</small></span><span class="ic">${TP_IC.video}${TP_IC.llamar}</span></div>
     <div class="tn-fondo fl-fondo"><div class="chatp" id="fl-chat">${chat}</div></div>
     <div class="tn-escribir">${I('plus')}<span class="campo2"></span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4Z"/><circle cx="12" cy="13" r="3.5"/></svg>${I('mic')}</div>
     <span class="tn-barrita"></span></div></div>`;
@@ -75,7 +75,7 @@ paginaFlujos = function(){
   html = html.replace(/<div class="fld">Canales<div class="chips2">[\s\S]*?<\/div><\/div>/, () => flPorDonde(f));
   // La prueba va en el iPhone; el botón queda abajo, separado del teléfono.
   html = html.replace(/<div class="phone"><div class="hd">([^<]*)<\/div><div class="chatp" id="fl-chat">([\s\S]*?)<\/div><\/div>\s*<button type="button" class="btn ([^"]*)" data-fl-probar="1">/, (m, hd, chat, cls) =>
-    `<span class="fl-asi">${hd}</span>${flIphone(chat)}<button type="button" class="btn ${cls} fl-probar" data-fl-probar="1">`);
+    `<span class="fl-asi">${hd}</span>${flIphone(chat, ((flViasDe(f).find(v => v.canal === 'wa') || {}).id || '').replace(/^wa:/, ''))}<button type="button" class="btn ${cls} fl-probar" data-fl-probar="1">`);
   const eqs = flEquiposDe(f);
   html = html.replace(/(<p class="sub">)(Activo|Apagado)( · \d+ pasos)(<\/p>)/, (m, a, b, c, d) => `${a}${b}${c}${eqs.length ? ' · ' + esc(eqs.join(', ')) : ''}${d}`);
   return html;
@@ -175,10 +175,23 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .pdc{width:20px;height:20px;border-radius:6px;border:2px solid var(--ink4);display:flex;align-items:center;justify-content:center;flex:none;color:transparent;box-sizing:border-box}
 .pd[aria-checked="true"] .pdc{background:#0b0b10;border-color:#0b0b10;color:#fff}
 .pdc svg{width:12px;height:12px;stroke-width:3}
-.flw:has(.fl-tel){grid-template-columns:minmax(0,1fr) 430px}
+/* El teléfono de la prueba del tamaño de los demás borradores (Difusiones, .df-tel): el mismo iPhone al 68 %, 286 px de
+   ancho, y la columna fija al bajar (24-nov). */
+.flw:has(.fl-tel){grid-template-columns:minmax(0,1fr) 300px;align-items:start}
+.fprev:has(.fl-tel){position:sticky;top:12px;align-self:start}
+.flw .two3{align-items:start}
 .fprev:has(.fl-tel){justify-items:center;gap:10px}
 .fprev .fl-asi{font-size:12.5px;color:var(--ink3);text-align:center}
-.fl-tel{position:relative;top:auto}
+.fl-tel{position:relative;top:auto;zoom:.68}
+/* El bloque del celular va fijo al deslizar: tiene que caber entero en la pantalla (25-nov: en 720 px de alto se
+   cortaba abajo). El teléfono se achica según el alto disponible. */
+@media (max-height:836px){.fl-tel{zoom:.6}}
+@media (max-height:764px){.fl-tel{zoom:.52}}
+@media (max-height:692px){.fl-tel{zoom:.45}}
+@media (max-height:629px){.fl-tel{zoom:.4}}
+/* «Probar el flujo» del ancho del teléfono y centrado debajo de él: a todo el ancho de la columna su punta quedaba
+   debajo de la burbuja de ayuda (abajo a la derecha). */
+.flw .fprev .btn.fl-probar{display:flex;width:fit-content!important;min-width:0;max-width:100%;padding-inline:28px;margin:10px auto 0!important;justify-content:center;align-self:center}
 .fl-fondo{padding:12px 10px}
 .fl-fondo .chatp{max-height:none;overflow-y:auto;height:100%;padding:2px}
 .fl-fondo .bb{font-size:15px;line-height:1.35;padding:7px 9px;border-radius:0 10px 10px 10px;color:#111b21;box-shadow:0 1px .5px rgba(11,20,26,.13)}
@@ -186,9 +199,9 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .fl-fondo .bb.ev{font-size:12px;color:#54656f;background:#fff;border-radius:8px;box-shadow:0 1px .5px rgba(11,20,26,.13)}
 .fl-fondo .opsb button{font-size:14px;color:#027eb5;border-radius:10px;padding:9px}
 .paso .ph .acc [data-fl-del]{color:#dc2626}
-.fprev .fl-probar{width:420px;justify-content:center;margin-top:18px}
-@media (max-width:1180px){.flw:has(.fl-tel){grid-template-columns:1fr}}
-@media (max-width:760px){.pdl{grid-template-columns:1fr}.fl-tel{transform:scale(.8);transform-origin:top center;margin-bottom:-180px}.fprev .fl-probar{width:100%}.fl-cab-acc{margin-left:0;flex-wrap:wrap}
+.fprev .fl-probar{width:286px;justify-content:center;margin-top:12px}
+@media (max-width:1180px){.flw:has(.fl-tel){grid-template-columns:1fr}.fprev:has(.fl-tel){position:static}}
+@media (max-width:760px){.pdl{grid-template-columns:1fr}.fl-tel{transform:none;margin-bottom:0}.fprev .fl-probar{width:100%}.fl-cab-acc{margin-left:0;flex-wrap:wrap}
   /* Celular (maqueta «Flujos: Nuevo flujo a la derecha», aprobada el 6-nov): «+» de solo ícono en la fila del título,
      la descripción debajo; en cada flujo el nombre con el interruptor y el ⋯ arriba, las etiquetas debajo desde el borde
      y cada «Equipos / Cuándo / Por dónde» en su renglón. */

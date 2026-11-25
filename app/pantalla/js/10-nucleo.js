@@ -1873,7 +1873,7 @@ function paginaFlujos(){
     if (p.t === 'mensaje') return `<textarea data-fl-txt="${i}">${esc(p.txt)}</textarea><p class="muted" style="margin:0">Puedes usar {{nombre}} si ya se lo preguntaste.</p>`;
     if (p.t === 'pregunta') return `<textarea data-fl-txt="${i}">${esc(p.txt)}</textarea>
       <div class="two3" style="grid-template-columns:1fr 1fr"><div class="fld">Guardar la respuesta en${ddSel('data-fl-guardar', ['Nombre del contacto','Correo','Ciudad','Producto'].map(x => [`${i}|${x}`, x]), `${i}|${esc(p.guardar)}`)}</div><div class="fld">Validar${ddSel('data-fl-validar', ['Nombre y apellido','Texto libre','Correo','Número'].map(x => [`${i}|${x}`, x]), `${i}|${esc(p.validar)}`)}</div></div>
-      ${p.validar !== 'Texto libre' ? `<label class="fld">Si la respuesta no sirve, pregunta de nuevo<input data-fl-reint="${i}" value="${esc(p.reintento || '')}"></label>` : ''}`;
+      ${p.validar !== 'Texto libre' ? `<label class="fld">Si la respuesta no sirve, pregunta de nuevo<textarea class="una" rows="1" data-fl-reint="${i}">${esc(p.reintento || '')}</textarea></label>` : ''}`;
     if (p.t === 'botones') return `<textarea data-fl-txt="${i}">${esc(p.txt)}</textarea><div class="ops">${p.ops.map((o, j) => `<input data-fl-op="${i}|${j}" value="${esc(o)}"><button type="button" class="btn ic" data-fl-opdel="${i}|${j}" aria-label="Quitar opción" style="width:28px;height:28px;padding:0">${I('x')}</button>`).join('')}${p.ops.length < 3 ? `<button type="button" class="btn" data-fl-opadd="${i}">${I('plus')}Opción</button>` : ''}</div><p class="muted" style="margin:0">WhatsApp permite hasta 3 botones por mensaje.</p>`;
     if (p.t === 'etiqueta') return `<div class="fld">Etiqueta${ddSel('data-fl-tag', ETIQS.map(([n]) => [`${i}|${n}`, n]), `${i}|${p.tag || ''}`)}</div>`;
     if (p.t === 'asignar') return `<div class="fld">A quién${ddSel('data-fl-asig', [...EQUIPOS.map(e => 'Reparto automático · equipo ' + e.n), ...ASESORES].map(x => [`${i}|${x}`, x]), `${i}|${esc(p.a)}`)}</div><p class="muted" style="margin:0">Aquí termina el flujo: el asesor recibe la conversación con lo que se respondió.</p>`;
@@ -1884,7 +1884,7 @@ function paginaFlujos(){
     <div class="pg-h"><div><h2>${esc(f.n)}</h2><p class="sub">${f.on ? 'Activo' : 'Apagado'} · ${f.pasos.length} pasos</p></div><button type="button" class="btn pri" data-fl-guardar-todo="1">${I('check')}Guardar</button></div>
     <div class="flw"><div style="display:grid;gap:0">
       <div class="box2" style="margin-bottom:14px">
-        <div class="two3" style="grid-template-columns:1fr 1fr"><label class="fld">Nombre<input data-fl-nombre="1" value="${esc(f.n)}"></label><div class="fld">Cuándo se activa${ddSel('data-fl-cuando', ['Llega el primer mensaje de un número nuevo','Llega un mensaje fuera de horario','Llega desde un anuncio'], f.cuando)}</div></div>
+        <div class="two3" style="grid-template-columns:1fr 1fr"><label class="fld">Nombre<input data-fl-nombre="1" value="${esc(f.n)}"></label><div class="fld">Cuándo se activa${ddSel('data-fl-cuando', ['Llega el primer mensaje de un número nuevo','Llega un mensaje fuera de horario','Llega desde un anuncio'], f.cuando)}<span class="fl-ayuda">${/anuncio/i.test(f.cuando) ? 'Solo con quien toca un anuncio de Meta o escribe por un enlace de Enlaces de pauta. Quien escribe directo no lo recibe.' : /fuera de horario/i.test(f.cuando) ? 'Solo con los números nuevos que escriben fuera del horario de atención.' : 'Con todo número nuevo que escribe, salvo si un flujo de anuncio o de fuera de horario le aplica primero.'}</span></div></div>
         <div class="fld">Canales<div class="chips2">${Object.entries(CANALES).filter(([k]) => k !== 'mail').map(([k, v]) => `<button type="button" data-fl-canal="${k}" aria-pressed="${f.canales.includes(k)}">${v.n}</button>`).join('')}</div></div>
         <div class="row2"><span>Saltar si ya es un contacto conocido<small>Si ya habló con un asesor y todavía no ha comprado, le llega directo a esa persona. Los clientes van a la lista de opciones.</small></span><button type="button" class="tg" role="switch" data-fl-saltar="1" aria-checked="${f.saltarConocidos}"></button></div>
         <div class="row2"><span>Si no responde en estos minutos, pasarlo igual al asesor<small>Para que ningún lead quede esperando en el flujo</small></span><input class="inl" data-fl-espera="1" value="${f.espera}" style="width:80px;text-align:center;border:1px solid var(--line);border-radius:9px;padding:7px"></div>
@@ -2267,14 +2267,36 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .rp-bt input{flex:1;min-width:0;font-weight:500}
 .rp-bt .rp-va{flex-basis:100%;font-size:12px;color:var(--ink3)}
 .rp-bt .cnt20{font-size:11px;color:var(--ink4);font-variant-numeric:tabular-nums}
-.rp-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.8fr);gap:10px;align-items:start}
-@media (max-width:1300px){.rp-cols{grid-template-columns:1fr}}
+/* Las columnas se deciden con el ancho del editor, no con el de la ventana (24-nov): al lado del celular de la prueba el
+   editor queda angosto, y con dos o tres columnas los campos cortaban el texto. */
+.rp{container-type:inline-size}
+.rp-cols{display:grid;grid-template-columns:1fr;gap:10px;align-items:start}
+.rp .ramas{grid-template-columns:1fr}
+@container (min-width:900px){.rp-cols{grid-template-columns:minmax(0,1fr) minmax(0,1.8fr)}.rp .ramas{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* La rama con lista de opciones (opción, lo que dice debajo y a dónde pasa) necesita todo el ancho para leerse. */
+.rp .ramas > :has(.ltab-w){grid-column:1 / -1}
 .rama-h b{font-size:12.5px;font-weight:600}
 .ltab-w{overflow-x:auto}
 .ltab{width:100%;border-collapse:collapse;font-size:12.5px;min-width:520px}
 .ltab th{text-align:left;font-weight:600;color:var(--ink2);font-size:12px;padding:4px 5px}
 .ltab td{padding:3px 5px;vertical-align:top}
 .ltab td.eq{width:180px}
+/* La descripción admite 72 letras: se lleva el ancho que sobra (la opción solo admite 24). */
+/* Cada opción de la lista es una tarjeta (25-nov): arriba la opción y a dónde pasa, debajo lo que dice, a todo el ancho.
+   Como tabla, en el editor angosto y en el celular los textos se cortaban y «Soporte de ventas» se partía en dos líneas. */
+.ltab,.ltab tbody{display:block;min-width:0}
+.ltab thead{display:none}
+.ltab tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,210px) 28px;grid-template-areas:"op eq x" "de de de";gap:8px 10px;align-items:start;padding:10px 12px 8px;border:1px solid var(--line);border-radius:12px;background:#fff;margin-bottom:8px}
+.ltab td{padding:0;min-width:0}
+.ltab td:nth-child(1){grid-area:op}.ltab td:nth-child(2){grid-area:de}.ltab td.eq{grid-area:eq;width:auto}.ltab td:nth-child(4){grid-area:x;align-self:start;margin-top:22px}
+.ltab td > input{width:100%}
+/* Textos de una línea que pueden ser largos (25-nov): crecen hacia abajo en vez de cortarse; Enter no hace salto. */
+textarea.una{field-sizing:content;resize:none;min-height:0;width:100%;overflow:hidden}
+.ltab .lt-l{display:block;font-size:11.5px;font-weight:500;color:var(--ink3);margin:0 0 4px 2px}
+.ltab .dsel .sel{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-sizing:border-box;height:34px;min-height:0;padding-top:0;padding-bottom:0;display:flex;align-items:center}
+@container (max-width:420px){.ltab tr{grid-template-columns:minmax(0,1fr) 28px;grid-template-areas:"op x" "eq eq" "de de"}}
+/* Si una rama trae la lista, las ramas van una debajo de la otra: la lista necesita todo el ancho. */
+.rp-cols:has(.ltab-w){grid-template-columns:1fr!important}
 .ltab .dsel{min-width:0!important}
 .ltab .cnt{display:block;font-size:10.5px;color:var(--ink4);text-align:right;font-variant-numeric:tabular-nums}
 .ltab .btn.ic{width:28px;height:28px;padding:0}
@@ -2340,9 +2362,9 @@ function campoRamas(p, i){
         <div class="two3" style="grid-template-columns:1fr 1fr"><label class="fld">Botón que abre la lista<input data-rp-set="${i}|lista.boton" value="${esc(L.boton)}" maxlength="20"></label>
           <label class="fld">Saludo si ya lo conocemos<input data-rp-set="${i}|saludoConocido" value="${esc(p.saludoConocido)}"></label></div>
         <div class="ltab-w"><table class="ltab"><thead><tr><th>Opción</th><th>Lo que dice debajo</th><th>Pasa a</th><th></th></tr></thead><tbody>
-          ${L.ops.map((o, j) => `<tr><td><input data-rp-lt="${i}|${j}" value="${esc(o.t)}" maxlength="24" aria-label="Opción ${j + 1}"><small class="cnt" id="rplt-${i}-${j}">${o.t.length}/24</small></td>
-            <td><input data-rp-ld="${i}|${j}" value="${esc(o.d)}" maxlength="72" aria-label="Descripción de la opción ${j + 1}"><small class="cnt" id="rpld-${i}-${j}">${o.d.length}/72</small></td>
-            <td class="eq">${ddSel('data-rp-eq', AREAS.map(e => [`${i}|${j}|${e}`, e]), `${i}|${j}|${esc(o.eq)}`)}</td>
+          ${L.ops.map((o, j) => `<tr><td><span class="lt-l">Opción ${j + 1}</span><input data-rp-lt="${i}|${j}" value="${esc(o.t)}" maxlength="24" aria-label="Opción ${j + 1}"><small class="cnt" id="rplt-${i}-${j}">${o.t.length}/24</small></td>
+            <td><span class="lt-l">Lo que dice debajo</span><textarea class="una" rows="1" data-rp-ld="${i}|${j}" maxlength="72" aria-label="Descripción de la opción ${j + 1}">${esc(o.d)}</textarea><small class="cnt" id="rpld-${i}-${j}">${o.d.length}/72</small></td>
+            <td class="eq"><span class="lt-l">Pasa a</span>${ddSel('data-rp-eq', AREAS.map(e => [`${i}|${j}|${e}`, e]), `${i}|${j}|${esc(o.eq)}`)}</td>
             <td><button type="button" class="btn ic" data-rp-ldel="${i}|${j}" aria-label="Quitar opción" ${L.ops.length > 1 ? '' : 'disabled'}>${I('x')}</button></td></tr>`).join('')}
         </tbody></table></div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">${L.ops.length < 10 ? `<button type="button" class="btn" data-rp-ladd="${i}">${I('plus')}Agregar opción</button>` : '<span></span>'}<small class="muted">WhatsApp permite hasta 10 opciones de 24 letras, con una descripción de hasta 72.</small></div>
@@ -2812,3 +2834,5 @@ document.getElementById('ov-x').addEventListener('input', e => {
   if (window.ResizeObserver) new ResizeObserver(medir).observe(nav);
   addEventListener('resize', medir);
 })();
+// Los campos que crecen (textarea.una) son de una sola línea: Enter no hace salto.
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches && e.target.matches('textarea.una')) e.preventDefault(); });

@@ -913,18 +913,24 @@ async function viaDelVinculo(_k: CrmContacto, _externoId: string): Promise<'tele
 }
 
 /** Qué flujo corre: de los del equipo de la conversación y de su línea o cuenta, los de un «Cuándo» específico que se cumple primero; si no, el del primer mensaje. En cada grupo, el de arriba. */
-async function elegirFlujo(flujos: Flujo[], conv: ConvConContacto): Promise<Flujo | null> {
+/** Los flujos encendidos que aplican a esta conversación: su línea o cuenta y su equipo. */
+function flujosActivos(flujos: Flujo[], conv: ConvConContacto): Flujo[] {
   const via = conv.canal === 'wa' ? `wa:${conv.lineaId ?? ''}` : conv.conexionId ? `cx:${conv.conexionId}` : conv.canal
   const porDonde = (f: Flujo) => Array.isArray(f.vias) ? f.vias.includes(via) : Array.isArray(f.canales) ? f.canales.includes(conv.canal) : conv.canal === 'wa'
   const deEquipo = (f: Flujo) => !Array.isArray(f.equipos) || !f.equipos.length || f.equipos.includes(conv.equipo || equipoRespaldo())
-  const activos = flujos.filter(f => f.on === true && f.pasos.length && porDonde(f) && deEquipo(f))
-  const tipo = (f: Flujo) => {
-    const c = plano(f.cuando || CUANDO_PRIMER)
-    if (c.includes('anuncio')) return 'anuncio'
-    if (c.includes('fuera de horario')) return 'fuera'
-    if (c.includes('primer mensaje')) return 'primer'
-    return 'otro'
-  }
+  return flujos.filter(f => f.on === true && f.pasos.length && porDonde(f) && deEquipo(f))
+}
+function tipoFlujo(f: Flujo): 'anuncio' | 'fuera' | 'primer' | 'otro' {
+  const c = plano(f.cuando || CUANDO_PRIMER)
+  if (c.includes('anuncio')) return 'anuncio'
+  if (c.includes('fuera de horario')) return 'fuera'
+  if (c.includes('primer mensaje')) return 'primer'
+  return 'otro'
+}
+
+async function elegirFlujo(flujos: Flujo[], conv: ConvConContacto): Promise<Flujo | null> {
+  const activos = flujosActivos(flujos, conv)
+  const tipo = tipoFlujo
   let fuera: boolean | null = null
   for (const f of activos) {
     const t = tipo(f)
@@ -981,10 +987,34 @@ export async function flujoIniciar(ctx: CtxEntrante): Promise<boolean> {
     if (!ctx.nueva && !ctx.reabierta) return false
     const conv = await prisma.crmConversacion.findUnique({ where: { id: ctx.convId }, include: { contacto: true } })
     // Por donde el CRM puede contestar: WhatsApp con línea, el chat de la web, o Instagram y Messenger con su página.
-    if (!conv || conv.estado === 'finalizadas' || conv.asignadoId || !tieneSalida(conv)) return false
+    if (!conv || conv.estado === 'finalizadas' || !tieneSalida(conv)) return false
+    // Ya es de alguien (se reabrió una conversación asignada): le llega directo a esa persona, sin flujo. Si un flujo le
+    // habría tocado, la conversación dice por qué no corrió (24-nov), para que no parezca una falla.
+    if (conv.asignadoId) {
+      if (!leerEstado(conv.extra)) {
+        const f0 = await elegirFlujo(await leerFlujos(), conv)
+        if (f0) {
+          const quien = (await nombreDe(conv.asignadoId)) ?? 'un asesor'
+          await guardarMensaje(conv.id, { ev: 'flow', t: `No corre el flujo ${f0.n}: este número ya había escrito y la conversación es de ${quien}. Le llega directo.` }, { autorId: null, por: null })
+        }
+      }
+      return false
+    }
     if (leerEstado(conv.extra)) return true
-    const f = await elegirFlujo(await leerFlujos(), conv)
-    if (!f) return false
+    const flujos = await leerFlujos()
+    const f = await elegirFlujo(flujos, conv)
+    if (!f) {
+      // Un número nuevo con flujos encendidos que no le aplican: la conversación dice por qué no corrió ninguno.
+      const aqui = ctx.contactoNuevo ? flujosActivos(flujos, conv) : []
+      if (aqui.length) {
+        const n = aqui.map(x => x.n).join(', '), uno = aqui.length === 1
+        const porque = aqui.every(x => tipoFlujo(x) === 'anuncio') ? 'no llegó desde un anuncio'
+          : aqui.every(x => tipoFlujo(x) === 'fuera') ? 'llegó dentro del horario de atención'
+          : 'no llegó desde un anuncio ni fuera del horario de atención'
+        await guardarMensaje(conv.id, { ev: 'flow', t: `No corre ${uno ? 'el flujo' : 'ningún flujo'} ${n}: ${porque}. Pasa al reparto.` }, { autorId: null, por: null })
+      }
+      return false
+    }
 
     // ¿Ya lo conocemos? Cliente registrado, conversaciones anteriores o dueño.
     const k = conv.contacto

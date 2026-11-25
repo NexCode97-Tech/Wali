@@ -25,6 +25,7 @@ import {
   empezarTiktok, firmaTiktokValida, guardarProveedorTiktok, proveedorTiktokPublico, revisarTiktok, secretoAvisosTiktok, terminarTiktok,
 } from '../services/crm/tiktok'
 import { descifrar } from '../services/crm/cifrado'
+import { credDeLinea } from '../services/crm/credenciales'
 import { enEspacio } from '../services/crm/espacio'
 import { recibirManychat } from '../services/crm/manychat'
 import { emitirConexiones as emitirConexionesDe } from '../services/crm/conexiones'
@@ -340,6 +341,40 @@ rutasWaCrm.post('/lineas', soloLideres, asyncHandler(async (req: Request, res: R
   // El marketing optimizado de su cuenta se averigua aparte: no demora la conexión.
   void revisarMarketingDeConexion(c.id)
   return ApiResponse.created(res, front)
+}))
+
+/**
+ * La foto de perfil de la línea en WhatsApp (24-nov), para los celulares de vista previa (flujos, plantillas, difusiones,
+ * encuesta). Meta la da en el perfil de empresa del número (`whatsapp_business_profile`, campo `profile_picture_url`), con
+ * una dirección que vence: el servidor la trae y la manda ya lista (data URL), porque la pantalla usa token y no cookie.
+ * Se guarda 6 horas en memoria por línea; sin foto o si Meta no responde, `foto: null` y la pantalla deja la inicial.
+ */
+const FOTOS_LINEA = new Map<string, { t: number; foto: string | null }>()
+const CDN_META = /(^|\.)(fbcdn\.net|whatsapp\.net|facebook\.com)$/i
+rutasWaCrm.get('/lineas/:id/foto', asyncHandler(async (req: Request, res: Response) => {
+  // Primero la línea del espacio actual: así nadie lee la foto guardada de una línea de otro espacio.
+  const linea = await prisma.crmLinea.findUnique({ where: { id: String(req.params.id) }, select: { id: true, phoneNumberId: true, conexionId: true } })
+  if (!linea) throw new NotFoundError('Esa línea no existe')
+  const guardada = FOTOS_LINEA.get(linea.id)
+  if (guardada && Date.now() - guardada.t < 6 * 3_600_000) return ApiResponse.success(res, { foto: guardada.foto })
+  let foto: string | null = null
+  try {
+    const cred = await credDeLinea(linea)
+    const r = await graph<{ data?: { profile_picture_url?: string }[] }>(`/${linea.phoneNumberId}/whatsapp_business_profile`, { cred, query: { fields: 'profile_picture_url' } })
+    const url = String(r.data?.[0]?.profile_picture_url ?? '')
+    if (url && /^https:\/\//.test(url) && CDN_META.test(new URL(url).hostname)) {
+      const img = await fetch(url, { signal: AbortSignal.timeout(10_000) })
+      const tipo = (img.headers.get('content-type') || '').split(';')[0]
+      if (img.ok && /^image\/(jpeg|png|webp)$/.test(tipo)) {
+        const b = Buffer.from(await img.arrayBuffer())
+        if (b.length && b.length < 1_500_000) foto = `data:${tipo};base64,${b.toString('base64')}`
+      }
+    }
+  } catch (e) {
+    logger.info(`[CRM líneas] sin foto de perfil de ${linea.id}: ${(e as Error)?.message ?? e}`)
+  }
+  FOTOS_LINEA.set(linea.id, { t: Date.now(), foto })
+  return ApiResponse.success(res, { foto })
 }))
 
 rutasWaCrm.patch('/lineas/:id', soloLideres, asyncHandler(async (req: Request, res: Response) => {
