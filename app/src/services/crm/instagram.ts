@@ -278,6 +278,10 @@ export async function empezarInstagram(baseApi: string, por: string | null): Pro
   u.searchParams.set('response_type', 'code')
   u.searchParams.set('scope', 'instagram_business_basic,instagram_business_manage_messages')
   u.searchParams.set('state', `${c.clave}.${nonce}`)
+  // Sin esto, quien no tenía sesión abierta en Instagram entra por el inicio de sesión normal y Instagram lo deja en
+  // su perfil, sin volver a la pantalla de permisos (24-nov). Con force_reauth el inicio de sesión es parte de la misma
+  // ventana de autorización y sigue directo a «Permitir»; además deja elegir la cuenta profesional correcta.
+  u.searchParams.set('force_reauth', 'true')
   logger.info(`[CRM instagram] inicio de sesión empezado por ${por}`)
   return { url: u.toString() }
 }
