@@ -1456,7 +1456,11 @@ LOGO.g = '<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M2
 /* Cabecera de un diálogo con la marca del canal: ícono en su color, título y una línea que explica. */
 const dlgCab = (clase, icono, titulo, sub) => `<div class="dlg-cab"><span class="marca ${clase}">${icono}</span><div><h3>${titulo}</h3>${sub ? `<p>${sub}</p>` : ''}</div></div>`;
 /* Pasos de un asistente: los hechos llevan chulo; el actual, resaltado. */
-const pasosHTML = (nombres, actual) => `<div class="pasos2" aria-label="Paso ${actual} de ${nombres.length}">${nombres.map((n, i) => `<div class="${i + 1 < actual ? 'hecho' : i + 1 === actual ? 'on' : ''}"${i + 1 === actual ? ' aria-current="step"' : ''}><i>${i + 1 < actual ? I('check') : i + 1}</i>${n}</div>`).join('')}</div>`;
+// Al terminar (actual > número de pasos) el último paso es donde está la persona: va amarillo, como paso actual, con su
+// chulo; los anteriores quedan terminados en negro (regla del círculo numerado, 25-nov).
+const pasosHTML = (nombres, actual) => { const fin = actual > nombres.length;
+  return `<div class="pasos2" aria-label="Paso ${Math.min(actual, nombres.length)} de ${nombres.length}">${nombres.map((n, i) => { const ult = fin && i === nombres.length - 1, cls = ult ? 'on' : i + 1 < actual ? 'hecho' : i + 1 === actual ? 'on' : '';
+    return `<div class="${cls}"${cls === 'on' ? ' aria-current="step"' : ''}><i>${i + 1 < actual ? I('check') : i + 1}</i>${n}</div>`; }).join('')}</div>`; };
 // Todo diálogo lleva su botón de cerrar arriba a la derecha (además de Escape y el clic afuera).
 function abrirDialogo(html, clase = ''){ const d = document.getElementById('dlg-x'); d.className = 'dlg' + (clase ? ' ' + clase : ''); d.innerHTML = `<button type="button" class="dlg-cerrar" data-cerrar-dlg="1" aria-label="Cerrar">${I('x')}</button>` + html; document.getElementById('ov-x').hidden = false; }
 function cerrarDialogo(){ document.getElementById('ov-x').hidden = true; }
