@@ -822,7 +822,8 @@ export async function enviarPorWhatsapp(msgId: string): Promise<void> {
     textoFinalPlantilla.delete(msgId)
     porMarketing.delete(msgId)
     const texto = e instanceof ErrorEnvio || e instanceof AppError ? e.message : esCorte(e) ? 'No se pudo enviar: la conexión se cortó mientras salía. Toca Reintentar.' : `No se pudo enviar: ${(e as Error)?.message ?? e}`
-    logger.warn(`[CRM WA] envío ${msgId} falló: ${texto}`)
+    // El área es la del canal (25-nov: las fallas de Instagram salían como «WA» y despistaron el diagnóstico).
+    logger.warn(`[CRM ${({ wa: 'WA', fb: 'fb', ig: 'ig', tg: 'tg', tt: 'tt', mail: 'correo' } as Record<string, string>)[canalDe] ?? canalDe}] envío ${msgId} falló: ${texto}`)
     if (!porPlan) avisarFalla(({ wa: 'WhatsApp', fb: 'Messenger', ig: 'Instagram', tg: 'Telegram', tt: 'TikTok', mail: 'correo' } as Record<string, string>)[canalDe] ?? canalDe, texto, e instanceof ErrorMeta ? e.codigo : undefined)
     // Token vencido o sin permiso: la cuenta de Meta queda con el problema a la vista en Líneas de WhatsApp (6-oct),
     // no solo en el mensaje que falló.

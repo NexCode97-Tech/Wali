@@ -155,6 +155,18 @@ export async function leerDeUrl(url: string): Promise<{ buffer: Buffer; tipo: st
   return { buffer: Buffer.from(await r.Body!.transformToByteArray()), tipo: r.ContentType || 'application/octet-stream' }
 }
 
+/**
+ * Enlace firmado del bucket (vence) a partir de la dirección de Wali (con &v= enlaza la versión convertida). Para que
+ * Meta baje el archivo directo, sin pasar por walicrm.com (Instagram por enlace, 25-nov). null si no es de Wali.
+ */
+export async function enlaceDirecto(url: string, segundos = 24 * 3600): Promise<string | null> {
+  const clave = claveDeUrl(url)
+  if (!clave) return null
+  const v = new URL(url).searchParams.get('v') ?? ''
+  const k = v in FORMATOS ? await variante(clave, v as Formato) : clave
+  return enlaceTemporal(k, segundos)
+}
+
 /** Deja listas en segundo plano las versiones de un audio recién subido (nota de voz de WhatsApp y mp3), para que el envío no espere a ffmpeg. */
 export function prepararAudio(url: string): void {
   const clave = claveDeUrl(url)

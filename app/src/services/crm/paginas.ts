@@ -434,7 +434,12 @@ export async function enviarPorPagina(m: MsgPagina): Promise<{ mid: string; extr
       if (!archivoPermitido(fuente)) throw new ErrorEnvio('El archivo no está en la Nube del CRM: vuelve a adjuntarlo')
       const tipo = esAudio ? 'audio' : tipoInstagram(fuente, mime)
       // Instagram por enlace no recibe bien los documentos de la Nube (salen sin tipo): van como enlace.
-      if (tipo) partes.push({ attachment: { type: tipo, payload: { url: fuente } } })
+      // 25-nov: ningún archivo salía (Meta 100/2018007 «Upload failed»). Ahora va como dice la API de Instagram
+      // (`attachments`) y con el enlace directo del bucket, para que Meta lo baje sin pasar por walicrm.com.
+      if (tipo) {
+        const directo = await (await import('../almacen')).enlaceDirecto(fuente).catch(e => { logger.warn(`[CRM páginas] sin enlace directo del archivo para Instagram: ${(e as Error)?.message ?? e}`); return null })
+        partes.push({ attachments: { type: tipo, payload: { url: directo || fuente } } })
+      }
       else texto = texto ? `${texto}\n\n${nombre}: ${fuente}` : `${nombre}: ${fuente}`
     }
     if (texto) partes.push({ text: texto })
