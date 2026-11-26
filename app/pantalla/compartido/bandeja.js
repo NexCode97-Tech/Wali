@@ -166,7 +166,8 @@ button.wb-cerrar-cajon:hover{background:#fef2f2}button.wb-cerrar-cajon:active{tr
 .wb-lista .it .tj-chip span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wb-lista .it .tj-chip svg{width:12px;height:12px;flex:0 0 auto;fill:none;stroke:currentcolor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
 .wb-lista .it .tj-chip.et{border-radius:7px;font-weight:600}
-.wb-lista .it .tj-chip.tg{background:none;padding:0px 2px;color:rgb(75, 85, 99)}
+.wb-lista .it .tj-chip.tg{background:none;padding:0px 2px;color:rgb(75, 85, 99);width:auto;height:22px;position:static}
+.wb-lista .it .tj-chip.tg::after{content:none}
 .wb-lista .it .tj-chip.am{background:rgb(255, 248, 225);color:rgb(122, 90, 0)}
 .wb-lista .it .tj-chip.rj{background:rgb(254, 226, 226);color:rgb(185, 28, 28)}
 .wb-lista .tj-carga{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding-bottom:60px}

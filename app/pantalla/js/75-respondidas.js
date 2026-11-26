@@ -4,7 +4,11 @@
    espera vuelve y regresa sola a Por responder. Solo con las abiertas; en Pendientes y Finalizadas no filtra. ── */
 st.resp = 'por';
 const respEsPor = c => !!c.esperaMin;
-const respActivo = () => !st.menciones && (st.est || 'abiertas') === 'abiertas';
+// 26-nov (maqueta «Etiquetas con todos sus chats»): con una etiqueta o una etapa de la barra puesta, la lista muestra
+// todos sus chats y los dos botones se recogen. Antes abría en «Por responder» y, si los chats de esa etiqueta ya
+// estaban respondidos, quedaba vacía aunque la barra dijera que había.
+const respPorBarra = () => !!(st.tag || st.etq);
+const respActivo = () => !st.menciones && (st.est || 'abiertas') === 'abiertas' && !respPorBarra();
 const visiblesSinResp = visibles;
 // Al responder, la conversación pasa a Respondidas de una vez (sale de la lista de Por responder y cambian los
 // contadores), pero el chat abierto NO se cierra (10-nov, reporte de soporte S-1002): sigue en pantalla hasta que la
@@ -37,7 +41,22 @@ function respPintar(){
   s.insertAdjacentHTML('beforeend', `<button type="button" data-rp="por" aria-pressed="${st.resp === 'por'}">Por responder<span class="n">${por}</span></button><button type="button" data-rp="resp" aria-pressed="${st.resp === 'resp'}">Respondidas<span class="n">${base.length - por}</span></button>`);
 }
 const navSinResp = nav;
-nav = function(){ const r = navSinResp.apply(this, arguments); respPintar(); return r; };
+// Al recogerse o volver los botones, lo de abajo (filtros puestos y la lista) se desliza a su lugar: solo transform.
+const respMoviles = () => [document.getElementById('fchips'), document.querySelector('.items')].filter(x => x && x.offsetParent);
+nav = function(){
+  const s0 = document.querySelector('.rp-seg'), antes = !!s0 && !s0.hidden;
+  const tops = new Map(respMoviles().map(x => [x, x.getBoundingClientRect().top]));
+  const r = navSinResp.apply(this, arguments); respPintar();
+  const s = document.querySelector('.rp-seg'), ahora = !!s && !s.hidden;
+  if (!s0 || antes === ahora || matchMedia('(prefers-reduced-motion: reduce)').matches) return r;
+  const ease = 'cubic-bezier(.23,1,.32,1)';
+  if (ahora) s.animate([{opacity: 0, transform: 'translateY(-6px)'}, {opacity: 1, transform: 'none'}], {duration: 240, easing: ease});
+  for (const x of respMoviles()) {
+    const d = (tops.get(x) ?? x.getBoundingClientRect().top) - x.getBoundingClientRect().top;
+    if (Math.abs(d) > 1) x.animate([{transform: `translateY(${d}px)`}, {transform: 'none'}], {duration: ahora ? 260 : 220, easing: ease});
+  }
+  return r;
+};
 document.addEventListener('click', e => {
   const b = e.target.closest('.rp-seg [data-rp]'); if (!b) return;
   st.resp = b.dataset.rp; const p = respFiltrar(visiblesSinResp())[0]; if (p) st.sel = p.id; render();
