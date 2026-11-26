@@ -40,6 +40,10 @@
   #app .nav.wb-plegada .me .av{position:relative}
   #app .nav.wb-plegada .me .av::after{content:"";position:absolute;right:-1px;bottom:-1px;width:10px;height:10px;border-radius:50%;background:var(--nav-est,#22c55e);border:2px solid var(--nx-negro,#0b0b10)}
 }
+/* Por debajo de 1180 px la ficha se esconde (crm.html): con la barra plegada tampoco queda su columna vacía. */
+@media (min-width:1001px) and (max-width:1180px){
+  #app.app.nav-plegada,#app.app.nav-plegada.panel-min{grid-template-columns:76px calc(var(--wb-lista,357px) + 23px) minmax(0,1fr)}
+}
 @media (prefers-reduced-motion:reduce){#app.app::before,#app.wb-anima > .nav{transition:none}}
 </style>`);
 

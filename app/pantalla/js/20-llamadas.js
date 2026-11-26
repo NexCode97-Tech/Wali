@@ -990,7 +990,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
    conversaciones de WhatsApp, y usa el mismo botón de llamar de siempre (un solo componente): llama, o explica qué
    falta si la línea no tiene las llamadas activas. */
 document.querySelector('.chat-h .acts').insertAdjacentHTML('afterbegin', `<button type="button" class="btn ic" id="b-call-h" aria-label="Llamar" data-tip="Llamar" hidden>${I('phone')}</button>`);
-document.head.insertAdjacentHTML('beforeend', '<style>#b-call-h{display:none}@media (max-width:1360px){#b-call-h:not([hidden]){display:inline-grid}}</style>');
+document.head.insertAdjacentHTML('beforeend', '<style>#b-call-h{display:none}@media (max-width:1180px){#b-call-h:not([hidden]){display:inline-grid}}</style>');
 document.addEventListener('click', e => { if (!e.target.closest('#b-call-h')) return; const b = document.getElementById('b-call'); if (b) b.click(); });
 const renderLlamarCab = render;
 render = function(...a){

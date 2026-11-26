@@ -92,6 +92,9 @@
 }
 @media (min-width:1001px) and (max-width:1360px){
   #app.app{--navw:220px}
+}
+/* Sin la ficha (se esconde por debajo de 1180 px desde el 25-nov), el chat lleva el margen de la orilla. */
+@media (min-width:1001px) and (max-width:1180px){
   #app > .chat{margin-right:18px}
 }`;
   const st = document.createElement('style');
