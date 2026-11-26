@@ -413,13 +413,39 @@
     const hb = document.getElementById('ay-hbtn'); if (hb) hb.setAttribute('aria-pressed', String(A.vista === 'historial'));
     pintarFab();
   }
-  // 25-nov, pedido del usuario: «de momento escondamos el botón del chat bot». El botón flotante no se ve; el aviso de
-  // «Soporte te respondió» sigue saliendo y abre la respuesta. Para volver a mostrarlo, quitar esta regla.
-  if (!document.getElementById('ay-fab-oculto')) document.head.insertAdjacentHTML('beforeend', '<style id="ay-fab-oculto">#ay-fab{display:none!important}</style>');
+  // 26-nov (maqueta aprobada «Ayuda en la barra lateral»): el robot ya no flota sobre el CRM. En computador es un botón
+  // en la fila de abajo de la barra, junto a Ajustes y con su misma caja (junto a la campana no cabe); con la barra
+  // plegada esa fila se apaga y el botón pasa a la columna de íconos, debajo de la campana. En tablet y celular sigue la
+  // tarjeta «Asistente de Wali» del menú (89-mi-bandeja.js). El botón flotante #ay-fab queda escondido: esa tarjeta
+  // copia de él el robot y el número de respuestas sin ver.
+  function pintarBarra(){
+    const nav = document.querySelector('#app > .nav'), marca = nav && nav.querySelector('.brand'), ajustes = document.getElementById('b-ajustes');
+    if (!nav || !marca || !ajustes) return;
+    let b = nav.querySelector('.ay-barra');
+    if (!b) {
+      b = document.createElement('button'); b.type = 'button'; b.className = 'btn ic ay-barra'; b.dataset.ayFab = '1'; b.dataset.wbT = 'Ayuda de Wali';
+      b.setAttribute('aria-label', 'Ayuda de Wali');
+      b.insertAdjacentHTML('beforeend', ASTRO + '<span class="n" hidden></span>');
+      const ubicar = () => {
+        const plegada = nav.classList.contains('wb-plegada');
+        const destino = plegada ? marca : ajustes.parentElement, antes = plegada ? marca.querySelector('.wb-plegar') : ajustes;
+        if (b.parentElement !== destino) destino.insertBefore(b, antes);
+        document.documentElement.classList.toggle('ay-arriba', plegada);
+      };
+      ubicar();
+      new MutationObserver(ubicar).observe(nav, { attributes: true, attributeFilter: ['class'] });
+    }
+    b.setAttribute('aria-expanded', String(A.abierto));
+    const n = b.querySelector('.n'), t = A.sinVer ? String(A.sinVer) : '';
+    n.hidden = !A.sinVer;
+    if (n.textContent !== t) n.textContent = t;
+    if (A.sinVer) n.setAttribute('aria-label', `${A.sinVer} ${A.sinVer === 1 ? 'respuesta nueva' : 'respuestas nuevas'} de soporte`); else n.removeAttribute('aria-label');
+  }
   function pintarFab(){
     let f = document.getElementById('ay-fab');
     if (!f) { document.body.insertAdjacentHTML('beforeend', `<button type="button" class="ay-fab" id="ay-fab" data-ay-fab="1" aria-label="Ayuda de Wali" aria-expanded="false"></button>`); f = document.getElementById('ay-fab'); }
     f.classList.toggle('abierta', A.abierto); f.setAttribute('aria-expanded', String(A.abierto));
+    pintarBarra();
     f.replaceChildren(); f.insertAdjacentHTML('beforeend', A.abierto ? IC.x : `${GLOBO}${ASTRO}${A.sinVer ? `<span class="ay-fab-n" aria-label="${A.sinVer} ${A.sinVer === 1 ? 'respuesta nueva' : 'respuestas nuevas'} de soporte">${A.sinVer}</span>` : '<span class="ay-fab-hola" aria-hidden="true">¿Te ayudo?</span>'}`);
     let av = document.getElementById('ay-aviso');
     const s = !A.abierto && A.aviso;
@@ -776,5 +802,29 @@ body:has(#ec-cajon.on) .ay-fab:not(.abierta){opacity:0;pointer-events:none;trans
 .ay-tip small{font-size:12.5px;color:var(--ink3)}
 @media (prefers-reduced-motion:reduce){.ay-sform,.ay-scard,.ay-equipo,.ay-fab-n,.ay-aviso,.ay-fab:not(.abierta),.ay-fab-hola,.ay-toast,.ay-hconf,.ay-htconf,.ay-hbt,.ay-ok,.ay-escr i,.ay-hueco,.ay-astro .ojos,.ay-astro .antena{animation:none}.ay-ok{stroke-dashoffset:0}}
 @media (max-width:760px){.ay-fab{right:16px;bottom:84px}.ay{right:16px;bottom:150px;height:min(560px,calc(100vh - 180px))}}
+/* Ayuda en la barra lateral (26-nov): el robot ya no flota; el botón va junto a Ajustes con su misma caja */
+#ay-fab{display:none!important}
+#app .nav .ay-barra{position:relative;flex:none;padding:0;display:grid;place-items:center;transition:background-color .16s cubic-bezier(.23,1,.32,1),border-color .16s cubic-bezier(.23,1,.32,1),scale .14s cubic-bezier(.23,1,.32,1)}
+#app .nav .cu-ctl .ay-barra{width:34px;height:34px;border-radius:9px;border:1px solid rgb(34,34,44);background:rgb(21,21,28)}
+#app .nav .cu-ctl .ay-barra:hover{background:var(--nx-negro-2,#1b1b22)}
+#app .nav .ay-barra:active{scale:.94}
+#app .nav .ay-barra .ay-astro{width:24px;height:24px;transition:transform .3s cubic-bezier(.23,1,.32,1)}
+#app .nav .ay-barra:hover .ay-astro,#app .nav .ay-barra[aria-expanded="true"] .ay-astro{transform:rotate(-8deg) scale(1.08)}
+#app .nav .ay-barra[aria-expanded="true"],#app .nav .cu-ctl .ay-barra[aria-expanded="true"]{border-color:rgba(255,210,31,.55);background:rgba(255,210,31,.1)}
+#app .nav .ay-barra .n{position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:#dc2626;color:#fff;font-size:10.5px;font-weight:600;line-height:17px;text-align:center;box-shadow:0 0 0 2px var(--nx-negro,#0b0b10);animation:ay-barra-n .32s cubic-bezier(.34,1.56,.64,1) both}
+#app .nav .ay-barra .n[hidden]{display:none}
+@keyframes ay-barra-n{from{scale:.4;opacity:0}}
+#app .nav .cu-ctl .cu-est{min-width:0;flex:1 1 auto}
+#app .nav.wb-plegada .brand .ay-barra{order:3;margin:0;border-color:transparent;background:none}
+#app .nav.wb-plegada .brand .ay-barra:hover{background:var(--nx-negro-2,#1b1b22)}
+@media (min-width:1001px){
+  .ay{left:calc(var(--navw,236px) + 10px);bottom:14px;top:auto;right:auto;height:min(640px,calc(100dvh - 28px));transform-origin:0 100%;animation:ay-desde-barra .32s cubic-bezier(.23,1,.32,1) both}
+  .ay-aviso{left:calc(var(--navw,236px) + 10px);bottom:14px;top:auto;right:auto;transform-origin:0 100%}
+  .ay-arriba .ay{top:14px;bottom:auto;transform-origin:0 0}
+  .ay-arriba .ay-aviso{top:14px;bottom:auto;transform-origin:0 0}
+}
+@media (max-width:1000px){#app .nav .ay-barra{display:none}}
+@keyframes ay-desde-barra{from{opacity:0;transform:translateX(-8px) scale(.97)}}
+@media (prefers-reduced-motion:reduce){.ay{animation:none}#app .nav .ay-barra .n{animation:none}#app .nav .ay-barra .ay-astro{transition:none}}
 </style>`);
 })();
