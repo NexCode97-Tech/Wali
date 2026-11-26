@@ -1,5 +1,5 @@
 /* ── Ficha del contacto en tablet (maqueta «Ficha en el iPad», opción A, aprobada el 11-nov) ──
-   Entre 760 y 1360 px la columna de la ficha no cabe: tocar la foto o el nombre en la cabecera del chat la abre como
+   Entre 760 y 1240 px (desde el 25-nov; antes 1360) la columna de la ficha no cabe: tocar la foto o el nombre en la cabecera del chat la abre como
    un cajón de arriba abajo, pegado al borde derecho, sobre un velo. La X roja, el velo o Escape la cierran. El cajón es
    el de la bandeja compartida (WB.cajon), el mismo de Soporte del superadmin. En celular sigue el panel a pantalla
    completa de 58-celular-chat.js. */
@@ -19,5 +19,5 @@
     if (app.classList.contains('wb-cajon-abierto') && t.closest('.list [data-c], .nav, [data-ir]')) cerrar();
   });
   // Si la pantalla pasa a computador o a celular, el cajón no queda abierto por debajo.
-  window.matchMedia('(min-width:760px) and (max-width:1360px)').addEventListener('change', ev => { if (!ev.matches) app.classList.remove('wb-cajon-abierto', 'wb-cajon-sale'); });
+  window.matchMedia('(min-width:760px) and (max-width:1240px)').addEventListener('change', ev => { if (!ev.matches) app.classList.remove('wb-cajon-abierto', 'wb-cajon-sale'); });
 })();

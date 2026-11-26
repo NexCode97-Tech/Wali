@@ -413,6 +413,9 @@
     const hb = document.getElementById('ay-hbtn'); if (hb) hb.setAttribute('aria-pressed', String(A.vista === 'historial'));
     pintarFab();
   }
+  // 25-nov, pedido del usuario: «de momento escondamos el botón del chat bot». El botón flotante no se ve; el aviso de
+  // «Soporte te respondió» sigue saliendo y abre la respuesta. Para volver a mostrarlo, quitar esta regla.
+  if (!document.getElementById('ay-fab-oculto')) document.head.insertAdjacentHTML('beforeend', '<style id="ay-fab-oculto">#ay-fab{display:none!important}</style>');
   function pintarFab(){
     let f = document.getElementById('ay-fab');
     if (!f) { document.body.insertAdjacentHTML('beforeend', `<button type="button" class="ay-fab" id="ay-fab" data-ay-fab="1" aria-label="Ayuda de Wali" aria-expanded="false"></button>`); f = document.getElementById('ay-fab'); }

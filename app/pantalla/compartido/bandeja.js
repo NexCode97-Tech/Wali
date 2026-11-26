@@ -3,12 +3,12 @@
    src/paginas.ts lo pone antes de los scripts del CRM y lo mete en admin.html en el marcador BANDEJA_COMPARTIDA (un comentario de bloque).
    Cada pantalla solo le pone las clases wb-* a su DOM:
    · wb-ficha            la columna de la ficha de la derecha
-   · wb-ficha-oculta     en el contenedor de la grilla, cuando la ficha está oculta (solo computador, > 1360 px)
+   · wb-ficha-oculta     en el contenedor de la grilla, cuando la ficha está oculta (solo computador, > 1240 px)
    · wb-ocultar          el botón dentro del título de la ficha (WB.botonOcultar)
    · wb-mostrar          el botón en la cabecera del chat, visible solo con la ficha oculta (WB.botonMostrar)
    Barra lateral plegable (maqueta del 11-nov): la barra lleva wb-barra; plegada, wb-plegada. Adentro: wb-marca (logo y
    botón), wb-logo, wb-txt (lo que se apaga), data-wb-t (el nombre que sale en el globito) y WB.botonPlegar().
-   Medidas (11-nov): las del CRM. Lista 357 px visibles (317 entre 1001 y 1360 px, 320 en tablet) y ficha 297 px. ── */
+   Medidas (11-nov): las del CRM. Lista 357 px visibles (317 entre 1001 y 1360 px, 320 en tablet; desde el 25-nov la ficha va en su columna desde 1241 px y es cajón por debajo) y ficha 297 px. ── */
 (() => {
   if (window.WB) return;
   const IOS = 'cubic-bezier(.32,.72,0,1)', SALIDA = 'cubic-bezier(.23,1,.32,1)';
@@ -17,7 +17,7 @@
 :root{--wb-lista:357px;--wb-ficha:297px}
 @media (max-width:1360px){:root{--wb-lista:317px}}
 @media (max-width:1000px){:root{--wb-lista:320px}}
-@media (min-width:1361px){
+@media (min-width:1241px){
   /* La ficha se cierra como un cajón hacia la derecha y el chat gana el espacio */
   .wb-ficha{overflow-x:hidden;transition:opacity 240ms ${SALIDA},transform 420ms ${IOS},filter 240ms ${SALIDA},margin 420ms ${IOS},visibility 0s}
   .wb-ficha > *{min-width:295px}
@@ -56,8 +56,10 @@ button.wb-ocultar{margin-left:auto;width:30px;height:30px;border-radius:8px;disp
 button.wb-ocultar:hover{background:#f3f6fa;color:#0b0b10}button.wb-ocultar:active{transform:scale(.92)}
 .wb-ocultar svg{width:17px;height:17px}.wb-ocultar .pr{fill:currentColor}
 .wb-mostrar{display:none}.wb-mostrar .pr{fill:none}
-@media (max-width:1360px){button.wb-ocultar,.wb-mostrar{display:none!important}}
-/* Tablet (760 a 1360 px, maqueta «Ficha en el iPad» opción A, aprobada el 11-nov): tocar el nombre abre la ficha como
+@media (max-width:1240px){button.wb-ocultar,.wb-mostrar{display:none!important}}
+/* 1241 a 1360 px (portátil al 100 %, 25-nov): la ficha va más angosta (crm.html) y su contenido cabe sin cortarse */
+@media (min-width:1241px) and (max-width:1360px){.wb-ficha > *{min-width:282px}}
+/* Tablet (760 a 1240 px desde el 25-nov, maqueta «Ficha en el iPad» opción A, aprobada el 11-nov): tocar el nombre abre la ficha como
    un cajón de arriba abajo, pegado al borde derecho del contenedor (que va con position:relative), sobre un velo. El
    contenido entra escalonado. La X roja (WB.botonCerrarCajon) o tocar el velo la cierran. */
 .wb-velo,.wb-cerrar-cajon{display:none}
@@ -65,7 +67,7 @@ button.wb-ocultar:hover{background:#f3f6fa;color:#0b0b10}button.wb-ocultar:activ
    mostraba al lado de «Ocultar la ficha», que hace lo mismo (12-nov). Y siempre roja: el tema pinta gris los íconos del título. */
 .ptitle button.wb-cerrar-cajon{display:none}
 .ptitle button.wb-cerrar-cajon svg,#app .ptitle button.wb-cerrar-cajon svg{color:#dc2626}
-@media (min-width:760px) and (max-width:1360px){
+@media (min-width:760px) and (max-width:1240px){
   .wb-cajon-abierto .wb-ficha{display:block!important;position:absolute;top:var(--wb-cajon-top,0);right:0;bottom:0;width:360px;max-width:calc(100% - 48px);z-index:61;margin:0;
     overflow-y:auto;background:#fff;border-left:0;box-shadow:-30px 0 60px -30px rgba(0,0,0,.45);animation:wb-cajon 420ms ${IOS} both}
   .wb-cajon-abierto .wb-ficha > *{animation:wb-fe 420ms ${SALIDA} both}
@@ -305,7 +307,7 @@ button.wb-cerrar-cajon:hover{background:#fef2f2}button.wb-cerrar-cajon:active{tr
     botonPlegar: (attrs = '') => `<button type="button" class="wb-plegar" ${attrs} aria-label="Ocultar el menú" title="Ocultar el menú" aria-expanded="true">${BARRA}</button>`,
     botonMostrar: (attrs = '', clase = '') => `<button type="button" class="wb-mostrar ${clase}" ${attrs} aria-label="Mostrar la ficha" title="Mostrar la ficha">${PANEL}</button>`,
     /** ¿La pantalla es de tablet, donde la ficha va como cajón? */
-    esCajon: () => window.matchMedia('(min-width:760px) and (max-width:1360px)').matches,
+    esCajon: () => window.matchMedia('(min-width:760px) and (max-width:1240px)').matches,
     /** Abre o cierra la ficha como cajón en `contenedor` (el que tiene la ficha; va con position:relative). */
     cajon(contenedor, abierto, alCerrar) {
       if (!contenedor) return;

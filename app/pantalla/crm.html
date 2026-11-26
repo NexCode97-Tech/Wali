@@ -194,10 +194,10 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 .pg-h .sub{margin:2px 0 0}
 .empty{padding:60px 20px;text-align:center;color:var(--ink3);font-size:13.5px;display:grid;justify-items:center;gap:8px}
 .empty svg{width:32px;height:32px;color:var(--ink4)}
-/* 25-nov: en pantallas de 1181 a 1360 px (un portátil al 100 %) la ficha del contacto se veía solo al alejar el zoom.
-   Ahora la lista y la ficha se angostan y la ficha sigue a la vista; se esconde solo por debajo de 1180 px. */
+/* 25-nov: en pantallas de 1241 a 1360 px (un portátil al 100 %) la ficha del contacto se veía solo al alejar el zoom.
+   Ahora la lista y la ficha se angostan y la ficha sigue a la vista; por debajo de 1240 px se abre como cajón (89-ficha-cajon.js). */
 @media (max-width:1360px){.app{grid-template-columns:220px calc(min(var(--wb-lista,357px),317px) + 23px) minmax(0,1fr) calc(min(var(--wb-ficha,297px),284px) + 23px)}.app.panel-min{grid-template-columns:220px calc(min(var(--wb-lista,357px),317px) + 23px) minmax(0,1fr) 0}}
-@media (max-width:1180px){.app,.app.panel-min{grid-template-columns:220px calc(var(--wb-lista,317px) + 23px) minmax(0,1fr)}.panel{display:none}}
+@media (max-width:1240px){.app,.app.panel-min{grid-template-columns:220px calc(var(--wb-lista,317px) + 23px) minmax(0,1fr)}.panel{display:none}}
 @media (max-width:1000px){.app{grid-template-columns:var(--wb-lista,320px) minmax(0,1fr)}}
 /* Celular: menos de 760 px (CELULAR en puenteCrm.ts, donde el marco deja de escalarse): una sola columna, lista o chat. */
 @media (max-width:759.98px){.app{grid-template-columns:minmax(0,1fr)}.chat{min-width:0}.app.open .list{display:none}.app:not(.open) .chat{display:none}}

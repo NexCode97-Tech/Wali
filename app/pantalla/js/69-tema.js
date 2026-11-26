@@ -93,8 +93,15 @@
 @media (min-width:1001px) and (max-width:1360px){
   #app.app{--navw:220px}
 }
-/* Sin la ficha (se esconde por debajo de 1180 px desde el 25-nov), el chat lleva el margen de la orilla. */
-@media (min-width:1001px) and (max-width:1180px){
+/* La ficha como cajón (89-ficha-cajon.js, por debajo de 1240 px): la regla de arriba (#app > .panel, relative) le ganaba
+   al cajón compartido y la ficha caía en una fila nueva de la grilla, abajo a la izquierda, aplastando el chat (25-nov).
+   Abierta, flota pegada al borde derecho del fondo redondeado. */
+@media (min-width:1001px) and (max-width:1240px){
+  #app.app.wb-cajon-abierto > .panel,#app.app.wb-cajon-sale > .panel{position:absolute;top:8px;right:8px;bottom:8px;margin:0;width:360px;max-width:calc(100% - 48px);border:0;border-radius:20px 0 0 20px;z-index:61}
+  #app.app.wb-cajon-abierto > .wb-velo,#app.app.wb-cajon-sale > .wb-velo{inset:8px 8px 8px var(--navw);border-radius:20px}
+}
+/* Sin la ficha (se esconde por debajo de 1240 px desde el 25-nov), el chat lleva el margen de la orilla. */
+@media (min-width:1001px) and (max-width:1240px){
   #app > .chat{margin-right:18px}
 }`;
   const st = document.createElement('style');
