@@ -20,6 +20,7 @@ import { agenteIniciar } from './agenteIA'
 import type { CtxEntrante } from './automatizaciones'
 import { CANALES_CONEXION, nombreCanal, tieneSalida } from './formas'
 import { motorIA, SIN_MOTOR } from './motorIA'
+import { registrarEtiquetasLuego } from './etiquetas'
 
 /**
  * Reglas automáticas del CRM (página «Reglas automáticas» de la maqueta,
@@ -585,6 +586,7 @@ async function accionEtiqueta(c: Conv, pedida: string, quitar: boolean): Promise
   const nuevas = quitar ? tags.filter(t => plano(t) !== plano(conocida)) : [...tags, conocida]
   await prisma.crmContacto.update({ where: { id: c.contactoId }, data: { tags: nuevas } })
   await emitirContacto(c.contactoId)
+  if (!quitar) await registrarEtiquetasLuego([conocida])
   return { hecho: quitar ? `quitó la etiqueta ${conocida}` : `etiqueta ${conocida}` }
 }
 

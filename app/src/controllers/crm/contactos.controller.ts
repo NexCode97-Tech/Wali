@@ -16,6 +16,7 @@ import { actualizarContacto, correoValido, datosDeContacto, emitirContacto, exig
 import { leerHoja } from './_hoja'
 import { desbloquearEnWhatsapp } from './spam.controller'
 import { listaContactos } from '../../services/crm/contactosLista'
+import { registrarEtiquetasLuego } from '../../services/crm/etiquetas'
 
 /**
  * Contactos del CRM: crear, editar, borrar, importar desde Excel o CSV,
@@ -167,6 +168,7 @@ export async function importarContactos(req: Request, res: Response) {
   const errores: { fila: number; motivo: string }[] = []
   const tocados: number[] = []
   const asesores = new Map<string, string | null>()
+  const etiquetasArchivo = new Set<string>()
 
   for (let i = 0; i < filas.length; i++) {
     const numFila = i + 2 // la fila 1 es de encabezados
@@ -187,6 +189,7 @@ export async function importarContactos(req: Request, res: Response) {
         if (!asignadoId) errores.push({ fila: numFila, motivo: `Se importó sin asesor: no encontré a «${f.asesor}» en Ventas` })
       }
       const tags = f.etiquetas ? [...new Set(String(f.etiquetas).split(/[,;|]/).map(t => corto(t, 60)).filter(Boolean))].slice(0, 50) : []
+      for (const t of tags) etiquetasArchivo.add(t)
       const fichaNueva: Json = {}
       for (const k of ['ciudad', 'origen']) if (f[k]) fichaNueva[k] = f[k]
       const camposNuevos: Json = {}
@@ -244,6 +247,8 @@ export async function importarContactos(req: Request, res: Response) {
     }
   }
 
+  // Las etiquetas del archivo que no existían entran a la lista del espacio (etiquetas.ts).
+  await registrarEtiquetasLuego([...etiquetasArchivo])
   // Tiempo real: uno por uno si son pocos; si son muchos, un solo aviso para recargar.
   const unicos = [...new Set(tocados)]
   if (unicos.length <= 300) for (const id of unicos) await emitirContacto(id, req.userId!)

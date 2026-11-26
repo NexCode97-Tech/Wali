@@ -15,6 +15,7 @@ import { dentroDeHorario } from '../services/crm/entrantes'
 import * as ajustes from '../controllers/crm/ajustes.controller'
 import * as conv from '../controllers/crm/conversaciones.controller'
 import * as contactos from '../controllers/crm/contactos.controller'
+import { registrarEtiquetasLuego } from '../services/crm/etiquetas'
 
 /**
  * API pública de Wali, versión 1 (11-nov). Base: https://walicrm.com/crm/api/v1. Va con
@@ -224,6 +225,7 @@ const editarSchema = z.object({
 
 router.patch('/conversaciones/:id', asyncHandler(async (req: Request, res: Response) => {
   const d = editarSchema.parse(req.body)
+  if (d.etiquetas?.agregar?.length) await registrarEtiquetasLuego(d.etiquetas.agregar)
   const id = Number(req.params.id) || 0
   const c = await prisma.crmConversacion.findFirst({ where: { id }, include: { contacto: { select: { tags: true } } } })
   if (!c) throw new NotFoundError('Esa conversación no existe en este espacio.')
@@ -258,6 +260,7 @@ const aPantalla = (d: z.infer<typeof contactoSchema>) => {
 
 router.post('/contactos', asyncHandler(async (req: Request, res: Response) => {
   const d = contactoSchema.parse(req.body)
+  if (d.etiquetas?.length) await registrarEtiquetasLuego(d.etiquetas)
   if (!d.telefono && !d.correo) throw new ValidationError('Un contacto necesita teléfono o correo.')
   const k = await llamar(contactos.crearContacto, req, {}, { contacto: aPantalla(d) })
   res.status(201).json({ data: { id: obj(k).id ?? obj(k).contactoId ?? null } })
@@ -265,6 +268,7 @@ router.post('/contactos', asyncHandler(async (req: Request, res: Response) => {
 
 router.patch('/contactos/:id', asyncHandler(async (req: Request, res: Response) => {
   const d = contactoSchema.parse(req.body)
+  if (d.etiquetas?.length) await registrarEtiquetasLuego(d.etiquetas)
   if (!Object.keys(d).length) throw new ValidationError('No mandaste ningún cambio.')
   await llamar(contactos.editarContacto, req, { id: String(Number(req.params.id) || 0) }, { cambios: aPantalla(d) })
   res.json({ data: { id: Number(req.params.id) } })

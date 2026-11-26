@@ -14,6 +14,7 @@ import { idDeNombre, nombreDe } from './usuarios'
 import { esFestivo } from './difusiones'
 import { tieneSalida } from './formas'
 import { equipoRespaldo } from './equipos'
+import { registrarEtiquetasLuego } from './etiquetas'
 
 /**
  * Motor de flujos del CRM (26-sep-2026): corre de verdad en WhatsApp los
@@ -510,6 +511,8 @@ class Corrida {
     if (!t) return
     const k = await this.contacto()
     if (!k.tags.some(x => x.toLowerCase() === t.toLowerCase())) await this.cambiarContacto({ tags: [...k.tags, t] })
+    // La respuesta a un botón que se guarda como etiqueta entra a la lista del espacio, con el equipo de la conversación.
+    await registrarEtiquetasLuego([t], this.conv.equipo || equipoRespaldo())
     this.est.resumen.push(`etiqueta «${t}»`)
   }
 

@@ -336,6 +336,8 @@ export function iniciarProcesosCrm() {
   setInterval(() => { void embudoAutomatico() }, 60_000)
   setTimeout(() => { void aprendizajeMiIa() }, 120_000)
   setInterval(() => { void aprendizajeMiIa() }, 10 * 60_000)
+  // Etiquetas que quedaron en contactos sin estar en la lista del espacio (26-nov, etiquetas.ts): una vez al arrancar.
+  setTimeout(() => { void pasoPorEspacio('etiquetas sueltas', () => import('./etiquetas').then(m => m.completarEtiquetasSueltas()).then(() => 0)) }, 100_000)
   // Webhooks de la API (11-nov): los avisos pendientes y sus reintentos, cada 30 s (al encolar también se intenta de una vez).
   setInterval(() => { void paso('webhooks de la API', () => import('./webhooks').then(m => m.entregarPendientes())) }, 30_000)
   logger.info('[CRM procesos] programados, recordatorios, reparto, cierre automático y difusiones en marcha')

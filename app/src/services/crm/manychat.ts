@@ -7,6 +7,7 @@ import { emitirContacto } from '../../controllers/crm/_contacto'
 import { avisarIntegraciones, escribirIntegracion, estadoIntegraciones, integracionGuardada, type EstadoSistema } from './integraciones'
 import { logger } from '../../utils/logger'
 import { ValidationError } from '../../utils/errors'
+import { registrarEtiquetasLuego } from './etiquetas'
 
 /**
  * ManyChat (8-oct, maqueta aprobada): cada lead que captura un flujo entra solo a Contactos. En ManyChat se pone
@@ -68,6 +69,7 @@ export async function recibirManychat(ruta: string, autorizacion: string, cuerpo
     const instagram = dato(cuerpo.instagram ?? cuerpo.ig_username).replace(/^@/, '').slice(0, 60)
     const etiquetas = etiquetasDe(cuerpo.etiquetas ?? cuerpo.tags)
     if (!tel && !correo) return { codigo: 400 }
+    await registrarEtiquetasLuego(etiquetas)
 
     const existente = (tel ? await prisma.crmContacto.findFirst({ where: { telefono: tel } }) : null)
       ?? (correo ? await prisma.crmContacto.findFirst({ where: { correo }, orderBy: { id: 'desc' } }) : null)
